@@ -85,7 +85,7 @@ function helpText(): string {
     "  validate <path> [--json]",
     "  render",
     "  export <path> --format mermaid [--out <path>]",
-    "  export <path> --format d2",
+    "  export <path> --format d2 [--out <path>]",
   ].join("\n");
 }
 
@@ -486,7 +486,7 @@ function runExport(args: readonly string[], streams: CliStreams): number {
       [
         "Usage:",
         "  diagrampilot export <path> --format mermaid [--out <path>]",
-        "  diagrampilot export <path> --format d2",
+        "  diagrampilot export <path> --format d2 [--out <path>]",
       ].join("\n"),
     );
     return 1;
@@ -527,15 +527,13 @@ function runExport(args: readonly string[], streams: CliStreams): number {
     return 0;
   }
 
-  if (argsResult.options.outPath !== undefined) {
-    writeLine(
-      streams.stderr,
-      "D2 export output files are not implemented yet; omit --out to print to stdout.",
-    );
-    return 1;
-  }
-
   const exportedText = exportDiagramSpecToD2(spec);
+
+  if (argsResult.options.outPath !== undefined) {
+    mkdirSync(path.dirname(argsResult.options.outPath), { recursive: true });
+    writeFileSync(argsResult.options.outPath, exportedText, "utf8");
+    return 0;
+  }
 
   streams.stdout.write(exportedText);
   return 0;

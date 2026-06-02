@@ -1619,6 +1619,65 @@ test("diagrampilot export writes Mermaid to a file when out is provided", async 
   });
 });
 
+test("diagrampilot export writes D2 to a file when out is provided", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "architecture.dp.yaml"),
+      [
+        "version: 1",
+        "title: Checkout Architecture",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "edges:",
+        "  - id: web_app_to_api_gateway",
+        "    from: web_app",
+        "    to: api_gateway",
+        "    label: HTTPS",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      [
+        "export",
+        "docs/architecture.dp.yaml",
+        "--format",
+        "d2",
+        "--out",
+        "docs/architecture.d2",
+      ],
+      tempRoot,
+    );
+
+    const exportedD2 = await readFile(
+      path.join(tempRoot, "docs", "architecture.d2"),
+      "utf8",
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stdout, "");
+    assert.equal(result.stderr, "");
+    assert.equal(
+      exportedD2,
+      [
+        "direction: right",
+        "",
+        'web_app: "Web App"',
+        'api_gateway: "API Gateway"',
+        "",
+        'web_app -> api_gateway: "HTTPS"',
+        "",
+      ].join("\n"),
+    );
+  });
+});
+
 test("diagrampilot export requires valid DiagramSpec input before printing Mermaid", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });
