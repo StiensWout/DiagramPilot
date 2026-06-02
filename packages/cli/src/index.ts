@@ -165,8 +165,9 @@ function formatSourceFailure(failure: SourceLoadFailure): string {
     failure.line === undefined || failure.column === undefined
       ? ""
       : ` at line ${failure.line}, column ${failure.column}`;
+  const formatLabel = failure.format.toUpperCase();
 
-  return `YAML parse error in ${failure.path}${location}: ${failure.message}`;
+  return `${formatLabel} parse error in ${failure.path}${location}: ${failure.message}`;
 }
 
 function runValidate(args: readonly string[], streams: CliStreams): number {

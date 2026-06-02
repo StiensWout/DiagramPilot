@@ -9,7 +9,7 @@ export function getDiagramPilotVersion(): string {
   return DIAGRAMPILOT_VERSION;
 }
 
-export type DiagramPilotSourceFormat = "yaml";
+export type DiagramPilotSourceFormat = "yaml" | "json";
 
 export interface DiagramPilotSourceFile {
   format: DiagramPilotSourceFormat;
@@ -19,6 +19,7 @@ export interface DiagramPilotSourceFile {
 
 export interface SourceParseFailure {
   kind: "parse";
+  format: DiagramPilotSourceFormat;
   path: string;
   message: string;
   line?: number;
@@ -67,6 +68,7 @@ function parseYamlSource(path: string, content: string): SourceLoadResult {
       ok: false,
       failure: {
         kind: "parse",
+        format: "yaml",
         path,
         message: firstError.message,
         line,
@@ -85,6 +87,48 @@ function parseYamlSource(path: string, content: string): SourceLoadResult {
   };
 }
 
+function jsonErrorPosition(message: string): { line?: number; column?: number } {
+  const match = /\(line (?<line>\d+) column (?<column>\d+)\)$/.exec(message);
+
+  if (match?.groups === undefined) {
+    return {};
+  }
+
+  return {
+    line: Number(match.groups.line),
+    column: Number(match.groups.column),
+  };
+}
+
+function parseJsonSource(path: string, content: string): SourceLoadResult {
+  try {
+    return {
+      ok: true,
+      source: {
+        format: "json",
+        path,
+        value: JSON.parse(content),
+      },
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unable to parse JSON.";
+    const { line, column } = jsonErrorPosition(message);
+
+    return {
+      ok: false,
+      failure: {
+        kind: "parse",
+        format: "json",
+        path,
+        message,
+        line,
+        column,
+      },
+    };
+  }
+}
+
 export function loadDiagramPilotSourceFile(path: string): SourceLoadResult {
   let content: string;
 
@@ -99,6 +143,10 @@ export function loadDiagramPilotSourceFile(path: string): SourceLoadResult {
         message: error instanceof Error ? error.message : "Unable to read file.",
       },
     };
+  }
+
+  if (path.toLowerCase().endsWith(".json")) {
+    return parseJsonSource(path, content);
   }
 
   return parseYamlSource(path, content);
