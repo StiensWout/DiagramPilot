@@ -352,6 +352,63 @@ test("diagrampilot validate rejects an invalid top-level direction", async () =>
   });
 });
 
+test("diagrampilot validate emits repairable validation errors in text mode", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "repairable-errors.dp.yaml"),
+      [
+        "version: 1",
+        "title: Repairable Error Architecture",
+        "direction: sideways",
+        "nodes:",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "edges:",
+        "  - id: ghost_client_to_api_gateway",
+        "    from: ghost_client",
+        "    to: api_gateway",
+        "    directed: sometimes",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/repairable-errors.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /DiagramSpec validation error in docs\/repairable-errors\.dp\.yaml:/,
+    );
+    assert.match(result.stderr, /Path: direction/);
+    assert.match(
+      result.stderr,
+      /Problem: direction must be one of: right, left, down, up\./,
+    );
+    assert.match(result.stderr, /Bad value: "sideways"/);
+    assert.match(result.stderr, /Expected: One of: right, left, down, up\./);
+    assert.match(
+      result.stderr,
+      /Suggestion: Change direction to right, left, down, or up\./,
+    );
+    assert.match(result.stderr, /Path: edges\[0\]\.from/);
+    assert.match(result.stderr, /Bad value: "ghost_client"/);
+    assert.match(
+      result.stderr,
+      /Suggestion: Add a node with id "ghost_client" or change edges\[0\]\.from to an existing node ID\./,
+    );
+    assert.match(result.stderr, /Path: edges\[0\]\.directed/);
+    assert.match(result.stderr, /Bad value: "sometimes"/);
+    assert.match(result.stderr, /Expected: Boolean true or false\./);
+  });
+});
+
 test("diagrampilot validate rejects an invalid stable ID shape", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });

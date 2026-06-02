@@ -172,15 +172,40 @@ function formatSourceFailure(failure: SourceLoadFailure): string {
   return `${formatLabel} parse error in ${failure.path}${location}: ${failure.message}`;
 }
 
+function hasBadValue(
+  error: DiagramSpecValidationError,
+): error is DiagramSpecValidationError & { badValue: unknown } {
+  return Object.prototype.hasOwnProperty.call(error, "badValue");
+}
+
+function formatBadValue(value: unknown): string {
+  if (value === undefined) {
+    return "<missing>";
+  }
+
+  const formatted = JSON.stringify(value);
+
+  return formatted === undefined ? String(value) : formatted;
+}
+
 function formatDiagramSpecValidationError(
   filePath: string,
   error: DiagramSpecValidationError,
 ): string {
-  return [
+  const lines = [
     `DiagramSpec validation error in ${filePath}: ${error.message}`,
-    error.expected,
-    error.suggestion,
-  ].join(" ");
+    `  Path: ${error.path}`,
+    `  Problem: ${error.message}`,
+  ];
+
+  if (hasBadValue(error)) {
+    lines.push(`  Bad value: ${formatBadValue(error.badValue)}`);
+  }
+
+  lines.push(`  Expected: ${error.expected}`);
+  lines.push(`  Suggestion: ${error.suggestion}`);
+
+  return lines.join("\n");
 }
 
 function runValidate(args: readonly string[], streams: CliStreams): number {
