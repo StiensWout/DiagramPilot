@@ -594,6 +594,183 @@ test("diagrampilot validate rejects duplicate stable IDs across diagram objects"
   });
 });
 
+test("diagrampilot validate rejects edge endpoints that are not nodes", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "broken-edge-endpoints.dp.yaml"),
+      [
+        "version: 1",
+        "title: Broken Edge Endpoint Architecture",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "edges:",
+        "  - id: web_app_to_backend_services",
+        "    from: web_app",
+        "    to: backend_services",
+        "  - id: ghost_client_to_api_gateway",
+        "    from: ghost_client",
+        "    to: api_gateway",
+        "groups:",
+        "  - id: backend_services",
+        "    label: Backend Services",
+        "    contains:",
+        "      - api_gateway",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/broken-edge-endpoints.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /edges\[0\]\.to references group "backend_services"; edges must reference node IDs\./,
+    );
+    assert.match(
+      result.stderr,
+      /edges\[1\]\.from references unknown node "ghost_client"\./,
+    );
+  });
+});
+
+test("diagrampilot validate rejects non-boolean edge directed values", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "bad-edge-directed.dp.yaml"),
+      [
+        "version: 1",
+        "title: Bad Edge Directed Architecture",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "edges:",
+        "  - id: web_app_to_api_gateway",
+        "    from: web_app",
+        "    to: api_gateway",
+        "    directed: sometimes",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/bad-edge-directed.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /edges\[0\]\.directed must be a boolean when present\./,
+    );
+    assert.match(
+      result.stderr,
+      /Use true for directed edges or false for undirected edges\./,
+    );
+  });
+});
+
+test("diagrampilot validate rejects non-string edge labels", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "bad-edge-label.dp.yaml"),
+      [
+        "version: 1",
+        "title: Bad Edge Label Architecture",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "edges:",
+        "  - id: web_app_to_api_gateway",
+        "    from: web_app",
+        "    to: api_gateway",
+        "    label: 443",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/bad-edge-label.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /edges\[0\]\.label must be a plain-text string when present\./,
+    );
+    assert.match(
+      result.stderr,
+      /Use a plain-text label or omit edges\[0\]\.label\./,
+    );
+  });
+});
+
+test("diagrampilot validate accepts directed and explicit undirected edges without labels", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "valid-edge-semantics.dp.yaml"),
+      [
+        "version: 1",
+        "title: Valid Edge Semantics Architecture",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "  - id: orders_db",
+        "    label: Orders DB",
+        "edges:",
+        "  - id: web_app_to_api_gateway",
+        "    from: web_app",
+        "    to: api_gateway",
+        "  - id: api_gateway_to_orders_db",
+        "    from: api_gateway",
+        "    to: orders_db",
+        "    directed: true",
+        "  - id: api_gateway_related_to_orders_db",
+        "    from: api_gateway",
+        "    to: orders_db",
+        "    directed: false",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/valid-edge-semantics.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.equal(result.stdout, "Valid docs/valid-edge-semantics.dp.yaml\n");
+  });
+});
+
 test("diagrampilot validate stops at a YAML parse failure", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });

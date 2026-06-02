@@ -290,6 +290,168 @@ function validateRequiredPlainTextLabels(
   }
 }
 
+function validateOptionalEdgeLabels(
+  value: Record<string, unknown>,
+  errors: DiagramSpecValidationError[],
+): void {
+  const edges = value.edges;
+
+  if (!Array.isArray(edges)) {
+    return;
+  }
+
+  edges.forEach((edge, index) => {
+    if (
+      !isRecord(edge) ||
+      !("label" in edge) ||
+      typeof edge.label === "string"
+    ) {
+      return;
+    }
+
+    errors.push({
+      path: `edges[${index}].label`,
+      message: `edges[${index}].label must be a plain-text string when present.`,
+      badValue: edge.label,
+      expected: "Plain-text label string.",
+      suggestion: `Use a plain-text label or omit edges[${index}].label.`,
+    });
+  });
+}
+
+function stableIdsFromCollection(collection: unknown): Set<string> {
+  const ids = new Set<string>();
+
+  if (!Array.isArray(collection)) {
+    return ids;
+  }
+
+  for (const item of collection) {
+    if (isRecord(item) && isStableId(item.id)) {
+      ids.add(item.id);
+    }
+  }
+
+  return ids;
+}
+
+function nodeIdsExpected(nodeIds: ReadonlySet<string>): string {
+  if (nodeIds.size === 0) {
+    return "An existing node ID.";
+  }
+
+  return `One of: ${Array.from(nodeIds).join(", ")}.`;
+}
+
+function validateEdgeEndpoint(
+  path: string,
+  endpoint: unknown,
+  nodeIds: ReadonlySet<string>,
+  groupIds: ReadonlySet<string>,
+  errors: DiagramSpecValidationError[],
+): void {
+  const expected = nodeIdsExpected(nodeIds);
+
+  if (typeof endpoint !== "string") {
+    errors.push({
+      path,
+      message: `${path} must reference a node ID.`,
+      badValue: endpoint,
+      expected,
+      suggestion: `Change ${path} to an existing node ID.`,
+    });
+    return;
+  }
+
+  if (nodeIds.has(endpoint)) {
+    return;
+  }
+
+  if (groupIds.has(endpoint)) {
+    errors.push({
+      path,
+      message: `${path} references group "${endpoint}"; edges must reference node IDs.`,
+      badValue: endpoint,
+      expected,
+      suggestion: `Change ${path} to an existing node ID instead of a group ID.`,
+    });
+    return;
+  }
+
+  errors.push({
+    path,
+    message: `${path} references unknown node "${endpoint}".`,
+    badValue: endpoint,
+    expected,
+    suggestion: `Add a node with id "${endpoint}" or change ${path} to an existing node ID.`,
+  });
+}
+
+function validateEdgeEndpoints(
+  value: Record<string, unknown>,
+  errors: DiagramSpecValidationError[],
+): void {
+  const edges = value.edges;
+
+  if (!Array.isArray(edges)) {
+    return;
+  }
+
+  const nodeIds = stableIdsFromCollection(value.nodes);
+  const groupIds = stableIdsFromCollection(value.groups);
+
+  edges.forEach((edge, index) => {
+    if (!isRecord(edge)) {
+      return;
+    }
+
+    validateEdgeEndpoint(
+      `edges[${index}].from`,
+      edge.from,
+      nodeIds,
+      groupIds,
+      errors,
+    );
+    validateEdgeEndpoint(
+      `edges[${index}].to`,
+      edge.to,
+      nodeIds,
+      groupIds,
+      errors,
+    );
+  });
+}
+
+function validateEdgeDirectedValues(
+  value: Record<string, unknown>,
+  errors: DiagramSpecValidationError[],
+): void {
+  const edges = value.edges;
+
+  if (!Array.isArray(edges)) {
+    return;
+  }
+
+  edges.forEach((edge, index) => {
+    if (!isRecord(edge) || !("directed" in edge)) {
+      return;
+    }
+
+    if (typeof edge.directed === "boolean") {
+      return;
+    }
+
+    errors.push({
+      path: `edges[${index}].directed`,
+      message: `edges[${index}].directed must be a boolean when present.`,
+      badValue: edge.directed,
+      expected: "Boolean true or false.",
+      suggestion:
+        "Use true for directed edges or false for undirected edges.",
+    });
+  });
+}
+
 export function validateDiagramSpec(
   value: unknown,
 ): DiagramSpecValidationResult {
@@ -341,6 +503,9 @@ export function validateDiagramSpec(
 
   validateDiagramObjectIds(value, errors);
   validateRequiredPlainTextLabels(value, errors);
+  validateOptionalEdgeLabels(value, errors);
+  validateEdgeEndpoints(value, errors);
+  validateEdgeDirectedValues(value, errors);
 
   if (errors.length > 0) {
     return { ok: false, errors };

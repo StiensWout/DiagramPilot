@@ -23,6 +23,9 @@ repairable errors.
 - Do not hand-edit generated artifacts unless the user explicitly asks.
 - At the end of implementation work, include a validation plan with the exact
   commands or checks the user can run to verify the change themselves.
+- After implementing an issue, update its local markdown file under
+  `.scratch/`: set the status appropriately, check completed acceptance
+  criteria, and add implementation notes plus the validation plan.
 
 ## Source Of Truth
 
