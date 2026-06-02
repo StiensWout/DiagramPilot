@@ -343,6 +343,19 @@ function nodeIdsExpected(nodeIds: ReadonlySet<string>): string {
   return `One of: ${Array.from(nodeIds).join(", ")}.`;
 }
 
+function nodeOrGroupIdsExpected(
+  nodeIds: ReadonlySet<string>,
+  groupIds: ReadonlySet<string>,
+): string {
+  const ids = [...nodeIds, ...groupIds];
+
+  if (ids.length === 0) {
+    return "An existing node or group ID.";
+  }
+
+  return `One of: ${ids.join(", ")}.`;
+}
+
 function validateEdgeEndpoint(
   path: string,
   endpoint: unknown,
@@ -420,6 +433,237 @@ function validateEdgeEndpoints(
       errors,
     );
   });
+}
+
+function validateGroupContainmentReferences(
+  value: Record<string, unknown>,
+  errors: DiagramSpecValidationError[],
+): void {
+  const groups = value.groups;
+
+  if (!Array.isArray(groups)) {
+    return;
+  }
+
+  const nodeIds = stableIdsFromCollection(value.nodes);
+  const edgeIds = stableIdsFromCollection(value.edges);
+  const groupIds = stableIdsFromCollection(groups);
+  const expected = nodeOrGroupIdsExpected(nodeIds, groupIds);
+
+  groups.forEach((group, groupIndex) => {
+    if (!isRecord(group)) {
+      return;
+    }
+
+    const containsPath = `groups[${groupIndex}].contains`;
+
+    if (!("contains" in group)) {
+      errors.push({
+        path: containsPath,
+        message: `${containsPath} is required.`,
+        badValue: group.contains,
+        expected: "Array of node or group IDs.",
+        suggestion: `Add contains to groups[${groupIndex}] with node or group IDs.`,
+      });
+      return;
+    }
+
+    if (!Array.isArray(group.contains)) {
+      errors.push({
+        path: containsPath,
+        message: `${containsPath} must be an array of node or group IDs.`,
+        badValue: group.contains,
+        expected: "Array of node or group IDs.",
+        suggestion: `Change ${containsPath} to a list of node or group IDs.`,
+      });
+      return;
+    }
+
+    group.contains.forEach((containedId, containedIndex) => {
+      const containedPath = `${containsPath}[${containedIndex}]`;
+
+      if (typeof containedId !== "string") {
+        errors.push({
+          path: containedPath,
+          message: `${containedPath} must reference a node or group ID.`,
+          badValue: containedId,
+          expected,
+          suggestion: `Change ${containedPath} to an existing node or group ID.`,
+        });
+        return;
+      }
+
+      if (nodeIds.has(containedId) || groupIds.has(containedId)) {
+        return;
+      }
+
+      if (edgeIds.has(containedId)) {
+        errors.push({
+          path: containedPath,
+          message: `${containedPath} references edge "${containedId}"; groups can contain nodes and groups only.`,
+          badValue: containedId,
+          expected,
+          suggestion: `Remove ${containedPath} or change it to an existing node or group ID.`,
+        });
+        return;
+      }
+
+      errors.push({
+        path: containedPath,
+        message: `${containedPath} references unknown node or group "${containedId}".`,
+        badValue: containedId,
+        expected,
+        suggestion: `Add a node or group with id "${containedId}" or change ${containedPath} to an existing node or group ID.`,
+      });
+    });
+  });
+}
+
+interface GroupParent {
+  id: string;
+}
+
+function validateDuplicateGroupContainmentParentage(
+  value: Record<string, unknown>,
+  errors: DiagramSpecValidationError[],
+): void {
+  const groups = value.groups;
+
+  if (!Array.isArray(groups)) {
+    return;
+  }
+
+  const nodeIds = stableIdsFromCollection(value.nodes);
+  const groupIds = stableIdsFromCollection(groups);
+  const parentByContainedId = new Map<string, GroupParent>();
+
+  groups.forEach((group, groupIndex) => {
+    if (!isRecord(group) || !Array.isArray(group.contains)) {
+      return;
+    }
+
+    const groupId = group.id;
+
+    if (!isStableId(groupId)) {
+      return;
+    }
+
+    group.contains.forEach((containedId, containedIndex) => {
+      if (
+        typeof containedId !== "string" ||
+        (!nodeIds.has(containedId) && !groupIds.has(containedId))
+      ) {
+        return;
+      }
+
+      const existingParent = parentByContainedId.get(containedId);
+
+      if (existingParent === undefined) {
+        parentByContainedId.set(containedId, {
+          id: groupId,
+        });
+        return;
+      }
+
+      const path = `groups[${groupIndex}].contains[${containedIndex}]`;
+
+      errors.push({
+        path,
+        message: `${path} contains "${containedId}", which is already contained by group "${existingParent.id}".`,
+        badValue: containedId,
+        expected:
+          "Each contained node or group can have at most one parent group.",
+        suggestion: `Remove ${path} or choose a single parent group for "${containedId}".`,
+      });
+    });
+  });
+}
+
+interface GroupContainmentLink {
+  childId: string;
+  childIndex: number;
+  parentIndex: number;
+}
+
+function validateGroupContainmentCycles(
+  value: Record<string, unknown>,
+  errors: DiagramSpecValidationError[],
+): void {
+  const groups = value.groups;
+
+  if (!Array.isArray(groups)) {
+    return;
+  }
+
+  const groupIds = stableIdsFromCollection(groups);
+  const linksByParentId = new Map<string, GroupContainmentLink[]>();
+
+  groups.forEach((group, groupIndex) => {
+    if (!isRecord(group) || !Array.isArray(group.contains)) {
+      return;
+    }
+
+    const groupId = group.id;
+
+    if (!isStableId(groupId)) {
+      return;
+    }
+
+    const links: GroupContainmentLink[] = [];
+
+    group.contains.forEach((containedId, containedIndex) => {
+      if (typeof containedId === "string" && groupIds.has(containedId)) {
+        links.push({
+          childId: containedId,
+          childIndex: containedIndex,
+          parentIndex: groupIndex,
+        });
+      }
+    });
+
+    linksByParentId.set(groupId, links);
+  });
+
+  const visited = new Set<string>();
+  const visiting = new Set<string>();
+  const stack: string[] = [];
+
+  function visit(groupId: string): void {
+    if (visited.has(groupId)) {
+      return;
+    }
+
+    visiting.add(groupId);
+    stack.push(groupId);
+
+    for (const link of linksByParentId.get(groupId) ?? []) {
+      const cycleStartIndex = stack.indexOf(link.childId);
+
+      if (cycleStartIndex !== -1 && visiting.has(link.childId)) {
+        const cyclePath = [...stack.slice(cycleStartIndex), link.childId];
+        const path = `groups[${link.parentIndex}].contains[${link.childIndex}]`;
+
+        errors.push({
+          path,
+          message: `${path} creates a group containment cycle: ${cyclePath.join(" -> ")}.`,
+          badValue: link.childId,
+          expected: "Acyclic group containment.",
+          suggestion: "Remove one group containment reference from the cycle.",
+        });
+        continue;
+      }
+
+      visit(link.childId);
+    }
+
+    stack.pop();
+    visiting.delete(groupId);
+    visited.add(groupId);
+  }
+
+  for (const groupId of groupIds) {
+    visit(groupId);
+  }
 }
 
 function validateEdgeDirectedValues(
@@ -504,6 +748,9 @@ export function validateDiagramSpec(
   validateDiagramObjectIds(value, errors);
   validateRequiredPlainTextLabels(value, errors);
   validateOptionalEdgeLabels(value, errors);
+  validateGroupContainmentReferences(value, errors);
+  validateDuplicateGroupContainmentParentage(value, errors);
+  validateGroupContainmentCycles(value, errors);
   validateEdgeEndpoints(value, errors);
   validateEdgeDirectedValues(value, errors);
 
