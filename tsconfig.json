@@ -1,0 +1,23 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/core"
+    },
+    {
+      "path": "./packages/icons"
+    },
+    {
+      "path": "./packages/export-mermaid"
+    },
+    {
+      "path": "./packages/export-d2"
+    },
+    {
+      "path": "./packages/render-svg"
+    },
+    {
+      "path": "./packages/cli"
+    }
+  ]
+}

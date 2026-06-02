@@ -1,0 +1,52 @@
+# DiagramPilot
+
+> DiagramPilot is a local-first, repo-native diagram compiler for AI coding
+> agents. It helps agents create, validate, repair, update, render, and export
+> diagrams from structured `*.dp.yaml` and `*.dp.json` source files.
+
+DiagramPilot uses DiagramSpec as its source model. A DiagramPilot source file is
+the editable artifact. Mermaid, D2, DOT, SVG, and PNG are derived artifacts, not
+the primary source of truth.
+
+Public documentation is hosted under `https://diagrampilot.com`.
+
+## Agent Docs
+
+- [Agent quickstart](https://diagrampilot.com/docs/agents/quickstart.md): Minimal workflow for creating, validating, rendering, and exporting diagrams.
+- [DiagramSpec](https://diagrampilot.com/docs/agents/spec.md): Structured source model for diagrams.
+- [Error repair](https://diagrampilot.com/docs/agents/error-repair.md): How agents should interpret and fix validation errors.
+- [Examples](https://diagrampilot.com/docs/agents/examples.md): Canonical diagram examples.
+- [MCP tools](https://diagrampilot.com/docs/agents/mcp.md): Planned Model Context Protocol interface after the CLI/core workflow is useful.
+- [Prompting guide](https://diagrampilot.com/docs/agents/prompting.md): Recommended instructions for agents using DiagramPilot.
+
+## Development Docs
+
+- [Roadmap](https://diagrampilot.com/docs/development/roadmap.md): MVP phases and priorities.
+- [Architecture](https://diagrampilot.com/docs/development/architecture.md): Planned packages, data flow, and constraints.
+- [Market research](https://diagrampilot.com/docs/development/market-research.md): Competitive findings and positioning.
+
+## Initial CLI Shape
+
+```bash
+diagrampilot init
+diagrampilot validate docs/architecture.dp.yaml
+diagrampilot validate docs/architecture.dp.yaml --json
+diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
+diagrampilot export docs/architecture.dp.yaml --format mermaid
+diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
+```
+
+## MVP Boundaries
+
+- `render` produces SVG and requires `--out`.
+- `export` supports Mermaid and D2.
+- `export` prints to stdout by default and writes files with `--out`.
+- Validation checks source files and returns repairable errors.
+- IDs are lowercase snake case and globally unique within a DiagramSpec.
+- Icons use namespaced references such as `lucide:database`.
+- DOT, PNG, MCP, hosted canvas, and project analyzers are deferred.
+
+## Optional
+
+- [GitHub repository](https://github.com/diagrampilot/diagrampilot): Source repository once public.
+- [JSON Schema](https://diagrampilot.com/schema/diagrampilot.schema.json): Planned machine-readable schema for DiagramSpec.

@@ -1,0 +1,26 @@
+{
+  "name": "diagrampilot",
+  "version": "0.1.0",
+  "description": "DiagramPilot command line interface.",
+  "type": "module",
+  "bin": {
+    "diagrampilot": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b && node scripts/make-bin-executable.mjs"
+  },
+  "dependencies": {
+    "@diagrampilot/core": "0.1.0"
+  }
+}
