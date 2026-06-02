@@ -16,6 +16,16 @@ repairable errors.
 - Validate before rendering.
 - Create a new git branch for every issue or task before making implementation
   edits. Include the issue number and slug in the branch name when available.
+- Create task branches without tracking `origin/main`; for example:
+  `git switch --create issue-17-write-d2-export-only-when-out-provided --no-track origin/main`.
+- After committing implementation work, push the current branch to a matching
+  remote branch with `git push -u origin HEAD`. Do not push implementation
+  commits directly to `main` or to `origin/main`.
+- Before opening a pull request, verify `git branch --show-current` is the task
+  branch, not `main`, and verify its upstream is the matching
+  `origin/<task-branch>` rather than `origin/main`.
+- When creating a pull request, use `main` as the base and the current task
+  branch as the head. A PR command must never pass `--head main`.
 - Prefer small, incremental edits over full diagram rewrites.
 - Keep generated SVG outputs next to their source spec when practical.
 - Public docs and URLs must use `https://diagrampilot.com`.
