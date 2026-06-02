@@ -258,6 +258,100 @@ test("diagrampilot validate reads a JSON source file from an explicit path", asy
   });
 });
 
+test("diagrampilot validate rejects a missing required top-level field", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "missing-title.dp.yaml"),
+      [
+        "version: 1",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/missing-title.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /DiagramSpec validation error in docs\/missing-title\.dp\.yaml: Missing required top-level field: title\./,
+    );
+    assert.match(
+      result.stderr,
+      /Required top-level fields: version, title, nodes\./,
+    );
+  });
+});
+
+test("diagrampilot validate rejects an empty nodes collection", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "empty.dp.yaml"),
+      [
+        "version: 1",
+        "title: Empty Architecture",
+        "nodes: []",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(["validate", "docs/empty.dp.yaml"], tempRoot);
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /DiagramSpec validation error in docs\/empty\.dp\.yaml: nodes must contain at least one node\./,
+    );
+    assert.match(result.stderr, /Add at least one node to nodes\./);
+  });
+});
+
+test("diagrampilot validate rejects an invalid top-level direction", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "bad-direction.dp.yaml"),
+      [
+        "version: 1",
+        "title: Bad Direction Architecture",
+        "direction: sideways",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/bad-direction.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /DiagramSpec validation error in docs\/bad-direction\.dp\.yaml: direction must be one of: right, left, down, up\./,
+    );
+    assert.match(result.stderr, /Change direction to right, left, down, or up\./);
+  });
+});
+
 test("diagrampilot validate stops at a YAML parse failure", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });
