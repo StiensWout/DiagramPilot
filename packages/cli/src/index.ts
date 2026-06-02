@@ -10,9 +10,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+  type DiagramSpecValidationError,
   getDiagramPilotVersion,
   loadDiagramPilotSourceFile,
   type SourceLoadFailure,
+  validateDiagramSpec,
 } from "@diagrampilot/core";
 
 type Writable = Pick<NodeJS.WritableStream, "write">;
@@ -170,6 +172,17 @@ function formatSourceFailure(failure: SourceLoadFailure): string {
   return `${formatLabel} parse error in ${failure.path}${location}: ${failure.message}`;
 }
 
+function formatDiagramSpecValidationError(
+  filePath: string,
+  error: DiagramSpecValidationError,
+): string {
+  return [
+    `DiagramSpec validation error in ${filePath}: ${error.message}`,
+    error.expected,
+    error.suggestion,
+  ].join(" ");
+}
+
 function runValidate(args: readonly string[], streams: CliStreams): number {
   const [sourcePath] = args;
 
@@ -183,6 +196,19 @@ function runValidate(args: readonly string[], streams: CliStreams): number {
 
   if (!result.ok) {
     writeLine(streams.stderr, formatSourceFailure(result.failure));
+    return 1;
+  }
+
+  const validation = validateDiagramSpec(result.source.value);
+
+  if (!validation.ok) {
+    for (const error of validation.errors) {
+      writeLine(
+        streams.stderr,
+        formatDiagramSpecValidationError(result.source.path, error),
+      );
+    }
+
     return 1;
   }
 

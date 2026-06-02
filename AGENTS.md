@@ -14,6 +14,8 @@ repairable errors.
   DiagramSpec.
 - Preserve existing IDs when updating diagrams.
 - Validate before rendering.
+- Create a new git branch for every issue or task before making implementation
+  edits. Include the issue number and slug in the branch name when available.
 - Prefer small, incremental edits over full diagram rewrites.
 - Keep generated SVG outputs next to their source spec when practical.
 - Public docs and URLs must use `https://diagrampilot.com`.
