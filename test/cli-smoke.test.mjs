@@ -594,6 +594,240 @@ test("diagrampilot validate rejects duplicate stable IDs across diagram objects"
   });
 });
 
+test("diagrampilot validate rejects group containment entries outside nodes and groups", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "bad-group-containment.dp.yaml"),
+      [
+        "version: 1",
+        "title: Bad Group Containment Architecture",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "edges:",
+        "  - id: web_app_to_api_gateway",
+        "    from: web_app",
+        "    to: api_gateway",
+        "groups:",
+        "  - id: backend_services",
+        "    label: Backend Services",
+        "    contains:",
+        "      - web_app_to_api_gateway",
+        "      - missing_service",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/bad-group-containment.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /groups\[0\]\.contains\[0\] references edge "web_app_to_api_gateway"; groups can contain nodes and groups only\./,
+    );
+    assert.match(
+      result.stderr,
+      /groups\[0\]\.contains\[1\] references unknown node or group "missing_service"\./,
+    );
+  });
+});
+
+test("diagrampilot validate rejects missing and non-array group containment", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "bad-group-contains-shape.dp.yaml"),
+      [
+        "version: 1",
+        "title: Bad Group Contains Shape Architecture",
+        "nodes:",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "groups:",
+        "  - id: backend",
+        "    label: Backend",
+        "  - id: services",
+        "    label: Services",
+        "    contains: api_gateway",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/bad-group-contains-shape.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(result.stderr, /groups\[0\]\.contains is required\./);
+    assert.match(
+      result.stderr,
+      /groups\[1\]\.contains must be an array of node or group IDs\./,
+    );
+  });
+});
+
+test("diagrampilot validate accepts nested groups that contain nodes and groups", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "nested-groups.dp.yaml"),
+      [
+        "version: 1",
+        "title: Nested Group Architecture",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "  - id: worker",
+        "    label: Worker",
+        "  - id: jobs_queue",
+        "    label: Jobs Queue",
+        "groups:",
+        "  - id: services",
+        "    label: Services",
+        "    contains:",
+        "      - api_gateway",
+        "      - worker",
+        "  - id: backend",
+        "    label: Backend",
+        "    contains:",
+        "      - services",
+        "      - jobs_queue",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/nested-groups.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.equal(result.stdout, "Valid docs/nested-groups.dp.yaml\n");
+  });
+});
+
+test("diagrampilot validate rejects group containment cycles", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "group-cycle.dp.yaml"),
+      [
+        "version: 1",
+        "title: Group Cycle Architecture",
+        "nodes:",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "groups:",
+        "  - id: backend",
+        "    label: Backend",
+        "    contains:",
+        "      - services",
+        "  - id: services",
+        "    label: Services",
+        "    contains:",
+        "      - backend",
+        "      - api_gateway",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/group-cycle.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /groups\[1\]\.contains\[0\] creates a group containment cycle: backend -> services -> backend\./,
+    );
+    assert.match(
+      result.stderr,
+      /Remove one group containment reference from the cycle\./,
+    );
+  });
+});
+
+test("diagrampilot validate rejects duplicate group containment parentage", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "duplicate-group-parentage.dp.yaml"),
+      [
+        "version: 1",
+        "title: Duplicate Group Parentage Architecture",
+        "nodes:",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "  - id: orders_db",
+        "    label: Orders DB",
+        "groups:",
+        "  - id: services",
+        "    label: Services",
+        "    contains:",
+        "      - api_gateway",
+        "  - id: data",
+        "    label: Data",
+        "    contains:",
+        "      - orders_db",
+        "  - id: backend",
+        "    label: Backend",
+        "    contains:",
+        "      - services",
+        "      - orders_db",
+        "  - id: platform",
+        "    label: Platform",
+        "    contains:",
+        "      - services",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/duplicate-group-parentage.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /groups\[2\]\.contains\[1\] contains "orders_db", which is already contained by group "data"\./,
+    );
+    assert.match(
+      result.stderr,
+      /groups\[3\]\.contains\[0\] contains "services", which is already contained by group "backend"\./,
+    );
+    assert.match(
+      result.stderr,
+      /Each contained node or group can have at most one parent group\./,
+    );
+  });
+});
+
 test("diagrampilot validate rejects edge endpoints that are not nodes", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });
