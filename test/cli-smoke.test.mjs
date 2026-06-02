@@ -773,6 +773,132 @@ test("diagrampilot validate treats kind as an open stable ID semantic tag", asyn
   });
 });
 
+test("diagrampilot validate rejects unknown Lucide icon references", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "unknown-lucide-icon.dp.yaml"),
+      [
+        "version: 1",
+        "title: Unknown Lucide Icon Architecture",
+        "nodes:",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "    icon: lucide:not-a-real-icon",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/unknown-lucide-icon.dp.yaml", "--json"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stderr, "");
+
+    assert.deepEqual(JSON.parse(result.stdout), {
+      file: "docs/unknown-lucide-icon.dp.yaml",
+      ok: false,
+      errors: [
+        {
+          path: "nodes[0].icon",
+          message:
+            'nodes[0].icon references unknown Lucide icon "not-a-real-icon".',
+          badValue: "lucide:not-a-real-icon",
+          expected: "Known Lucide icon name.",
+          suggestion:
+            "Choose a packaged Lucide icon, such as lucide:database.",
+        },
+      ],
+    });
+  });
+});
+
+test("diagrampilot validate accepts packaged Lucide icon references", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "lucide-icons.dp.yaml"),
+      [
+        "version: 1",
+        "title: Lucide Icon Architecture",
+        "nodes:",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "    icon: lucide:server",
+        "  - id: orders_db",
+        "    label: Orders DB",
+        "    icon: lucide:database-backup",
+        "groups:",
+        "  - id: backend_services",
+        "    label: Backend Services",
+        "    icon: lucide:blocks",
+        "    contains:",
+        "      - api_gateway",
+        "      - orders_db",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/lucide-icons.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.equal(result.stdout, "Valid docs/lucide-icons.dp.yaml\n");
+  });
+});
+
+test("diagrampilot validate rejects unsupported icon namespaces", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "unsupported-icon-namespace.dp.yaml"),
+      [
+        "version: 1",
+        "title: Unsupported Icon Namespace Architecture",
+        "nodes:",
+        "  - id: queue_worker",
+        "    label: Queue Worker",
+        "    icon: aws:lambda",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/unsupported-icon-namespace.dp.yaml", "--json"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stderr, "");
+
+    assert.deepEqual(JSON.parse(result.stdout), {
+      file: "docs/unsupported-icon-namespace.dp.yaml",
+      ok: false,
+      errors: [
+        {
+          path: "nodes[0].icon",
+          message: 'nodes[0].icon uses unsupported icon namespace "aws".',
+          badValue: "aws:lambda",
+          expected: "Supported icon namespaces: lucide.",
+          suggestion:
+            "Use lucide:<icon-name> with a packaged Lucide icon, such as lucide:database.",
+        },
+      ],
+    });
+  });
+});
+
 test("diagrampilot validate accepts valid metadata source and external references", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });

@@ -16,5 +16,8 @@
   ],
   "scripts": {
     "build": "tsc -b"
+  },
+  "dependencies": {
+    "lucide-static": "^1.17.0"
   }
 }

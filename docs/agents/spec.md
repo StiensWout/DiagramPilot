@@ -188,9 +188,10 @@ package
 icon: lucide:database
 ```
 
-Icon namespaces and names use lowercase snake case. MVP renderers support
-packaged Lucide icons. Validation rejects unsupported icon namespaces and
-unknown icons in supported namespaces.
+Icon namespaces use lowercase names. Lucide icon names use the packaged Lucide
+kebab-case names, such as `database-backup`. MVP renderers support packaged
+Lucide icons. Validation rejects unsupported icon namespaces and unknown icons
+in supported namespaces.
 
 Reserved future namespaces include:
 

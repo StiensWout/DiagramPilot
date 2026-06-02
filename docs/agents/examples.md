@@ -58,11 +58,11 @@ nodes:
   - id: start
     label: User submits credentials
     kind: start
-    icon: lucide:circle_play
+    icon: lucide:circle-play
   - id: validate_credentials
     label: Validate credentials
     kind: process
-    icon: lucide:shield_check
+    icon: lucide:shield-check
   - id: valid_credentials
     label: Credentials valid?
     kind: decision
@@ -70,11 +70,11 @@ nodes:
   - id: create_session
     label: Create session
     kind: process
-    icon: lucide:key_round
+    icon: lucide:key-round
   - id: reject_login
     label: Reject login
     kind: end
-    icon: lucide:circle_x
+    icon: lucide:circle-x
 edges:
   - id: start_to_validate_credentials
     from: start
@@ -114,7 +114,7 @@ nodes:
   - id: render_svg
     label: packages/render-svg
     kind: package
-    icon: lucide:file_image
+    icon: lucide:file-image
 edges:
   - id: cli_to_core
     from: cli
