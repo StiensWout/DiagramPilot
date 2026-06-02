@@ -33,6 +33,7 @@ interface ValidateOptions {
 
 interface ExportOptions {
   format: "mermaid";
+  outPath?: string;
   sourcePath: string;
 }
 
@@ -82,7 +83,7 @@ function helpText(): string {
     "  init",
     "  validate <path> [--json]",
     "  render",
-    "  export <path> --format mermaid",
+    "  export <path> --format mermaid [--out <path>]",
   ].join("\n");
 }
 
@@ -321,6 +322,7 @@ function parseValidateArgs(args: readonly string[]): ValidateArgsResult {
 
 function parseExportArgs(args: readonly string[]): ExportArgsResult {
   let format: string | undefined;
+  let outPath: string | undefined;
   let sourcePath: string | undefined;
 
   for (let index = 0; index < args.length; index += 1) {
@@ -337,6 +339,21 @@ function parseExportArgs(args: readonly string[]): ExportArgsResult {
       }
 
       format = nextArg;
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--out") {
+      const nextArg = args[index + 1];
+
+      if (nextArg === undefined) {
+        return {
+          ok: false,
+          message: "Missing export output path.",
+        };
+      }
+
+      outPath = nextArg;
       index += 1;
       continue;
     }
@@ -383,6 +400,7 @@ function parseExportArgs(args: readonly string[]): ExportArgsResult {
     ok: true,
     options: {
       format,
+      outPath,
       sourcePath,
     },
   };
@@ -463,7 +481,7 @@ function runExport(args: readonly string[], streams: CliStreams): number {
     writeLine(streams.stderr, argsResult.message);
     writeLine(
       streams.stderr,
-      "Usage: diagrampilot export <path> --format mermaid",
+      "Usage: diagrampilot export <path> --format mermaid [--out <path>]",
     );
     return 1;
   }
@@ -489,9 +507,17 @@ function runExport(args: readonly string[], streams: CliStreams): number {
   }
 
   if (argsResult.options.format === "mermaid") {
-    streams.stdout.write(
-      exportDiagramSpecToMermaid(result.source.value as DiagramSpec),
+    const exportedText = exportDiagramSpecToMermaid(
+      result.source.value as DiagramSpec,
     );
+
+    if (argsResult.options.outPath !== undefined) {
+      mkdirSync(path.dirname(argsResult.options.outPath), { recursive: true });
+      writeFileSync(argsResult.options.outPath, exportedText, "utf8");
+      return 0;
+    }
+
+    streams.stdout.write(exportedText);
     return 0;
   }
 
