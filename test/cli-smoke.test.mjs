@@ -1412,3 +1412,221 @@ test("diagrampilot validate stops at a JSON parse failure", async () => {
     assert.doesNotMatch(result.stderr, /Required top-level fields/);
   });
 });
+
+test("diagrampilot export prints Mermaid for a valid DiagramSpec without rewriting the source", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
+    const sourceText = [
+      "version: 1",
+      "title: Checkout Architecture",
+      "direction: right",
+      "nodes:",
+      "  - id: web_app",
+      "    label: Web App",
+      "  - id: api_gateway",
+      "    label: API Gateway",
+      "  - id: checkout_service",
+      "    label: Checkout Service",
+      "  - id: orders_db",
+      "    label: Orders DB",
+      "groups:",
+      "  - id: backend",
+      "    label: Backend",
+      "    contains:",
+      "      - api_gateway",
+      "      - checkout_service",
+      "      - orders_db",
+      "edges:",
+      "  - id: web_app_to_api_gateway",
+      "    from: web_app",
+      "    to: api_gateway",
+      "    label: HTTPS",
+      "  - id: api_gateway_to_checkout_service",
+      "    from: api_gateway",
+      "    to: checkout_service",
+      "  - id: checkout_service_related_to_orders_db",
+      "    from: checkout_service",
+      "    to: orders_db",
+      "    directed: false",
+      "",
+    ].join("\n");
+
+    await writeFile(sourcePath, sourceText, "utf8");
+
+    const result = await runBuiltCli(
+      ["export", "docs/architecture.dp.yaml", "--format", "mermaid"],
+      tempRoot,
+    );
+
+    const sourceTextAfterExport = await readFile(sourcePath, "utf8");
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.equal(
+      result.stdout,
+      [
+        "flowchart LR",
+        "  web_app[\"Web App\"]",
+        "  subgraph backend[\"Backend\"]",
+        "    api_gateway[\"API Gateway\"]",
+        "    checkout_service[\"Checkout Service\"]",
+        "    orders_db[\"Orders DB\"]",
+        "  end",
+        "  web_app -->|HTTPS| api_gateway",
+        "  api_gateway --> checkout_service",
+        "  checkout_service --- orders_db",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(sourceTextAfterExport, sourceText);
+  });
+});
+
+test("diagrampilot export requires valid DiagramSpec input before printing Mermaid", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "invalid-export.dp.yaml"),
+      [
+        "version: 1",
+        "direction: sideways",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["export", "docs/invalid-export.dp.yaml", "--format", "mermaid"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /DiagramSpec validation error in docs\/invalid-export\.dp\.yaml: Missing required top-level field: title\./,
+    );
+    assert.match(
+      result.stderr,
+      /DiagramSpec validation error in docs\/invalid-export\.dp\.yaml: direction must be one of: right, left, down, up\./,
+    );
+    assert.doesNotMatch(result.stderr, /flowchart/);
+  });
+});
+
+test("diagrampilot export rejects invalid top-level collection shapes without a stack trace", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "bad-collections.dp.yaml"),
+      [
+        "version: 1",
+        "title: Bad Collections Architecture",
+        "nodes: api_gateway",
+        "edges: api_gateway_to_orders_service",
+        "groups: backend_services",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["export", "docs/bad-collections.dp.yaml", "--format", "mermaid"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /DiagramSpec validation error in docs\/bad-collections\.dp\.yaml: nodes must be an array of node objects\./,
+    );
+    assert.match(
+      result.stderr,
+      /DiagramSpec validation error in docs\/bad-collections\.dp\.yaml: edges must be an array of edge objects when present\./,
+    );
+    assert.match(
+      result.stderr,
+      /DiagramSpec validation error in docs\/bad-collections\.dp\.yaml: groups must be an array of group objects when present\./,
+    );
+    assert.doesNotMatch(result.stderr, /TypeError/);
+  });
+});
+
+test("diagrampilot export prints Mermaid for nested groups and vertical flow direction", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "platform.dp.yaml"),
+      [
+        "version: 1",
+        "title: Platform Overview",
+        "direction: down",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "  - id: worker",
+        "    label: Worker",
+        "  - id: jobs_queue",
+        "    label: Jobs Queue",
+        "groups:",
+        "  - id: services",
+        "    label: Services",
+        "    contains:",
+        "      - api_gateway",
+        "      - worker",
+        "  - id: backend",
+        "    label: Backend",
+        "    contains:",
+        "      - services",
+        "      - jobs_queue",
+        "edges:",
+        "  - id: web_app_to_api_gateway",
+        "    from: web_app",
+        "    to: api_gateway",
+        "    label: HTTPS",
+        "  - id: jobs_queue_to_worker",
+        "    from: jobs_queue",
+        "    to: worker",
+        "    label: consumed by",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["export", "docs/platform.dp.yaml", "--format", "mermaid"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.equal(
+      result.stdout,
+      [
+        "flowchart TB",
+        "  web_app[\"Web App\"]",
+        "  subgraph backend[\"Backend\"]",
+        "    subgraph services[\"Services\"]",
+        "      api_gateway[\"API Gateway\"]",
+        "      worker[\"Worker\"]",
+        "    end",
+        "    jobs_queue[\"Jobs Queue\"]",
+        "  end",
+        "  web_app -->|HTTPS| api_gateway",
+        "  jobs_queue -->|consumed by| worker",
+        "",
+      ].join("\n"),
+    );
+  });
+});

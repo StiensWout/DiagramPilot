@@ -10,12 +10,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+  type DiagramSpec,
   type DiagramSpecValidationError,
   getDiagramPilotVersion,
   loadDiagramPilotSourceFile,
   type SourceLoadFailure,
   validateDiagramSpec,
 } from "@diagrampilot/core";
+import { exportDiagramSpecToMermaid } from "@diagrampilot/export-mermaid";
 
 type Writable = Pick<NodeJS.WritableStream, "write">;
 
@@ -29,10 +31,25 @@ interface ValidateOptions {
   sourcePath: string;
 }
 
+interface ExportOptions {
+  format: "mermaid";
+  sourcePath: string;
+}
+
 type ValidateArgsResult =
   | {
       ok: true;
       options: ValidateOptions;
+    }
+  | {
+      ok: false;
+      message: string;
+    };
+
+type ExportArgsResult =
+  | {
+      ok: true;
+      options: ExportOptions;
     }
   | {
       ok: false;
@@ -65,7 +82,7 @@ function helpText(): string {
     "  init",
     "  validate <path> [--json]",
     "  render",
-    "  export",
+    "  export <path> --format mermaid",
   ].join("\n");
 }
 
@@ -302,6 +319,75 @@ function parseValidateArgs(args: readonly string[]): ValidateArgsResult {
   };
 }
 
+function parseExportArgs(args: readonly string[]): ExportArgsResult {
+  let format: string | undefined;
+  let sourcePath: string | undefined;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+
+    if (arg === "--format") {
+      const nextArg = args[index + 1];
+
+      if (nextArg === undefined) {
+        return {
+          ok: false,
+          message: "Missing export format.",
+        };
+      }
+
+      format = nextArg;
+      index += 1;
+      continue;
+    }
+
+    if (arg.startsWith("-")) {
+      return {
+        ok: false,
+        message: `Unknown export option: ${arg}`,
+      };
+    }
+
+    if (sourcePath !== undefined) {
+      return {
+        ok: false,
+        message: `Unexpected export argument: ${arg}`,
+      };
+    }
+
+    sourcePath = arg;
+  }
+
+  if (sourcePath === undefined) {
+    return {
+      ok: false,
+      message: "Missing source path.",
+    };
+  }
+
+  if (format === undefined) {
+    return {
+      ok: false,
+      message: "Missing export format.",
+    };
+  }
+
+  if (format !== "mermaid") {
+    return {
+      ok: false,
+      message: `Unsupported export format: ${format}`,
+    };
+  }
+
+  return {
+    ok: true,
+    options: {
+      format,
+      sourcePath,
+    },
+  };
+}
+
 function writeStructuredValidationResult(
   streams: CliStreams,
   result: StructuredValidationResult,
@@ -370,6 +456,48 @@ function runValidate(args: readonly string[], streams: CliStreams): number {
   return 0;
 }
 
+function runExport(args: readonly string[], streams: CliStreams): number {
+  const argsResult = parseExportArgs(args);
+
+  if (!argsResult.ok) {
+    writeLine(streams.stderr, argsResult.message);
+    writeLine(
+      streams.stderr,
+      "Usage: diagrampilot export <path> --format mermaid",
+    );
+    return 1;
+  }
+
+  const result = loadDiagramPilotSourceFile(argsResult.options.sourcePath);
+
+  if (!result.ok) {
+    writeLine(streams.stderr, formatSourceFailure(result.failure));
+    return 1;
+  }
+
+  const validation = validateDiagramSpec(result.source.value);
+
+  if (!validation.ok) {
+    for (const error of validation.errors) {
+      writeLine(
+        streams.stderr,
+        formatDiagramSpecValidationError(result.source.path, error),
+      );
+    }
+
+    return 1;
+  }
+
+  if (argsResult.options.format === "mermaid") {
+    streams.stdout.write(
+      exportDiagramSpecToMermaid(result.source.value as DiagramSpec),
+    );
+    return 0;
+  }
+
+  return 1;
+}
+
 export function run(args: readonly string[], streams: CliStreams): number {
   const [firstArg] = args;
 
@@ -389,6 +517,10 @@ export function run(args: readonly string[], streams: CliStreams): number {
 
   if (firstArg === "validate") {
     return runValidate(args.slice(1), streams);
+  }
+
+  if (firstArg === "export") {
+    return runExport(args.slice(1), streams);
   }
 
   writeLine(streams.stderr, `Unknown command or option: ${firstArg}`);
