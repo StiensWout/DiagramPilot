@@ -1486,6 +1486,82 @@ test("diagrampilot export prints Mermaid for a valid DiagramSpec without rewriti
   });
 });
 
+test("diagrampilot export prints D2 for a valid DiagramSpec without rewriting the source", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
+    const sourceText = [
+      "version: 1",
+      "title: Checkout Architecture",
+      "direction: right",
+      "nodes:",
+      "  - id: web_app",
+      "    label: Web App",
+      "  - id: api_gateway",
+      "    label: API Gateway",
+      "  - id: checkout_service",
+      "    label: Checkout Service",
+      "  - id: orders_db",
+      "    label: Orders DB",
+      "groups:",
+      "  - id: backend",
+      "    label: Backend",
+      "    contains:",
+      "      - api_gateway",
+      "      - checkout_service",
+      "      - orders_db",
+      "edges:",
+      "  - id: web_app_to_api_gateway",
+      "    from: web_app",
+      "    to: api_gateway",
+      "    label: HTTPS",
+      "  - id: api_gateway_to_checkout_service",
+      "    from: api_gateway",
+      "    to: checkout_service",
+      "  - id: checkout_service_related_to_orders_db",
+      "    from: checkout_service",
+      "    to: orders_db",
+      "    directed: false",
+      "",
+    ].join("\n");
+
+    await writeFile(sourcePath, sourceText, "utf8");
+
+    const result = await runBuiltCli(
+      ["export", "docs/architecture.dp.yaml", "--format", "d2"],
+      tempRoot,
+    );
+
+    const sourceTextAfterExport = await readFile(sourcePath, "utf8");
+    const docsEntriesAfterExport = await readdir(path.join(tempRoot, "docs"));
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.equal(
+      result.stdout,
+      [
+        "direction: right",
+        "",
+        'web_app: "Web App"',
+        "backend: {",
+        '  label: "Backend"',
+        '  api_gateway: "API Gateway"',
+        '  checkout_service: "Checkout Service"',
+        '  orders_db: "Orders DB"',
+        "}",
+        "",
+        'web_app -> backend.api_gateway: "HTTPS"',
+        "backend.api_gateway -> backend.checkout_service",
+        "backend.checkout_service -- backend.orders_db",
+        "",
+      ].join("\n"),
+    );
+    assert.equal(sourceTextAfterExport, sourceText);
+    assert.deepEqual(docsEntriesAfterExport.sort(), ["architecture.dp.yaml"]);
+  });
+});
+
 test("diagrampilot export writes Mermaid to a file when out is provided", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });
@@ -1576,6 +1652,43 @@ test("diagrampilot export requires valid DiagramSpec input before printing Merma
       /DiagramSpec validation error in docs\/invalid-export\.dp\.yaml: direction must be one of: right, left, down, up\./,
     );
     assert.doesNotMatch(result.stderr, /flowchart/);
+  });
+});
+
+test("diagrampilot export requires valid DiagramSpec input before printing D2", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "invalid-export.dp.yaml"),
+      [
+        "version: 1",
+        "direction: sideways",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["export", "docs/invalid-export.dp.yaml", "--format", "d2"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /DiagramSpec validation error in docs\/invalid-export\.dp\.yaml: Missing required top-level field: title\./,
+    );
+    assert.match(
+      result.stderr,
+      /DiagramSpec validation error in docs\/invalid-export\.dp\.yaml: direction must be one of: right, left, down, up\./,
+    );
+    assert.doesNotMatch(result.stderr, /direction: /);
+    assert.doesNotMatch(result.stderr, /->/);
   });
 });
 
@@ -1684,6 +1797,81 @@ test("diagrampilot export prints Mermaid for nested groups and vertical flow dir
         "  end",
         "  web_app -->|HTTPS| api_gateway",
         "  jobs_queue -->|consumed by| worker",
+        "",
+      ].join("\n"),
+    );
+  });
+});
+
+test("diagrampilot export prints D2 for nested groups and vertical flow direction", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "platform.dp.yaml"),
+      [
+        "version: 1",
+        "title: Platform Overview",
+        "direction: down",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "  - id: worker",
+        "    label: Worker",
+        "  - id: jobs_queue",
+        "    label: Jobs Queue",
+        "groups:",
+        "  - id: services",
+        "    label: Services",
+        "    contains:",
+        "      - api_gateway",
+        "      - worker",
+        "  - id: backend",
+        "    label: Backend",
+        "    contains:",
+        "      - services",
+        "      - jobs_queue",
+        "edges:",
+        "  - id: web_app_to_api_gateway",
+        "    from: web_app",
+        "    to: api_gateway",
+        "    label: HTTPS",
+        "  - id: jobs_queue_to_worker",
+        "    from: jobs_queue",
+        "    to: worker",
+        "    label: consumed by",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["export", "docs/platform.dp.yaml", "--format", "d2"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.equal(
+      result.stdout,
+      [
+        "direction: down",
+        "",
+        'web_app: "Web App"',
+        "backend: {",
+        '  label: "Backend"',
+        "  services: {",
+        '    label: "Services"',
+        '    api_gateway: "API Gateway"',
+        '    worker: "Worker"',
+        "  }",
+        '  jobs_queue: "Jobs Queue"',
+        "}",
+        "",
+        'web_app -> backend.services.api_gateway: "HTTPS"',
+        'backend.jobs_queue -> backend.services.worker: "consumed by"',
         "",
       ].join("\n"),
     );

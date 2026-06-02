@@ -17,6 +17,7 @@ import {
   type SourceLoadFailure,
   validateDiagramSpec,
 } from "@diagrampilot/core";
+import { exportDiagramSpecToD2 } from "@diagrampilot/export-d2";
 import { exportDiagramSpecToMermaid } from "@diagrampilot/export-mermaid";
 
 type Writable = Pick<NodeJS.WritableStream, "write">;
@@ -32,7 +33,7 @@ interface ValidateOptions {
 }
 
 interface ExportOptions {
-  format: "mermaid";
+  format: "d2" | "mermaid";
   outPath?: string;
   sourcePath: string;
 }
@@ -84,6 +85,7 @@ function helpText(): string {
     "  validate <path> [--json]",
     "  render",
     "  export <path> --format mermaid [--out <path>]",
+    "  export <path> --format d2",
   ].join("\n");
 }
 
@@ -389,7 +391,7 @@ function parseExportArgs(args: readonly string[]): ExportArgsResult {
     };
   }
 
-  if (format !== "mermaid") {
+  if (format !== "mermaid" && format !== "d2") {
     return {
       ok: false,
       message: `Unsupported export format: ${format}`,
@@ -481,7 +483,11 @@ function runExport(args: readonly string[], streams: CliStreams): number {
     writeLine(streams.stderr, argsResult.message);
     writeLine(
       streams.stderr,
-      "Usage: diagrampilot export <path> --format mermaid [--out <path>]",
+      [
+        "Usage:",
+        "  diagrampilot export <path> --format mermaid [--out <path>]",
+        "  diagrampilot export <path> --format d2",
+      ].join("\n"),
     );
     return 1;
   }
@@ -506,10 +512,10 @@ function runExport(args: readonly string[], streams: CliStreams): number {
     return 1;
   }
 
+  const spec = result.source.value as DiagramSpec;
+
   if (argsResult.options.format === "mermaid") {
-    const exportedText = exportDiagramSpecToMermaid(
-      result.source.value as DiagramSpec,
-    );
+    const exportedText = exportDiagramSpecToMermaid(spec);
 
     if (argsResult.options.outPath !== undefined) {
       mkdirSync(path.dirname(argsResult.options.outPath), { recursive: true });
@@ -521,7 +527,18 @@ function runExport(args: readonly string[], streams: CliStreams): number {
     return 0;
   }
 
-  return 1;
+  if (argsResult.options.outPath !== undefined) {
+    writeLine(
+      streams.stderr,
+      "D2 export output files are not implemented yet; omit --out to print to stdout.",
+    );
+    return 1;
+  }
+
+  const exportedText = exportDiagramSpecToD2(spec);
+
+  streams.stdout.write(exportedText);
+  return 0;
 }
 
 export function run(args: readonly string[], streams: CliStreams): number {
