@@ -1,0 +1,24 @@
+{
+  "name": "@diagrampilot/render-svg",
+  "version": "0.1.0",
+  "description": "SVG rendering adapter for DiagramPilot.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@diagrampilot/core": "0.1.0",
+    "@diagrampilot/export-d2": "0.1.0"
+  }
+}
