@@ -200,3 +200,59 @@ test(
     });
   },
 );
+
+test("diagrampilot validate reads a YAML source file from an explicit path", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "architecture.dp.yaml"),
+      [
+        "version: 1",
+        "title: Checkout Architecture",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/architecture.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.equal(result.stdout, "Valid docs/architecture.dp.yaml\n");
+  });
+});
+
+test("diagrampilot validate stops at a YAML parse failure", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "broken.dp.yaml"),
+      [
+        "version: 1",
+        "title: Broken Source",
+        "nodes: [",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/broken.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(result.stderr, /^YAML parse error in docs\/broken\.dp\.yaml/);
+    assert.doesNotMatch(result.stderr, /Missing required top-level field/);
+    assert.doesNotMatch(result.stderr, /Required top-level fields/);
+  });
+});
