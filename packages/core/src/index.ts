@@ -7,6 +7,8 @@ export const DIAGRAMPILOT_VERSION = "0.1.0";
 
 const allowedDirections = ["right", "left", "down", "up"] as const;
 const allowedDirectionList = allowedDirections.join(", ");
+const stableIdPattern = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/;
+const stableIdExpected = "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$";
 
 export function getDiagramPilotVersion(): string {
   return DIAGRAMPILOT_VERSION;
@@ -181,6 +183,80 @@ function isAllowedDirection(value: unknown): boolean {
   return allowedDirections.some((direction) => direction === value);
 }
 
+function isStableId(value: unknown): value is string {
+  return typeof value === "string" && stableIdPattern.test(value);
+}
+
+function validateStableIdShape(
+  path: string,
+  value: unknown,
+  errors: DiagramSpecValidationError[],
+): value is string {
+  if (isStableId(value)) {
+    return true;
+  }
+
+  errors.push({
+    path,
+    message: `${path} must match the stable ID pattern.`,
+    badValue: value,
+    expected: stableIdExpected,
+    suggestion: `Change ${path} to lowercase snake case, such as api_gateway.`,
+  });
+
+  return false;
+}
+
+function validateGlobalStableIdUniqueness(
+  path: string,
+  id: string,
+  seenIds: Map<string, string>,
+  errors: DiagramSpecValidationError[],
+): void {
+  const originalPath = seenIds.get(id);
+
+  if (originalPath === undefined) {
+    seenIds.set(id, path);
+    return;
+  }
+
+  errors.push({
+    path,
+    message: `${path} duplicates ${originalPath} "${id}".`,
+    badValue: id,
+    expected: "One globally unique stable ID across nodes, edges, and groups.",
+    suggestion: "Assign a unique stable ID across nodes, edges, and groups.",
+  });
+}
+
+function validateDiagramObjectIds(
+  value: Record<string, unknown>,
+  errors: DiagramSpecValidationError[],
+): void {
+  const seenIds = new Map<string, string>();
+
+  for (const collectionName of ["nodes", "edges", "groups"] as const) {
+    const collection = value[collectionName];
+
+    if (!Array.isArray(collection)) {
+      continue;
+    }
+
+    collection.forEach((item, index) => {
+      if (!isRecord(item)) {
+        return;
+      }
+
+      const idPath = `${collectionName}[${index}].id`;
+      const id = item.id;
+
+      if (validateStableIdShape(idPath, id, errors)) {
+        validateGlobalStableIdUniqueness(idPath, id, seenIds, errors);
+      }
+    });
+  }
+}
+
 export function validateDiagramSpec(
   value: unknown,
 ): DiagramSpecValidationResult {
@@ -229,6 +305,8 @@ export function validateDiagramSpec(
       suggestion: "Change direction to right, left, down, or up.",
     });
   }
+
+  validateDiagramObjectIds(value, errors);
 
   if (errors.length > 0) {
     return { ok: false, errors };

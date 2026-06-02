@@ -352,6 +352,172 @@ test("diagrampilot validate rejects an invalid top-level direction", async () =>
   });
 });
 
+test("diagrampilot validate rejects an invalid stable ID shape", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "bad-id.dp.yaml"),
+      [
+        "version: 1",
+        "title: Bad ID Architecture",
+        "nodes:",
+        "  - id: API Gateway",
+        "    label: API Gateway",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/bad-id.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /DiagramSpec validation error in docs\/bad-id\.dp\.yaml: nodes\[0\]\.id must match the stable ID pattern\./,
+    );
+    assert.match(
+      result.stderr,
+      /\^\[a-z\]\[a-z0-9\]\*\(\?:_\[a-z0-9\]\+\)\*\$/,
+    );
+    assert.match(result.stderr, /Change nodes\[0\]\.id to lowercase snake case/);
+  });
+});
+
+test("diagrampilot validate rejects missing stable IDs across diagram objects", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "missing-ids.dp.yaml"),
+      [
+        "version: 1",
+        "title: Missing IDs Architecture",
+        "nodes:",
+        "  - label: Web App",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "edges:",
+        "  - from: api_gateway",
+        "    to: api_gateway",
+        "groups:",
+        "  - label: Backend Services",
+        "    contains:",
+        "      - api_gateway",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/missing-ids.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(result.stderr, /nodes\[0\]\.id must match the stable ID pattern/);
+    assert.match(result.stderr, /edges\[0\]\.id must match the stable ID pattern/);
+    assert.match(
+      result.stderr,
+      /groups\[0\]\.id must match the stable ID pattern/,
+    );
+  });
+});
+
+test("diagrampilot validate accepts stable IDs across diagram objects", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "stable-ids.dp.yaml"),
+      [
+        "version: 1",
+        "title: Stable ID Architecture",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "edges:",
+        "  - id: web_app_to_api_gateway",
+        "    from: web_app",
+        "    to: api_gateway",
+        "groups:",
+        "  - id: backend_services",
+        "    label: Backend Services",
+        "    contains:",
+        "      - api_gateway",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/stable-ids.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.equal(result.stdout, "Valid docs/stable-ids.dp.yaml\n");
+  });
+});
+
+test("diagrampilot validate rejects duplicate stable IDs across diagram objects", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "duplicate-ids.dp.yaml"),
+      [
+        "version: 1",
+        "title: Duplicate ID Architecture",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "edges:",
+        "  - id: api_gateway",
+        "    from: web_app",
+        "    to: api_gateway",
+        "groups:",
+        "  - id: web_app",
+        "    label: Frontend Group",
+        "    contains:",
+        "      - web_app",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/duplicate-ids.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /edges\[0\]\.id duplicates nodes\[1\]\.id "api_gateway"\./,
+    );
+    assert.match(
+      result.stderr,
+      /groups\[0\]\.id duplicates nodes\[0\]\.id "web_app"\./,
+    );
+    assert.match(
+      result.stderr,
+      /Assign a unique stable ID across nodes, edges, and groups\./,
+    );
+  });
+});
+
 test("diagrampilot validate stops at a YAML parse failure", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });
