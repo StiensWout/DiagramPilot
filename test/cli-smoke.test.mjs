@@ -1,10 +1,21 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  writeFile,
+} from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const cliEntryPoint = path.join(repoRoot, "packages", "cli", "dist", "index.js");
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 
 function testEnv() {
@@ -43,6 +54,45 @@ function runDiagramPilot(args) {
   });
 }
 
+function runBuiltCli(args, cwd) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [cliEntryPoint, ...args], {
+      cwd,
+      env: testEnv(),
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
+    child.on("error", reject);
+    child.on("close", (code, signal) => {
+      resolve({ code, signal, stdout, stderr });
+    });
+  });
+}
+
+async function withTempRepo(run) {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "diagrampilot-init-"));
+
+  try {
+    return await run(tempRoot);
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+}
+
+function occurrenceCount(text, pattern) {
+  return text.match(pattern)?.length ?? 0;
+}
+
 test("diagrampilot executable starts and reports its version", async () => {
   const result = await runDiagramPilot(["--version"]);
 
@@ -51,3 +101,102 @@ test("diagrampilot executable starts and reports its version", async () => {
   assert.equal(result.stderr, "");
   assert.equal(result.stdout, "diagrampilot 0.1.0\n");
 });
+
+test("diagrampilot init creates adoption support files without generating diagrams", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const result = await runBuiltCli(["init"], tempRoot);
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.match(result.stdout, /Created llms\.txt/);
+    assert.match(result.stdout, /Created docs\/diagrampilot\.md/);
+
+    const llmsText = await readFile(path.join(tempRoot, "llms.txt"), "utf8");
+    const guideText = await readFile(
+      path.join(tempRoot, "docs", "diagrampilot.md"),
+      "utf8",
+    );
+
+    assert.match(llmsText, /https:\/\/diagrampilot\.com\/llms\.txt/);
+    assert.match(guideText, /DiagramSpec is the source of truth/);
+
+    const rootEntries = await readdir(tempRoot);
+    const docsEntries = await readdir(path.join(tempRoot, "docs"));
+
+    assert.deepEqual(rootEntries.sort(), ["docs", "llms.txt"]);
+    assert.deepEqual(docsEntries.sort(), ["diagrampilot.md"]);
+  });
+});
+
+test("diagrampilot init preserves existing support-file content and is idempotent", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "llms.txt"),
+      "# Existing Agent Notes\n\nKeep this project-specific guidance.\n",
+      "utf8",
+    );
+    await writeFile(
+      path.join(tempRoot, "docs", "diagrampilot.md"),
+      "# Local Diagram Notes\n\nKeep this local rendering convention.\n",
+      "utf8",
+    );
+
+    const firstRun = await runBuiltCli(["init"], tempRoot);
+    const secondRun = await runBuiltCli(["init"], tempRoot);
+
+    assert.equal(firstRun.code, 0, firstRun.stderr);
+    assert.equal(secondRun.code, 0, secondRun.stderr);
+    assert.equal(firstRun.stderr, "");
+    assert.equal(secondRun.stderr, "");
+
+    const llmsText = await readFile(path.join(tempRoot, "llms.txt"), "utf8");
+    const guideText = await readFile(
+      path.join(tempRoot, "docs", "diagrampilot.md"),
+      "utf8",
+    );
+
+    assert.match(llmsText, /Keep this project-specific guidance/);
+    assert.match(guideText, /Keep this local rendering convention/);
+    assert.equal(occurrenceCount(llmsText, /diagrampilot:init:start/g), 1);
+    assert.equal(occurrenceCount(guideText, /diagrampilot:init:start/g), 1);
+    assert.equal(
+      occurrenceCount(llmsText, /https:\/\/diagrampilot\.com\/llms\.txt/g),
+      1,
+    );
+    assert.equal(
+      occurrenceCount(guideText, /DiagramSpec is the source of truth/g),
+      1,
+    );
+  });
+});
+
+test(
+  "diagrampilot init does not scan repository contents",
+  { skip: process.platform === "win32" },
+  async () => {
+    await withTempRepo(async (tempRoot) => {
+      const unreadableDir = path.join(tempRoot, "src", "private");
+      await mkdir(unreadableDir, { recursive: true });
+      await writeFile(
+        path.join(tempRoot, "src", "broken.dp.yaml"),
+        "this is not valid: [",
+        "utf8",
+      );
+      await chmod(unreadableDir, 0o000);
+
+      try {
+        const result = await runBuiltCli(["init"], tempRoot);
+
+        assert.equal(result.signal, null);
+        assert.equal(result.code, 0, result.stderr);
+        assert.equal(result.stderr, "");
+        assert.doesNotMatch(result.stdout, /broken\.dp\.yaml/);
+        assert.doesNotMatch(result.stdout, /src\/private/);
+      } finally {
+        await chmod(unreadableDir, 0o700);
+      }
+    });
+  },
+);
