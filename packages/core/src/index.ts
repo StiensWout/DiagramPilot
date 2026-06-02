@@ -257,6 +257,31 @@ function validateDiagramObjectIds(
   }
 }
 
+function validateDiagramObjectKinds(
+  value: Record<string, unknown>,
+  errors: DiagramSpecValidationError[],
+): void {
+  for (const collectionName of ["nodes", "edges", "groups"] as const) {
+    const collection = value[collectionName];
+
+    if (!Array.isArray(collection)) {
+      continue;
+    }
+
+    collection.forEach((item, index) => {
+      if (!isRecord(item) || !("kind" in item)) {
+        return;
+      }
+
+      validateStableIdShape(
+        `${collectionName}[${index}].kind`,
+        item.kind,
+        errors,
+      );
+    });
+  }
+}
+
 function validateRequiredPlainTextLabels(
   value: Record<string, unknown>,
   errors: DiagramSpecValidationError[],
@@ -746,6 +771,7 @@ export function validateDiagramSpec(
   }
 
   validateDiagramObjectIds(value, errors);
+  validateDiagramObjectKinds(value, errors);
   validateRequiredPlainTextLabels(value, errors);
   validateOptionalEdgeLabels(value, errors);
   validateGroupContainmentReferences(value, errors);

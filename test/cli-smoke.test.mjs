@@ -544,6 +544,77 @@ test("diagrampilot validate accepts stable IDs across diagram objects", async ()
   });
 });
 
+test("diagrampilot validate treats kind as an open stable ID semantic tag", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "open-kind.dp.yaml"),
+      [
+        "version: 1",
+        "title: Open Kind Architecture",
+        "nodes:",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "    kind: repo_gateway",
+        "  - id: orders_service",
+        "    label: Orders Service",
+        "    kind: domain_service",
+        "edges:",
+        "  - id: api_gateway_to_orders_service",
+        "    from: api_gateway",
+        "    to: orders_service",
+        "    kind: async_request",
+        "groups:",
+        "  - id: backend_services",
+        "    label: Backend Services",
+        "    kind: bounded_context",
+        "    contains:",
+        "      - orders_service",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+    await writeFile(
+      path.join(tempRoot, "docs", "bad-kind.dp.yaml"),
+      [
+        "version: 1",
+        "title: Bad Kind Architecture",
+        "nodes:",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "    kind: API Gateway",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const validResult = await runBuiltCli(
+      ["validate", "docs/open-kind.dp.yaml"],
+      tempRoot,
+    );
+    const invalidResult = await runBuiltCli(
+      ["validate", "docs/bad-kind.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(validResult.signal, null);
+    assert.equal(validResult.code, 0, validResult.stderr);
+    assert.equal(validResult.stderr, "");
+    assert.equal(validResult.stdout, "Valid docs/open-kind.dp.yaml\n");
+    assert.equal(invalidResult.signal, null);
+    assert.equal(invalidResult.code, 1);
+    assert.equal(invalidResult.stdout, "");
+    assert.match(
+      invalidResult.stderr,
+      /nodes\[0\]\.kind must match the stable ID pattern\./,
+    );
+    assert.match(
+      invalidResult.stderr,
+      /Change nodes\[0\]\.kind to lowercase snake case/,
+    );
+  });
+});
+
 test("diagrampilot validate rejects duplicate stable IDs across diagram objects", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });
