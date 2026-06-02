@@ -9,7 +9,11 @@ import {
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getDiagramPilotVersion } from "@diagrampilot/core";
+import {
+  getDiagramPilotVersion,
+  loadDiagramPilotSourceFile,
+  type SourceLoadFailure,
+} from "@diagrampilot/core";
 
 type Writable = Pick<NodeJS.WritableStream, "write">;
 
@@ -32,7 +36,7 @@ function helpText(): string {
     "",
     "MVP commands:",
     "  init",
-    "  validate",
+    "  validate <path>",
     "  render",
     "  export",
   ].join("\n");
@@ -152,6 +156,39 @@ function runInit(streams: CliStreams): number {
   return 0;
 }
 
+function formatSourceFailure(failure: SourceLoadFailure): string {
+  if (failure.kind === "read") {
+    return `Unable to read ${failure.path}: ${failure.message}`;
+  }
+
+  const location =
+    failure.line === undefined || failure.column === undefined
+      ? ""
+      : ` at line ${failure.line}, column ${failure.column}`;
+
+  return `YAML parse error in ${failure.path}${location}: ${failure.message}`;
+}
+
+function runValidate(args: readonly string[], streams: CliStreams): number {
+  const [sourcePath] = args;
+
+  if (sourcePath === undefined) {
+    writeLine(streams.stderr, "Missing source path.");
+    writeLine(streams.stderr, "Usage: diagrampilot validate <path>");
+    return 1;
+  }
+
+  const result = loadDiagramPilotSourceFile(sourcePath);
+
+  if (!result.ok) {
+    writeLine(streams.stderr, formatSourceFailure(result.failure));
+    return 1;
+  }
+
+  writeLine(streams.stdout, `Valid ${result.source.path}`);
+  return 0;
+}
+
 export function run(args: readonly string[], streams: CliStreams): number {
   const [firstArg] = args;
 
@@ -167,6 +204,10 @@ export function run(args: readonly string[], streams: CliStreams): number {
 
   if (firstArg === "init") {
     return runInit(streams);
+  }
+
+  if (firstArg === "validate") {
+    return runValidate(args.slice(1), streams);
   }
 
   writeLine(streams.stderr, `Unknown command or option: ${firstArg}`);
