@@ -258,6 +258,39 @@ test("diagrampilot validate reads a JSON source file from an explicit path", asy
   });
 });
 
+test("diagrampilot validate --json emits a structured valid result on stdout", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "architecture.dp.yaml"),
+      [
+        "version: 1",
+        "title: Checkout Architecture",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/architecture.dp.yaml", "--json"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.doesNotMatch(result.stdout, /^Valid /);
+    assert.deepEqual(JSON.parse(result.stdout), {
+      file: "docs/architecture.dp.yaml",
+      ok: true,
+      errors: [],
+    });
+  });
+});
+
 test("diagrampilot validate rejects a missing required top-level field", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });
@@ -406,6 +439,74 @@ test("diagrampilot validate emits repairable validation errors in text mode", as
     assert.match(result.stderr, /Path: edges\[0\]\.directed/);
     assert.match(result.stderr, /Bad value: "sometimes"/);
     assert.match(result.stderr, /Expected: Boolean true or false\./);
+  });
+});
+
+test("diagrampilot validate --json emits structured repairable validation errors on stdout", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "repairable-errors.dp.yaml"),
+      [
+        "version: 1",
+        "title: Repairable Error Architecture",
+        "direction: sideways",
+        "nodes:",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "edges:",
+        "  - id: ghost_client_to_api_gateway",
+        "    from: ghost_client",
+        "    to: api_gateway",
+        "    directed: sometimes",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/repairable-errors.dp.yaml", "--json"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stderr, "");
+    assert.doesNotMatch(result.stdout, /DiagramSpec validation error in/);
+    assert.doesNotMatch(result.stdout, /Path:/);
+    assert.doesNotMatch(result.stdout, /Suggestion:/);
+
+    const validationResult = JSON.parse(result.stdout);
+
+    assert.deepEqual(validationResult, {
+      file: "docs/repairable-errors.dp.yaml",
+      ok: false,
+      errors: [
+        {
+          path: "direction",
+          message: "direction must be one of: right, left, down, up.",
+          badValue: "sideways",
+          expected: "One of: right, left, down, up.",
+          suggestion: "Change direction to right, left, down, or up.",
+        },
+        {
+          path: "edges[0].from",
+          message: 'edges[0].from references unknown node "ghost_client".',
+          badValue: "ghost_client",
+          expected: "One of: api_gateway.",
+          suggestion:
+            'Add a node with id "ghost_client" or change edges[0].from to an existing node ID.',
+        },
+        {
+          path: "edges[0].directed",
+          message: "edges[0].directed must be a boolean when present.",
+          badValue: "sometimes",
+          expected: "Boolean true or false.",
+          suggestion:
+            "Use true for directed edges or false for undirected edges.",
+        },
+      ],
+    });
   });
 });
 

@@ -24,8 +24,33 @@ interface CliStreams {
   stderr: Writable;
 }
 
+interface ValidateOptions {
+  json: boolean;
+  sourcePath: string;
+}
+
+type ValidateArgsResult =
+  | {
+      ok: true;
+      options: ValidateOptions;
+    }
+  | {
+      ok: false;
+      message: string;
+    };
+
+interface StructuredValidationResult {
+  file: string;
+  ok: boolean;
+  errors: DiagramSpecValidationError[];
+}
+
 function writeLine(stream: Writable, message: string): void {
   stream.write(`${message}\n`);
+}
+
+function writeJsonLine(stream: Writable, value: unknown): void {
+  stream.write(`${JSON.stringify(value, null, 2)}\n`);
 }
 
 function helpText(): string {
@@ -38,7 +63,7 @@ function helpText(): string {
     "",
     "MVP commands:",
     "  init",
-    "  validate <path>",
+    "  validate <path> [--json]",
     "  render",
     "  export",
   ].join("\n");
@@ -172,6 +197,32 @@ function formatSourceFailure(failure: SourceLoadFailure): string {
   return `${formatLabel} parse error in ${failure.path}${location}: ${failure.message}`;
 }
 
+function sourceFailureToValidationError(
+  failure: SourceLoadFailure,
+): DiagramSpecValidationError {
+  if (failure.kind === "read") {
+    return {
+      path: "$",
+      message: `Unable to read ${failure.path}: ${failure.message}`,
+      expected: "Readable DiagramPilot Source File.",
+      suggestion: "Check that the source path exists and is readable.",
+    };
+  }
+
+  const location =
+    failure.line === undefined || failure.column === undefined
+      ? ""
+      : ` at line ${failure.line}, column ${failure.column}`;
+  const formatLabel = failure.format.toUpperCase();
+
+  return {
+    path: "$",
+    message: `${formatLabel} parse error${location}: ${failure.message}`,
+    expected: `Valid ${formatLabel} DiagramPilot Source File syntax.`,
+    suggestion: `Fix the ${failure.format.toUpperCase()} syntax before semantic validation.`,
+  };
+}
+
 function hasBadValue(
   error: DiagramSpecValidationError,
 ): error is DiagramSpecValidationError & { badValue: unknown } {
@@ -208,18 +259,78 @@ function formatDiagramSpecValidationError(
   return lines.join("\n");
 }
 
-function runValidate(args: readonly string[], streams: CliStreams): number {
-  const [sourcePath] = args;
+function parseValidateArgs(args: readonly string[]): ValidateArgsResult {
+  let json = false;
+  let sourcePath: string | undefined;
+
+  for (const arg of args) {
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+
+    if (arg.startsWith("-")) {
+      return {
+        ok: false,
+        message: `Unknown validate option: ${arg}`,
+      };
+    }
+
+    if (sourcePath !== undefined) {
+      return {
+        ok: false,
+        message: `Unexpected validate argument: ${arg}`,
+      };
+    }
+
+    sourcePath = arg;
+  }
 
   if (sourcePath === undefined) {
-    writeLine(streams.stderr, "Missing source path.");
-    writeLine(streams.stderr, "Usage: diagrampilot validate <path>");
+    return {
+      ok: false,
+      message: "Missing source path.",
+    };
+  }
+
+  return {
+    ok: true,
+    options: {
+      json,
+      sourcePath,
+    },
+  };
+}
+
+function writeStructuredValidationResult(
+  streams: CliStreams,
+  result: StructuredValidationResult,
+): void {
+  writeJsonLine(streams.stdout, result);
+}
+
+function runValidate(args: readonly string[], streams: CliStreams): number {
+  const argsResult = parseValidateArgs(args);
+
+  if (!argsResult.ok) {
+    writeLine(streams.stderr, argsResult.message);
+    writeLine(streams.stderr, "Usage: diagrampilot validate <path> [--json]");
     return 1;
   }
 
+  const { json, sourcePath } = argsResult.options;
   const result = loadDiagramPilotSourceFile(sourcePath);
 
   if (!result.ok) {
+    if (json) {
+      writeStructuredValidationResult(streams, {
+        file: result.failure.path,
+        ok: false,
+        errors: [sourceFailureToValidationError(result.failure)],
+      });
+      return 1;
+    }
+
     writeLine(streams.stderr, formatSourceFailure(result.failure));
     return 1;
   }
@@ -227,6 +338,15 @@ function runValidate(args: readonly string[], streams: CliStreams): number {
   const validation = validateDiagramSpec(result.source.value);
 
   if (!validation.ok) {
+    if (json) {
+      writeStructuredValidationResult(streams, {
+        file: result.source.path,
+        ok: false,
+        errors: validation.errors,
+      });
+      return 1;
+    }
+
     for (const error of validation.errors) {
       writeLine(
         streams.stderr,
@@ -235,6 +355,15 @@ function runValidate(args: readonly string[], streams: CliStreams): number {
     }
 
     return 1;
+  }
+
+  if (json) {
+    writeStructuredValidationResult(streams, {
+      file: result.source.path,
+      ok: true,
+      errors: [],
+    });
+    return 0;
   }
 
   writeLine(streams.stdout, `Valid ${result.source.path}`);
