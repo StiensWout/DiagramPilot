@@ -257,6 +257,39 @@ function validateDiagramObjectIds(
   }
 }
 
+function validateRequiredPlainTextLabels(
+  value: Record<string, unknown>,
+  errors: DiagramSpecValidationError[],
+): void {
+  for (const collectionName of ["nodes", "groups"] as const) {
+    const collection = value[collectionName];
+
+    if (!Array.isArray(collection)) {
+      continue;
+    }
+
+    collection.forEach((item, index) => {
+      if (!isRecord(item)) {
+        return;
+      }
+
+      const labelPath = `${collectionName}[${index}].label`;
+
+      if (typeof item.label === "string") {
+        return;
+      }
+
+      errors.push({
+        path: labelPath,
+        message: `${labelPath} is required.`,
+        badValue: item.label,
+        expected: "Plain-text label string.",
+        suggestion: `Add a plain-text label to ${collectionName}[${index}].`,
+      });
+    });
+  }
+}
+
 export function validateDiagramSpec(
   value: unknown,
 ): DiagramSpecValidationResult {
@@ -307,6 +340,7 @@ export function validateDiagramSpec(
   }
 
   validateDiagramObjectIds(value, errors);
+  validateRequiredPlainTextLabels(value, errors);
 
   if (errors.length > 0) {
     return { ok: false, errors };

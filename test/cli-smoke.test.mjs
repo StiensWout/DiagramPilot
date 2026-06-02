@@ -429,6 +429,82 @@ test("diagrampilot validate rejects missing stable IDs across diagram objects", 
   });
 });
 
+test("diagrampilot validate rejects missing node and group labels", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "missing-labels.dp.yaml"),
+      [
+        "version: 1",
+        "title: Missing Labels Architecture",
+        "nodes:",
+        "  - id: web_app",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "groups:",
+        "  - id: backend_services",
+        "    contains:",
+        "      - api_gateway",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/missing-labels.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(result.stderr, /nodes\[0\]\.label is required\./);
+    assert.match(result.stderr, /groups\[0\]\.label is required\./);
+    assert.match(result.stderr, /Add a plain-text label to nodes\[0\]\./);
+    assert.match(result.stderr, /Add a plain-text label to groups\[0\]\./);
+  });
+});
+
+test("diagrampilot validate accepts multiline node and group labels", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "multiline-labels.dp.yaml"),
+      [
+        "version: 1",
+        "title: Multiline Label Architecture",
+        "nodes:",
+        "  - id: web_app",
+        "    label: |-",
+        "      Public Web",
+        "      App",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "groups:",
+        "  - id: customer_entrypoints",
+        "    label: |-",
+        "      Customer",
+        "      Entrypoints",
+        "    contains:",
+        "      - web_app",
+        "      - api_gateway",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/multiline-labels.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.equal(result.stdout, "Valid docs/multiline-labels.dp.yaml\n");
+  });
+});
+
 test("diagrampilot validate accepts stable IDs across diagram objects", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });
