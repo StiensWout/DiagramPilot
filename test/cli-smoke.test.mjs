@@ -615,6 +615,125 @@ test("diagrampilot validate treats kind as an open stable ID semantic tag", asyn
   });
 });
 
+test("diagrampilot validate accepts valid metadata source and external references", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "metadata-references.dp.yaml"),
+      [
+        "version: 1",
+        "title: Metadata References Architecture",
+        "metadata:",
+        "  source: docs/**/*.dp.yaml",
+        "  external_url: https://example.com/architecture-notes",
+        "nodes:",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "    metadata:",
+        "      source: packages/core/src/index.ts",
+        "      external_url: https://example.com/api-gateway",
+        "  - id: orders_service",
+        "    label: Orders Service",
+        "edges:",
+        "  - id: api_gateway_to_orders_service",
+        "    from: api_gateway",
+        "    to: orders_service",
+        "    metadata:",
+        "      source: packages/*/src/**/*.ts",
+        "      external_url: http://example.com/service-contract",
+        "groups:",
+        "  - id: backend_services",
+        "    label: Backend Services",
+        "    contains:",
+        "      - orders_service",
+        "    metadata:",
+        "      source: packages/core",
+        "      external_url: https://example.com/backend-services",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/metadata-references.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.equal(result.stdout, "Valid docs/metadata-references.dp.yaml\n");
+  });
+});
+
+test("diagrampilot validate rejects external URLs in metadata source references", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "bad-source-reference.dp.yaml"),
+      [
+        "version: 1",
+        "title: Bad Source Reference Architecture",
+        "nodes:",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "    metadata:",
+        "      source: https://example.com/api-gateway",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/bad-source-reference.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /nodes\[0\]\.metadata\.source must be a local repository path or path-like glob\./,
+    );
+    assert.match(result.stderr, /Use metadata\.external_url for external URLs/);
+  });
+});
+
+test("diagrampilot validate rejects local paths in metadata external references", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "bad-external-reference.dp.yaml"),
+      [
+        "version: 1",
+        "title: Bad External Reference Architecture",
+        "nodes:",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "    metadata:",
+        "      external_url: src/gateway",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/bad-external-reference.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /nodes\[0\]\.metadata\.external_url must be an external URL\./,
+    );
+    assert.match(result.stderr, /Use metadata\.source for local repo paths/);
+  });
+});
+
 test("diagrampilot validate rejects duplicate stable IDs across diagram objects", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });
