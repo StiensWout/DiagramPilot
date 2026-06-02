@@ -229,6 +229,35 @@ test("diagrampilot validate reads a YAML source file from an explicit path", asy
   });
 });
 
+test("diagrampilot validate reads a JSON source file from an explicit path", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "architecture.dp.json"),
+      JSON.stringify(
+        {
+          version: 1,
+          title: "Checkout Architecture",
+          nodes: [{ id: "web_app", label: "Web App" }],
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/architecture.dp.json"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.equal(result.stdout, "Valid docs/architecture.dp.json\n");
+  });
+});
+
 test("diagrampilot validate stops at a YAML parse failure", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });
@@ -252,6 +281,38 @@ test("diagrampilot validate stops at a YAML parse failure", async () => {
     assert.equal(result.code, 1);
     assert.equal(result.stdout, "");
     assert.match(result.stderr, /^YAML parse error in docs\/broken\.dp\.yaml/);
+    assert.doesNotMatch(result.stderr, /Missing required top-level field/);
+    assert.doesNotMatch(result.stderr, /Required top-level fields/);
+  });
+});
+
+test("diagrampilot validate stops at a JSON parse failure", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "broken.dp.json"),
+      [
+        "{",
+        '  "version": 1,',
+        '  "title": "Broken Source",',
+        '  "nodes": [',
+        '    { "id": "web_app", "label": "Web App" },',
+        "  ]",
+        "}",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/broken.dp.json"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(result.stderr, /^JSON parse error in docs\/broken\.dp\.json/);
     assert.doesNotMatch(result.stderr, /Missing required top-level field/);
     assert.doesNotMatch(result.stderr, /Required top-level fields/);
   });
