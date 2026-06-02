@@ -21,6 +21,7 @@
     "build": "tsc -b && node scripts/make-bin-executable.mjs"
   },
   "dependencies": {
-    "@diagrampilot/core": "0.1.0"
+    "@diagrampilot/core": "0.1.0",
+    "@diagrampilot/export-mermaid": "0.1.0"
   }
 }

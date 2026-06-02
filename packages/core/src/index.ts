@@ -19,6 +19,52 @@ export function getDiagramPilotVersion(): string {
   return DIAGRAMPILOT_VERSION;
 }
 
+export type DiagramSpecDirection = (typeof allowedDirections)[number];
+
+export interface DiagramSpecMetadata {
+  [key: string]: unknown;
+}
+
+export interface DiagramSpecNode {
+  id: string;
+  label: string;
+  kind?: string;
+  description?: string;
+  icon?: string;
+  metadata?: DiagramSpecMetadata;
+}
+
+export interface DiagramSpecEdge {
+  id: string;
+  from: string;
+  to: string;
+  label?: string;
+  kind?: string;
+  description?: string;
+  directed?: boolean;
+  metadata?: DiagramSpecMetadata;
+}
+
+export interface DiagramSpecGroup {
+  id: string;
+  label: string;
+  contains: string[];
+  kind?: string;
+  description?: string;
+  metadata?: DiagramSpecMetadata;
+}
+
+export interface DiagramSpec {
+  version: number;
+  title: string;
+  description?: string;
+  direction?: DiagramSpecDirection;
+  nodes: DiagramSpecNode[];
+  edges?: DiagramSpecEdge[];
+  groups?: DiagramSpecGroup[];
+  metadata?: DiagramSpecMetadata;
+}
+
 export type DiagramPilotSourceFormat = "yaml" | "json";
 
 export interface DiagramPilotSourceFile {
@@ -182,6 +228,76 @@ export function loadDiagramPilotSourceFile(path: string): SourceLoadResult {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function validateTopLevelCollectionShapes(
+  value: Record<string, unknown>,
+  errors: DiagramSpecValidationError[],
+): void {
+  if ("nodes" in value && !Array.isArray(value.nodes)) {
+    errors.push({
+      path: "nodes",
+      message: "nodes must be an array of node objects.",
+      badValue: value.nodes,
+      expected: "Array of node objects with at least one node.",
+      suggestion: "Change nodes to a list of node objects.",
+    });
+  }
+
+  if ("edges" in value && !Array.isArray(value.edges)) {
+    errors.push({
+      path: "edges",
+      message: "edges must be an array of edge objects when present.",
+      badValue: value.edges,
+      expected: "Array of edge objects.",
+      suggestion: "Change edges to a list of edge objects or omit edges.",
+    });
+  }
+
+  if ("groups" in value && !Array.isArray(value.groups)) {
+    errors.push({
+      path: "groups",
+      message: "groups must be an array of group objects when present.",
+      badValue: value.groups,
+      expected: "Array of group objects.",
+      suggestion: "Change groups to a list of group objects or omit groups.",
+    });
+  }
+}
+
+function validateDiagramObjectShapes(
+  value: Record<string, unknown>,
+  errors: DiagramSpecValidationError[],
+): void {
+  const collectionLabels = {
+    nodes: "node",
+    edges: "edge",
+    groups: "group",
+  } as const;
+
+  for (const collectionName of ["nodes", "edges", "groups"] as const) {
+    const collection = value[collectionName];
+
+    if (!Array.isArray(collection)) {
+      continue;
+    }
+
+    collection.forEach((item, index) => {
+      if (isRecord(item)) {
+        return;
+      }
+
+      const objectLabel = collectionLabels[collectionName];
+
+      errors.push({
+        path: `${collectionName}[${index}]`,
+        message: `${collectionName}[${index}] must be a ${objectLabel} object.`,
+        badValue: item,
+        expected: `${objectLabel[0].toUpperCase()}${objectLabel.slice(1)} object.`,
+        suggestion: `Change ${collectionName}[${index}] to a ${objectLabel} object with a stable id.`,
+      });
+    });
+  }
 }
 
 function isAllowedDirection(value: unknown): boolean {
@@ -886,6 +1002,8 @@ export function validateDiagramSpec(
     });
   }
 
+  validateTopLevelCollectionShapes(value, errors);
+  validateDiagramObjectShapes(value, errors);
   validateDiagramObjectIds(value, errors);
   validateDiagramObjectKinds(value, errors);
   validateWellKnownMetadataReferences(value, errors);
