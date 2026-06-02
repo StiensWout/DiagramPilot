@@ -1460,6 +1460,7 @@ test("diagrampilot export prints Mermaid for a valid DiagramSpec without rewriti
     );
 
     const sourceTextAfterExport = await readFile(sourcePath, "utf8");
+    const docsEntriesAfterExport = await readdir(path.join(tempRoot, "docs"));
 
     assert.equal(result.signal, null);
     assert.equal(result.code, 0, result.stderr);
@@ -1481,6 +1482,64 @@ test("diagrampilot export prints Mermaid for a valid DiagramSpec without rewriti
       ].join("\n"),
     );
     assert.equal(sourceTextAfterExport, sourceText);
+    assert.deepEqual(docsEntriesAfterExport.sort(), ["architecture.dp.yaml"]);
+  });
+});
+
+test("diagrampilot export writes Mermaid to a file when out is provided", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "architecture.dp.yaml"),
+      [
+        "version: 1",
+        "title: Checkout Architecture",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "edges:",
+        "  - id: web_app_to_api_gateway",
+        "    from: web_app",
+        "    to: api_gateway",
+        "    label: HTTPS",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      [
+        "export",
+        "docs/architecture.dp.yaml",
+        "--format",
+        "mermaid",
+        "--out",
+        "docs/architecture.mmd",
+      ],
+      tempRoot,
+    );
+
+    const exportedMermaid = await readFile(
+      path.join(tempRoot, "docs", "architecture.mmd"),
+      "utf8",
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stdout, "");
+    assert.equal(result.stderr, "");
+    assert.equal(
+      exportedMermaid,
+      [
+        "flowchart LR",
+        "  web_app[\"Web App\"]",
+        "  api_gateway[\"API Gateway\"]",
+        "  web_app -->|HTTPS| api_gateway",
+        "",
+      ].join("\n"),
+    );
   });
 });
 
