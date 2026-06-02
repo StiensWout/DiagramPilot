@@ -1,5 +1,9 @@
 import { readFileSync } from "node:fs";
 
+import {
+  isPackagedLucideIconName,
+  LUCIDE_ICON_NAMESPACE,
+} from "@diagrampilot/icons";
 import { LineCounter, parseDocument } from "yaml";
 import type { YAMLError } from "yaml";
 
@@ -14,6 +18,8 @@ const sourceReferenceExpected =
   "Local repository path or path-like glob, such as src/gateway or packages/*/src/**/*.ts.";
 const externalReferenceExpected =
   "External HTTP(S) URL, such as https://example.com/context.";
+const iconReferenceExpected =
+  "Namespaced icon reference, such as lucide:database.";
 
 export function getDiagramPilotVersion(): string {
   return DIAGRAMPILOT_VERSION;
@@ -51,6 +57,7 @@ export interface DiagramSpecGroup {
   contains: string[];
   kind?: string;
   description?: string;
+  icon?: string;
   metadata?: DiagramSpecMetadata;
 }
 
@@ -397,6 +404,106 @@ function validateDiagramObjectKinds(
       validateStableIdShape(
         `${collectionName}[${index}].kind`,
         item.kind,
+        errors,
+      );
+    });
+  }
+}
+
+interface IconReference {
+  namespace: string;
+  name: string;
+}
+
+function parseIconReference(value: string): IconReference | undefined {
+  const separatorIndex = value.indexOf(":");
+
+  if (
+    separatorIndex <= 0 ||
+    separatorIndex === value.length - 1 ||
+    value.indexOf(":", separatorIndex + 1) !== -1
+  ) {
+    return undefined;
+  }
+
+  return {
+    namespace: value.slice(0, separatorIndex),
+    name: value.slice(separatorIndex + 1),
+  };
+}
+
+function validateIconReferenceValue(
+  path: string,
+  value: unknown,
+  errors: DiagramSpecValidationError[],
+): void {
+  if (typeof value !== "string" || value.trim() !== value) {
+    errors.push({
+      path,
+      message: `${path} must be a namespaced icon reference.`,
+      badValue: value,
+      expected: iconReferenceExpected,
+      suggestion: `Use a supported icon reference such as ${LUCIDE_ICON_NAMESPACE}:database.`,
+    });
+    return;
+  }
+
+  const reference = parseIconReference(value);
+
+  if (reference === undefined) {
+    errors.push({
+      path,
+      message: `${path} must be a namespaced icon reference.`,
+      badValue: value,
+      expected: iconReferenceExpected,
+      suggestion: `Use a supported icon reference such as ${LUCIDE_ICON_NAMESPACE}:database.`,
+    });
+    return;
+  }
+
+  if (reference.namespace !== LUCIDE_ICON_NAMESPACE) {
+    errors.push({
+      path,
+      message: `${path} uses unsupported icon namespace "${reference.namespace}".`,
+      badValue: value,
+      expected: `Supported icon namespaces: ${LUCIDE_ICON_NAMESPACE}.`,
+      suggestion: `Use ${LUCIDE_ICON_NAMESPACE}:<icon-name> with a packaged Lucide icon, such as ${LUCIDE_ICON_NAMESPACE}:database.`,
+    });
+    return;
+  }
+
+  if (isPackagedLucideIconName(reference.name)) {
+    return;
+  }
+
+  errors.push({
+    path,
+    message: `${path} references unknown Lucide icon "${reference.name}".`,
+    badValue: value,
+    expected: "Known Lucide icon name.",
+    suggestion: `Choose a packaged Lucide icon, such as ${LUCIDE_ICON_NAMESPACE}:database.`,
+  });
+}
+
+function validateDiagramObjectIcons(
+  value: Record<string, unknown>,
+  errors: DiagramSpecValidationError[],
+): void {
+  for (const collectionName of ["nodes", "groups"] as const) {
+    const collection = value[collectionName];
+
+    if (!Array.isArray(collection)) {
+      continue;
+    }
+
+    collection.forEach((item, index) => {
+      if (!isRecord(item) || !("icon" in item)) {
+        return;
+      }
+
+      validateIconReferenceValue(
+        `${collectionName}[${index}].icon`,
+        item.icon,
         errors,
       );
     });
@@ -1006,6 +1113,7 @@ export function validateDiagramSpec(
   validateDiagramObjectShapes(value, errors);
   validateDiagramObjectIds(value, errors);
   validateDiagramObjectKinds(value, errors);
+  validateDiagramObjectIcons(value, errors);
   validateWellKnownMetadataReferences(value, errors);
   validateRequiredPlainTextLabels(value, errors);
   validateOptionalEdgeLabels(value, errors);

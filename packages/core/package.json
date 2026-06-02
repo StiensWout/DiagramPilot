@@ -18,6 +18,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
+    "@diagrampilot/icons": "0.1.0",
     "yaml": "^2.9.0"
   }
 }
