@@ -15,6 +15,7 @@ import {
   type DiagramSpecValidationError,
   getDiagramPilotVersion,
   loadDiagramPilotSourceFile,
+  loadValidatedDiagramSpec,
   type SourceLoadFailure,
   validateDiagramSpec,
 } from "@diagrampilot/core";
@@ -512,9 +513,29 @@ function runValidate(args: readonly string[], streams: CliStreams): number {
   }
 
   const { json, sourcePath } = argsResult.options;
-  const result = loadDiagramPilotSourceFile(sourcePath);
+  const result = loadValidatedDiagramSpec(sourcePath);
 
   if (!result.ok) {
+    if (result.failure.kind === "validation") {
+      if (json) {
+        writeStructuredValidationResult(streams, {
+          file: result.failure.source.path,
+          ok: false,
+          errors: result.failure.errors,
+        });
+        return 1;
+      }
+
+      for (const error of result.failure.errors) {
+        writeLine(
+          streams.stderr,
+          formatDiagramSpecValidationError(result.failure.source.path, error),
+        );
+      }
+
+      return 1;
+    }
+
     if (json) {
       writeStructuredValidationResult(streams, {
         file: result.failure.path,
@@ -525,28 +546,6 @@ function runValidate(args: readonly string[], streams: CliStreams): number {
     }
 
     writeLine(streams.stderr, formatSourceFailure(result.failure));
-    return 1;
-  }
-
-  const validation = validateDiagramSpec(result.source.value);
-
-  if (!validation.ok) {
-    if (json) {
-      writeStructuredValidationResult(streams, {
-        file: result.source.path,
-        ok: false,
-        errors: validation.errors,
-      });
-      return 1;
-    }
-
-    for (const error of validation.errors) {
-      writeLine(
-        streams.stderr,
-        formatDiagramSpecValidationError(result.source.path, error),
-      );
-    }
-
     return 1;
   }
 
