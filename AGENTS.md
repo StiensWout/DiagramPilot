@@ -69,7 +69,10 @@ source of truth.
 - `docs/agents/issue-tracker.md`: local markdown issue and PRD workflow.
 - `docs/agents/triage-labels.md`: status vocabulary for triage.
 - `docs/agents/domain.md`: domain-doc lookup rules for engineering skills.
+- `docs/development/architecture.md`: maintainer architecture notes.
 - `docs/development/roadmap.md`: implementation priorities.
+- `docs/adr/0006-public-docs-live-under-docs-public.md`: public/internal docs
+  split decision.
 
 ## Agent skills
 
@@ -88,7 +91,7 @@ Triage uses the default local status vocabulary. See
 This repo uses a single-context domain docs layout. See
 `docs/agents/domain.md`.
 
-## Initial CLI Shape
+## Implemented CLI Shape
 
 ```bash
 diagrampilot init

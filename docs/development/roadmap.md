@@ -3,11 +3,13 @@
 DiagramPilot is a local-first compiler and validation engine for repo-native
 diagrams authored by AI coding agents.
 
-The current implementation has crossed the MVP implementation checkpoint. The
-next work is split into release readiness, architecture deepening, and product
-capability backlog. Keep these tracks separate: release readiness makes the
-existing product easy to adopt; architecture deepening makes the codebase safer
-to extend; product capability work adds new user-facing behaviour.
+The current implementation has crossed the MVP and architecture-deepening
+checkpoints recorded in `.scratch/diagrampilot-mvp/` and
+`.scratch/architecture-deepening/`. The next work is release readiness:
+separating public documentation from internal maintainer documentation and
+adding the Checkout Demo Project workflow. Keep that track separate from the
+product capability backlog. Release readiness makes the existing product easy
+to adopt; product capability work adds new user-facing behaviour.
 
 ## Current State
 
@@ -24,19 +26,25 @@ The MVP CLI workflow is implemented in the TypeScript workspace:
 The implemented MVP includes:
 
 - DiagramSpec v1 source loading from YAML and JSON DiagramPilot Source Files.
+- Validated DiagramSpec loading through a shared core lifecycle.
 - Repairable text and JSON validation errors.
 - Stable lowercase snake case IDs across nodes, edges, and groups.
 - Node, Edge, Group, Metadata, Source Reference, External Reference, and Icon
   Reference validation.
+- Reusable DiagramSpec topology for Group roots, Group parentage, containment,
+  traversal order, and Node paths.
 - Mermaid and D2 text export.
 - SVG rendering through the included local D2 path.
 - Packaged `lucide:*` Icon Reference validation.
 - Deterministic SVG provenance metadata without wall-clock timestamps.
-- CLI smoke tests and focused validation/export/render/provenance coverage.
+- A CLI command planning seam for validating command behaviour without
+  spawning the executable for every rule.
+- CLI smoke tests and focused validation/export/render/provenance/topology
+  coverage.
 
-The MVP issue slices are completed in the local tracker. The remaining MVP
-closeout work is documentation and planning-state cleanup, not core CLI
-implementation.
+The MVP issue slices and architecture-deepening issue slices are completed in
+the local tracker. The remaining closeout work is documentation, the demo
+project workflow, and planning-state cleanup, not core CLI implementation.
 
 ## Current Contract
 
@@ -82,30 +90,30 @@ Release readiness is complete when an AI coding agent can start at
 the Checkout Demo Project, validate its DiagramPilot Source File, render its
 SVG Derived Artifact, and repeat the workflow in another repository.
 
-### Architecture Deepening
+## Completed Architecture Deepening
 
-This track improves locality before the next wave of product features.
+The architecture-deepening tracker slices under
+`.scratch/architecture-deepening/issues/` are completed in the current checkout.
+Treat these as current architecture, not future backlog:
 
-The first two deepening targets are:
-
-1. Validated DiagramSpec loading: one module owns the ordered lifecycle from an
-   explicit DiagramPilot Source File path to a valid DiagramSpec or a
+1. Validated DiagramSpec loading: the core package owns the ordered lifecycle
+   from an explicit DiagramPilot Source File path to a valid DiagramSpec or a
    diagnostic-friendly failure.
-2. DiagramSpec topology: one module owns reusable knowledge about Diagram
+2. Shared validation loading in `export` and `render`, so those commands
+   validate before producing derived artifacts through the same path as
+   `validate`.
+3. Centralized Repairable Validation Error diagnostics for read, parse, and
+   semantic validation failures.
+4. DiagramSpec topology: the core package owns reusable knowledge about Diagram
    Objects, including Stable ID lookup, Group roots, Group parentage,
    containment relationships, Node paths, and traversal order.
-
-Supporting slices:
-
-1. Reuse validated DiagramSpec loading in `export` and `render`.
-2. Centralize Repairable Validation Error diagnostics.
-3. Reuse DiagramSpec topology in containment validation.
-4. Deepen Derived Artifact provenance.
-5. Add a CLI command planning seam so command behaviour can be tested without
-   spawning the executable for every rule.
-
-Architecture deepening is not required for the first public workflow, but it is
-the preferred next engineering work before adding major new capabilities.
+5. Group containment validation reuses the shared topology where it improves
+   locality while preserving repairable validation behaviour.
+6. SVG provenance construction and SVG metadata insertion are isolated in the
+   render package and covered without requiring D2 rendering.
+7. CLI command planning represents exit code, stdout, stderr, and file-write
+   intent for `validate`, `export`, and `render`; filesystem reads and writes
+   remain at command execution edges.
 
 ## Product Backlog
 
@@ -140,7 +148,7 @@ Later layout candidates:
 
 ### MCP And Structured Agent Operations
 
-MCP comes after the CLI/core workflow and architecture seams are stable.
+MCP comes after release readiness and the public demo workflow are stable.
 
 - Add MCP server.
 - Add resources for schema, docs, and examples.
