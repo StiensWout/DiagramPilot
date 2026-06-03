@@ -125,6 +125,25 @@ export type SourceLoadResult =
       failure: SourceLoadFailure;
     };
 
+export type ValidatedDiagramSpecLoadFailure =
+  | SourceLoadFailure
+  | {
+      kind: "validation";
+      source: DiagramPilotSourceFile;
+      errors: DiagramSpecValidationError[];
+    };
+
+export type ValidatedDiagramSpecLoadResult =
+  | {
+      ok: true;
+      source: DiagramPilotSourceFile;
+      spec: DiagramSpec;
+    }
+  | {
+      ok: false;
+      failure: ValidatedDiagramSpecLoadFailure;
+    };
+
 function firstLinePosition(error: YAMLError): { line?: number; column?: number } {
   const [linePosition] = error.linePos ?? [];
 
@@ -1128,4 +1147,36 @@ export function validateDiagramSpec(
   }
 
   return { ok: true, errors: [] };
+}
+
+export function loadValidatedDiagramSpec(
+  path: string,
+): ValidatedDiagramSpecLoadResult {
+  const sourceResult = loadDiagramPilotSourceFile(path);
+
+  if (!sourceResult.ok) {
+    return {
+      ok: false,
+      failure: sourceResult.failure,
+    };
+  }
+
+  const validation = validateDiagramSpec(sourceResult.source.value);
+
+  if (!validation.ok) {
+    return {
+      ok: false,
+      failure: {
+        kind: "validation",
+        source: sourceResult.source,
+        errors: validation.errors,
+      },
+    };
+  }
+
+  return {
+    ok: true,
+    source: sourceResult.source,
+    spec: sourceResult.source.value as DiagramSpec,
+  };
 }
