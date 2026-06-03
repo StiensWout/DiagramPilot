@@ -19,7 +19,7 @@ packages/export-d2
 packages/render-svg
 packages/icons
 docs
-docs-public        # planned public documentation root
+docs-public        # public documentation root
 examples           # planned Demo Project and examples root
 ```
 
@@ -91,8 +91,8 @@ Icon Reference namespaces.
 ADRs, issue-tracker workflow, triage labels, and domain-doc guidance.
 
 `docs-public`
-: Planned Public Documentation root for AI coding agents and developers using
-DiagramPilot in their own repositories. Hosted URLs still use
+: Public Documentation root for AI coding agents and developers using
+DiagramPilot in their own repositories. Hosted URLs use
 `https://diagrampilot.com/docs/...`.
 
 `examples`
@@ -255,7 +255,7 @@ Public Documentation and Internal Documentation are separate categories.
 Internal Documentation stays under `docs/` and includes maintainer workflow,
 architecture, roadmap, ADRs, triage labels, and issue-tracker guidance.
 
-Public Documentation should live under `docs-public/` while hosted URLs remain
+Public Documentation lives under `docs-public/` while hosted URLs remain
 under `https://diagrampilot.com/docs/...`. `llms.txt` should link only Public
 Documentation.
 
