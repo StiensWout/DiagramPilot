@@ -96,3 +96,31 @@ A validation error that identifies the invalid spec path, explains the problem,
 and gives a concrete repair step. Repairable validation errors are intended for
 both humans and AI coding agents.
 _Avoid_: Generic validation failure, renderer error, stack trace
+
+**Demo Project**:
+A checked-in sample repository fixture that demonstrates the DiagramPilot
+workflow with real project files, DiagramPilot Source Files, and Derived
+Artifacts.
+_Avoid_: Hosted demo, docs-only example, isolated snippet
+
+**Agent-First Documentation**:
+Documentation written so AI coding agents can execute repo-native workflows from
+explicit files, commands, and validation expectations, while remaining readable
+to human maintainers.
+_Avoid_: Marketing copy, human-only tutorial, vague onboarding guide
+
+**Checkout Demo Project**:
+The Demo Project domain used to demonstrate DiagramPilot with one end-to-end
+architecture diagram for a small checkout system.
+_Avoid_: Demo gallery, unrelated sample app, abstract toy diagram
+
+**Public Documentation**:
+Documentation for AI coding agents and developers using DiagramPilot in their
+own repositories.
+_Avoid_: Maintainer workflow notes, implementation planning docs, private
+project process
+
+**Internal Documentation**:
+Documentation for DiagramPilot maintainers that explains project workflow,
+implementation plans, architecture decisions, and development process.
+_Avoid_: Public user guide, public agent quickstart, product usage docs
