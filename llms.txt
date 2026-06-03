@@ -10,7 +10,7 @@ the primary source of truth.
 
 Public documentation is hosted under `https://diagrampilot.com`.
 
-## Agent Docs
+## Agent And User Docs
 
 - [Agent quickstart](https://diagrampilot.com/docs/agents/quickstart.md): Minimal workflow for creating, validating, rendering, and exporting diagrams.
 - [DiagramSpec](https://diagrampilot.com/docs/agents/spec.md): Structured source model for diagrams.
@@ -22,10 +22,10 @@ Public documentation is hosted under `https://diagrampilot.com`.
 ## Development Docs
 
 - [Roadmap](https://diagrampilot.com/docs/development/roadmap.md): MVP phases and priorities.
-- [Architecture](https://diagrampilot.com/docs/development/architecture.md): Planned packages, data flow, and constraints.
+- [Architecture](https://diagrampilot.com/docs/development/architecture.md): Current packages, data flow, and constraints.
 - [Market research](https://diagrampilot.com/docs/development/market-research.md): Competitive findings and positioning.
 
-## Initial CLI Shape
+## Current CLI
 
 ```bash
 diagrampilot init
@@ -39,6 +39,8 @@ diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architectur
 ## MVP Boundaries
 
 - `render` produces SVG and requires `--out`.
+- Rendered SVG includes deterministic provenance metadata with no wall-clock
+  timestamps.
 - `export` supports Mermaid and D2.
 - `export` prints to stdout by default and writes files with `--out`.
 - Validation checks source files and returns repairable errors.

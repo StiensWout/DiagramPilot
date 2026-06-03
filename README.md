@@ -19,7 +19,7 @@ DiagramPilot's wedge is:
 
 - Structured `*.dp.yaml` and `*.dp.json` source files.
 - YAML-first authoring for humans and agents.
-- JSON Schema validation.
+- Source-file validation for DiagramSpec.
 - Repairable validation errors.
 - Stable globally unique node, edge, and group IDs.
 - Review-stable rendering to project artifacts.
@@ -58,7 +58,7 @@ diagrampilot validate docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 ```
 
-## Initial CLI Shape
+## Current CLI
 
 ```bash
 diagrampilot init
@@ -71,6 +71,10 @@ diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architectur
 
 `render` requires `--out`. `export` prints to stdout by default and writes a
 file only when `--out` is provided.
+
+Rendered SVG artifacts include deterministic provenance metadata with the source
+path, source SHA-256 hash, DiagramPilot version, and renderer version. The
+provenance metadata does not include wall-clock timestamps.
 
 ## MVP Scope
 
@@ -97,7 +101,7 @@ Deferred:
 - Drag-and-drop editor.
 - Prompt-only SaaS generation.
 
-## Documentation
+## Agent And User Documentation
 
 - [Agent quickstart](https://diagrampilot.com/docs/agents/quickstart.md)
 - [DiagramSpec guide](https://diagrampilot.com/docs/agents/spec.md)
@@ -105,10 +109,17 @@ Deferred:
 - [Agent examples](https://diagrampilot.com/docs/agents/examples.md)
 - [MCP plan](https://diagrampilot.com/docs/agents/mcp.md)
 - [Agent prompting guide](https://diagrampilot.com/docs/agents/prompting.md)
+
+## Development Documentation
+
 - [Development roadmap](https://diagrampilot.com/docs/development/roadmap.md)
 - [Architecture plan](https://diagrampilot.com/docs/development/architecture.md)
 - [Market research](https://diagrampilot.com/docs/development/market-research.md)
 
 ## Status
 
-Planning stage. No runtime implementation exists yet.
+MVP implementation is in progress. The TypeScript workspace includes core
+source loading and validation, CLI commands for `init`, `validate`, `render`,
+and `export`, Mermaid and D2 export, SVG rendering through the included local D2
+path, packaged Lucide icon validation, and deterministic SVG provenance
+metadata.

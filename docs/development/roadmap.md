@@ -12,8 +12,8 @@ agent-generated diagrams.
 5. Implement validation with repairable text and JSON errors.
 6. Implement CLI commands:
    - `diagrampilot init`
-   - `diagrampilot validate <path...>`
-   - `diagrampilot validate <path...> --json`
+   - `diagrampilot validate <path>`
+   - `diagrampilot validate <path> --json`
    - `diagrampilot render <path> --out <artifact.svg>`
    - `diagrampilot export <path> --format mermaid|d2`
    - `diagrampilot export <path> --format mermaid|d2 --out <path>`

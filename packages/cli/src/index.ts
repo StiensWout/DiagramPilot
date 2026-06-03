@@ -6,6 +6,7 @@ import {
   realpathSync,
   writeFileSync,
 } from "node:fs";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -19,7 +20,11 @@ import {
 } from "@diagrampilot/core";
 import { exportDiagramSpecToD2 } from "@diagrampilot/export-d2";
 import { exportDiagramSpecToMermaid } from "@diagrampilot/export-mermaid";
-import { renderDiagramSpecToSvg } from "@diagrampilot/render-svg";
+import {
+  renderDiagramSpecToSvg,
+  SVG_RENDERER_NAME,
+  SVG_RENDERER_VERSION,
+} from "@diagrampilot/render-svg";
 
 type Writable = Pick<NodeJS.WritableStream, "write">;
 
@@ -86,6 +91,10 @@ function writeLine(stream: Writable, message: string): void {
 
 function writeJsonLine(stream: Writable, value: unknown): void {
   stream.write(`${JSON.stringify(value, null, 2)}\n`);
+}
+
+function sourceSha256(sourcePath: string): string {
+  return createHash("sha256").update(readFileSync(sourcePath)).digest("hex");
 }
 
 function helpText(): string {
@@ -655,7 +664,17 @@ async function runRender(
   const spec = result.source.value as DiagramSpec;
 
   try {
-    const renderedSvg = await renderDiagramSpecToSvg(spec);
+    const renderedSvg = await renderDiagramSpecToSvg(spec, {
+      provenance: {
+        sourcePath: result.source.path,
+        sourceSha256: sourceSha256(result.source.path),
+        diagramPilotVersion: getDiagramPilotVersion(),
+        renderer: {
+          name: SVG_RENDERER_NAME,
+          version: SVG_RENDERER_VERSION,
+        },
+      },
+    });
 
     mkdirSync(path.dirname(argsResult.options.outPath), { recursive: true });
     writeFileSync(argsResult.options.outPath, renderedSvg, "utf8");

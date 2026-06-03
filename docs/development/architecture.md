@@ -73,12 +73,12 @@ DiagramSpec utilities.
 : Creates or updates DiagramPilot support files only. It does not scan the
 codebase or generate diagrams by default.
 
-`diagrampilot validate <path...>`
-: Validates explicit DiagramPilot source file paths. It collects all safely
+`diagrampilot validate <path>`
+: Validates one explicit DiagramPilot source file path. It collects all safely
 discoverable errors, exits nonzero on failure, and validates source correctness
 only.
 
-`diagrampilot validate <path...> --json`
+`diagrampilot validate <path> --json`
 : Emits structured validation output suitable for agents and scripts.
 
 `diagrampilot render <path> --out <artifact.svg>`
@@ -107,9 +107,10 @@ The DiagramPilot install includes a pinned, platform-specific D2 rendering
 dependency. Users should not need a separate manual D2 installation or a
 first-run renderer download.
 
-Rendered SVGs should include deterministic provenance metadata, such as source
-path, DiagramPilot version, renderer version, and source hash. They should not
-include wall-clock timestamps.
+Rendered SVGs include deterministic provenance metadata inside
+`<metadata id="diagrampilot-provenance">`. The metadata records source path,
+source SHA-256 hash, DiagramPilot version, and renderer name/version. It does
+not include wall-clock timestamps.
 
 Rendering should be stable enough for code review for the same DiagramPilot
 version, renderer version, input, and environment. Do not promise perfect
