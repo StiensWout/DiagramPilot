@@ -310,3 +310,75 @@ test("createDiagramSpecTopology describes nested groups and contained node paths
     },
   ]);
 });
+
+test("createDiagramSpecTopology classifies group containment references", () => {
+  const spec = {
+    version: 1,
+    title: "Containment Reference Architecture",
+    nodes: [
+      { id: "api_gateway", label: "API Gateway" },
+      { id: "orders_db", label: "Orders DB" },
+    ],
+    edges: [
+      {
+        id: "api_gateway_to_orders_db",
+        from: "api_gateway",
+        to: "orders_db",
+      },
+    ],
+    groups: [
+      {
+        id: "backend",
+        label: "Backend",
+        contains: ["api_gateway", "services"],
+      },
+      {
+        id: "services",
+        label: "Services",
+        contains: ["api_gateway_to_orders_db", "missing_service"],
+      },
+    ],
+  };
+
+  const topology = createDiagramSpecTopology(spec);
+
+  assert.deepEqual(
+    topology.containmentReferences.map((reference) => ({
+      parentGroupId: reference.parentGroupId,
+      parentGroupIndex: reference.parentGroupIndex,
+      containedId: reference.containedId,
+      containedIndex: reference.containedIndex,
+      containedObjectType: reference.containedObjectType,
+    })),
+    [
+      {
+        parentGroupId: "backend",
+        parentGroupIndex: 0,
+        containedId: "api_gateway",
+        containedIndex: 0,
+        containedObjectType: "node",
+      },
+      {
+        parentGroupId: "backend",
+        parentGroupIndex: 0,
+        containedId: "services",
+        containedIndex: 1,
+        containedObjectType: "group",
+      },
+      {
+        parentGroupId: "services",
+        parentGroupIndex: 1,
+        containedId: "api_gateway_to_orders_db",
+        containedIndex: 0,
+        containedObjectType: "edge",
+      },
+      {
+        parentGroupId: "services",
+        parentGroupIndex: 1,
+        containedId: "missing_service",
+        containedIndex: 1,
+        containedObjectType: "unknown",
+      },
+    ],
+  );
+});
