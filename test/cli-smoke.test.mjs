@@ -1804,6 +1804,129 @@ test("diagrampilot export writes D2 to a file when out is provided", async () =>
   });
 });
 
+test("diagrampilot render writes SVG through the included local D2 path", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "architecture.dp.yaml"),
+      [
+        "version: 1",
+        "title: Checkout Architecture",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "edges:",
+        "  - id: web_app_to_api_gateway",
+        "    from: web_app",
+        "    to: api_gateway",
+        "    label: HTTPS",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      [
+        "render",
+        "docs/architecture.dp.yaml",
+        "--out",
+        "docs/architecture.svg",
+      ],
+      tempRoot,
+    );
+
+    const renderedSvg = await readFile(
+      path.join(tempRoot, "docs", "architecture.svg"),
+      "utf8",
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stdout, "");
+    assert.equal(result.stderr, "");
+    assert.match(renderedSvg, /<svg\b/);
+    assert.match(renderedSvg, /Web App/);
+    assert.match(renderedSvg, /API Gateway/);
+    assert.match(renderedSvg, /HTTPS/);
+  });
+});
+
+test("diagrampilot render requires an explicit output path", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "architecture.dp.yaml"),
+      [
+        "version: 1",
+        "title: Checkout Architecture",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["render", "docs/architecture.dp.yaml"],
+      tempRoot,
+    );
+    const docsEntries = await readdir(path.join(tempRoot, "docs"));
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(result.stderr, /Missing render output path\./);
+    assert.match(result.stderr, /Usage: diagrampilot render <path> --out <path>/);
+    assert.deepEqual(docsEntries.sort(), ["architecture.dp.yaml"]);
+  });
+});
+
+test("diagrampilot render validates input before writing SVG", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "invalid-render.dp.yaml"),
+      [
+        "version: 1",
+        "direction: sideways",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      [
+        "render",
+        "docs/invalid-render.dp.yaml",
+        "--out",
+        "docs/invalid-render.svg",
+      ],
+      tempRoot,
+    );
+    const docsEntries = await readdir(path.join(tempRoot, "docs"));
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /DiagramSpec validation error in docs\/invalid-render\.dp\.yaml: Missing required top-level field: title\./,
+    );
+    assert.match(
+      result.stderr,
+      /DiagramSpec validation error in docs\/invalid-render\.dp\.yaml: direction must be one of: right, left, down, up\./,
+    );
+    assert.doesNotMatch(result.stderr, /Unable to render/);
+    assert.deepEqual(docsEntries.sort(), ["invalid-render.dp.yaml"]);
+  });
+});
+
 test("diagrampilot export requires valid DiagramSpec input before printing Mermaid", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });

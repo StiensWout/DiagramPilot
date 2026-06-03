@@ -19,6 +19,7 @@ import {
 } from "@diagrampilot/core";
 import { exportDiagramSpecToD2 } from "@diagrampilot/export-d2";
 import { exportDiagramSpecToMermaid } from "@diagrampilot/export-mermaid";
+import { renderDiagramSpecToSvg } from "@diagrampilot/render-svg";
 
 type Writable = Pick<NodeJS.WritableStream, "write">;
 
@@ -38,6 +39,11 @@ interface ExportOptions {
   sourcePath: string;
 }
 
+interface RenderCommandOptions {
+  outPath: string;
+  sourcePath: string;
+}
+
 type ValidateArgsResult =
   | {
       ok: true;
@@ -52,6 +58,16 @@ type ExportArgsResult =
   | {
       ok: true;
       options: ExportOptions;
+    }
+  | {
+      ok: false;
+      message: string;
+    };
+
+type RenderArgsResult =
+  | {
+      ok: true;
+      options: RenderCommandOptions;
     }
   | {
       ok: false;
@@ -83,7 +99,7 @@ function helpText(): string {
     "MVP commands:",
     "  init",
     "  validate <path> [--json]",
-    "  render",
+    "  render <path> --out <path>",
     "  export <path> --format mermaid [--out <path>]",
     "  export <path> --format d2 [--out <path>]",
   ].join("\n");
@@ -408,6 +424,68 @@ function parseExportArgs(args: readonly string[]): ExportArgsResult {
   };
 }
 
+function parseRenderArgs(args: readonly string[]): RenderArgsResult {
+  let outPath: string | undefined;
+  let sourcePath: string | undefined;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+
+    if (arg === "--out") {
+      const nextArg = args[index + 1];
+
+      if (nextArg === undefined) {
+        return {
+          ok: false,
+          message: "Missing render output path.",
+        };
+      }
+
+      outPath = nextArg;
+      index += 1;
+      continue;
+    }
+
+    if (arg.startsWith("-")) {
+      return {
+        ok: false,
+        message: `Unknown render option: ${arg}`,
+      };
+    }
+
+    if (sourcePath !== undefined) {
+      return {
+        ok: false,
+        message: `Unexpected render argument: ${arg}`,
+      };
+    }
+
+    sourcePath = arg;
+  }
+
+  if (sourcePath === undefined) {
+    return {
+      ok: false,
+      message: "Missing source path.",
+    };
+  }
+
+  if (outPath === undefined) {
+    return {
+      ok: false,
+      message: "Missing render output path.",
+    };
+  }
+
+  return {
+    ok: true,
+    options: {
+      outPath,
+      sourcePath,
+    },
+  };
+}
+
 function writeStructuredValidationResult(
   streams: CliStreams,
   result: StructuredValidationResult,
@@ -539,7 +617,62 @@ function runExport(args: readonly string[], streams: CliStreams): number {
   return 0;
 }
 
-export function run(args: readonly string[], streams: CliStreams): number {
+async function runRender(
+  args: readonly string[],
+  streams: CliStreams,
+): Promise<number> {
+  const argsResult = parseRenderArgs(args);
+
+  if (!argsResult.ok) {
+    writeLine(streams.stderr, argsResult.message);
+    writeLine(
+      streams.stderr,
+      "Usage: diagrampilot render <path> --out <path>",
+    );
+    return 1;
+  }
+
+  const result = loadDiagramPilotSourceFile(argsResult.options.sourcePath);
+
+  if (!result.ok) {
+    writeLine(streams.stderr, formatSourceFailure(result.failure));
+    return 1;
+  }
+
+  const validation = validateDiagramSpec(result.source.value);
+
+  if (!validation.ok) {
+    for (const error of validation.errors) {
+      writeLine(
+        streams.stderr,
+        formatDiagramSpecValidationError(result.source.path, error),
+      );
+    }
+
+    return 1;
+  }
+
+  const spec = result.source.value as DiagramSpec;
+
+  try {
+    const renderedSvg = await renderDiagramSpecToSvg(spec);
+
+    mkdirSync(path.dirname(argsResult.options.outPath), { recursive: true });
+    writeFileSync(argsResult.options.outPath, renderedSvg, "utf8");
+    return 0;
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unable to render SVG.";
+
+    writeLine(streams.stderr, `Unable to render ${result.source.path}: ${message}`);
+    return 1;
+  }
+}
+
+export async function run(
+  args: readonly string[],
+  streams: CliStreams,
+): Promise<number> {
   const [firstArg] = args;
 
   if (firstArg === "--version" || firstArg === "-v") {
@@ -558,6 +691,10 @@ export function run(args: readonly string[], streams: CliStreams): number {
 
   if (firstArg === "validate") {
     return runValidate(args.slice(1), streams);
+  }
+
+  if (firstArg === "render") {
+    return await runRender(args.slice(1), streams);
   }
 
   if (firstArg === "export") {
@@ -588,7 +725,7 @@ function isDirectEntryPoint(): boolean {
 }
 
 if (isDirectEntryPoint()) {
-  process.exitCode = run(process.argv.slice(2), {
+  process.exitCode = await run(process.argv.slice(2), {
     stdout: process.stdout,
     stderr: process.stderr,
   });

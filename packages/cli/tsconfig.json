@@ -18,6 +18,9 @@
     },
     {
       "path": "../export-mermaid"
+    },
+    {
+      "path": "../render-svg"
     }
   ]
 }
