@@ -11,11 +11,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  type DiagramSpecValidationError,
+  createRepairableDiagnosticReport,
   getDiagramPilotVersion,
   loadValidatedDiagramSpec,
-  type SourceLoadFailure,
-  type ValidatedDiagramSpecLoadFailure,
+  type RepairableDiagnostic,
 } from "@diagrampilot/core";
 import { exportDiagramSpecToD2 } from "@diagrampilot/export-d2";
 import { exportDiagramSpecToMermaid } from "@diagrampilot/export-mermaid";
@@ -81,7 +80,7 @@ type RenderArgsResult =
 interface StructuredValidationResult {
   file: string;
   ok: boolean;
-  errors: DiagramSpecValidationError[];
+  errors: RepairableDiagnostic[];
 }
 
 function writeLine(stream: Writable, message: string): void {
@@ -225,99 +224,6 @@ function runInit(streams: CliStreams): number {
   }
 
   return 0;
-}
-
-function formatSourceFailure(failure: SourceLoadFailure): string {
-  if (failure.kind === "read") {
-    return `Unable to read ${failure.path}: ${failure.message}`;
-  }
-
-  const location =
-    failure.line === undefined || failure.column === undefined
-      ? ""
-      : ` at line ${failure.line}, column ${failure.column}`;
-  const formatLabel = failure.format.toUpperCase();
-
-  return `${formatLabel} parse error in ${failure.path}${location}: ${failure.message}`;
-}
-
-function sourceFailureToValidationError(
-  failure: SourceLoadFailure,
-): DiagramSpecValidationError {
-  if (failure.kind === "read") {
-    return {
-      path: "$",
-      message: `Unable to read ${failure.path}: ${failure.message}`,
-      expected: "Readable DiagramPilot Source File.",
-      suggestion: "Check that the source path exists and is readable.",
-    };
-  }
-
-  const location =
-    failure.line === undefined || failure.column === undefined
-      ? ""
-      : ` at line ${failure.line}, column ${failure.column}`;
-  const formatLabel = failure.format.toUpperCase();
-
-  return {
-    path: "$",
-    message: `${formatLabel} parse error${location}: ${failure.message}`,
-    expected: `Valid ${formatLabel} DiagramPilot Source File syntax.`,
-    suggestion: `Fix the ${failure.format.toUpperCase()} syntax before semantic validation.`,
-  };
-}
-
-function hasBadValue(
-  error: DiagramSpecValidationError,
-): error is DiagramSpecValidationError & { badValue: unknown } {
-  return Object.prototype.hasOwnProperty.call(error, "badValue");
-}
-
-function formatBadValue(value: unknown): string {
-  if (value === undefined) {
-    return "<missing>";
-  }
-
-  const formatted = JSON.stringify(value);
-
-  return formatted === undefined ? String(value) : formatted;
-}
-
-function formatDiagramSpecValidationError(
-  filePath: string,
-  error: DiagramSpecValidationError,
-): string {
-  const lines = [
-    `DiagramSpec validation error in ${filePath}: ${error.message}`,
-    `  Path: ${error.path}`,
-    `  Problem: ${error.message}`,
-  ];
-
-  if (hasBadValue(error)) {
-    lines.push(`  Bad value: ${formatBadValue(error.badValue)}`);
-  }
-
-  lines.push(`  Expected: ${error.expected}`);
-  lines.push(`  Suggestion: ${error.suggestion}`);
-
-  return lines.join("\n");
-}
-
-function writeTextValidatedDiagramSpecLoadFailure(
-  streams: CliStreams,
-  failure: ValidatedDiagramSpecLoadFailure,
-): void {
-  if (failure.kind !== "validation") {
-    writeLine(streams.stderr, formatSourceFailure(failure));
-    return;
-  }
-
-  for (const error of failure.errors) {
-    writeLine(
-      streams.stderr,
-      formatDiagramSpecValidationError(failure.source.path, error),
-    );
-  }
 }
 
 function parseValidateArgs(args: readonly string[]): ValidateArgsResult {
@@ -531,25 +437,18 @@ function runValidate(args: readonly string[], streams: CliStreams): number {
   const result = loadValidatedDiagramSpec(sourcePath);
 
   if (!result.ok) {
-    if (json) {
-      if (result.failure.kind === "validation") {
-        writeStructuredValidationResult(streams, {
-          file: result.failure.source.path,
-          ok: false,
-          errors: result.failure.errors,
-        });
-        return 1;
-      }
+    const report = createRepairableDiagnosticReport(result.failure);
 
+    if (json) {
       writeStructuredValidationResult(streams, {
-        file: result.failure.path,
+        file: report.file,
         ok: false,
-        errors: [sourceFailureToValidationError(result.failure)],
+        errors: report.errors,
       });
       return 1;
     }
 
-    writeTextValidatedDiagramSpecLoadFailure(streams, result.failure);
+    writeLine(streams.stderr, report.text);
     return 1;
   }
 
@@ -585,7 +484,9 @@ function runExport(args: readonly string[], streams: CliStreams): number {
   const result = loadValidatedDiagramSpec(argsResult.options.sourcePath);
 
   if (!result.ok) {
-    writeTextValidatedDiagramSpecLoadFailure(streams, result.failure);
+    const report = createRepairableDiagnosticReport(result.failure);
+
+    writeLine(streams.stderr, report.text);
     return 1;
   }
 
@@ -634,7 +535,9 @@ async function runRender(
   const result = loadValidatedDiagramSpec(argsResult.options.sourcePath);
 
   if (!result.ok) {
-    writeTextValidatedDiagramSpecLoadFailure(streams, result.failure);
+    const report = createRepairableDiagnosticReport(result.failure);
+
+    writeLine(streams.stderr, report.text);
     return 1;
   }
 
