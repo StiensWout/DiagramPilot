@@ -72,6 +72,168 @@ export interface DiagramSpec {
   metadata?: DiagramSpecMetadata;
 }
 
+interface DiagramSpecTopologyEntryBase {
+  id: string;
+  depth: number;
+  path: readonly string[];
+  parentGroupId?: string;
+}
+
+export interface DiagramSpecTopologyNodeEntry
+  extends DiagramSpecTopologyEntryBase {
+  objectType: "node";
+  node: DiagramSpecNode;
+}
+
+export interface DiagramSpecTopologyGroupEntry
+  extends DiagramSpecTopologyEntryBase {
+  objectType: "group";
+  group: DiagramSpecGroup;
+}
+
+export type DiagramSpecTopologyEntry =
+  | DiagramSpecTopologyNodeEntry
+  | DiagramSpecTopologyGroupEntry;
+
+export interface DiagramSpecTopology {
+  nodesById: ReadonlyMap<string, DiagramSpecNode>;
+  edgesById: ReadonlyMap<string, DiagramSpecEdge>;
+  groupsById: ReadonlyMap<string, DiagramSpecGroup>;
+  rootNodes: readonly DiagramSpecNode[];
+  rootGroups: readonly DiagramSpecGroup[];
+  parentGroupIdsByObjectId: ReadonlyMap<string, string>;
+  containedObjectsByGroupId: ReadonlyMap<
+    string,
+    readonly DiagramSpecTopologyEntry[]
+  >;
+  traversal: readonly DiagramSpecTopologyEntry[];
+  nodePathsById: ReadonlyMap<string, readonly string[]>;
+}
+
+export function createDiagramSpecTopology(
+  spec: DiagramSpec,
+): DiagramSpecTopology {
+  const nodesById = new Map(spec.nodes.map((node) => [node.id, node]));
+  const edgesById = new Map((spec.edges ?? []).map((edge) => [edge.id, edge]));
+  const groups = spec.groups ?? [];
+  const groupsById = new Map(
+    groups.map((group) => [group.id, group]),
+  );
+  const parentGroupIdsByObjectId = new Map<string, string>();
+  const containedObjectsByGroupId = new Map<
+    string,
+    DiagramSpecTopologyEntry[]
+  >();
+  const nodePathsById = new Map<string, readonly string[]>();
+  const traversal: DiagramSpecTopologyEntry[] = [];
+
+  for (const group of groups) {
+    for (const containedId of group.contains) {
+      parentGroupIdsByObjectId.set(containedId, group.id);
+    }
+  }
+
+  function createNodeEntry(
+    node: DiagramSpecNode,
+    depth: number,
+    path: readonly string[],
+    parentGroupId?: string,
+  ): DiagramSpecTopologyEntry {
+    nodePathsById.set(node.id, path);
+
+    return {
+      objectType: "node",
+      id: node.id,
+      depth,
+      path,
+      parentGroupId,
+      node,
+    };
+  }
+
+  function createGroupEntry(
+    group: DiagramSpecGroup,
+    depth: number,
+    path: readonly string[],
+    parentGroupId?: string,
+  ): DiagramSpecTopologyEntry {
+    return {
+      objectType: "group",
+      id: group.id,
+      depth,
+      path,
+      parentGroupId,
+      group,
+    };
+  }
+
+  function addContainedObjects(
+    group: DiagramSpecGroup,
+    depth: number,
+    parentPath: readonly string[],
+  ): void {
+    const entries: DiagramSpecTopologyEntry[] = [];
+
+    for (const containedId of group.contains) {
+      const path = [...parentPath, containedId];
+      const childGroup = groupsById.get(containedId);
+
+      if (childGroup !== undefined) {
+        const entry = createGroupEntry(childGroup, depth, path, group.id);
+
+        entries.push(entry);
+        traversal.push(entry);
+        addContainedObjects(childGroup, depth + 1, path);
+        continue;
+      }
+
+      const childNode = nodesById.get(containedId);
+
+      if (childNode !== undefined) {
+        const entry = createNodeEntry(childNode, depth, path, group.id);
+
+        entries.push(entry);
+        traversal.push(entry);
+      }
+    }
+
+    containedObjectsByGroupId.set(group.id, entries);
+  }
+
+  const rootNodes = spec.nodes.filter(
+    (node) => !parentGroupIdsByObjectId.has(node.id),
+  );
+  const rootGroups = groups.filter(
+    (group) => !parentGroupIdsByObjectId.has(group.id),
+  );
+
+  for (const node of rootNodes) {
+    const entry = createNodeEntry(node, 0, [node.id]);
+
+    traversal.push(entry);
+  }
+
+  for (const group of rootGroups) {
+    const path = [group.id];
+    const entry = createGroupEntry(group, 0, path);
+
+    traversal.push(entry);
+    addContainedObjects(group, 1, path);
+  }
+
+  return {
+    nodesById,
+    edgesById,
+    groupsById,
+    rootNodes,
+    rootGroups,
+    parentGroupIdsByObjectId,
+    containedObjectsByGroupId,
+    traversal,
+    nodePathsById,
+  };
+}
+
 export type DiagramPilotSourceFormat = "yaml" | "json";
 
 export interface DiagramPilotSourceFile {
