@@ -11,13 +11,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  type DiagramSpec,
   type DiagramSpecValidationError,
   getDiagramPilotVersion,
-  loadDiagramPilotSourceFile,
   loadValidatedDiagramSpec,
   type SourceLoadFailure,
-  validateDiagramSpec,
+  type ValidatedDiagramSpecLoadFailure,
 } from "@diagrampilot/core";
 import { exportDiagramSpecToD2 } from "@diagrampilot/export-d2";
 import { exportDiagramSpecToMermaid } from "@diagrampilot/export-mermaid";
@@ -305,6 +303,23 @@ function formatDiagramSpecValidationError(
   return lines.join("\n");
 }
 
+function writeTextValidatedDiagramSpecLoadFailure(
+  streams: CliStreams,
+  failure: ValidatedDiagramSpecLoadFailure,
+): void {
+  if (failure.kind !== "validation") {
+    writeLine(streams.stderr, formatSourceFailure(failure));
+    return;
+  }
+
+  for (const error of failure.errors) {
+    writeLine(
+      streams.stderr,
+      formatDiagramSpecValidationError(failure.source.path, error),
+    );
+  }
+}
+
 function parseValidateArgs(args: readonly string[]): ValidateArgsResult {
   let json = false;
   let sourcePath: string | undefined;
@@ -516,8 +531,8 @@ function runValidate(args: readonly string[], streams: CliStreams): number {
   const result = loadValidatedDiagramSpec(sourcePath);
 
   if (!result.ok) {
-    if (result.failure.kind === "validation") {
-      if (json) {
+    if (json) {
+      if (result.failure.kind === "validation") {
         writeStructuredValidationResult(streams, {
           file: result.failure.source.path,
           ok: false,
@@ -526,17 +541,6 @@ function runValidate(args: readonly string[], streams: CliStreams): number {
         return 1;
       }
 
-      for (const error of result.failure.errors) {
-        writeLine(
-          streams.stderr,
-          formatDiagramSpecValidationError(result.failure.source.path, error),
-        );
-      }
-
-      return 1;
-    }
-
-    if (json) {
       writeStructuredValidationResult(streams, {
         file: result.failure.path,
         ok: false,
@@ -545,7 +549,7 @@ function runValidate(args: readonly string[], streams: CliStreams): number {
       return 1;
     }
 
-    writeLine(streams.stderr, formatSourceFailure(result.failure));
+    writeTextValidatedDiagramSpecLoadFailure(streams, result.failure);
     return 1;
   }
 
@@ -578,27 +582,14 @@ function runExport(args: readonly string[], streams: CliStreams): number {
     return 1;
   }
 
-  const result = loadDiagramPilotSourceFile(argsResult.options.sourcePath);
+  const result = loadValidatedDiagramSpec(argsResult.options.sourcePath);
 
   if (!result.ok) {
-    writeLine(streams.stderr, formatSourceFailure(result.failure));
+    writeTextValidatedDiagramSpecLoadFailure(streams, result.failure);
     return 1;
   }
 
-  const validation = validateDiagramSpec(result.source.value);
-
-  if (!validation.ok) {
-    for (const error of validation.errors) {
-      writeLine(
-        streams.stderr,
-        formatDiagramSpecValidationError(result.source.path, error),
-      );
-    }
-
-    return 1;
-  }
-
-  const spec = result.source.value as DiagramSpec;
+  const spec = result.spec;
 
   if (argsResult.options.format === "mermaid") {
     const exportedText = exportDiagramSpecToMermaid(spec);
@@ -640,27 +631,14 @@ async function runRender(
     return 1;
   }
 
-  const result = loadDiagramPilotSourceFile(argsResult.options.sourcePath);
+  const result = loadValidatedDiagramSpec(argsResult.options.sourcePath);
 
   if (!result.ok) {
-    writeLine(streams.stderr, formatSourceFailure(result.failure));
+    writeTextValidatedDiagramSpecLoadFailure(streams, result.failure);
     return 1;
   }
 
-  const validation = validateDiagramSpec(result.source.value);
-
-  if (!validation.ok) {
-    for (const error of validation.errors) {
-      writeLine(
-        streams.stderr,
-        formatDiagramSpecValidationError(result.source.path, error),
-      );
-    }
-
-    return 1;
-  }
-
-  const spec = result.source.value as DiagramSpec;
+  const spec = result.spec;
 
   try {
     const renderedSvg = await renderDiagramSpecToSvg(spec, {
