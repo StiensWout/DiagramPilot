@@ -21,6 +21,7 @@ docs.
 - [ ] Rendered SVG excludes wall-clock timestamps to avoid noisy diffs.
 - [ ] End-to-end tests and docs prove an agent can follow the documented local
       workflow to validate and render a DiagramPilot Source File.
+- [ ] All documentation is fully up to date to the current codebase, there is a clear distinction between developper documentation and end user/agent documentation.
 
 ## Blocked by
 
