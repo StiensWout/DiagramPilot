@@ -95,6 +95,20 @@ export type DiagramSpecTopologyEntry =
   | DiagramSpecTopologyNodeEntry
   | DiagramSpecTopologyGroupEntry;
 
+export type DiagramSpecTopologyObjectType =
+  | "node"
+  | "edge"
+  | "group"
+  | "unknown";
+
+export interface DiagramSpecTopologyContainmentReference {
+  parentGroupId: string;
+  parentGroupIndex: number;
+  containedId: string;
+  containedIndex: number;
+  containedObjectType: DiagramSpecTopologyObjectType;
+}
+
 export interface DiagramSpecTopology {
   nodesById: ReadonlyMap<string, DiagramSpecNode>;
   edgesById: ReadonlyMap<string, DiagramSpecEdge>;
@@ -102,6 +116,7 @@ export interface DiagramSpecTopology {
   rootNodes: readonly DiagramSpecNode[];
   rootGroups: readonly DiagramSpecGroup[];
   parentGroupIdsByObjectId: ReadonlyMap<string, string>;
+  containmentReferences: readonly DiagramSpecTopologyContainmentReference[];
   containedObjectsByGroupId: ReadonlyMap<
     string,
     readonly DiagramSpecTopologyEntry[]
@@ -120,6 +135,7 @@ export function createDiagramSpecTopology(
     groups.map((group) => [group.id, group]),
   );
   const parentGroupIdsByObjectId = new Map<string, string>();
+  const containmentReferences: DiagramSpecTopologyContainmentReference[] = [];
   const containedObjectsByGroupId = new Map<
     string,
     DiagramSpecTopologyEntry[]
@@ -127,11 +143,34 @@ export function createDiagramSpecTopology(
   const nodePathsById = new Map<string, readonly string[]>();
   const traversal: DiagramSpecTopologyEntry[] = [];
 
-  for (const group of groups) {
-    for (const containedId of group.contains) {
-      parentGroupIdsByObjectId.set(containedId, group.id);
+  function getObjectType(id: string): DiagramSpecTopologyObjectType {
+    if (nodesById.has(id)) {
+      return "node";
     }
+
+    if (groupsById.has(id)) {
+      return "group";
+    }
+
+    if (edgesById.has(id)) {
+      return "edge";
+    }
+
+    return "unknown";
   }
+
+  groups.forEach((group, parentGroupIndex) => {
+    group.contains.forEach((containedId, containedIndex) => {
+      parentGroupIdsByObjectId.set(containedId, group.id);
+      containmentReferences.push({
+        parentGroupId: group.id,
+        parentGroupIndex,
+        containedId,
+        containedIndex,
+        containedObjectType: getObjectType(containedId),
+      });
+    });
+  });
 
   function createNodeEntry(
     node: DiagramSpecNode,
@@ -171,6 +210,7 @@ export function createDiagramSpecTopology(
     group: DiagramSpecGroup,
     depth: number,
     parentPath: readonly string[],
+    activeGroupIds: ReadonlySet<string>,
   ): void {
     const entries: DiagramSpecTopologyEntry[] = [];
 
@@ -183,7 +223,14 @@ export function createDiagramSpecTopology(
 
         entries.push(entry);
         traversal.push(entry);
-        addContainedObjects(childGroup, depth + 1, path);
+        if (!activeGroupIds.has(childGroup.id)) {
+          addContainedObjects(
+            childGroup,
+            depth + 1,
+            path,
+            new Set([...activeGroupIds, childGroup.id]),
+          );
+        }
         continue;
       }
 
@@ -218,7 +265,7 @@ export function createDiagramSpecTopology(
     const entry = createGroupEntry(group, 0, path);
 
     traversal.push(entry);
-    addContainedObjects(group, 1, path);
+    addContainedObjects(group, 1, path, new Set([group.id]));
   }
 
   return {
@@ -228,6 +275,7 @@ export function createDiagramSpecTopology(
     rootNodes,
     rootGroups,
     parentGroupIdsByObjectId,
+    containmentReferences,
     containedObjectsByGroupId,
     traversal,
     nodePathsById,
@@ -984,6 +1032,54 @@ function stableIdsFromCollection(collection: unknown): Set<string> {
   return ids;
 }
 
+function idsFromTopologyMap<T>(objectsById: ReadonlyMap<string, T>): Set<string> {
+  return new Set(objectsById.keys());
+}
+
+function isTopologyCompatibleObjectCollection(collection: unknown): boolean {
+  return (
+    Array.isArray(collection) &&
+    collection.every((item) => isRecord(item) && isStableId(item.id))
+  );
+}
+
+function isTopologyCompatibleGroupCollection(collection: unknown): boolean {
+  return (
+    Array.isArray(collection) &&
+    collection.every(
+      (item) =>
+        isRecord(item) &&
+        isStableId(item.id) &&
+        Array.isArray(item.contains) &&
+        item.contains.every((containedId) => typeof containedId === "string"),
+    )
+  );
+}
+
+function createDiagramSpecTopologyForValidation(
+  value: Record<string, unknown>,
+): DiagramSpecTopology | undefined {
+  if (!isTopologyCompatibleObjectCollection(value.nodes)) {
+    return undefined;
+  }
+
+  if (
+    value.edges !== undefined &&
+    !isTopologyCompatibleObjectCollection(value.edges)
+  ) {
+    return undefined;
+  }
+
+  if (
+    value.groups !== undefined &&
+    !isTopologyCompatibleGroupCollection(value.groups)
+  ) {
+    return undefined;
+  }
+
+  return createDiagramSpecTopology(value as unknown as DiagramSpec);
+}
+
 function nodeIdsExpected(nodeIds: ReadonlySet<string>): string {
   if (nodeIds.size === 0) {
     return "An existing node ID.";
@@ -1051,6 +1147,7 @@ function validateEdgeEndpoint(
 
 function validateEdgeEndpoints(
   value: Record<string, unknown>,
+  topology: DiagramSpecTopology | undefined,
   errors: DiagramSpecValidationError[],
 ): void {
   const edges = value.edges;
@@ -1059,8 +1156,14 @@ function validateEdgeEndpoints(
     return;
   }
 
-  const nodeIds = stableIdsFromCollection(value.nodes);
-  const groupIds = stableIdsFromCollection(value.groups);
+  const nodeIds =
+    topology === undefined
+      ? stableIdsFromCollection(value.nodes)
+      : idsFromTopologyMap(topology.nodesById);
+  const groupIds =
+    topology === undefined
+      ? stableIdsFromCollection(value.groups)
+      : idsFromTopologyMap(topology.groupsById);
 
   edges.forEach((edge, index) => {
     if (!isRecord(edge)) {
@@ -1086,6 +1189,7 @@ function validateEdgeEndpoints(
 
 function validateGroupContainmentReferences(
   value: Record<string, unknown>,
+  topology: DiagramSpecTopology | undefined,
   errors: DiagramSpecValidationError[],
 ): void {
   const groups = value.groups;
@@ -1094,10 +1198,53 @@ function validateGroupContainmentReferences(
     return;
   }
 
-  const nodeIds = stableIdsFromCollection(value.nodes);
-  const edgeIds = stableIdsFromCollection(value.edges);
-  const groupIds = stableIdsFromCollection(groups);
+  const nodeIds =
+    topology === undefined
+      ? stableIdsFromCollection(value.nodes)
+      : idsFromTopologyMap(topology.nodesById);
+  const edgeIds =
+    topology === undefined
+      ? stableIdsFromCollection(value.edges)
+      : idsFromTopologyMap(topology.edgesById);
+  const groupIds =
+    topology === undefined
+      ? stableIdsFromCollection(groups)
+      : idsFromTopologyMap(topology.groupsById);
   const expected = nodeOrGroupIdsExpected(nodeIds, groupIds);
+
+  if (topology !== undefined) {
+    for (const reference of topology.containmentReferences) {
+      const containedPath = `groups[${reference.parentGroupIndex}].contains[${reference.containedIndex}]`;
+
+      if (
+        reference.containedObjectType === "node" ||
+        reference.containedObjectType === "group"
+      ) {
+        continue;
+      }
+
+      if (reference.containedObjectType === "edge") {
+        errors.push({
+          path: containedPath,
+          message: `${containedPath} references edge "${reference.containedId}"; groups can contain nodes and groups only.`,
+          badValue: reference.containedId,
+          expected,
+          suggestion: `Remove ${containedPath} or change it to an existing node or group ID.`,
+        });
+        continue;
+      }
+
+      errors.push({
+        path: containedPath,
+        message: `${containedPath} references unknown node or group "${reference.containedId}".`,
+        badValue: reference.containedId,
+        expected,
+        suggestion: `Add a node or group with id "${reference.containedId}" or change ${containedPath} to an existing node or group ID.`,
+      });
+    }
+
+    return;
+  }
 
   groups.forEach((group, groupIndex) => {
     if (!isRecord(group)) {
@@ -1174,8 +1321,44 @@ interface GroupParent {
 
 function validateDuplicateGroupContainmentParentage(
   value: Record<string, unknown>,
+  topology: DiagramSpecTopology | undefined,
   errors: DiagramSpecValidationError[],
 ): void {
+  if (topology !== undefined) {
+    const parentByContainedId = new Map<string, GroupParent>();
+
+    for (const reference of topology.containmentReferences) {
+      if (
+        reference.containedObjectType !== "node" &&
+        reference.containedObjectType !== "group"
+      ) {
+        continue;
+      }
+
+      const existingParent = parentByContainedId.get(reference.containedId);
+
+      if (existingParent === undefined) {
+        parentByContainedId.set(reference.containedId, {
+          id: reference.parentGroupId,
+        });
+        continue;
+      }
+
+      const path = `groups[${reference.parentGroupIndex}].contains[${reference.containedIndex}]`;
+
+      errors.push({
+        path,
+        message: `${path} contains "${reference.containedId}", which is already contained by group "${existingParent.id}".`,
+        badValue: reference.containedId,
+        expected:
+          "Each contained node or group can have at most one parent group.",
+        suggestion: `Remove ${path} or choose a single parent group for "${reference.containedId}".`,
+      });
+    }
+
+    return;
+  }
+
   const groups = value.groups;
 
   if (!Array.isArray(groups)) {
@@ -1236,6 +1419,7 @@ interface GroupContainmentLink {
 
 function validateGroupContainmentCycles(
   value: Record<string, unknown>,
+  topology: DiagramSpecTopology | undefined,
   errors: DiagramSpecValidationError[],
 ): void {
   const groups = value.groups;
@@ -1244,34 +1428,54 @@ function validateGroupContainmentCycles(
     return;
   }
 
-  const groupIds = stableIdsFromCollection(groups);
+  const groupIds =
+    topology === undefined
+      ? stableIdsFromCollection(groups)
+      : idsFromTopologyMap(topology.groupsById);
   const linksByParentId = new Map<string, GroupContainmentLink[]>();
 
-  groups.forEach((group, groupIndex) => {
-    if (!isRecord(group) || !Array.isArray(group.contains)) {
-      return;
-    }
+  if (topology !== undefined) {
+    for (const reference of topology.containmentReferences) {
+      if (reference.containedObjectType === "group") {
+        const links =
+          linksByParentId.get(reference.parentGroupId) ?? [];
 
-    const groupId = group.id;
-
-    if (!isStableId(groupId)) {
-      return;
-    }
-
-    const links: GroupContainmentLink[] = [];
-
-    group.contains.forEach((containedId, containedIndex) => {
-      if (typeof containedId === "string" && groupIds.has(containedId)) {
         links.push({
-          childId: containedId,
-          childIndex: containedIndex,
-          parentIndex: groupIndex,
+          childId: reference.containedId,
+          childIndex: reference.containedIndex,
+          parentIndex: reference.parentGroupIndex,
         });
-      }
-    });
 
-    linksByParentId.set(groupId, links);
-  });
+        linksByParentId.set(reference.parentGroupId, links);
+      }
+    }
+  } else {
+    groups.forEach((group, groupIndex) => {
+      if (!isRecord(group) || !Array.isArray(group.contains)) {
+        return;
+      }
+
+      const groupId = group.id;
+
+      if (!isStableId(groupId)) {
+        return;
+      }
+
+      const links: GroupContainmentLink[] = [];
+
+      group.contains.forEach((containedId, containedIndex) => {
+        if (typeof containedId === "string" && groupIds.has(containedId)) {
+          links.push({
+            childId: containedId,
+            childIndex: containedIndex,
+            parentIndex: groupIndex,
+          });
+        }
+      });
+
+      linksByParentId.set(groupId, links);
+    });
+  }
 
   const visited = new Set<string>();
   const visiting = new Set<string>();
@@ -1402,10 +1606,12 @@ export function validateDiagramSpec(
   validateWellKnownMetadataReferences(value, errors);
   validateRequiredPlainTextLabels(value, errors);
   validateOptionalEdgeLabels(value, errors);
-  validateGroupContainmentReferences(value, errors);
-  validateDuplicateGroupContainmentParentage(value, errors);
-  validateGroupContainmentCycles(value, errors);
-  validateEdgeEndpoints(value, errors);
+  const topology = createDiagramSpecTopologyForValidation(value);
+
+  validateGroupContainmentReferences(value, topology, errors);
+  validateDuplicateGroupContainmentParentage(value, topology, errors);
+  validateGroupContainmentCycles(value, topology, errors);
+  validateEdgeEndpoints(value, topology, errors);
   validateEdgeDirectedValues(value, errors);
 
   if (errors.length > 0) {
