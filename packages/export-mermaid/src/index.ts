@@ -1,9 +1,11 @@
+import { createDiagramSpecTopology } from "@diagrampilot/core";
 import type {
   DiagramSpec,
   DiagramSpecDirection,
   DiagramSpecEdge,
   DiagramSpecGroup,
   DiagramSpecNode,
+  DiagramSpecTopologyEntry,
 } from "@diagrampilot/core";
 
 export const EXPORT_MERMAID_PACKAGE_NAME = "@diagrampilot/export-mermaid";
@@ -52,76 +54,42 @@ function edgeDefinition(edge: DiagramSpecEdge): string {
   return `${edge.from} ${connector}|${escapeMermaidEdgeLabel(edge.label)}| ${edge.to}`;
 }
 
-function groupParentIds(groups: readonly DiagramSpecGroup[]): Set<string> {
-  const groupIds = new Set(groups.map((group) => group.id));
-  const containedGroupIds = new Set<string>();
-
-  for (const group of groups) {
-    for (const containedId of group.contains) {
-      if (groupIds.has(containedId)) {
-        containedGroupIds.add(containedId);
-      }
-    }
-  }
-
-  return containedGroupIds;
-}
-
 export function exportDiagramSpecToMermaid(spec: DiagramSpec): string {
   const lines = [`flowchart ${mermaidDirection(spec.direction)}`];
-  const nodesById = new Map(spec.nodes.map((node) => [node.id, node]));
-  const groups = spec.groups ?? [];
-  const groupsById = new Map(groups.map((group) => [group.id, group]));
-  const containedIds = new Set(groups.flatMap((group) => group.contains));
-  const containedGroupIds = groupParentIds(groups);
-  const emittedNodes = new Set<string>();
-  const emittedGroups = new Set<string>();
+  const topology = createDiagramSpecTopology(spec);
 
   function emitNode(node: DiagramSpecNode, depth: number): void {
-    if (emittedNodes.has(node.id)) {
-      return;
-    }
-
-    emittedNodes.add(node.id);
     lines.push(`${indent(depth)}${nodeDefinition(node)}`);
   }
 
-  function emitGroup(group: DiagramSpecGroup, depth: number): void {
-    if (emittedGroups.has(group.id)) {
+  function emitTopologyEntry(
+    entry: DiagramSpecTopologyEntry,
+    depth: number,
+  ): void {
+    if (entry.objectType === "node") {
+      emitNode(entry.node, depth);
       return;
     }
 
-    emittedGroups.add(group.id);
+    emitGroup(entry.group, depth);
+  }
+
+  function emitGroup(group: DiagramSpecGroup, depth: number): void {
     lines.push(`${indent(depth)}${groupDefinition(group)}`);
 
-    for (const containedId of group.contains) {
-      const childGroup = groupsById.get(containedId);
-
-      if (childGroup !== undefined) {
-        emitGroup(childGroup, depth + 1);
-        continue;
-      }
-
-      const childNode = nodesById.get(containedId);
-
-      if (childNode !== undefined) {
-        emitNode(childNode, depth + 1);
-      }
+    for (const entry of topology.containedObjectsByGroupId.get(group.id) ?? []) {
+      emitTopologyEntry(entry, depth + 1);
     }
 
     lines.push(`${indent(depth)}end`);
   }
 
-  for (const node of spec.nodes) {
-    if (!containedIds.has(node.id)) {
-      emitNode(node, 1);
-    }
+  for (const node of topology.rootNodes) {
+    emitNode(node, 1);
   }
 
-  for (const group of groups) {
-    if (!containedGroupIds.has(group.id)) {
-      emitGroup(group, 1);
-    }
+  for (const group of topology.rootGroups) {
+    emitGroup(group, 1);
   }
 
   for (const edge of spec.edges ?? []) {
