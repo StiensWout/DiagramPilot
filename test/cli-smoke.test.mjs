@@ -515,6 +515,88 @@ test("diagrampilot validate --json emits structured repairable validation errors
   });
 });
 
+test("diagrampilot validate --json emits read diagnostics only on stdout", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const result = await runBuiltCli(
+      ["validate", "docs/missing.dp.yaml", "--json"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stderr, "");
+
+    const validationResult = JSON.parse(result.stdout);
+
+    assert.equal(validationResult.file, "docs/missing.dp.yaml");
+    assert.equal(validationResult.ok, false);
+    assert.equal(validationResult.errors.length, 1);
+    assert.deepEqual(
+      {
+        path: validationResult.errors[0].path,
+        expected: validationResult.errors[0].expected,
+        suggestion: validationResult.errors[0].suggestion,
+      },
+      {
+        path: "$",
+        expected: "Readable DiagramPilot Source File.",
+        suggestion: "Check that the source path exists and is readable.",
+      },
+    );
+    assert.match(
+      validationResult.errors[0].message,
+      /^Unable to read docs\/missing\.dp\.yaml: /,
+    );
+  });
+});
+
+test("diagrampilot validate --json emits parse diagnostics only on stdout", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "broken.dp.yaml"),
+      [
+        "version: 1",
+        "title: Broken Source",
+        "nodes: [",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/broken.dp.yaml", "--json"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stderr, "");
+    assert.doesNotMatch(
+      result.stdout,
+      /YAML parse error in docs\/broken\.dp\.yaml/,
+    );
+
+    const validationResult = JSON.parse(result.stdout);
+
+    assert.equal(validationResult.file, "docs/broken.dp.yaml");
+    assert.equal(validationResult.ok, false);
+    assert.deepEqual(
+      {
+        path: validationResult.errors[0].path,
+        expected: validationResult.errors[0].expected,
+        suggestion: validationResult.errors[0].suggestion,
+      },
+      {
+        path: "$",
+        expected: "Valid YAML DiagramPilot Source File syntax.",
+        suggestion: "Fix the YAML syntax before semantic validation.",
+      },
+    );
+    assert.match(validationResult.errors[0].message, /^YAML parse error/);
+  });
+});
+
 test("diagrampilot validate rejects an invalid stable ID shape", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });

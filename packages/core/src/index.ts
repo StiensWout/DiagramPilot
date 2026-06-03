@@ -80,12 +80,20 @@ export interface DiagramPilotSourceFile {
   value: unknown;
 }
 
-export interface DiagramSpecValidationError {
+export interface RepairableDiagnostic {
   path: string;
   message: string;
   badValue?: unknown;
   expected: string;
   suggestion: string;
+}
+
+export interface DiagramSpecValidationError extends RepairableDiagnostic {}
+
+export interface RepairableDiagnosticReport {
+  file: string;
+  errors: RepairableDiagnostic[];
+  text: string;
 }
 
 export type DiagramSpecValidationResult =
@@ -143,6 +151,102 @@ export type ValidatedDiagramSpecLoadResult =
       ok: false;
       failure: ValidatedDiagramSpecLoadFailure;
     };
+
+function formatSourceFailure(failure: SourceLoadFailure): string {
+  if (failure.kind === "read") {
+    return `Unable to read ${failure.path}: ${failure.message}`;
+  }
+
+  const location =
+    failure.line === undefined || failure.column === undefined
+      ? ""
+      : ` at line ${failure.line}, column ${failure.column}`;
+  const formatLabel = failure.format.toUpperCase();
+
+  return `${formatLabel} parse error in ${failure.path}${location}: ${failure.message}`;
+}
+
+function sourceFailureToRepairableDiagnostic(
+  failure: SourceLoadFailure,
+): RepairableDiagnostic {
+  if (failure.kind === "read") {
+    return {
+      path: "$",
+      message: `Unable to read ${failure.path}: ${failure.message}`,
+      expected: "Readable DiagramPilot Source File.",
+      suggestion: "Check that the source path exists and is readable.",
+    };
+  }
+
+  const location =
+    failure.line === undefined || failure.column === undefined
+      ? ""
+      : ` at line ${failure.line}, column ${failure.column}`;
+  const formatLabel = failure.format.toUpperCase();
+
+  return {
+    path: "$",
+    message: `${formatLabel} parse error${location}: ${failure.message}`,
+    expected: `Valid ${formatLabel} DiagramPilot Source File syntax.`,
+    suggestion: `Fix the ${failure.format.toUpperCase()} syntax before semantic validation.`,
+  };
+}
+
+function hasBadValue(
+  error: RepairableDiagnostic,
+): error is RepairableDiagnostic & { badValue: unknown } {
+  return Object.prototype.hasOwnProperty.call(error, "badValue");
+}
+
+function formatBadValue(value: unknown): string {
+  if (value === undefined) {
+    return "<missing>";
+  }
+
+  const formatted = JSON.stringify(value);
+
+  return formatted === undefined ? String(value) : formatted;
+}
+
+function formatRepairableDiagnostic(
+  filePath: string,
+  error: RepairableDiagnostic,
+): string {
+  const lines = [
+    `DiagramSpec validation error in ${filePath}: ${error.message}`,
+    `  Path: ${error.path}`,
+    `  Problem: ${error.message}`,
+  ];
+
+  if (hasBadValue(error)) {
+    lines.push(`  Bad value: ${formatBadValue(error.badValue)}`);
+  }
+
+  lines.push(`  Expected: ${error.expected}`);
+  lines.push(`  Suggestion: ${error.suggestion}`);
+
+  return lines.join("\n");
+}
+
+export function createRepairableDiagnosticReport(
+  failure: ValidatedDiagramSpecLoadFailure,
+): RepairableDiagnosticReport {
+  if (failure.kind !== "validation") {
+    return {
+      file: failure.path,
+      errors: [sourceFailureToRepairableDiagnostic(failure)],
+      text: formatSourceFailure(failure),
+    };
+  }
+
+  return {
+    file: failure.source.path,
+    errors: failure.errors,
+    text: failure.errors
+      .map((error) => formatRepairableDiagnostic(failure.source.path, error))
+      .join("\n"),
+  };
+}
 
 function firstLinePosition(error: YAMLError): { line?: number; column?: number } {
   const [linePosition] = error.linePos ?? [];

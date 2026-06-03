@@ -14,3 +14,12 @@ test("CLI commands use validated DiagramSpec loading instead of lower-level load
   assert.doesNotMatch(cliSource, /\bloadDiagramPilotSourceFile\b/);
   assert.doesNotMatch(cliSource, /\bvalidateDiagramSpec\b/);
 });
+
+test("CLI commands route load failures through centralized repairable diagnostics", async () => {
+  const cliSource = await readFile(cliSourcePath, "utf8");
+
+  assert.match(cliSource, /\bcreateRepairableDiagnosticReport\b/);
+  assert.doesNotMatch(cliSource, /\bformatSourceFailure\b/);
+  assert.doesNotMatch(cliSource, /\bsourceFailureToValidationError\b/);
+  assert.doesNotMatch(cliSource, /\bformatDiagramSpecValidationError\b/);
+});
