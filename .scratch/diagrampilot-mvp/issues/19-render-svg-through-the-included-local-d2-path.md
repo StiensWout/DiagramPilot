@@ -74,3 +74,8 @@ grep -q '<svg' "$tmpdir/docs/architecture.svg"
 
   Confirm the render command exits zero, writes `docs/architecture.svg`, and
   the SVG contains the expected labels.
+
+Maintainer approval 2026-06-03:
+
+The implementation change was approved after review. Status remains
+`completed`.
