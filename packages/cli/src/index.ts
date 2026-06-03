@@ -13,12 +13,15 @@ import {
   createRepairableDiagnosticReport,
   getDiagramPilotVersion,
   loadValidatedDiagramSpec,
-  type RepairableDiagnostic,
+  type DiagramSpec,
+  type ValidatedDiagramSpecLoadResult,
 } from "@diagrampilot/core";
 import { exportDiagramSpecToD2 } from "@diagrampilot/export-d2";
 import { exportDiagramSpecToMermaid } from "@diagrampilot/export-mermaid";
 import {
   createSvgRendererProvenance,
+  type CreateSvgRendererProvenanceOptions,
+  type SvgRendererProvenance,
   renderDiagramSpecToSvg,
 } from "@diagrampilot/render-svg";
 
@@ -75,23 +78,58 @@ type RenderArgsResult =
       message: string;
     };
 
-interface StructuredValidationResult {
-  file: string;
-  ok: boolean;
-  errors: RepairableDiagnostic[];
+export interface CommandWriteIntent {
+  path: string;
+  content: string;
 }
+
+export interface CommandPlan {
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+  writes: CommandWriteIntent[];
+}
+
+export interface CommandPlanningDependencies {
+  loadValidatedDiagramSpec(path: string): ValidatedDiagramSpecLoadResult;
+  exportDiagramSpecToMermaid(spec: DiagramSpec): string;
+  exportDiagramSpecToD2(spec: DiagramSpec): string;
+  readSourceContent(path: string): string | Uint8Array;
+  renderDiagramSpecToSvg(
+    spec: DiagramSpec,
+    options: { provenance?: SvgRendererProvenance },
+  ): Promise<string>;
+  createSvgRendererProvenance(
+    options: CreateSvgRendererProvenanceOptions,
+  ): SvgRendererProvenance;
+  getDiagramPilotVersion(): string;
+}
+
+const defaultCommandPlanningDependencies: CommandPlanningDependencies = {
+  loadValidatedDiagramSpec,
+  exportDiagramSpecToMermaid,
+  exportDiagramSpecToD2,
+  readSourceContent: (sourcePath) => readFileSync(sourcePath),
+  renderDiagramSpecToSvg,
+  createSvgRendererProvenance,
+  getDiagramPilotVersion,
+};
 
 function writeLine(stream: Writable, message: string): void {
   stream.write(`${message}\n`);
 }
 
-function writeJsonLine(stream: Writable, value: unknown): void {
-  stream.write(`${JSON.stringify(value, null, 2)}\n`);
+function textLine(message: string): string {
+  return `${message}\n`;
 }
 
-function helpText(): string {
+function jsonTextLine(value: unknown): string {
+  return `${JSON.stringify(value, null, 2)}\n`;
+}
+
+function helpText(version = getDiagramPilotVersion()): string {
   return [
-    `diagrampilot ${getDiagramPilotVersion()}`,
+    `diagrampilot ${version}`,
     "",
     "Usage:",
     "  diagrampilot --version",
@@ -411,150 +449,267 @@ function parseRenderArgs(args: readonly string[]): RenderArgsResult {
   };
 }
 
-function writeStructuredValidationResult(
-  streams: CliStreams,
-  result: StructuredValidationResult,
-): void {
-  writeJsonLine(streams.stdout, result);
-}
-
-function runValidate(args: readonly string[], streams: CliStreams): number {
+function planValidate(
+  args: readonly string[],
+  dependencies: CommandPlanningDependencies,
+): CommandPlan {
   const argsResult = parseValidateArgs(args);
 
   if (!argsResult.ok) {
-    writeLine(streams.stderr, argsResult.message);
-    writeLine(streams.stderr, "Usage: diagrampilot validate <path> [--json]");
-    return 1;
+    return {
+      exitCode: 1,
+      stdout: "",
+      stderr: [
+        argsResult.message,
+        "Usage: diagrampilot validate <path> [--json]",
+        "",
+      ].join("\n"),
+      writes: [],
+    };
   }
 
   const { json, sourcePath } = argsResult.options;
-  const result = loadValidatedDiagramSpec(sourcePath);
+  const result = dependencies.loadValidatedDiagramSpec(sourcePath);
 
   if (!result.ok) {
     const report = createRepairableDiagnosticReport(result.failure);
 
     if (json) {
-      writeStructuredValidationResult(streams, {
-        file: report.file,
-        ok: false,
-        errors: report.errors,
-      });
-      return 1;
+      return {
+        exitCode: 1,
+        stdout: jsonTextLine({
+          file: report.file,
+          ok: false,
+          errors: report.errors,
+        }),
+        stderr: "",
+        writes: [],
+      };
     }
 
-    writeLine(streams.stderr, report.text);
-    return 1;
+    return {
+      exitCode: 1,
+      stdout: "",
+      stderr: textLine(report.text),
+      writes: [],
+    };
   }
 
   if (json) {
-    writeStructuredValidationResult(streams, {
-      file: result.source.path,
-      ok: true,
-      errors: [],
-    });
-    return 0;
+    return {
+      exitCode: 0,
+      stdout: jsonTextLine({
+        file: result.source.path,
+        ok: true,
+        errors: [],
+      }),
+      stderr: "",
+      writes: [],
+    };
   }
 
-  writeLine(streams.stdout, `Valid ${result.source.path}`);
-  return 0;
+  return {
+    exitCode: 0,
+    stdout: textLine(`Valid ${result.source.path}`),
+    stderr: "",
+    writes: [],
+  };
 }
 
-function runExport(args: readonly string[], streams: CliStreams): number {
+function exportUsageText(): string {
+  return [
+    "Usage:",
+    "  diagrampilot export <path> --format mermaid [--out <path>]",
+    "  diagrampilot export <path> --format d2 [--out <path>]",
+  ].join("\n");
+}
+
+function planExport(
+  args: readonly string[],
+  dependencies: CommandPlanningDependencies,
+): CommandPlan {
   const argsResult = parseExportArgs(args);
 
   if (!argsResult.ok) {
-    writeLine(streams.stderr, argsResult.message);
-    writeLine(
-      streams.stderr,
-      [
-        "Usage:",
-        "  diagrampilot export <path> --format mermaid [--out <path>]",
-        "  diagrampilot export <path> --format d2 [--out <path>]",
-      ].join("\n"),
-    );
-    return 1;
+    return {
+      exitCode: 1,
+      stdout: "",
+      stderr: [argsResult.message, exportUsageText(), ""].join("\n"),
+      writes: [],
+    };
   }
 
-  const result = loadValidatedDiagramSpec(argsResult.options.sourcePath);
+  const result = dependencies.loadValidatedDiagramSpec(
+    argsResult.options.sourcePath,
+  );
 
   if (!result.ok) {
     const report = createRepairableDiagnosticReport(result.failure);
 
-    writeLine(streams.stderr, report.text);
-    return 1;
+    return {
+      exitCode: 1,
+      stdout: "",
+      stderr: textLine(report.text),
+      writes: [],
+    };
   }
 
-  const spec = result.spec;
-
-  if (argsResult.options.format === "mermaid") {
-    const exportedText = exportDiagramSpecToMermaid(spec);
-
-    if (argsResult.options.outPath !== undefined) {
-      mkdirSync(path.dirname(argsResult.options.outPath), { recursive: true });
-      writeFileSync(argsResult.options.outPath, exportedText, "utf8");
-      return 0;
-    }
-
-    streams.stdout.write(exportedText);
-    return 0;
-  }
-
-  const exportedText = exportDiagramSpecToD2(spec);
+  const exportedText =
+    argsResult.options.format === "mermaid"
+      ? dependencies.exportDiagramSpecToMermaid(result.spec)
+      : dependencies.exportDiagramSpecToD2(result.spec);
 
   if (argsResult.options.outPath !== undefined) {
-    mkdirSync(path.dirname(argsResult.options.outPath), { recursive: true });
-    writeFileSync(argsResult.options.outPath, exportedText, "utf8");
-    return 0;
+    return {
+      exitCode: 0,
+      stdout: "",
+      stderr: "",
+      writes: [
+        {
+          path: argsResult.options.outPath,
+          content: exportedText,
+        },
+      ],
+    };
   }
 
-  streams.stdout.write(exportedText);
-  return 0;
+  return {
+    exitCode: 0,
+    stdout: exportedText,
+    stderr: "",
+    writes: [],
+  };
 }
 
-async function runRender(
+async function planRender(
   args: readonly string[],
-  streams: CliStreams,
-): Promise<number> {
+  dependencies: CommandPlanningDependencies,
+): Promise<CommandPlan> {
   const argsResult = parseRenderArgs(args);
 
   if (!argsResult.ok) {
-    writeLine(streams.stderr, argsResult.message);
-    writeLine(
-      streams.stderr,
-      "Usage: diagrampilot render <path> --out <path>",
-    );
-    return 1;
+    return {
+      exitCode: 1,
+      stdout: "",
+      stderr: [
+        argsResult.message,
+        "Usage: diagrampilot render <path> --out <path>",
+        "",
+      ].join("\n"),
+      writes: [],
+    };
   }
 
-  const result = loadValidatedDiagramSpec(argsResult.options.sourcePath);
+  const result = dependencies.loadValidatedDiagramSpec(
+    argsResult.options.sourcePath,
+  );
 
   if (!result.ok) {
     const report = createRepairableDiagnosticReport(result.failure);
 
-    writeLine(streams.stderr, report.text);
-    return 1;
+    return {
+      exitCode: 1,
+      stdout: "",
+      stderr: textLine(report.text),
+      writes: [],
+    };
   }
 
-  const spec = result.spec;
-
   try {
-    const renderedSvg = await renderDiagramSpecToSvg(spec, {
-      provenance: createSvgRendererProvenance({
+    const renderedSvg = await dependencies.renderDiagramSpecToSvg(result.spec, {
+      provenance: dependencies.createSvgRendererProvenance({
         sourcePath: result.source.path,
-        sourceContent: readFileSync(result.source.path),
+        sourceContent: dependencies.readSourceContent(result.source.path),
       }),
     });
 
-    mkdirSync(path.dirname(argsResult.options.outPath), { recursive: true });
-    writeFileSync(argsResult.options.outPath, renderedSvg, "utf8");
-    return 0;
+    return {
+      exitCode: 0,
+      stdout: "",
+      stderr: "",
+      writes: [
+        {
+          path: argsResult.options.outPath,
+          content: renderedSvg,
+        },
+      ],
+    };
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to render SVG.";
 
-    writeLine(streams.stderr, `Unable to render ${result.source.path}: ${message}`);
-    return 1;
+    return {
+      exitCode: 1,
+      stdout: "",
+      stderr: textLine(`Unable to render ${result.source.path}: ${message}`),
+      writes: [],
+    };
   }
+}
+
+export async function planCommand(
+  args: readonly string[],
+  dependencies: CommandPlanningDependencies = defaultCommandPlanningDependencies,
+): Promise<CommandPlan> {
+  const [firstArg] = args;
+
+  if (firstArg === "--version" || firstArg === "-v") {
+    return {
+      exitCode: 0,
+      stdout: textLine(`diagrampilot ${dependencies.getDiagramPilotVersion()}`),
+      stderr: "",
+      writes: [],
+    };
+  }
+
+  if (firstArg === undefined || firstArg === "--help" || firstArg === "-h") {
+    return {
+      exitCode: 0,
+      stdout: textLine(helpText(dependencies.getDiagramPilotVersion())),
+      stderr: "",
+      writes: [],
+    };
+  }
+
+  if (firstArg === "validate") {
+    return planValidate(args.slice(1), dependencies);
+  }
+
+  if (firstArg === "export") {
+    return planExport(args.slice(1), dependencies);
+  }
+
+  if (firstArg === "render") {
+    return await planRender(args.slice(1), dependencies);
+  }
+
+  return {
+    exitCode: 1,
+    stdout: "",
+    stderr: [
+      `Unknown command or option: ${firstArg}`,
+      "Run `diagrampilot --help` for usage.",
+      "",
+    ].join("\n"),
+    writes: [],
+  };
+}
+
+function executeCommandPlan(plan: CommandPlan, streams: CliStreams): number {
+  if (plan.stdout !== "") {
+    streams.stdout.write(plan.stdout);
+  }
+
+  if (plan.stderr !== "") {
+    streams.stderr.write(plan.stderr);
+  }
+
+  for (const write of plan.writes) {
+    mkdirSync(path.dirname(write.path), { recursive: true });
+    writeFileSync(write.path, write.content, "utf8");
+  }
+
+  return plan.exitCode;
 }
 
 export async function run(
@@ -563,35 +718,11 @@ export async function run(
 ): Promise<number> {
   const [firstArg] = args;
 
-  if (firstArg === "--version" || firstArg === "-v") {
-    writeLine(streams.stdout, `diagrampilot ${getDiagramPilotVersion()}`);
-    return 0;
-  }
-
-  if (firstArg === undefined || firstArg === "--help" || firstArg === "-h") {
-    writeLine(streams.stdout, helpText());
-    return 0;
-  }
-
   if (firstArg === "init") {
     return runInit(streams);
   }
 
-  if (firstArg === "validate") {
-    return runValidate(args.slice(1), streams);
-  }
-
-  if (firstArg === "render") {
-    return await runRender(args.slice(1), streams);
-  }
-
-  if (firstArg === "export") {
-    return runExport(args.slice(1), streams);
-  }
-
-  writeLine(streams.stderr, `Unknown command or option: ${firstArg}`);
-  writeLine(streams.stderr, "Run `diagrampilot --help` for usage.");
-  return 1;
+  return executeCommandPlan(await planCommand(args), streams);
 }
 
 function realpathIfPresent(filePath: string): string {
