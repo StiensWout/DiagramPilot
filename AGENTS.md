@@ -14,8 +14,12 @@ repairable errors.
   DiagramSpec.
 - Preserve existing IDs when updating diagrams.
 - Validate before rendering.
+- Local issue numbers under `.scratch/` must be globally unique across all
+  PRD directories. Before creating or renaming issue files, scan existing
+  `.scratch/**/issues/<NN>-*.md` files and use the next unused number.
 - Create a new git branch for every issue or task before making implementation
-  edits. Include the issue number and slug in the branch name when available.
+  edits. Include the globally unique issue number and slug in the branch name
+  when available.
 - Create task branches without tracking `origin/main`; for example:
   `git switch --create issue-17-write-d2-export-only-when-out-provided --no-track origin/main`.
 - After committing implementation work, push the current branch to a matching
@@ -63,9 +67,12 @@ source of truth.
 ## Useful Docs
 
 - `llms.txt`: public agent documentation index.
-- `docs/agents/quickstart.md`: shortest path for creating a diagram.
-- `docs/agents/spec.md`: expected spec structure.
-- `docs/agents/error-repair.md`: how to fix invalid specs.
+- `docs-public/agents/quickstart.md`: shortest path for creating a diagram.
+- `docs-public/agents/spec.md`: expected spec structure.
+- `docs-public/agents/error-repair.md`: how to fix invalid specs.
+- `docs-public/agents/examples.md`: canonical diagram examples.
+- `docs-public/agents/mcp.md`: planned MCP interface notes.
+- `docs-public/agents/prompting.md`: recommended prompts for agents.
 - `docs/agents/issue-tracker.md`: local markdown issue and PRD workflow.
 - `docs/agents/triage-labels.md`: status vocabulary for triage.
 - `docs/agents/domain.md`: domain-doc lookup rules for engineering skills.
@@ -80,6 +87,7 @@ source of truth.
 
 Issues and PRDs are tracked as local markdown files under `.scratch/`. See
 `docs/agents/issue-tracker.md`.
+Issue numbers must not overlap between PRD directories.
 
 ### Triage labels
 

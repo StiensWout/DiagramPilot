@@ -101,7 +101,7 @@ Deferred:
 - Drag-and-drop editor.
 - Prompt-only SaaS generation.
 
-## Agent And User Documentation
+## Public Documentation
 
 - [Agent quickstart](https://diagrampilot.com/docs/agents/quickstart.md)
 - [DiagramSpec guide](https://diagrampilot.com/docs/agents/spec.md)
@@ -110,11 +110,15 @@ Deferred:
 - [MCP plan](https://diagrampilot.com/docs/agents/mcp.md)
 - [Agent prompting guide](https://diagrampilot.com/docs/agents/prompting.md)
 
-## Development Documentation
+## Internal Documentation
 
-- [Development roadmap](https://diagrampilot.com/docs/development/roadmap.md)
-- [Architecture plan](https://diagrampilot.com/docs/development/architecture.md)
-- [Market research](https://diagrampilot.com/docs/development/market-research.md)
+- [Development roadmap](docs/development/roadmap.md)
+- [Architecture notes](docs/development/architecture.md)
+- [Market research](docs/development/market-research.md)
+- [Issue tracker workflow](docs/agents/issue-tracker.md)
+- [Triage labels](docs/agents/triage-labels.md)
+- [Domain docs](docs/agents/domain.md)
+- [Public/internal docs split ADR](docs/adr/0006-public-docs-live-under-docs-public.md)
 
 ## Status
 

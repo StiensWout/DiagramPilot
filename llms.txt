@@ -10,7 +10,7 @@ the primary source of truth.
 
 Public documentation is hosted under `https://diagrampilot.com`.
 
-## Agent And User Docs
+## Public Documentation
 
 - [Agent quickstart](https://diagrampilot.com/docs/agents/quickstart.md): Minimal workflow for creating, validating, rendering, and exporting diagrams.
 - [DiagramSpec](https://diagrampilot.com/docs/agents/spec.md): Structured source model for diagrams.
@@ -18,12 +18,6 @@ Public documentation is hosted under `https://diagrampilot.com`.
 - [Examples](https://diagrampilot.com/docs/agents/examples.md): Canonical diagram examples.
 - [MCP tools](https://diagrampilot.com/docs/agents/mcp.md): Planned Model Context Protocol interface after the CLI/core workflow is useful.
 - [Prompting guide](https://diagrampilot.com/docs/agents/prompting.md): Recommended instructions for agents using DiagramPilot.
-
-## Development Docs
-
-- [Roadmap](https://diagrampilot.com/docs/development/roadmap.md): MVP phases and priorities.
-- [Architecture](https://diagrampilot.com/docs/development/architecture.md): Current packages, data flow, and constraints.
-- [Market research](https://diagrampilot.com/docs/development/market-research.md): Competitive findings and positioning.
 
 ## Current CLI
 
