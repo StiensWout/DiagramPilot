@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   chmod,
   mkdir,
@@ -91,6 +92,10 @@ async function withTempRepo(run) {
 
 function occurrenceCount(text, pattern) {
   return text.match(pattern)?.length ?? 0;
+}
+
+function sha256Hex(text) {
+  return createHash("sha256").update(text).digest("hex");
 }
 
 test("diagrampilot executable starts and reports its version", async () => {
@@ -1850,6 +1855,91 @@ test("diagrampilot render writes SVG through the included local D2 path", async 
     assert.match(renderedSvg, /Web App/);
     assert.match(renderedSvg, /API Gateway/);
     assert.match(renderedSvg, /HTTPS/);
+  });
+});
+
+test("agent quickstart workflow renders SVG with deterministic provenance", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    const sourceText = [
+      "version: 1",
+      "title: Checkout Architecture",
+      "direction: right",
+      "nodes:",
+      "  - id: web_app",
+      "    label: Web App",
+      "    kind: frontend",
+      "  - id: api_gateway",
+      "    label: API Gateway",
+      "    kind: service",
+      "    icon: lucide:server",
+      "  - id: orders_db",
+      "    label: Orders DB",
+      "    kind: database",
+      "    icon: lucide:database",
+      "edges:",
+      "  - id: web_app_to_api_gateway",
+      "    from: web_app",
+      "    to: api_gateway",
+      "    label: HTTPS",
+      "  - id: api_gateway_to_orders_db",
+      "    from: api_gateway",
+      "    to: orders_db",
+      "    label: reads/writes",
+      "",
+    ].join("\n");
+
+    await writeFile(
+      path.join(tempRoot, "docs", "architecture.dp.yaml"),
+      sourceText,
+      "utf8",
+    );
+
+    const validation = await runBuiltCli(
+      ["validate", "docs/architecture.dp.yaml"],
+      tempRoot,
+    );
+    const render = await runBuiltCli(
+      [
+        "render",
+        "docs/architecture.dp.yaml",
+        "--out",
+        "docs/architecture.svg",
+      ],
+      tempRoot,
+    );
+
+    const renderedSvg = await readFile(
+      path.join(tempRoot, "docs", "architecture.svg"),
+      "utf8",
+    );
+    const provenanceMatch = /<metadata id="diagrampilot-provenance">(?<json>.*?)<\/metadata>/s.exec(
+      renderedSvg,
+    );
+
+    assert.equal(validation.signal, null);
+    assert.equal(validation.code, 0, validation.stderr);
+    assert.equal(validation.stderr, "");
+    assert.equal(validation.stdout, "Valid docs/architecture.dp.yaml\n");
+    assert.equal(render.signal, null);
+    assert.equal(render.code, 0, render.stderr);
+    assert.equal(render.stdout, "");
+    assert.equal(render.stderr, "");
+    assert.match(renderedSvg, /<svg\b/);
+    assert.notEqual(provenanceMatch, null);
+
+    const provenance = JSON.parse(provenanceMatch.groups.json);
+
+    assert.deepEqual(provenance, {
+      sourcePath: "docs/architecture.dp.yaml",
+      sourceSha256: sha256Hex(sourceText),
+      diagramPilotVersion: "0.1.0",
+      renderer: {
+        name: "@terrastruct/d2",
+        version: "0.1.33",
+      },
+    });
+    assert.doesNotMatch(renderedSvg, /timestamp|renderedAt|createdAt|date/iu);
   });
 });
 

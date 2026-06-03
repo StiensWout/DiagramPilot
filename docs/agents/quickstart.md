@@ -48,16 +48,19 @@ diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architectur
 : Creates or updates DiagramPilot support files only. It does not scan the
 codebase or generate a diagram by default.
 
-`diagrampilot validate <path...>`
-: Validates explicit DiagramPilot source file paths. Validation reports
+`diagrampilot validate <path>`
+: Validates one explicit DiagramPilot source file path. Validation reports
 source-file correctness only; it does not check whether generated artifacts are
 fresh.
 
-`diagrampilot validate <path...> --json`
+`diagrampilot validate <path> --json`
 : Emits structured repairable validation errors for agents and scripts.
 
 `diagrampilot render <path> --out <artifact.svg>`
-: Renders a valid DiagramPilot source file to SVG. `--out` is required.
+: Renders a valid DiagramPilot source file to SVG. `--out` is required. The SVG
+includes deterministic provenance metadata with the source path, source
+SHA-256 hash, DiagramPilot version, and renderer version. It does not include
+wall-clock timestamps.
 
 `diagrampilot export <path> --format mermaid|d2`
 : Prints an exported text format to stdout.
@@ -115,6 +118,7 @@ The agent should leave the project with:
 
 - A valid DiagramPilot source file.
 - A rendered SVG artifact when requested.
+- Deterministic SVG provenance metadata when rendering.
 - No broken references between nodes, groups, or edges.
 - A short note explaining what the diagram shows.
 
