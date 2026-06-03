@@ -23,6 +23,7 @@
   "dependencies": {
     "@diagrampilot/core": "0.1.0",
     "@diagrampilot/export-d2": "0.1.0",
-    "@diagrampilot/export-mermaid": "0.1.0"
+    "@diagrampilot/export-mermaid": "0.1.0",
+    "@diagrampilot/render-svg": "0.1.0"
   }
 }
