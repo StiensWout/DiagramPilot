@@ -1,4 +1,6 @@
-import type { DiagramSpec } from "@diagrampilot/core";
+import { createHash } from "node:crypto";
+
+import { getDiagramPilotVersion, type DiagramSpec } from "@diagrampilot/core";
 import { exportDiagramSpecToD2 } from "@diagrampilot/export-d2";
 import { D2 } from "@terrastruct/d2";
 
@@ -14,6 +16,11 @@ export interface SvgRendererProvenance {
     name: string;
     version: string;
   };
+}
+
+export interface CreateSvgRendererProvenanceOptions {
+  sourcePath: string;
+  sourceContent: string | Uint8Array;
 }
 
 export interface RenderDiagramSpecToSvgOptions {
@@ -36,7 +43,23 @@ async function terminateD2Worker(d2: D2): Promise<void> {
   await worker.terminate();
 }
 
-function addProvenanceMetadata(
+export function createSvgRendererProvenance(
+  options: CreateSvgRendererProvenanceOptions,
+): SvgRendererProvenance {
+  return {
+    sourcePath: options.sourcePath,
+    sourceSha256: createHash("sha256")
+      .update(options.sourceContent)
+      .digest("hex"),
+    diagramPilotVersion: getDiagramPilotVersion(),
+    renderer: {
+      name: SVG_RENDERER_NAME,
+      version: SVG_RENDERER_VERSION,
+    },
+  };
+}
+
+export function addSvgProvenanceMetadata(
   svg: string,
   provenance: SvgRendererProvenance,
 ): string {
@@ -71,7 +94,7 @@ export async function renderDiagramSpecToSvg(
       return renderedSvg;
     }
 
-    return addProvenanceMetadata(renderedSvg, options.provenance);
+    return addSvgProvenanceMetadata(renderedSvg, options.provenance);
   } finally {
     await terminateD2Worker(d2);
   }
