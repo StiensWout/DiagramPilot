@@ -12,7 +12,7 @@ Public documentation is hosted under `https://diagrampilot.com`.
 
 ## Public Documentation
 
-- [Agent quickstart](https://diagrampilot.com/docs/agents/quickstart.md): Minimal workflow for creating, validating, rendering, and exporting diagrams.
+- [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md): Worked demo workflow for validating, rendering, checking provenance, and exporting diagrams.
 - [DiagramSpec](https://diagrampilot.com/docs/agents/spec.md): Structured source model for diagrams.
 - [Error repair](https://diagrampilot.com/docs/agents/error-repair.md): How agents should interpret and fix validation errors.
 - [Examples](https://diagrampilot.com/docs/agents/examples.md): Canonical diagram examples.

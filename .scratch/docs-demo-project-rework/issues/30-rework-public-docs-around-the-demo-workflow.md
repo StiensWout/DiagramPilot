@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: completed
 
 # Rework public docs around the Demo Project workflow
 
@@ -17,18 +17,39 @@ maintainer workflow guidance.
 
 ## Acceptance criteria
 
-- [ ] The public quickstart uses the Checkout Demo Project as the primary
+- [x] The public quickstart uses the Checkout Demo Project as the primary
       worked workflow.
-- [ ] Public docs explain DiagramPilot Source Files, Derived Artifacts,
+- [x] Public docs explain DiagramPilot Source Files, Derived Artifacts,
       validation before rendering, SVG provenance, and export stdout/file
       behavior using current CLI behavior.
-- [ ] Public examples are corrected so they do not reference stale packages or
+- [x] Public examples are corrected so they do not reference stale packages or
       deferred features as current behavior.
-- [ ] README navigation points users and agents to the public demo workflow.
-- [ ] Public docs remain Agent-First Documentation with explicit paths,
+- [x] README navigation points users and agents to the public demo workflow.
+- [x] Public docs remain Agent-First Documentation with explicit paths,
       commands, and validation expectations.
 
 ## Blocked by
 
 - [01 Split Public Documentation and Internal Documentation roots](./01-split-public-and-internal-documentation-roots.md)
 - [02 Add the Checkout Demo Project fixture](./02-add-the-checkout-demo-project-fixture.md)
+
+## Implementation notes
+
+- Reworked `docs-public/agents/quickstart.md` around the Checkout Demo Project
+  workflow at `demo-projects/checkout`.
+- Documented the demo DiagramPilot Source File, Derived Artifacts, validation
+  expectations, SVG provenance keys, render `--out` behavior, and export
+  stdout/file behavior.
+- Updated `README.md` and `llms.txt` so public navigation points to the checkout
+  demo quickstart.
+- Corrected the public package dependency example to use current workspace
+  packages and packaged Lucide icons.
+- Expanded `test/docs-public-boundary.test.mjs` to cover the demo workflow,
+  current artifact/CLI behavior, public examples, and packaged example icons.
+
+## Validation plan
+
+```bash
+node --test test/docs-public-boundary.test.mjs
+npm test
+```

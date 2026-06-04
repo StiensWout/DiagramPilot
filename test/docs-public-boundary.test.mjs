@@ -110,3 +110,94 @@ test("README keeps public docs hosted and internal docs local", async () => {
   assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/adr\//);
   assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/agents\/issue-tracker\.md/);
 });
+
+test("public quickstart and README route users through the checkout demo workflow", async () => {
+  const quickstart = await readFile(
+    path.join(repoRoot, "docs-public", "agents", "quickstart.md"),
+    "utf8",
+  );
+  const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
+  const llmsText = await readFile(path.join(repoRoot, "llms.txt"), "utf8");
+
+  assert.match(quickstart, /Checkout Demo Project/);
+  assert.match(quickstart, /demo-projects\/checkout/);
+  assert.match(quickstart, /cd demo-projects\/checkout/);
+  assert.match(
+    quickstart,
+    /diagrampilot validate docs\/architecture\.dp\.yaml/,
+  );
+  assert.match(
+    quickstart,
+    /diagrampilot render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/,
+  );
+  assert.match(
+    quickstart,
+    /diagrampilot export docs\/architecture\.dp\.yaml --format mermaid/,
+  );
+  assert.match(
+    quickstart,
+    /diagrampilot export docs\/architecture\.dp\.yaml --format d2 --out docs\/architecture\.d2/,
+  );
+
+  assert.match(readme, /Checkout Demo Project/);
+  assert.match(
+    readme,
+    /https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md/,
+  );
+  assert.match(llmsText, /Checkout demo quickstart/);
+  assert.match(
+    llmsText,
+    /https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md/,
+  );
+});
+
+test("public quickstart explains current DiagramPilot artifact and CLI behavior", async () => {
+  const quickstart = await readFile(
+    path.join(repoRoot, "docs-public", "agents", "quickstart.md"),
+    "utf8",
+  );
+
+  assert.match(quickstart, /DiagramPilot Source Files/);
+  assert.match(quickstart, /Derived Artifacts/);
+  assert.match(quickstart, /Validate before rendering/);
+  assert.match(quickstart, /render` requires `--out`/);
+  assert.match(quickstart, /sourcePath/);
+  assert.match(quickstart, /sourceSha256/);
+  assert.match(quickstart, /diagramPilotVersion/);
+  assert.match(quickstart, /renderer/);
+  assert.match(quickstart, /does not include wall-clock timestamps/);
+  assert.match(quickstart, /export` prints to stdout by default/);
+  assert.match(quickstart, /Use `--out` only when you want to write/);
+});
+
+test("public examples reference current packages and avoid deferred features", async () => {
+  const examples = await readFile(
+    path.join(repoRoot, "docs-public", "agents", "examples.md"),
+    "utf8",
+  );
+
+  assert.match(examples, /packages\/cli/);
+  assert.match(examples, /packages\/core/);
+  assert.match(examples, /packages\/render-svg/);
+  assert.match(examples, /packages\/export-mermaid/);
+  assert.match(examples, /packages\/export-d2/);
+  assert.doesNotMatch(examples, /packages\/layout/);
+  assert.doesNotMatch(examples, /\bDOT\b/);
+  assert.doesNotMatch(examples, /\bPNG\b/);
+  assert.doesNotMatch(examples, /\bMCP\b/);
+
+  const iconNames = Array.from(
+    examples.matchAll(/icon: lucide:([a-z0-9-]+)/gu),
+    (match) => match[1],
+  );
+
+  assert.notEqual(iconNames.length, 0);
+
+  for (const iconName of iconNames) {
+    assert.equal(
+      await exists(path.join("node_modules", "lucide-static", "icons", `${iconName}.svg`)),
+      true,
+      `lucide:${iconName} should be a packaged icon`,
+    );
+  }
+});
