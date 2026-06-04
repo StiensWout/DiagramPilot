@@ -1,4 +1,4 @@
-Status: pending
+Status: completed
 
 # Add repo workflow source discovery
 
@@ -27,15 +27,15 @@ full `check` command output yet unless needed as a thin vertical tracer.
 
 ## Acceptance criteria
 
-- [ ] Discovery finds `*.dp.yaml` and `*.dp.json` files recursively from the current working directory.
-- [ ] Discovery supports one explicit directory path.
-- [ ] Discovery supports one explicit DiagramPilot Source File path.
-- [ ] Discovery rejects unsupported explicit source extensions such as `.dp.yml`.
-- [ ] Discovery ignores `.git`, `node_modules`, `dist`, `build`, `coverage`, `.next`, `.vite`, and `.turbo`.
-- [ ] Directory discovery with no DiagramPilot Source Files is represented as a successful no-op.
-- [ ] Discovery returns sources in stable normalized relative path order.
-- [ ] Discovery does not validate, render, write files, or rewrite source files.
-- [ ] Tests cover supported extensions, unsupported explicit paths, ignored directories, explicit file scope, explicit directory scope, and no-source no-op behavior.
+- [x] Discovery finds `*.dp.yaml` and `*.dp.json` files recursively from the current working directory.
+- [x] Discovery supports one explicit directory path.
+- [x] Discovery supports one explicit DiagramPilot Source File path.
+- [x] Discovery rejects unsupported explicit source extensions such as `.dp.yml`.
+- [x] Discovery ignores `.git`, `node_modules`, `dist`, `build`, `coverage`, `.next`, `.vite`, and `.turbo`.
+- [x] Directory discovery with no DiagramPilot Source Files is represented as a successful no-op.
+- [x] Discovery returns sources in stable normalized relative path order.
+- [x] Discovery does not validate, render, write files, or rewrite source files.
+- [x] Tests cover supported extensions, unsupported explicit paths, ignored directories, explicit file scope, explicit directory scope, and no-source no-op behavior.
 
 ## Blocked by
 
@@ -47,3 +47,26 @@ None - can start immediately
 npm test
 node --test test/*.test.mjs
 ```
+
+## Comments
+
+Implemented 2026-06-04:
+
+- Added `discoverDiagramPilotSourceFiles()` to `@diagrampilot/core` as the reusable repo workflow discovery seam for later `check` command work.
+- Added explicit discovery result types for successful directory/file scope handling and for unsupported or missing explicit paths.
+- Implemented recursive directory walking for `*.dp.yaml` and `*.dp.json` only, with stable normalized relative path ordering.
+- Ignored the documented VCS, dependency, and build directories: `.git`, `node_modules`, `dist`, `build`, `coverage`, `.next`, `.vite`, and `.turbo`.
+- Kept discovery read-only and validation-free so invalid DiagramPilot source files are still discoverable for later check-phase validation.
+- Added focused tests covering explicit file scope, unsupported explicit source extensions, explicit directory recursion, ignored directories, current-working-directory scope, and no-source success.
+
+Validation plan:
+
+```bash
+npm test
+node --test test/repo-workflow-source-discovery.test.mjs
+```
+
+Validation performed 2026-06-04:
+
+- `npm test` passed 59 tests.
+- `npm run build && node --test test/repo-workflow-source-discovery.test.mjs` passed 5 tests.
