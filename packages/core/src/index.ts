@@ -78,6 +78,13 @@ export interface SvgArtifactRenderer {
   version: string;
 }
 
+export interface CreateSvgArtifactProvenanceOptions {
+  sourcePath: string;
+  sourceContent: string | Uint8Array;
+  diagramPilotVersion?: string;
+  renderer: SvgArtifactRenderer;
+}
+
 export interface CheckExpectedSvgArtifactFreshnessOptions {
   sourcePath: string;
   provenanceSourcePath: string;
@@ -197,13 +204,11 @@ export function deriveExpectedSvgArtifactPath(sourcePath: string): string {
   return sourcePath.replace(/\.dp\.(yaml|json)$/iu, ".svg");
 }
 
-function createSvgArtifactProvenance(
-  options: Omit<CheckExpectedSvgArtifactFreshnessOptions, "sourcePath"> & {
-    sourceContent: string | Uint8Array;
-  },
+export function createSvgArtifactProvenance(
+  options: CreateSvgArtifactProvenanceOptions,
 ): SvgArtifactProvenance {
   return {
-    sourcePath: options.provenanceSourcePath,
+    sourcePath: options.sourcePath,
     sourceSha256: createHash("sha256")
       .update(options.sourceContent)
       .digest("hex"),
@@ -337,7 +342,7 @@ export async function checkExpectedSvgArtifactFreshnessForValidatedSource(
   }
 
   const expectedProvenance = createSvgArtifactProvenance({
-    provenanceSourcePath: options.provenanceSourcePath,
+    sourcePath: options.provenanceSourcePath,
     sourceContent: options.source.content,
     diagramPilotVersion: options.diagramPilotVersion,
     renderer: options.renderer,
