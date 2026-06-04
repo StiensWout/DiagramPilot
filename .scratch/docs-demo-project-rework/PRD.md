@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: completed
 
 # Public docs and checkout demo project rework
 
@@ -119,6 +119,26 @@ reference material.
 - Replacing the local markdown issue tracker.
 - Publishing or deploying the public website.
 - Adding a visual editor or hosted workspace dependency.
+
+## Closeout Notes
+
+All docs/demo rework issue slices are completed in the local tracker:
+
+- 28 split Public Documentation and Internal Documentation roots.
+- 29 add the Checkout Demo Project fixture.
+- 30 rework Public Documentation around the Demo Project workflow.
+- 31 clean up Internal Documentation and close out planning state.
+
+Final maintainer validation:
+
+```bash
+node --test test/docs-public-boundary.test.mjs
+node --test test/checkout-demo-project.test.mjs
+(cd demo-projects/checkout && node ../../packages/cli/dist/index.js validate docs/architecture.dp.yaml)
+(cd demo-projects/checkout && node ../../packages/cli/dist/index.js render docs/architecture.dp.yaml --out docs/architecture.svg)
+git diff --exit-code demo-projects/checkout/docs/architecture.svg
+npm test
+```
 
 ## Further Notes
 

@@ -1,6 +1,6 @@
 # DiagramPilot architecture deepening PRD
 
-Status: ready-for-agent
+Status: completed
 
 ## Problem Statement
 
@@ -182,6 +182,19 @@ and generated artifact expectations remain intact.
 - Adding a hosted-workspace dependency.
 - Publishing or deploying public docs.
 - Hand-editing generated SVG artifacts.
+
+## Closeout Notes
+
+Reviewed during docs/demo closeout. All architecture-deepening issue slices
+under `.scratch/architecture-deepening/issues/` are completed, and the current
+architecture notes treat validated DiagramSpec loading, DiagramSpec topology,
+diagnostics, provenance, and command planning as implemented architecture.
+
+Validation:
+
+```bash
+npm test
+```
 
 ## Further Notes
 

@@ -1,6 +1,6 @@
 # DiagramPilot MVP PRD
 
-Status: ready-for-agent
+Status: completed
 
 ## Problem Statement
 
@@ -226,6 +226,19 @@ are regenerated rather than hand-edited.
 - Hosted diagram storage.
 - Visual editor state synchronization.
 - Full workspace collaboration.
+
+## Closeout Notes
+
+Reviewed during docs/demo closeout. All MVP implementation issue slices under
+`.scratch/diagrampilot-mvp/issues/` are completed, and the current roadmap
+treats the MVP CLI shape as implemented product contract rather than active
+planning state.
+
+Validation:
+
+```bash
+npm test
+```
 
 ## Further Notes
 

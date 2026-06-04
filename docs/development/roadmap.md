@@ -3,13 +3,13 @@
 DiagramPilot is a local-first compiler and validation engine for repo-native
 diagrams authored by AI coding agents.
 
-The current implementation has crossed the MVP and architecture-deepening
-checkpoints recorded in `.scratch/diagrampilot-mvp/` and
-`.scratch/architecture-deepening/`. The next work is release readiness:
-separating public documentation from internal maintainer documentation and
-adding the Checkout Demo Project workflow. Keep that track separate from the
-product capability backlog. Release readiness makes the existing product easy
-to adopt; product capability work adds new user-facing behaviour.
+The current implementation has crossed the MVP, architecture-deepening, and
+docs/demo release-readiness checkpoints recorded in
+`.scratch/diagrampilot-mvp/`, `.scratch/architecture-deepening/`, and
+`.scratch/docs-demo-project-rework/`. The next work is product backlog
+selection. Keep release-readiness maintenance separate from product capability
+work: release readiness keeps the existing product easy to adopt; product
+capability work adds new user-facing behaviour.
 
 ## Current State
 
@@ -42,9 +42,9 @@ The implemented MVP includes:
 - CLI smoke tests and focused validation/export/render/provenance/topology
   coverage.
 
-The MVP issue slices and architecture-deepening issue slices are completed in
-the local tracker. The remaining closeout work is documentation, the demo
-project workflow, and planning-state cleanup, not core CLI implementation.
+The MVP issue slices, architecture-deepening issue slices, and docs/demo rework
+issue slices are completed in the local tracker. The current closeout state is
+documentation and demo maintenance, not core CLI implementation.
 
 ## Current Contract
 
@@ -70,9 +70,7 @@ them:
 - Generated SVG provenance must not include wall-clock timestamps.
 - Core workflows must remain local and must not depend on a hosted workspace.
 
-## Active Backlog
-
-### Release Readiness
+## Completed Release Readiness
 
 This track turns the implemented MVP into a clear first user workflow.
 
@@ -85,10 +83,23 @@ This track turns the implemented MVP into a clear first user workflow.
 7. Rework the public quickstart around the Demo Project workflow.
 8. Clean up internal docs and planning state after the docs/demo work lands.
 
-Release readiness is complete when an AI coding agent can start at
+Release readiness is complete. An AI coding agent can start at
 `https://diagrampilot.com/llms.txt`, follow only Public Documentation, inspect
 the Checkout Demo Project, validate its DiagramPilot Source File, render its
 SVG Derived Artifact, and repeat the workflow in another repository.
+
+Maintainers can verify the public/internal docs split and demo workflow with:
+
+```bash
+node --test test/docs-public-boundary.test.mjs
+node --test test/checkout-demo-project.test.mjs
+(cd demo-projects/checkout && node ../../packages/cli/dist/index.js validate docs/architecture.dp.yaml)
+(cd demo-projects/checkout && node ../../packages/cli/dist/index.js render docs/architecture.dp.yaml --out docs/architecture.svg)
+git diff --exit-code demo-projects/checkout/docs/architecture.svg
+npm test
+```
+
+## Active Backlog
 
 ## Completed Architecture Deepening
 
