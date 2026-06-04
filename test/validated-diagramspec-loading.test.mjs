@@ -23,24 +23,23 @@ test("loadValidatedDiagramSpec returns a valid DiagramSpec with source context f
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });
     const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
 
-    await writeFile(
-      sourcePath,
-      [
-        "version: 1",
-        "title: Checkout Architecture",
-        "nodes:",
-        "  - id: web_app",
-        "    label: Web App",
-        "",
-      ].join("\n"),
-      "utf8",
-    );
+    const sourceContent = [
+      "version: 1",
+      "title: Checkout Architecture",
+      "nodes:",
+      "  - id: web_app",
+      "    label: Web App",
+      "",
+    ].join("\n");
+
+    await writeFile(sourcePath, sourceContent, "utf8");
 
     const result = loadValidatedDiagramSpec(sourcePath);
 
     assert.equal(result.ok, true);
     assert.equal(result.source.path, sourcePath);
     assert.equal(result.source.format, "yaml");
+    assert.equal(result.source.content, sourceContent);
     assert.equal(result.spec.title, "Checkout Architecture");
     assert.deepEqual(result.spec.nodes, [{ id: "web_app", label: "Web App" }]);
   });
@@ -51,25 +50,24 @@ test("loadValidatedDiagramSpec returns a valid DiagramSpec with source context f
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });
     const sourcePath = path.join(tempRoot, "docs", "architecture.dp.json");
 
-    await writeFile(
-      sourcePath,
-      JSON.stringify(
-        {
-          version: 1,
-          title: "Checkout Architecture",
-          nodes: [{ id: "web_app", label: "Web App" }],
-        },
-        null,
-        2,
-      ),
-      "utf8",
+    const sourceContent = JSON.stringify(
+      {
+        version: 1,
+        title: "Checkout Architecture",
+        nodes: [{ id: "web_app", label: "Web App" }],
+      },
+      null,
+      2,
     );
+
+    await writeFile(sourcePath, sourceContent, "utf8");
 
     const result = loadValidatedDiagramSpec(sourcePath);
 
     assert.equal(result.ok, true);
     assert.equal(result.source.path, sourcePath);
     assert.equal(result.source.format, "json");
+    assert.equal(result.source.content, sourceContent);
     assert.equal(result.spec.title, "Checkout Architecture");
     assert.deepEqual(result.spec.nodes, [{ id: "web_app", label: "Web App" }]);
   });

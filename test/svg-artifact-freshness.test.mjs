@@ -4,7 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { checkExpectedSvgArtifactFreshness } from "../packages/core/dist/index.js";
+import {
+  checkExpectedSvgArtifactFreshness,
+  checkExpectedSvgArtifactFreshnessForValidatedSource,
+} from "../packages/core/dist/index.js";
 import {
   SVG_RENDERER_NAME,
   SVG_RENDERER_VERSION,
@@ -97,6 +100,59 @@ test("checkExpectedSvgArtifactFreshness returns fresh for a next-to-source SVG w
     const result = await checkExpectedSvgArtifactFreshness({
       sourcePath,
       provenanceSourcePath: "docs/architecture.dp.yaml",
+      renderer: {
+        name: SVG_RENDERER_NAME,
+        version: SVG_RENDERER_VERSION,
+      },
+    });
+
+    assert.deepEqual(result, {
+      sourcePath,
+      artifactPath,
+      status: "fresh",
+      provenance,
+    });
+  });
+});
+
+test("checkExpectedSvgArtifactFreshnessForValidatedSource computes expected provenance from supplied source context", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
+    const artifactPath = path.join(tempRoot, "docs", "architecture.svg");
+    const suppliedSourceContent = [
+      "version: 1",
+      "title: Architecture",
+      "nodes:",
+      "  - id: web_app",
+      "    label: Web App",
+      "",
+    ].join("\n");
+
+    await mkdir(path.dirname(sourcePath), { recursive: true });
+    await writeFile(sourcePath, "this on-disk content is not used\n", "utf8");
+    const provenance = createSvgRendererProvenance({
+      sourcePath: provenanceSourcePath,
+      sourceContent: suppliedSourceContent,
+    });
+
+    await writeFile(
+      artifactPath,
+      addSvgProvenanceMetadata(emptySvg, provenance),
+      "utf8",
+    );
+
+    const result = await checkExpectedSvgArtifactFreshnessForValidatedSource({
+      source: {
+        format: "yaml",
+        path: sourcePath,
+        content: suppliedSourceContent,
+        value: {
+          version: 1,
+          title: "Architecture",
+          nodes: [{ id: "web_app", label: "Web App" }],
+        },
+      },
+      provenanceSourcePath,
       renderer: {
         name: SVG_RENDERER_NAME,
         version: SVG_RENDERER_VERSION,
