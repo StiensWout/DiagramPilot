@@ -125,6 +125,24 @@ test("checkout demo project has one canonical DiagramPilot source that validates
   assert.equal(result.stdout, `Valid ${checkoutArchitectureSource}\n`);
 });
 
+test("checkout demo project supports check as a read-only repository review command", async () => {
+  const svgBefore = await readFile(checkoutArchitectureSvg, "utf8");
+
+  const result = await runBuiltCli(["check"], checkoutDemoRoot);
+
+  assert.equal(result.signal, null);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stderr, "");
+  assert.equal(
+    result.stdout,
+    "Checked 1 DiagramPilot Source File. All expected SVG artifacts are fresh.\n",
+  );
+
+  const svgAfter = await readFile(checkoutArchitectureSvg, "utf8");
+
+  assert.equal(svgAfter, svgBefore);
+});
+
 test("checkout demo project SVG is rendered by the real CLI with deterministic provenance", async () => {
   const tempRoot = await mkdtemp(
     path.join(os.tmpdir(), "diagrampilot-checkout-demo-"),

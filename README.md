@@ -21,14 +21,16 @@ Run the primary workflow from the repository root:
 
 ```bash
 cd demo-projects/checkout
+diagrampilot check
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
 ```
 
-Validate before rendering. `render` requires `--out`; `export` prints to stdout
-by default and writes a file only when `--out` is provided.
+Use `check` as the read-only repo review/CI command. Use `validate` when you
+need explicit source repair output. `render` requires `--out`; `export` prints
+to stdout by default and writes a file only when `--out` is provided.
 
 ## Product Direction
 
@@ -82,6 +84,7 @@ docs/architecture.svg
 
 ```bash
 diagrampilot init
+diagrampilot check
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg

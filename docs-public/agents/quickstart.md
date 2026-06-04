@@ -6,8 +6,10 @@ source snippets, a DiagramPilot source file, and a committed SVG artifact.
 
 ## Goal
 
-Validate and render the demo architecture diagram, inspect its provenance, and
-export it when another diagram-as-code format is needed.
+Run the repo review workflow with `diagrampilot check`, repair DiagramSpec
+source problems with `validate`, refresh the committed SVG only with `render
+--out`, inspect SVG provenance, and export when another diagram-as-code format
+is needed.
 
 ## Demo Files
 
@@ -42,6 +44,33 @@ Run the workflow from the demo project directory:
 
 ```bash
 cd demo-projects/checkout
+diagrampilot check
+```
+
+Expected check result:
+
+```text
+Checked 1 DiagramPilot Source File. All expected SVG artifacts are fresh.
+```
+
+`diagrampilot check` is the repo-level review/CI command. It is read-only: it
+discovers DiagramPilot source files, validates them, and checks the expected
+SVG artifact without rendering, fixing, or writing files.
+
+In v1, `check` uses the next-to-source same-stem Expected SVG Artifact. For
+`docs/architecture.dp.yaml`, the expected SVG artifact is
+`docs/architecture.svg`.
+
+SVG freshness is provenance-only in v1. `check` reads DiagramPilot provenance
+metadata from the expected SVG artifact; it does not render to compare output.
+
+`check` does not check Mermaid, D2, DOT, or PNG artifact freshness. v1 also
+does not support configurable artifact mappings or ignore patterns.
+
+When `check` reports a source problem, use `validate` on the explicit source
+file to get the detailed repair loop:
+
+```bash
 diagrampilot validate docs/architecture.dp.yaml
 ```
 
@@ -88,6 +117,7 @@ review-stable and makes stale artifacts easy to detect by re-rendering and
 checking the Git diff.
 
 ```bash
+diagrampilot check
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 git diff --exit-code docs/architecture.svg
@@ -132,6 +162,8 @@ Agent rules:
 
 ```bash
 diagrampilot init
+diagrampilot check
+diagrampilot check demo-projects/checkout --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
@@ -142,6 +174,14 @@ diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architectur
 `diagrampilot init`
 : Creates or updates DiagramPilot support files only. It does not scan the
 codebase or generate a diagram by default.
+
+`diagrampilot check [path]`
+: Read-only repo review/CI command. Discovers DiagramPilot source files in the
+given scope, validates them, and checks next-to-source same-stem expected SVG
+artifacts through provenance metadata only.
+
+`diagrampilot check [path] --json`
+: Emits structured repo check results to stdout for agents and CI scripts.
 
 `diagrampilot validate <path>`
 : Validates one explicit DiagramPilot source file path.
