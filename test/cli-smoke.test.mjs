@@ -15,6 +15,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import {
+  SVG_RENDERER_NAME,
+  SVG_RENDERER_VERSION,
+  addSvgProvenanceMetadata,
+  createSvgRendererProvenance,
+} from "../packages/render-svg/dist/index.js";
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cliEntryPoint = path.join(repoRoot, "packages", "cli", "dist", "index.js");
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
@@ -96,6 +103,34 @@ function occurrenceCount(text, pattern) {
 
 function sha256Hex(text) {
   return createHash("sha256").update(text).digest("hex");
+}
+
+async function writeFreshDiagramArtifact(tempRoot) {
+  await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+  const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
+  const sourceText = [
+    "version: 1",
+    "title: Checkout Architecture",
+    "nodes:",
+    "  - id: web_app",
+    "    label: Web App",
+    "",
+  ].join("\n");
+
+  await writeFile(sourcePath, sourceText, "utf8");
+  await writeFile(
+    path.join(tempRoot, "docs", "architecture.svg"),
+    addSvgProvenanceMetadata(
+      '<svg xmlns="http://www.w3.org/2000/svg"><g /></svg>',
+      createSvgRendererProvenance({
+        sourcePath: "docs/architecture.dp.yaml",
+        sourceContent: sourceText,
+      }),
+    ),
+    "utf8",
+  );
+
+  return { sourcePath, sourceText };
 }
 
 test("diagrampilot executable starts and reports its version", async () => {
@@ -328,5 +363,69 @@ test("diagrampilot render writes SVG with deterministic provenance", async () =>
       },
     });
     assert.doesNotMatch(renderedSvg, /timestamp|renderedAt|createdAt|date/iu);
+  });
+});
+
+test("diagrampilot check uses the current working directory by default", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await writeFreshDiagramArtifact(tempRoot);
+
+    const result = await runBuiltCli(["check"], tempRoot);
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.equal(
+      result.stdout,
+      "Checked 1 DiagramPilot Source File. All expected SVG artifacts are fresh.\n",
+    );
+  });
+});
+
+test("diagrampilot check supports an explicit directory scope with aggregate json output", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await writeFreshDiagramArtifact(tempRoot);
+
+    const result = await runBuiltCli(["check", ".", "--json"], tempRoot);
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+
+    const payload = JSON.parse(result.stdout);
+
+    assert.equal(payload.ok, true);
+    assert.deepEqual(payload.scope, {
+      kind: "directory",
+      path: ".",
+    });
+    assert.deepEqual(payload.summary, {
+      checkedSourceCount: 1,
+      freshSourceCount: 1,
+      issueCount: 0,
+    });
+    assert.equal(payload.sources.length, 1);
+    assert.equal(payload.sources[0].sourcePath, "docs/architecture.dp.yaml");
+    assert.equal(payload.sources[0].artifact.status, "fresh");
+    assert.equal(payload.sources[0].artifact.path, "docs/architecture.svg");
+  });
+});
+
+test("diagrampilot check supports one explicit source file", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await writeFreshDiagramArtifact(tempRoot);
+
+    const result = await runBuiltCli(
+      ["check", "docs/architecture.dp.yaml"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.equal(
+      result.stdout,
+      "Checked 1 DiagramPilot Source File. All expected SVG artifacts are fresh.\n",
+    );
   });
 });
