@@ -10,10 +10,18 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+  checkExpectedSvgArtifactFreshness,
   createRepairableDiagnosticReport,
+  discoverDiagramPilotSourceFiles,
   getDiagramPilotVersion,
   loadValidatedDiagramSpec,
   type DiagramSpec,
+  type DiagramPilotSourceDiscoveryScope,
+  type FreshSvgArtifactResult,
+  type SvgArtifactProvenance,
+  type DiagramPilotSourceDiscoveryResult,
+  type SvgArtifactFreshnessCheckResult,
+  type StaleSvgArtifactResult,
   type ValidatedDiagramSpecLoadResult,
 } from "@diagrampilot/core";
 import { exportDiagramSpecToD2 } from "@diagrampilot/export-d2";
@@ -22,6 +30,8 @@ import {
   createSvgRendererProvenance,
   type CreateSvgRendererProvenanceOptions,
   type SvgRendererProvenance,
+  SVG_RENDERER_NAME,
+  SVG_RENDERER_VERSION,
   renderDiagramSpecToSvg,
 } from "@diagrampilot/render-svg";
 
@@ -46,6 +56,49 @@ interface ExportOptions {
 interface RenderCommandOptions {
   outPath: string;
   sourcePath: string;
+}
+
+interface CheckCommandOptions {
+  json: boolean;
+  scopePath?: string;
+}
+
+interface CheckSourceResult {
+  sourcePath: string;
+  validation:
+    | {
+        ok: true;
+        errors: [];
+      }
+    | {
+        ok: false;
+        errors: ReturnType<typeof createRepairableDiagnosticReport>["errors"];
+      };
+  artifact:
+    | {
+        status: "fresh";
+        path: string;
+        provenance: SvgArtifactProvenance;
+      }
+    | {
+        status:
+          | "missing-artifact"
+          | "unreadable-artifact"
+          | "malformed-artifact"
+          | "missing-provenance";
+        path: string;
+        message?: string;
+      }
+    | {
+        status: "stale";
+        path: string;
+        reasons: StaleSvgArtifactResult["reasons"];
+        expected: StaleSvgArtifactResult["expected"];
+        actual: StaleSvgArtifactResult["actual"];
+      }
+    | {
+        status: "unchecked";
+      };
 }
 
 type ValidateArgsResult =
@@ -78,6 +131,16 @@ type RenderArgsResult =
       message: string;
     };
 
+type CheckArgsResult =
+  | {
+      ok: true;
+      options: CheckCommandOptions;
+    }
+  | {
+      ok: false;
+      message: string;
+    };
+
 export interface CommandWriteIntent {
   path: string;
   content: string;
@@ -92,6 +155,18 @@ export interface CommandPlan {
 
 export interface CommandPlanningDependencies {
   loadValidatedDiagramSpec(path: string): ValidatedDiagramSpecLoadResult;
+  discoverDiagramPilotSourceFiles(
+    scopePath?: string,
+  ): Promise<DiagramPilotSourceDiscoveryResult>;
+  checkExpectedSvgArtifactFreshness(options: {
+    sourcePath: string;
+    provenanceSourcePath: string;
+    diagramPilotVersion?: string;
+    renderer: {
+      name: string;
+      version: string;
+    };
+  }): Promise<SvgArtifactFreshnessCheckResult>;
   exportDiagramSpecToMermaid(spec: DiagramSpec): string;
   exportDiagramSpecToD2(spec: DiagramSpec): string;
   readSourceContent(path: string): string | Uint8Array;
@@ -107,6 +182,8 @@ export interface CommandPlanningDependencies {
 
 const defaultCommandPlanningDependencies: CommandPlanningDependencies = {
   loadValidatedDiagramSpec,
+  discoverDiagramPilotSourceFiles,
+  checkExpectedSvgArtifactFreshness,
   exportDiagramSpecToMermaid,
   exportDiagramSpecToD2,
   readSourceContent: (sourcePath) => readFileSync(sourcePath),
@@ -138,6 +215,7 @@ function helpText(version = getDiagramPilotVersion()): string {
     "MVP commands:",
     "  init",
     "  validate <path> [--json]",
+    "  check [path] [--json]",
     "  render <path> --out <path>",
     "  export <path> --format mermaid [--out <path>]",
     "  export <path> --format d2 [--out <path>]",
@@ -449,6 +527,271 @@ function parseRenderArgs(args: readonly string[]): RenderArgsResult {
   };
 }
 
+function parseCheckArgs(args: readonly string[]): CheckArgsResult {
+  let json = false;
+  let scopePath: string | undefined;
+
+  for (const arg of args) {
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+
+    if (arg.startsWith("-")) {
+      return {
+        ok: false,
+        message: `Unknown check option: ${arg}`,
+      };
+    }
+
+    if (scopePath !== undefined) {
+      return {
+        ok: false,
+        message: `Unexpected check argument: ${arg}`,
+      };
+    }
+
+    scopePath = arg;
+  }
+
+  return {
+    ok: true,
+    options: {
+      json,
+      scopePath,
+    },
+  };
+}
+
+function checkUsageText(): string {
+  return "Usage: diagrampilot check [path] [--json]";
+}
+
+function normalizePathForDisplay(filePath: string): string {
+  return filePath.split(path.sep).join("/");
+}
+
+function deriveCheckSourcePath(
+  scope: DiagramPilotSourceDiscoveryScope,
+  absolutePath: string,
+  relativePath: string,
+): string {
+  if (scope.kind === "directory") {
+    return relativePath;
+  }
+
+  return normalizePathForDisplay(path.relative(process.cwd(), absolutePath));
+}
+
+function deriveArtifactDisplayPath(
+  sourcePath: string,
+  artifactPath: string,
+): string {
+  const relativeArtifactPath = normalizePathForDisplay(
+    path.relative(process.cwd(), artifactPath),
+  );
+
+  if (!relativeArtifactPath.startsWith("..")) {
+    return relativeArtifactPath;
+  }
+
+  return sourcePath.replace(/\.dp\.(yaml|json)$/iu, ".svg");
+}
+
+function formatSourceCount(count: number): string {
+  return `${count} DiagramPilot Source File${count === 1 ? "" : "s"}`;
+}
+
+function isArtifactFailure(
+  source: CheckSourceResult,
+): boolean {
+  return source.validation.ok === false || source.artifact.status !== "fresh";
+}
+
+function isIssueArtifact(
+  artifact: CheckSourceResult["artifact"],
+): artifact is Exclude<CheckSourceResult["artifact"], { status: "fresh" } | { status: "unchecked" }> {
+  return artifact.status !== "fresh" && artifact.status !== "unchecked";
+}
+
+async function buildCheckSourceResults(
+  discoveryResult: Extract<DiagramPilotSourceDiscoveryResult, { ok: true }>,
+  dependencies: CommandPlanningDependencies,
+): Promise<CheckSourceResult[]> {
+  const results: CheckSourceResult[] = [];
+
+  for (const source of discoveryResult.sources) {
+    const result = dependencies.loadValidatedDiagramSpec(source.absolutePath);
+    const sourcePath = deriveCheckSourcePath(
+      discoveryResult.scope,
+      source.absolutePath,
+      source.relativePath,
+    );
+
+    if (!result.ok) {
+      const report = createRepairableDiagnosticReport(result.failure);
+      results.push({
+        sourcePath,
+        validation: {
+          ok: false,
+          errors: report.errors,
+        },
+        artifact: {
+          status: "unchecked",
+        },
+      });
+      continue;
+    }
+
+    const artifact = await dependencies.checkExpectedSvgArtifactFreshness({
+      sourcePath: source.absolutePath,
+      provenanceSourcePath: sourcePath,
+      renderer: {
+        name: SVG_RENDERER_NAME,
+        version: SVG_RENDERER_VERSION,
+      },
+    });
+    const artifactPath = deriveArtifactDisplayPath(sourcePath, artifact.artifactPath);
+
+    if (artifact.status === "fresh") {
+      const freshArtifact: FreshSvgArtifactResult = artifact;
+      results.push({
+        sourcePath,
+        validation: {
+          ok: true,
+          errors: [],
+        },
+        artifact: {
+          status: "fresh",
+          path: artifactPath,
+          provenance: freshArtifact.provenance,
+        },
+      });
+      continue;
+    }
+
+    if (artifact.status === "stale") {
+      results.push({
+        sourcePath,
+        validation: {
+          ok: true,
+          errors: [],
+        },
+        artifact: {
+          status: "stale",
+          path: artifactPath,
+          reasons: artifact.reasons,
+          expected: artifact.expected,
+          actual: artifact.actual,
+        },
+      });
+      continue;
+    }
+
+    if (artifact.status === "unreadable-artifact") {
+      results.push({
+        sourcePath,
+        validation: {
+          ok: true,
+          errors: [],
+        },
+        artifact: {
+          status: artifact.status,
+          path: artifactPath,
+          message: artifact.message,
+        },
+      });
+      continue;
+    }
+
+    if (artifact.status === "malformed-artifact") {
+      results.push({
+        sourcePath,
+        validation: {
+          ok: true,
+          errors: [],
+        },
+        artifact: {
+          status: artifact.status,
+          path: artifactPath,
+          message: artifact.message,
+        },
+      });
+      continue;
+    }
+
+    results.push({
+      sourcePath,
+      validation: {
+        ok: true,
+        errors: [],
+      },
+      artifact: {
+        status: artifact.status,
+        path: artifactPath,
+      },
+    });
+  }
+
+  return results;
+}
+
+function formatCheckTextReport(sourceResults: readonly CheckSourceResult[]): string {
+  const issueSources = sourceResults.filter(isArtifactFailure);
+
+  if (issueSources.length === 0) {
+    return `Checked ${formatSourceCount(sourceResults.length)}. All expected SVG artifacts are fresh.`;
+  }
+
+  const lines = [
+    `Checked ${formatSourceCount(sourceResults.length)}. Found ${issueSources.length} workflow issues.`,
+  ];
+
+  for (const source of issueSources) {
+    if (source.validation.ok === false) {
+      lines.push(
+        `Invalid source: ${source.sourcePath}. Run \`diagrampilot validate ${source.sourcePath}\`.`,
+      );
+      continue;
+    }
+
+    if (!isIssueArtifact(source.artifact)) {
+      continue;
+    }
+
+    if (source.artifact.status === "missing-artifact") {
+      lines.push(
+        `Missing SVG artifact: ${source.artifact.path} for ${source.sourcePath}. Run \`diagrampilot render ${source.sourcePath} --out ${source.artifact.path}\`.`,
+      );
+      continue;
+    }
+
+    if (source.artifact.status === "stale") {
+      lines.push(
+        `Stale SVG artifact: ${source.artifact.path} for ${source.sourcePath} (${source.artifact.reasons.join(", ")}). Run \`diagrampilot render ${source.sourcePath} --out ${source.artifact.path}\`.`,
+      );
+      continue;
+    }
+
+    if (source.artifact.status === "missing-provenance") {
+      lines.push(
+        `Missing DiagramPilot provenance: ${source.artifact.path} for ${source.sourcePath}. Run \`diagrampilot render ${source.sourcePath} --out ${source.artifact.path}\`.`,
+      );
+      continue;
+    }
+
+    const artifactLabel =
+      source.artifact.status === "unreadable-artifact"
+        ? "Unreadable SVG artifact"
+        : "Malformed SVG artifact";
+    lines.push(
+      `${artifactLabel}: ${source.artifact.path} for ${source.sourcePath}. Run \`diagrampilot render ${source.sourcePath} --out ${source.artifact.path}\`.`,
+    );
+  }
+
+  return lines.join("\n");
+}
+
 function planValidate(
   args: readonly string[],
   dependencies: CommandPlanningDependencies,
@@ -647,6 +990,97 @@ async function planRender(
   }
 }
 
+async function planCheck(
+  args: readonly string[],
+  dependencies: CommandPlanningDependencies,
+): Promise<CommandPlan> {
+  const argsResult = parseCheckArgs(args);
+
+  if (!argsResult.ok) {
+    return {
+      exitCode: 1,
+      stdout: "",
+      stderr: [argsResult.message, checkUsageText(), ""].join("\n"),
+      writes: [],
+    };
+  }
+
+  const discoveryResult = await dependencies.discoverDiagramPilotSourceFiles(
+    argsResult.options.scopePath,
+  );
+
+  if (!discoveryResult.ok) {
+    return {
+      exitCode: 1,
+      stdout: "",
+      stderr: textLine(discoveryResult.failure.message),
+      writes: [],
+    };
+  }
+
+  if (discoveryResult.sources.length === 0) {
+    if (argsResult.options.json) {
+      return {
+        exitCode: 0,
+        stdout: jsonTextLine({
+          ok: true,
+          scope: discoveryResult.scope,
+          summary: {
+            checkedSourceCount: 0,
+            freshSourceCount: 0,
+            issueCount: 0,
+          },
+          sources: [],
+        }),
+        stderr: "",
+        writes: [],
+      };
+    }
+
+    return {
+      exitCode: 0,
+      stdout: textLine(
+        `No DiagramPilot Source Files found in ${discoveryResult.scope.path}.`,
+      ),
+      stderr: "",
+      writes: [],
+    };
+  }
+
+  const sourceResults = await buildCheckSourceResults(
+    discoveryResult,
+    dependencies,
+  );
+  const issueCount = sourceResults.filter(isArtifactFailure).length;
+
+  if (argsResult.options.json) {
+    return {
+      exitCode: issueCount === 0 ? 0 : 1,
+      stdout: jsonTextLine({
+        ok: issueCount === 0,
+        scope: discoveryResult.scope,
+        summary: {
+          checkedSourceCount: sourceResults.length,
+          freshSourceCount: sourceResults.filter(
+            (source) => source.artifact.status === "fresh",
+          ).length,
+          issueCount,
+        },
+        sources: sourceResults,
+      }),
+      stderr: "",
+      writes: [],
+    };
+  }
+
+  return {
+    exitCode: issueCount === 0 ? 0 : 1,
+    stdout: issueCount === 0 ? textLine(formatCheckTextReport(sourceResults)) : "",
+    stderr: issueCount === 0 ? "" : textLine(formatCheckTextReport(sourceResults)),
+    writes: [],
+  };
+}
+
 export async function planCommand(
   args: readonly string[],
   dependencies: CommandPlanningDependencies = defaultCommandPlanningDependencies,
@@ -681,6 +1115,10 @@ export async function planCommand(
 
   if (firstArg === "render") {
     return await planRender(args.slice(1), dependencies);
+  }
+
+  if (firstArg === "check") {
+    return await planCheck(args.slice(1), dependencies);
   }
 
   return {
