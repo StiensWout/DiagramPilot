@@ -12,7 +12,7 @@ Public documentation is hosted under `https://diagrampilot.com`.
 
 ## Public Documentation
 
-- [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md): Worked demo workflow for validating, rendering, checking provenance, and exporting diagrams.
+- [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md): Worked demo workflow for repo checks, source repair, SVG refresh, and exports.
 - [DiagramSpec](https://diagrampilot.com/docs/agents/spec.md): Structured source model for diagrams.
 - [Error repair](https://diagrampilot.com/docs/agents/error-repair.md): How agents should interpret and fix validation errors.
 - [Examples](https://diagrampilot.com/docs/agents/examples.md): Canonical diagram examples.
@@ -23,6 +23,7 @@ Public documentation is hosted under `https://diagrampilot.com`.
 
 ```bash
 diagrampilot init
+diagrampilot check
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
@@ -32,12 +33,13 @@ diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architectur
 
 ## MVP Boundaries
 
+- `check` is the read-only repo review/CI command.
 - `render` produces SVG and requires `--out`.
 - Rendered SVG includes deterministic provenance metadata with no wall-clock
   timestamps.
 - `export` supports Mermaid and D2.
 - `export` prints to stdout by default and writes files with `--out`.
-- Validation checks source files and returns repairable errors.
+- `validate` checks explicit source files and returns repairable errors.
 - IDs are lowercase snake case and globally unique within a DiagramSpec.
 - Icons use namespaced references such as `lucide:database`.
 - DOT, PNG, MCP, hosted canvas, and project analyzers are deferred.

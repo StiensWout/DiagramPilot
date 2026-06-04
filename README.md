@@ -105,7 +105,7 @@ Included in the MVP:
 
 - DiagramSpec v1.
 - TypeScript package workspace.
-- CLI commands for `init`, `validate`, `render`, and `export`.
+- CLI commands for `init`, `check`, `validate`, `render`, and `export`.
 - YAML and JSON source files.
 - Source-only validation with repairable text and JSON errors.
 - SVG rendering.

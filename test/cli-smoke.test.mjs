@@ -159,7 +159,27 @@ test("diagrampilot init creates adoption support files without generating diagra
     );
 
     assert.match(llmsText, /https:\/\/diagrampilot\.com\/llms\.txt/);
+    assert.match(llmsText, /diagrampilot check/);
+    assert.match(llmsText, /read-only repo review\/CI command/);
+    assert.match(
+      llmsText,
+      /diagrampilot validate docs\/architecture\.dp\.yaml/,
+    );
+    assert.match(
+      llmsText,
+      /diagrampilot render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/,
+    );
     assert.match(guideText, /DiagramSpec is the source of truth/);
+    assert.match(guideText, /diagrampilot check/);
+    assert.match(guideText, /read-only repo review\/CI command/);
+    assert.match(
+      guideText,
+      /diagrampilot validate docs\/architecture\.dp\.yaml/,
+    );
+    assert.match(
+      guideText,
+      /diagrampilot render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/,
+    );
     assert.deepEqual((await readdir(tempRoot)).sort(), ["docs", "llms.txt"]);
     assert.deepEqual(
       (await readdir(path.join(tempRoot, "docs"))).sort(),
