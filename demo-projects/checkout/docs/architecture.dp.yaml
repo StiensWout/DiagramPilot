@@ -1,0 +1,165 @@
+version: 1
+title: Checkout Demo Project Architecture
+description: Small checkout system fixture showing the repository workflow for DiagramPilot.
+direction: right
+metadata:
+  source: .
+nodes:
+  - id: customer_browser
+    label: Customer Browser
+    kind: frontend
+    description: Runs the checkout page and submits carts for purchase.
+    icon: lucide:monitor
+    metadata:
+      source: src/web/checkout-page.tsx
+  - id: checkout_api
+    label: Checkout API
+    kind: service
+    description: Accepts checkout requests and converts HTTP payloads into commands.
+    icon: lucide:server
+    metadata:
+      source: src/api/checkout-routes.ts
+  - id: checkout_service
+    label: Checkout Service
+    kind: service
+    description: Coordinates payment, inventory reservation, order storage, and event publication.
+    icon: lucide:shopping-cart
+    metadata:
+      source: src/services/checkout-service.ts
+  - id: payment_provider
+    label: Payment Provider
+    kind: external_service
+    description: Authorizes customer payment details through an external processor boundary.
+    icon: lucide:credit-card
+    metadata:
+      source: src/services/payment-provider.ts
+  - id: inventory_service
+    label: Inventory Service
+    kind: service
+    description: Reserves stock before the order is committed.
+    icon: lucide:boxes
+    metadata:
+      source: src/services/inventory-service.ts
+  - id: orders_db
+    label: Orders DB
+    kind: database
+    description: Stores order records and fulfillment status.
+    icon: lucide:database
+    metadata:
+      source: src/data/orders-repository.ts
+  - id: order_events
+    label: Order Events
+    kind: event_stream
+    description: Carries order_placed messages for asynchronous fulfillment.
+    icon: lucide:bell
+    metadata:
+      source: src/events/order-events.ts
+  - id: fulfillment_worker
+    label: Fulfillment Worker
+    kind: worker
+    description: Consumes order events and marks orders ready for fulfillment.
+    icon: lucide:package-check
+    metadata:
+      source: src/workers/fulfillment-worker.ts
+groups:
+  - id: checkout_system
+    label: Checkout System
+    kind: system
+    description: Local source files that make up the checkout demo fixture.
+    icon: lucide:shopping-cart
+    contains:
+      - customer_experience
+      - checkout_runtime
+      - fulfillment_pipeline
+    metadata:
+      source: src
+  - id: customer_experience
+    label: Customer Experience
+    kind: surface
+    description: Browser-facing checkout entrypoint.
+    icon: lucide:monitor
+    contains:
+      - customer_browser
+    metadata:
+      source: src/web
+  - id: checkout_runtime
+    label: Checkout Runtime
+    kind: runtime
+    description: Synchronous checkout request path.
+    icon: lucide:server
+    contains:
+      - checkout_api
+      - checkout_service
+      - payment_provider
+      - inventory_service
+      - orders_db
+    metadata:
+      source: src
+  - id: fulfillment_pipeline
+    label: Fulfillment Pipeline
+    kind: pipeline
+    description: Asynchronous order fulfillment path.
+    icon: lucide:package-check
+    contains:
+      - order_events
+      - fulfillment_worker
+    metadata:
+      source: src/events
+edges:
+  - id: customer_browser_to_checkout_api
+    from: customer_browser
+    to: checkout_api
+    label: HTTPS checkout request
+    kind: request
+    metadata:
+      source: src/web/checkout-page.tsx
+  - id: checkout_api_to_checkout_service
+    from: checkout_api
+    to: checkout_service
+    label: creates checkout command
+    kind: command
+    metadata:
+      source: src/api/checkout-routes.ts
+  - id: checkout_service_to_payment_provider
+    from: checkout_service
+    to: payment_provider
+    label: authorizes payment
+    kind: request
+    metadata:
+      source: src/services/payment-provider.ts
+  - id: checkout_service_to_inventory_service
+    from: checkout_service
+    to: inventory_service
+    label: reserves stock
+    kind: request
+    metadata:
+      source: src/services/inventory-service.ts
+  - id: checkout_service_to_orders_db
+    from: checkout_service
+    to: orders_db
+    label: stores order
+    kind: write
+    metadata:
+      source: src/data/orders-repository.ts
+  - id: checkout_service_to_order_events
+    from: checkout_service
+    to: order_events
+    label: publishes order_placed
+    kind: event
+    metadata:
+      source: src/events/order-events.ts
+  - id: order_events_to_fulfillment_worker
+    from: order_events
+    to: fulfillment_worker
+    label: triggers fulfillment
+    kind: event
+    metadata:
+      source: src/workers/fulfillment-worker.ts
+  - id: fulfillment_worker_to_orders_db
+    from: fulfillment_worker
+    to: orders_db
+    label: updates fulfillment status
+    kind: write
+    metadata:
+      source: src/workers/fulfillment-worker.ts
+
