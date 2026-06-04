@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import test from "node:test";
 
+import { createSvgArtifactProvenance } from "@diagrampilot/core";
 import {
   addSvgProvenanceMetadata,
   createSvgRendererProvenance,
@@ -26,6 +27,14 @@ test("SVG provenance construction records deterministic source and renderer meta
     sourcePath,
     sourceContent,
   });
+  const sharedProvenance = createSvgArtifactProvenance({
+    sourcePath,
+    sourceContent,
+    renderer: {
+      name: "@terrastruct/d2",
+      version: "0.1.33",
+    },
+  });
   const repeatedProvenance = createSvgRendererProvenance({
     sourcePath,
     sourceContent,
@@ -40,6 +49,7 @@ test("SVG provenance construction records deterministic source and renderer meta
       version: "0.1.33",
     },
   });
+  assert.deepEqual(provenance, sharedProvenance);
   assert.deepEqual(repeatedProvenance, provenance);
   assert.doesNotMatch(
     JSON.stringify(provenance),

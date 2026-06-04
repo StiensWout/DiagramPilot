@@ -1,6 +1,8 @@
-import { createHash } from "node:crypto";
-
-import { getDiagramPilotVersion, type DiagramSpec } from "@diagrampilot/core";
+import {
+  createSvgArtifactProvenance,
+  type DiagramSpec,
+  type SvgArtifactProvenance,
+} from "@diagrampilot/core";
 import { exportDiagramSpecToD2 } from "@diagrampilot/export-d2";
 import { D2 } from "@terrastruct/d2";
 
@@ -8,15 +10,7 @@ export const RENDER_SVG_PACKAGE_NAME = "@diagrampilot/render-svg";
 export const SVG_RENDERER_NAME = "@terrastruct/d2";
 export const SVG_RENDERER_VERSION = "0.1.33";
 
-export interface SvgRendererProvenance {
-  sourcePath: string;
-  sourceSha256: string;
-  diagramPilotVersion: string;
-  renderer: {
-    name: string;
-    version: string;
-  };
-}
+export type SvgRendererProvenance = SvgArtifactProvenance;
 
 export interface CreateSvgRendererProvenanceOptions {
   sourcePath: string;
@@ -46,17 +40,14 @@ async function terminateD2Worker(d2: D2): Promise<void> {
 export function createSvgRendererProvenance(
   options: CreateSvgRendererProvenanceOptions,
 ): SvgRendererProvenance {
-  return {
+  return createSvgArtifactProvenance({
     sourcePath: options.sourcePath,
-    sourceSha256: createHash("sha256")
-      .update(options.sourceContent)
-      .digest("hex"),
-    diagramPilotVersion: getDiagramPilotVersion(),
+    sourceContent: options.sourceContent,
     renderer: {
       name: SVG_RENDERER_NAME,
       version: SVG_RENDERER_VERSION,
     },
-  };
+  });
 }
 
 export function addSvgProvenanceMetadata(
