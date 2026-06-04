@@ -109,6 +109,63 @@ explicit files, commands, and validation expectations, while remaining readable
 to human maintainers.
 _Avoid_: Marketing copy, human-only tutorial, vague onboarding guide
 
+**Repo Workflow**:
+A DiagramPilot product capability area for operating on DiagramPilot Source
+Files and Derived Artifacts across a local repository, rather than on one
+explicit source file at a time.
+_Avoid_: Hosted workspace workflow, visual editor workflow, project analyzer
+
+**Artifact Freshness**:
+The relationship between a DiagramPilot Source File and a Derived Artifact when
+the artifact corresponds to the source and DiagramPilot generation context it
+was produced from.
+_Avoid_: Source validity, wall-clock freshness, hand-edited artifact
+
+**Repo Workflow Check**:
+A Repo Workflow operation that evaluates local diagram workflow health across a
+repository, including discovered DiagramPilot Source Files and their expected
+Derived Artifacts.
+_Avoid_: Single-file validation, hosted project audit, codebase analyzer
+
+**Read-Only Check**:
+A Repo Workflow Check that reports discovered workflow problems without
+rewriting DiagramPilot Source Files, rendering Derived Artifacts, or updating
+existing artifacts.
+_Avoid_: Fix command, auto-render, source rewrite
+
+**Check Scope**:
+The local directory tree or explicit DiagramPilot Source File a Repo Workflow
+Check evaluates. The first Repo Workflow Check uses the current working
+directory by default, or one explicit directory or source file path when
+provided.
+_Avoid_: Git root auto-detection, hosted workspace scope, global filesystem scan
+
+**SVG Artifact Freshness**:
+Artifact Freshness for an SVG Derived Artifact generated from a DiagramPilot
+Source File. The first Repo Workflow Check focuses on SVG Artifact Freshness
+before checking exported text formats.
+_Avoid_: Mermaid freshness, D2 freshness, PNG freshness, source validation
+
+**Stale SVG Artifact**:
+An Expected SVG Artifact that does not match the current DiagramPilot Source
+File and generation context recorded in DiagramPilot provenance metadata.
+Missing DiagramPilot provenance is treated as stale artifact evidence, not as a
+source validation error.
+_Avoid_: Invalid DiagramPilot Source File, old file by timestamp, manual SVG
+review
+
+**Provenance-Only Freshness Check**:
+An SVG Artifact Freshness check that reads DiagramPilot provenance metadata and
+does not render or byte-compare SVG output.
+_Avoid_: Render verification, generated output diff, timestamp comparison
+
+**Expected SVG Artifact**:
+The SVG Derived Artifact that a Repo Workflow Check expects for a DiagramPilot
+Source File. In the first Repo Workflow Check, it is the next-to-source SVG with
+the same filename stem as the source, and provenance source paths are compared
+relative to the Check Scope for directory checks.
+_Avoid_: Configured output path, exported text artifact, arbitrary SVG
+
 **Checkout Demo Project**:
 The Demo Project domain used to demonstrate DiagramPilot with one end-to-end
 architecture diagram for a small checkout system.
