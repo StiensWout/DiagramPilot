@@ -23,3 +23,15 @@ test("CLI commands route load failures through centralized repairable diagnostic
   assert.doesNotMatch(cliSource, /\bsourceFailureToValidationError\b/);
   assert.doesNotMatch(cliSource, /\bformatDiagramSpecValidationError\b/);
 });
+
+test("CLI check planning delegates Repo Workflow Check internals to the core module", async () => {
+  const cliSource = await readFile(cliSourcePath, "utf8");
+
+  assert.match(cliSource, /\bcheckDiagramPilotRepoWorkflow\b/);
+  assert.doesNotMatch(cliSource, /\bdiscoverDiagramPilotSourceFiles\b/);
+  assert.doesNotMatch(
+    cliSource,
+    /\bcheckExpectedSvgArtifactFreshnessForValidatedSource\b/,
+  );
+  assert.doesNotMatch(cliSource, /\bbuildCheckSourceResults\b/);
+});
