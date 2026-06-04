@@ -122,6 +122,7 @@ test("public quickstart and README route users through the checkout demo workflo
   assert.match(quickstart, /Checkout Demo Project/);
   assert.match(quickstart, /demo-projects\/checkout/);
   assert.match(quickstart, /cd demo-projects\/checkout/);
+  assert.match(quickstart, /diagrampilot check/);
   assert.match(
     quickstart,
     /diagrampilot validate docs\/architecture\.dp\.yaml/,
@@ -159,6 +160,18 @@ test("public quickstart explains current DiagramPilot artifact and CLI behavior"
 
   assert.match(quickstart, /DiagramPilot Source Files/);
   assert.match(quickstart, /Derived Artifacts/);
+  assert.match(quickstart, /review\/CI command/i);
+  assert.match(quickstart, /read-only/i);
+  assert.match(quickstart, /next-to-source same-stem Expected SVG Artifact/i);
+  assert.match(quickstart, /SVG freshness is provenance-only in v1/i);
+  assert.match(
+    quickstart,
+    /does not check Mermaid, D2, DOT, or PNG artifact freshness/i,
+  );
+  assert.match(
+    quickstart,
+    /does not support configurable artifact mappings or ignore patterns/i,
+  );
   assert.match(quickstart, /Validate before rendering/);
   assert.match(quickstart, /render` requires `--out`/);
   assert.match(quickstart, /sourcePath/);
