@@ -8,6 +8,20 @@ import {
 } from "@diagrampilot/icons";
 import { LineCounter, parseDocument } from "yaml";
 import type { YAMLError } from "yaml";
+import {
+  checkDiagramPilotRepoWorkflowWithDependencies,
+  type RepoWorkflowCheckOptions,
+  type RepoWorkflowCheckResult,
+} from "./repo-workflow-check.js";
+
+export { checkDiagramPilotRepoWorkflowWithDependencies } from "./repo-workflow-check.js";
+export type {
+  RepoWorkflowCheckDependencies,
+  RepoWorkflowCheckOptions,
+  RepoWorkflowCheckResult,
+  RepoWorkflowCheckSourceResult,
+  RepoWorkflowCheckSummary,
+} from "./repo-workflow-check.js";
 
 export const DIAGRAMPILOT_VERSION = "0.1.0";
 
@@ -25,6 +39,18 @@ const iconReferenceExpected =
 
 export function getDiagramPilotVersion(): string {
   return DIAGRAMPILOT_VERSION;
+}
+
+export async function checkDiagramPilotRepoWorkflow(
+  options: RepoWorkflowCheckOptions,
+): Promise<RepoWorkflowCheckResult> {
+  return checkDiagramPilotRepoWorkflowWithDependencies(options, {
+    discoverDiagramPilotSourceFiles,
+    loadValidatedDiagramSpec,
+    checkExpectedSvgArtifactFreshnessForValidatedSource,
+    createRepairableDiagnosticReport,
+    getCurrentWorkingDirectory: () => process.cwd(),
+  });
 }
 
 export interface DiscoveredDiagramPilotSourceFile {
