@@ -10,20 +10,15 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  checkExpectedSvgArtifactFreshnessForValidatedSource,
+  checkDiagramPilotRepoWorkflow,
   createRepairableDiagnosticReport,
-  discoverDiagramPilotSourceFiles,
   getDiagramPilotVersion,
   loadValidatedDiagramSpec,
-  type DiagramPilotSourceFile,
   type DiagramSpec,
-  type DiagramPilotSourceDiscoveryScope,
-  type FreshSvgArtifactResult,
-  type SvgArtifactProvenance,
-  type DiagramPilotSourceDiscoveryResult,
-  type SvgArtifactFreshnessCheckResult,
-  type StaleSvgArtifactResult,
   type ValidatedDiagramSpecLoadResult,
+  type RepoWorkflowCheckOptions,
+  type RepoWorkflowCheckResult,
+  type RepoWorkflowCheckSourceResult,
 } from "@diagrampilot/core";
 import { exportDiagramSpecToD2 } from "@diagrampilot/export-d2";
 import { exportDiagramSpecToMermaid } from "@diagrampilot/export-mermaid";
@@ -62,44 +57,6 @@ interface RenderCommandOptions {
 interface CheckCommandOptions {
   json: boolean;
   scopePath?: string;
-}
-
-interface CheckSourceResult {
-  sourcePath: string;
-  validation:
-    | {
-        ok: true;
-        errors: [];
-      }
-    | {
-        ok: false;
-        errors: ReturnType<typeof createRepairableDiagnosticReport>["errors"];
-      };
-  artifact:
-    | {
-        status: "fresh";
-        path: string;
-        provenance: SvgArtifactProvenance;
-      }
-    | {
-        status:
-          | "missing-artifact"
-          | "unreadable-artifact"
-          | "malformed-artifact"
-          | "missing-provenance";
-        path: string;
-        message?: string;
-      }
-    | {
-        status: "stale";
-        path: string;
-        reasons: StaleSvgArtifactResult["reasons"];
-        expected: StaleSvgArtifactResult["expected"];
-        actual: StaleSvgArtifactResult["actual"];
-      }
-    | {
-        status: "unchecked";
-      };
 }
 
 type ValidateArgsResult =
@@ -155,19 +112,10 @@ export interface CommandPlan {
 }
 
 export interface CommandPlanningDependencies {
+  checkDiagramPilotRepoWorkflow(
+    options: RepoWorkflowCheckOptions,
+  ): Promise<RepoWorkflowCheckResult>;
   loadValidatedDiagramSpec(path: string): ValidatedDiagramSpecLoadResult;
-  discoverDiagramPilotSourceFiles(
-    scopePath?: string,
-  ): Promise<DiagramPilotSourceDiscoveryResult>;
-  checkExpectedSvgArtifactFreshnessForValidatedSource(options: {
-    source: DiagramPilotSourceFile;
-    provenanceSourcePath: string;
-    diagramPilotVersion?: string;
-    renderer: {
-      name: string;
-      version: string;
-    };
-  }): Promise<SvgArtifactFreshnessCheckResult>;
   exportDiagramSpecToMermaid(spec: DiagramSpec): string;
   exportDiagramSpecToD2(spec: DiagramSpec): string;
   readSourceContent(path: string): string | Uint8Array;
@@ -182,9 +130,8 @@ export interface CommandPlanningDependencies {
 }
 
 const defaultCommandPlanningDependencies: CommandPlanningDependencies = {
+  checkDiagramPilotRepoWorkflow,
   loadValidatedDiagramSpec,
-  discoverDiagramPilotSourceFiles,
-  checkExpectedSvgArtifactFreshnessForValidatedSource,
   exportDiagramSpecToMermaid,
   exportDiagramSpecToD2,
   readSourceContent: (sourcePath) => readFileSync(sourcePath),
@@ -568,180 +515,28 @@ function checkUsageText(): string {
   return "Usage: diagrampilot check [path] [--json]";
 }
 
-function normalizePathForDisplay(filePath: string): string {
-  return filePath.split(path.sep).join("/");
-}
-
-function deriveCheckSourcePath(
-  scope: DiagramPilotSourceDiscoveryScope,
-  absolutePath: string,
-  relativePath: string,
-): string {
-  if (scope.kind === "directory") {
-    return relativePath;
-  }
-
-  return normalizePathForDisplay(path.relative(process.cwd(), absolutePath));
-}
-
-function deriveArtifactDisplayPath(
-  sourcePath: string,
-  artifactPath: string,
-): string {
-  const relativeArtifactPath = normalizePathForDisplay(
-    path.relative(process.cwd(), artifactPath),
-  );
-
-  if (!relativeArtifactPath.startsWith("..")) {
-    return relativeArtifactPath;
-  }
-
-  return sourcePath.replace(/\.dp\.(yaml|json)$/iu, ".svg");
-}
-
 function formatSourceCount(count: number): string {
   return `${count} DiagramPilot Source File${count === 1 ? "" : "s"}`;
 }
 
 function isArtifactFailure(
-  source: CheckSourceResult,
+  source: RepoWorkflowCheckSourceResult,
 ): boolean {
   return source.validation.ok === false || source.artifact.status !== "fresh";
 }
 
 function isIssueArtifact(
-  artifact: CheckSourceResult["artifact"],
-): artifact is Exclude<CheckSourceResult["artifact"], { status: "fresh" } | { status: "unchecked" }> {
+  artifact: RepoWorkflowCheckSourceResult["artifact"],
+): artifact is Exclude<
+  RepoWorkflowCheckSourceResult["artifact"],
+  { status: "fresh" } | { status: "unchecked" }
+> {
   return artifact.status !== "fresh" && artifact.status !== "unchecked";
 }
 
-async function buildCheckSourceResults(
-  discoveryResult: Extract<DiagramPilotSourceDiscoveryResult, { ok: true }>,
-  dependencies: CommandPlanningDependencies,
-): Promise<CheckSourceResult[]> {
-  const results: CheckSourceResult[] = [];
-
-  for (const source of discoveryResult.sources) {
-    const result = dependencies.loadValidatedDiagramSpec(source.absolutePath);
-    const sourcePath = deriveCheckSourcePath(
-      discoveryResult.scope,
-      source.absolutePath,
-      source.relativePath,
-    );
-
-    if (!result.ok) {
-      const report = createRepairableDiagnosticReport(result.failure);
-      results.push({
-        sourcePath,
-        validation: {
-          ok: false,
-          errors: report.errors,
-        },
-        artifact: {
-          status: "unchecked",
-        },
-      });
-      continue;
-    }
-
-    const artifact =
-      await dependencies.checkExpectedSvgArtifactFreshnessForValidatedSource({
-        source: result.source,
-        provenanceSourcePath: sourcePath,
-        renderer: {
-          name: SVG_RENDERER_NAME,
-          version: SVG_RENDERER_VERSION,
-        },
-      });
-    const artifactPath = deriveArtifactDisplayPath(
-      sourcePath,
-      artifact.artifactPath,
-    );
-
-    if (artifact.status === "fresh") {
-      const freshArtifact: FreshSvgArtifactResult = artifact;
-      results.push({
-        sourcePath,
-        validation: {
-          ok: true,
-          errors: [],
-        },
-        artifact: {
-          status: "fresh",
-          path: artifactPath,
-          provenance: freshArtifact.provenance,
-        },
-      });
-      continue;
-    }
-
-    if (artifact.status === "stale") {
-      results.push({
-        sourcePath,
-        validation: {
-          ok: true,
-          errors: [],
-        },
-        artifact: {
-          status: "stale",
-          path: artifactPath,
-          reasons: artifact.reasons,
-          expected: artifact.expected,
-          actual: artifact.actual,
-        },
-      });
-      continue;
-    }
-
-    if (artifact.status === "unreadable-artifact") {
-      results.push({
-        sourcePath,
-        validation: {
-          ok: true,
-          errors: [],
-        },
-        artifact: {
-          status: artifact.status,
-          path: artifactPath,
-          message: artifact.message,
-        },
-      });
-      continue;
-    }
-
-    if (artifact.status === "malformed-artifact") {
-      results.push({
-        sourcePath,
-        validation: {
-          ok: true,
-          errors: [],
-        },
-        artifact: {
-          status: artifact.status,
-          path: artifactPath,
-          message: artifact.message,
-        },
-      });
-      continue;
-    }
-
-    results.push({
-      sourcePath,
-      validation: {
-        ok: true,
-        errors: [],
-      },
-      artifact: {
-        status: artifact.status,
-        path: artifactPath,
-      },
-    });
-  }
-
-  return results;
-}
-
-function formatCheckTextReport(sourceResults: readonly CheckSourceResult[]): string {
+function formatCheckTextReport(
+  sourceResults: readonly RepoWorkflowCheckSourceResult[],
+): string {
   const issueSources = sourceResults.filter(isArtifactFailure);
 
   if (issueSources.length === 0) {
@@ -1010,33 +805,29 @@ async function planCheck(
     };
   }
 
-  const discoveryResult = await dependencies.discoverDiagramPilotSourceFiles(
-    argsResult.options.scopePath,
-  );
+  const checkResult = await dependencies.checkDiagramPilotRepoWorkflow({
+    scopePath: argsResult.options.scopePath,
+    diagramPilotVersion: dependencies.getDiagramPilotVersion(),
+    renderer: {
+      name: SVG_RENDERER_NAME,
+      version: SVG_RENDERER_VERSION,
+    },
+  });
 
-  if (!discoveryResult.ok) {
+  if (!checkResult.ok) {
     return {
       exitCode: 1,
       stdout: "",
-      stderr: textLine(discoveryResult.failure.message),
+      stderr: textLine(checkResult.failure.message),
       writes: [],
     };
   }
 
-  if (discoveryResult.sources.length === 0) {
+  if (checkResult.sources.length === 0) {
     if (argsResult.options.json) {
       return {
         exitCode: 0,
-        stdout: jsonTextLine({
-          ok: true,
-          scope: discoveryResult.scope,
-          summary: {
-            checkedSourceCount: 0,
-            freshSourceCount: 0,
-            issueCount: 0,
-          },
-          sources: [],
-        }),
+        stdout: jsonTextLine(checkResult),
         stderr: "",
         writes: [],
       };
@@ -1045,33 +836,22 @@ async function planCheck(
     return {
       exitCode: 0,
       stdout: textLine(
-        `No DiagramPilot Source Files found in ${discoveryResult.scope.path}.`,
+        `No DiagramPilot Source Files found in ${checkResult.scope.path}.`,
       ),
       stderr: "",
       writes: [],
     };
   }
 
-  const sourceResults = await buildCheckSourceResults(
-    discoveryResult,
-    dependencies,
-  );
-  const issueCount = sourceResults.filter(isArtifactFailure).length;
+  const sourceResults = checkResult.sources;
+  const issueCount = checkResult.summary.issueCount;
 
   if (argsResult.options.json) {
     return {
       exitCode: issueCount === 0 ? 0 : 1,
       stdout: jsonTextLine({
+        ...checkResult,
         ok: issueCount === 0,
-        scope: discoveryResult.scope,
-        summary: {
-          checkedSourceCount: sourceResults.length,
-          freshSourceCount: sourceResults.filter(
-            (source) => source.artifact.status === "fresh",
-          ).length,
-          issueCount,
-        },
-        sources: sourceResults,
       }),
       stderr: "",
       writes: [],
