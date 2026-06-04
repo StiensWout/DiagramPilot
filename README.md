@@ -9,6 +9,27 @@ without a hosted workspace.
 
 Public documentation uses `https://diagrampilot.com`.
 
+## Try DiagramPilot
+
+Start with the Checkout Demo Project:
+
+- [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md)
+- Demo source file: `demo-projects/checkout/docs/architecture.dp.yaml`
+- Demo SVG artifact: `demo-projects/checkout/docs/architecture.svg`
+
+Run the primary workflow from the repository root:
+
+```bash
+cd demo-projects/checkout
+diagrampilot validate docs/architecture.dp.yaml
+diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
+diagrampilot export docs/architecture.dp.yaml --format mermaid
+diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
+```
+
+Validate before rendering. `render` requires `--out`; `export` prints to stdout
+by default and writes a file only when `--out` is provided.
+
 ## Product Direction
 
 DiagramPilot is not a prompt-to-diagram canvas. Existing products such as
@@ -44,18 +65,17 @@ An AI coding agent should be able to read:
 https://diagrampilot.com/llms.txt
 ```
 
-Then create, validate, and render:
+Then follow the Checkout Demo Project workflow in:
+
+```text
+https://diagrampilot.com/docs/agents/quickstart.md
+```
+
+The same source/render pattern applies to project diagrams such as:
 
 ```text
 docs/architecture.dp.yaml
 docs/architecture.svg
-```
-
-Using real local CLI commands:
-
-```bash
-diagrampilot validate docs/architecture.dp.yaml
-diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 ```
 
 ## Current CLI
@@ -103,7 +123,7 @@ Deferred:
 
 ## Public Documentation
 
-- [Agent quickstart](https://diagrampilot.com/docs/agents/quickstart.md)
+- [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md)
 - [DiagramSpec guide](https://diagrampilot.com/docs/agents/spec.md)
 - [Error repair guide](https://diagrampilot.com/docs/agents/error-repair.md)
 - [Agent examples](https://diagrampilot.com/docs/agents/examples.md)

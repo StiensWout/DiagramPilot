@@ -1,66 +1,156 @@
-# Agent Quickstart
+# Try DiagramPilot With The Checkout Demo Project
 
-Use DiagramPilot when a project needs a diagram that should live in the repo,
-survive review, and be updated by agents over time.
+Use the Checkout Demo Project when you want the shortest real repository
+workflow for DiagramPilot. It is a small repo-shaped checkout system with local
+source snippets, a DiagramPilot source file, and a committed SVG artifact.
 
 ## Goal
 
-Create a DiagramPilot source file, validate it, render an SVG artifact, and
-commit the source plus any useful generated artifact.
+Validate and render the demo architecture diagram, inspect its provenance, and
+export it when another diagram-as-code format is needed.
 
-## File Names
+## Demo Files
 
-Recommended source path:
-
-```text
-docs/architecture.dp.yaml
-```
-
-Recommended rendered path:
+From the repository root, the demo lives here:
 
 ```text
-docs/architecture.svg
+demo-projects/checkout
 ```
 
-Generated artifacts are usually easiest to review when they live next to their
-source file, but DiagramPilot does not require that.
+DiagramPilot Source Files use `*.dp.yaml` or `*.dp.json`. The demo uses:
 
-## Minimal Workflow
+```text
+demo-projects/checkout/docs/architecture.dp.yaml
+```
+
+Derived Artifacts produced or refreshed by this workflow:
+
+```text
+demo-projects/checkout/docs/architecture.svg
+demo-projects/checkout/docs/architecture.d2
+```
+
+`architecture.svg` is committed with the demo. `architecture.d2` is an optional
+export file created only when the D2 export command uses `--out`.
+`architecture.dp.yaml` is the editable source of truth. SVG, Mermaid, D2, DOT,
+and PNG are derived artifacts; regenerate them from the source instead of
+hand-editing generated output.
+
+## Demo Workflow
+
+Run the workflow from the demo project directory:
 
 ```bash
-diagrampilot init
+cd demo-projects/checkout
 diagrampilot validate docs/architecture.dp.yaml
+```
+
+Expected validation result:
+
+```text
+Valid docs/architecture.dp.yaml
+```
+
+Validate before rendering. Validation checks the DiagramPilot source file and
+reports repairable source errors. It does not check whether generated artifacts
+are fresh.
+
+Render the SVG artifact only after validation succeeds:
+
+```bash
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 ```
 
-Export to existing diagram-as-code formats when needed:
+`render` requires `--out`. Keep the rendered SVG next to the source when that
+is practical for review.
+
+Export to another diagram-as-code format when needed:
 
 ```bash
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
 ```
 
-`export` prints to stdout by default. Use `--out` to write a file.
+`export` prints to stdout by default. Use `--out` only when you want to write a
+derived export file.
+
+## SVG Provenance
+
+Rendered SVG includes deterministic provenance metadata:
+
+- `sourcePath`
+- `sourceSha256`
+- `diagramPilotVersion`
+- `renderer`
+
+The provenance does not include wall-clock timestamps. This keeps rendered SVG
+review-stable and makes stale artifacts easy to detect by re-rendering and
+checking the Git diff.
+
+```bash
+diagrampilot validate docs/architecture.dp.yaml
+diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
+git diff --exit-code docs/architecture.svg
+```
+
+## What The Demo Shows
+
+The checkout demo source demonstrates the current DiagramSpec shape:
+
+- Nodes for browser, API, service, database, event stream, and worker concepts.
+- Groups for customer experience, runtime, and fulfillment boundaries.
+- `lucide:*` icons.
+- Labeled directed edges.
+- `metadata.source` references to local repository paths.
+
+Use these local references when updating a diagram so reviewers can connect a
+diagram object back to the code it represents.
+
+## Create Your Own Diagram
+
+Use the same file shape in another repository:
+
+```text
+docs/architecture.dp.yaml
+docs/architecture.svg
+```
+
+Agent rules:
+
+- Create or update `*.dp.yaml` or `*.dp.json` as the editable source.
+- Prefer YAML for human- and agent-authored diagrams.
+- Use stable lowercase snake case IDs for nodes, edges, and groups.
+- Keep IDs globally unique within one DiagramSpec.
+- Preserve existing IDs when updating diagrams.
+- Validate before rendering.
+- Fix validation errors directly in the source spec.
+- Render only after validation succeeds.
+- Do not hand-edit generated SVG, Mermaid, D2, DOT, or PNG unless explicitly
+  requested.
 
 ## CLI Contract
+
+```bash
+diagrampilot init
+diagrampilot validate docs/architecture.dp.yaml
+diagrampilot validate docs/architecture.dp.yaml --json
+diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
+diagrampilot export docs/architecture.dp.yaml --format mermaid
+diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
+```
 
 `diagrampilot init`
 : Creates or updates DiagramPilot support files only. It does not scan the
 codebase or generate a diagram by default.
 
 `diagrampilot validate <path>`
-: Validates one explicit DiagramPilot source file path. Validation reports
-source-file correctness only; it does not check whether generated artifacts are
-fresh.
+: Validates one explicit DiagramPilot source file path.
 
 `diagrampilot validate <path> --json`
 : Emits structured repairable validation errors for agents and scripts.
 
 `diagrampilot render <path> --out <artifact.svg>`
-: Renders a valid DiagramPilot source file to SVG. `--out` is required. The SVG
-includes deterministic provenance metadata with the source path, source
-SHA-256 hash, DiagramPilot version, and renderer version. It does not include
-wall-clock timestamps.
+: Renders a valid DiagramPilot source file to SVG. `--out` is required.
 
 `diagrampilot export <path> --format mermaid|d2`
 : Prints an exported text format to stdout.
@@ -69,66 +159,3 @@ wall-clock timestamps.
 : Writes an exported text format to a file.
 
 Diagnostics and validation errors should go to stderr, not stdout.
-
-## Agent Rules
-
-- Create `*.dp.yaml` or `*.dp.json` as the editable source.
-- Prefer YAML for human- and agent-authored diagrams.
-- Use stable lowercase snake case IDs for nodes, edges, and groups.
-- Keep IDs globally unique within one DiagramSpec.
-- Preserve existing IDs when updating diagrams.
-- Validate before rendering.
-- Fix validation errors directly in the source spec.
-- Render only after validation succeeds.
-- Do not hand-edit generated SVG, Mermaid, D2, DOT, or PNG unless the user
-  explicitly asks.
-
-## Minimal DiagramSpec
-
-```yaml
-version: 1
-title: Checkout Architecture
-direction: right
-nodes:
-  - id: web_app
-    label: Web App
-    kind: frontend
-  - id: api_gateway
-    label: API Gateway
-    kind: service
-    icon: lucide:server
-  - id: orders_db
-    label: Orders DB
-    kind: database
-    icon: lucide:database
-edges:
-  - id: web_app_to_api_gateway
-    from: web_app
-    to: api_gateway
-    label: HTTPS
-  - id: api_gateway_to_orders_db
-    from: api_gateway
-    to: orders_db
-    label: reads/writes
-```
-
-## Expected Output
-
-The agent should leave the project with:
-
-- A valid DiagramPilot source file.
-- A rendered SVG artifact when requested.
-- Deterministic SVG provenance metadata when rendering.
-- No broken references between nodes, groups, or edges.
-- A short note explaining what the diagram shows.
-
-## CI Guidance
-
-Projects can validate diagrams and detect stale committed artifacts with normal
-shell commands:
-
-```bash
-diagrampilot validate docs/architecture.dp.yaml
-diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
-git diff --exit-code docs/architecture.svg
-```

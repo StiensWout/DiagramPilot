@@ -1,7 +1,8 @@
 # Examples
 
 These examples show the intended DiagramSpec style. They are deliberately small
-so agents can copy and adapt them.
+so agents can copy and adapt them. Use the quickstart for the full Checkout
+Demo Project workflow.
 
 ## Architecture Diagram
 
@@ -107,24 +108,50 @@ nodes:
     label: packages/core
     kind: package
     icon: lucide:box
-  - id: layout
-    label: packages/layout
-    kind: package
-    icon: lucide:network
   - id: render_svg
     label: packages/render-svg
     kind: package
     icon: lucide:file-image
+  - id: export_mermaid
+    label: packages/export-mermaid
+    kind: package
+    icon: lucide:file-code
+  - id: export_d2
+    label: packages/export-d2
+    kind: package
+    icon: lucide:file-code
+  - id: icons
+    label: packages/icons
+    kind: package
+    icon: lucide:shapes
 edges:
   - id: cli_to_core
     from: cli
     to: core
-  - id: core_to_layout
-    from: core
-    to: layout
-  - id: core_to_render_svg
-    from: core
+  - id: cli_to_render_svg
+    from: cli
     to: render_svg
+  - id: cli_to_export_mermaid
+    from: cli
+    to: export_mermaid
+  - id: cli_to_export_d2
+    from: cli
+    to: export_d2
+  - id: render_svg_to_export_d2
+    from: render_svg
+    to: export_d2
+  - id: render_svg_to_core
+    from: render_svg
+    to: core
+  - id: export_mermaid_to_core
+    from: export_mermaid
+    to: core
+  - id: export_d2_to_core
+    from: export_d2
+    to: core
+  - id: core_to_icons
+    from: core
+    to: icons
 ```
 
 ## Nested Groups
