@@ -118,6 +118,10 @@ test("public quickstart and README route users through the checkout demo workflo
   );
   const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
   const llmsText = await readFile(path.join(repoRoot, "llms.txt"), "utf8");
+  const checkoutDemoReadme = await readFile(
+    path.join(repoRoot, "demo-projects", "checkout", "README.md"),
+    "utf8",
+  );
 
   assert.match(quickstart, /Checkout Demo Project/);
   assert.match(quickstart, /demo-projects\/checkout/);
@@ -145,10 +149,29 @@ test("public quickstart and README route users through the checkout demo workflo
     readme,
     /https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md/,
   );
+  assert.match(readme, /diagrampilot check/);
+  assert.match(readme, /diagrampilot validate docs\/architecture\.dp\.yaml/);
+  assert.match(
+    readme,
+    /diagrampilot render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/,
+  );
+
   assert.match(llmsText, /Checkout demo quickstart/);
   assert.match(
     llmsText,
     /https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md/,
+  );
+  assert.match(llmsText, /diagrampilot check/);
+
+  assert.match(checkoutDemoReadme, /diagrampilot check/);
+  assert.match(checkoutDemoReadme, /read-only repo review\/CI command/);
+  assert.match(
+    checkoutDemoReadme,
+    /diagrampilot validate docs\/architecture\.dp\.yaml/,
+  );
+  assert.match(
+    checkoutDemoReadme,
+    /diagrampilot render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/,
   );
 });
 
