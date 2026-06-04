@@ -195,7 +195,54 @@ function extractSvgArtifactProvenance(
     return undefined;
   }
 
-  return JSON.parse(match.groups.json) as SvgArtifactProvenance;
+  const provenance = JSON.parse(
+    match.groups.json,
+  ) as Partial<SvgArtifactProvenance>;
+
+  if (
+    provenance === null ||
+    typeof provenance !== "object" ||
+    typeof provenance.sourcePath !== "string"
+  ) {
+    throw new Error(
+      "Malformed DiagramPilot provenance: expected string sourcePath.",
+    );
+  }
+
+  if (typeof provenance.sourceSha256 !== "string") {
+    throw new Error(
+      "Malformed DiagramPilot provenance: expected string sourceSha256.",
+    );
+  }
+
+  if (typeof provenance.diagramPilotVersion !== "string") {
+    throw new Error(
+      "Malformed DiagramPilot provenance: expected string diagramPilotVersion.",
+    );
+  }
+
+  if (
+    provenance.renderer === null ||
+    typeof provenance.renderer !== "object"
+  ) {
+    throw new Error(
+      "Malformed DiagramPilot provenance: expected renderer object.",
+    );
+  }
+
+  if (typeof provenance.renderer.name !== "string") {
+    throw new Error(
+      "Malformed DiagramPilot provenance: expected string renderer.name.",
+    );
+  }
+
+  if (typeof provenance.renderer.version !== "string") {
+    throw new Error(
+      "Malformed DiagramPilot provenance: expected string renderer.version.",
+    );
+  }
+
+  return provenance as SvgArtifactProvenance;
 }
 
 function compareSvgArtifactProvenance(
