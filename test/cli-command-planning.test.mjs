@@ -9,6 +9,7 @@ function validLoadResult(sourcePath = "docs/architecture.dp.yaml") {
     source: {
       format: "yaml",
       path: sourcePath,
+      content: "version: 1\n",
       value: {
         version: 1,
         title: "Checkout Architecture",
@@ -103,7 +104,7 @@ function createPlanningDependencies(overrides = {}) {
       scope: { kind: "directory", path: "/repo" },
       sources: [],
     }),
-    checkExpectedSvgArtifactFreshness: async () => ({
+    checkExpectedSvgArtifactFreshnessForValidatedSource: async () => ({
       sourcePath: "docs/architecture.dp.yaml",
       artifactPath: "docs/architecture.svg",
       status: "fresh",
@@ -394,7 +395,7 @@ test("plans check text success as a concise summary without listing every fresh 
             relativePath: "docs/architecture.dp.yaml",
           },
         ]),
-      checkExpectedSvgArtifactFreshness: async () =>
+      checkExpectedSvgArtifactFreshnessForValidatedSource: async () =>
         freshArtifact(
           "/repo/docs/architecture.dp.yaml",
           "/repo/docs/architecture.svg",
@@ -410,6 +411,45 @@ test("plans check text success as a concise summary without listing every fresh 
     writes: [],
   });
   assert.doesNotMatch(plan.stdout, /architecture\.dp\.yaml/);
+});
+
+test("plans check passes validated source context into SVG Artifact Freshness", async () => {
+  const loadResult = validLoadResult("/repo/docs/architecture.dp.yaml");
+  let loadCount = 0;
+  let freshnessOptions;
+
+  const plan = await planCommand(
+    ["check"],
+    createPlanningDependencies({
+      discoverDiagramPilotSourceFiles: async () =>
+        discoveryDirectoryScope([
+          {
+            absolutePath: "/repo/docs/architecture.dp.yaml",
+            relativePath: "docs/architecture.dp.yaml",
+          },
+        ]),
+      loadValidatedDiagramSpec: () => {
+        loadCount += 1;
+        return loadResult;
+      },
+      checkExpectedSvgArtifactFreshnessForValidatedSource: async (options) => {
+        freshnessOptions = options;
+
+        return freshArtifact(
+          options.source.path,
+          "/repo/docs/architecture.svg",
+        );
+      },
+    }),
+  );
+
+  assert.equal(plan.exitCode, 0);
+  assert.equal(loadCount, 1);
+  assert.equal(freshnessOptions.source, loadResult.source);
+  assert.equal(
+    freshnessOptions.provenanceSourcePath,
+    "docs/architecture.dp.yaml",
+  );
 });
 
 test("plans check text failures with concise repair commands for invalid, missing, and stale sources", async () => {
@@ -442,7 +482,9 @@ test("plans check text failures with concise repair commands for invalid, missin
 
         return validLoadResult(sourcePath);
       },
-      checkExpectedSvgArtifactFreshness: async ({ sourcePath }) => {
+      checkExpectedSvgArtifactFreshnessForValidatedSource: async ({ source }) => {
+        const sourcePath = source.path;
+
         if (sourcePath.endsWith("fresh.dp.yaml")) {
           return freshArtifact(sourcePath, "/repo/docs/fresh.svg");
         }
@@ -527,7 +569,9 @@ test("plans check json as an aggregate result including fresh and stale sources"
 
         return validLoadResult(sourcePath);
       },
-      checkExpectedSvgArtifactFreshness: async ({ sourcePath }) => {
+      checkExpectedSvgArtifactFreshnessForValidatedSource: async ({ source }) => {
+        const sourcePath = source.path;
+
         if (sourcePath.endsWith("fresh.dp.yaml")) {
           return freshArtifact(sourcePath, "/repo/docs/fresh.svg");
         }

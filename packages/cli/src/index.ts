@@ -10,11 +10,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  checkExpectedSvgArtifactFreshness,
+  checkExpectedSvgArtifactFreshnessForValidatedSource,
   createRepairableDiagnosticReport,
   discoverDiagramPilotSourceFiles,
   getDiagramPilotVersion,
   loadValidatedDiagramSpec,
+  type DiagramPilotSourceFile,
   type DiagramSpec,
   type DiagramPilotSourceDiscoveryScope,
   type FreshSvgArtifactResult,
@@ -158,8 +159,8 @@ export interface CommandPlanningDependencies {
   discoverDiagramPilotSourceFiles(
     scopePath?: string,
   ): Promise<DiagramPilotSourceDiscoveryResult>;
-  checkExpectedSvgArtifactFreshness(options: {
-    sourcePath: string;
+  checkExpectedSvgArtifactFreshnessForValidatedSource(options: {
+    source: DiagramPilotSourceFile;
     provenanceSourcePath: string;
     diagramPilotVersion?: string;
     renderer: {
@@ -183,7 +184,7 @@ export interface CommandPlanningDependencies {
 const defaultCommandPlanningDependencies: CommandPlanningDependencies = {
   loadValidatedDiagramSpec,
   discoverDiagramPilotSourceFiles,
-  checkExpectedSvgArtifactFreshness,
+  checkExpectedSvgArtifactFreshnessForValidatedSource,
   exportDiagramSpecToMermaid,
   exportDiagramSpecToD2,
   readSourceContent: (sourcePath) => readFileSync(sourcePath),
@@ -643,15 +644,19 @@ async function buildCheckSourceResults(
       continue;
     }
 
-    const artifact = await dependencies.checkExpectedSvgArtifactFreshness({
-      sourcePath: source.absolutePath,
-      provenanceSourcePath: sourcePath,
-      renderer: {
-        name: SVG_RENDERER_NAME,
-        version: SVG_RENDERER_VERSION,
-      },
-    });
-    const artifactPath = deriveArtifactDisplayPath(sourcePath, artifact.artifactPath);
+    const artifact =
+      await dependencies.checkExpectedSvgArtifactFreshnessForValidatedSource({
+        source: result.source,
+        provenanceSourcePath: sourcePath,
+        renderer: {
+          name: SVG_RENDERER_NAME,
+          version: SVG_RENDERER_VERSION,
+        },
+      });
+    const artifactPath = deriveArtifactDisplayPath(
+      sourcePath,
+      artifact.artifactPath,
+    );
 
     if (artifact.status === "fresh") {
       const freshArtifact: FreshSvgArtifactResult = artifact;
