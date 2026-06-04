@@ -142,8 +142,9 @@ Deferred:
 
 ## Status
 
-MVP implementation is in progress. The TypeScript workspace includes core
-source loading and validation, CLI commands for `init`, `validate`, `render`,
-and `export`, Mermaid and D2 export, SVG rendering through the included local D2
-path, packaged Lucide icon validation, and deterministic SVG provenance
-metadata.
+MVP, architecture deepening, and docs/demo rework checkpoints are complete. The
+TypeScript workspace includes core source loading and validation, CLI commands
+for `init`, `validate`, `render`, and `export`, Mermaid and D2 export, SVG
+rendering through the included local D2 path, packaged Lucide icon validation,
+deterministic SVG provenance metadata, the Checkout Demo Project, and the
+public/internal documentation split.

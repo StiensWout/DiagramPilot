@@ -30,8 +30,8 @@ maintainer workflow guidance.
 
 ## Blocked by
 
-- [01 Split Public Documentation and Internal Documentation roots](./01-split-public-and-internal-documentation-roots.md)
-- [02 Add the Checkout Demo Project fixture](./02-add-the-checkout-demo-project-fixture.md)
+- [28 Split Public Documentation and Internal Documentation roots](./28-split-public-and-internal-documentation-roots.md)
+- [29 Add the Checkout Demo Project fixture](./29-add-the-checkout-demo-project-fixture.md)
 
 ## Implementation notes
 
