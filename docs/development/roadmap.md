@@ -101,6 +101,28 @@ npm test
 
 ## Active Backlog
 
+### Repo Workflow Check
+
+The next product capability phase is the first Repo Workflow Check:
+`diagrampilot check`.
+
+This phase is tracked in `.scratch/repo-workflow-check/` and focuses on a
+read-only repository health check for diagrams:
+
+1. Discover DiagramPilot Source Files from the current directory, one explicit
+   directory, or one explicit source file.
+2. Validate discovered source files through the shared validated DiagramSpec
+   loading path.
+3. Derive the next-to-source same-stem Expected SVG Artifact for each valid
+   source.
+4. Check SVG Artifact Freshness by reading DiagramPilot provenance metadata.
+5. Emit concise text output and aggregate JSON output.
+6. Update Public Documentation after the command is implemented.
+
+The first `check` command does not render, write files, update artifacts,
+rewrite sources, scan from the Git root by default, check Mermaid/D2/DOT/PNG
+freshness, or use configurable artifact mappings.
+
 ## Completed Architecture Deepening
 
 The architecture-deepening tracker slices under
