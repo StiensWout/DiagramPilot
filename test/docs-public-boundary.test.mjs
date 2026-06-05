@@ -174,6 +174,52 @@ test("README describes current behavior and public docs only", async () => {
   assert.doesNotMatch(readme, /planned|deferred|future|not implemented|source mutation/i);
 });
 
+test("public entrypoints expose canonical DiagramPilot Brand Assets", async () => {
+  const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
+  const publicDocsIndex = await readFile(
+    path.join(repoRoot, "docs-public", "index.md"),
+    "utf8",
+  );
+  const llmsText = await readFile(path.join(repoRoot, "llms.txt"), "utf8");
+  const brandUsePolicy = await readFile(
+    path.join(repoRoot, "BRAND_USE_POLICY.md"),
+    "utf8",
+  );
+
+  assert.match(
+    readme,
+    /!\[DiagramPilot wordmark\]\(assets\/brand\/diagrampilot-logo\.svg\)/,
+  );
+  assert.match(
+    readme,
+    /\[DiagramPilot mark\]\(assets\/brand\/diagrampilot-mark\.svg\)/,
+  );
+  assert.match(
+    publicDocsIndex,
+    /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo\.svg/,
+  );
+  assert.match(
+    publicDocsIndex,
+    /https:\/\/diagrampilot\.com\/brand\/diagrampilot-mark\.svg/,
+  );
+  assert.match(
+    llmsText,
+    /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo\.svg/,
+  );
+  assert.match(
+    llmsText,
+    /https:\/\/diagrampilot\.com\/brand\/diagrampilot-mark\.svg/,
+  );
+  assert.match(brandUsePolicy, /assets\/brand\/diagrampilot-logo\.svg/);
+  assert.match(brandUsePolicy, /assets\/brand\/diagrampilot-mark\.svg/);
+
+  for (const publicSurface of [readme, publicDocsIndex, llmsText]) {
+    assert.doesNotMatch(publicSurface, /docs\/development\//);
+    assert.doesNotMatch(publicSurface, /docs\/adr\//);
+    assert.doesNotMatch(publicSurface, /\.scratch\//);
+  }
+});
+
 test("public quickstart and README route users through the checkout demo workflow", async () => {
   const quickstart = await readFile(
     path.join(repoRoot, "docs-public", "agents", "quickstart.md"),

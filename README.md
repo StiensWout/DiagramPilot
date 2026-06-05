@@ -1,5 +1,7 @@
 # DiagramPilot
 
+![DiagramPilot wordmark](assets/brand/diagrampilot-logo.svg)
+
 DiagramPilot is a local-first, repo-native diagram compiler for AI coding
 agents. It validates structured DiagramSpec source files, renders review-stable
 SVG artifacts, and exports Mermaid or D2 text from the same source of truth.
@@ -65,6 +67,11 @@ DiagramPilot code and repository materials use the [MIT Code License](LICENSE).
 The DiagramPilot name, mark, wordmark, `diagrampilot.com` domain, and official
 release identity are covered separately by the
 [Brand Use Policy](BRAND_USE_POLICY.md).
+
+Canonical DiagramPilot Brand Assets live in `assets/brand/`: the
+[DiagramPilot mark](assets/brand/diagrampilot-mark.svg) for icon-sized
+placements and the [DiagramPilot wordmark](assets/brand/diagrampilot-logo.svg)
+for surfaces where it remains legible.
 
 ## CLI Commands
 

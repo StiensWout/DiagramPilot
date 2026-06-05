@@ -162,6 +162,39 @@ test("public landing page presents generated product visuals", async () => {
   }
 });
 
+test("website publishes canonical brand assets and uses the mark as favicon", async () => {
+  await websiteBuild();
+
+  const canonicalMark = await readFile(
+    path.join(repoRoot, "assets", "brand", "diagrampilot-mark.svg"),
+    "utf8",
+  );
+  const canonicalLogo = await readFile(
+    path.join(repoRoot, "assets", "brand", "diagrampilot-logo.svg"),
+    "utf8",
+  );
+  const publishedMark = await readFile(
+    path.join(repoRoot, "website", "dist", "brand", "diagrampilot-mark.svg"),
+    "utf8",
+  );
+  const publishedLogo = await readFile(
+    path.join(repoRoot, "website", "dist", "brand", "diagrampilot-logo.svg"),
+    "utf8",
+  );
+  const html = await readFile(
+    path.join(repoRoot, "website", "dist", "index.html"),
+    "utf8",
+  );
+
+  assert.equal(publishedMark, canonicalMark);
+  assert.equal(publishedLogo, canonicalLogo);
+  assert.match(
+    html,
+    /<link rel="(?:shortcut )?icon" href="\/brand\/diagrampilot-mark\.svg" type="image\/svg\+xml">/,
+  );
+  assert.doesNotMatch(html, /href="\/favicon\.svg"/);
+});
+
 test("custom landing styles keep accessibility and motion controls explicit", async () => {
   const landingCss = await readFile(
     path.join(repoRoot, "website", "src", "styles", "landing.css"),

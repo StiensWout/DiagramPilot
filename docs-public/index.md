@@ -1,5 +1,7 @@
 # Public Documentation
 
+![DiagramPilot wordmark](https://diagrampilot.com/brand/diagrampilot-logo.svg)
+
 DiagramPilot Public Documentation is for developers and AI coding agents using
 DiagramPilot in their own repositories.
 
@@ -31,3 +33,8 @@ diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architectur
 Use `check` as the read-only repo review/CI command. `render` requires
 `--out`. `export` prints to stdout by default and writes a file only when
 `--out` is provided.
+
+## Brand Assets
+
+- [DiagramPilot wordmark](https://diagrampilot.com/brand/diagrampilot-logo.svg)
+- [DiagramPilot mark](https://diagrampilot.com/brand/diagrampilot-mark.svg)

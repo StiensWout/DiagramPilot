@@ -182,6 +182,25 @@ test("website publishes public docs as human HTML and agent Markdown routes", as
   );
 });
 
+test("website docs pages use published DiagramPilot brand assets", async () => {
+  await websiteBuild();
+
+  const html = await readFile(
+    path.join(repoRoot, "website", "dist", "docs", "index.html"),
+    "utf8",
+  );
+
+  assert.match(
+    html,
+    /href="\/brand\/diagrampilot-mark\.svg"[^>]*type="image\/svg\+xml"/,
+  );
+  assert.match(html, /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo\.svg/);
+  assert.match(html, /https:\/\/diagrampilot\.com\/brand\/diagrampilot-mark\.svg/);
+  assert.doesNotMatch(html, /href="\/favicon\.svg"/);
+  assert.equal(await exists("website/dist/brand/diagrampilot-logo.svg"), true);
+  assert.equal(await exists("website/dist/brand/diagrampilot-mark.svg"), true);
+});
+
 test("website publishes llms.txt and the public DiagramSpec schema", async () => {
   await websiteBuild();
 
@@ -237,6 +256,7 @@ test("website build excludes internal docs and keeps synced copies untracked", a
 
   const trackedGeneratedFiles = await gitLsFiles([
     "website/src/content/docs/docs",
+    "website/public/brand",
     "website/public/llms.txt",
     "website/public/schema",
   ]);

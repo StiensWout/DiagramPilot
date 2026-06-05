@@ -15,6 +15,7 @@ const publicDocsRoot = path.join(repoRoot, "docs-public");
 const starlightDocsRoot = path.join(websiteRoot, "src", "content", "docs");
 const starlightPublicDocsRoot = path.join(starlightDocsRoot, "docs");
 const websitePublicRoot = path.join(websiteRoot, "public");
+const brandAssetsRoot = path.join(repoRoot, "assets", "brand");
 
 async function listMarkdownFiles(root, current = root) {
   let entries;
@@ -92,10 +93,19 @@ async function syncPublicDocs() {
 }
 
 async function syncStaticPublicFiles() {
+  await mkdir(path.join(websitePublicRoot, "brand"), { recursive: true });
   await mkdir(path.join(websitePublicRoot, "schema"), { recursive: true });
   await mkdir(
     path.join(websitePublicRoot, "demo-projects", "checkout", "docs"),
     { recursive: true },
+  );
+  await copyFile(
+    path.join(brandAssetsRoot, "diagrampilot-logo.svg"),
+    path.join(websitePublicRoot, "brand", "diagrampilot-logo.svg"),
+  );
+  await copyFile(
+    path.join(brandAssetsRoot, "diagrampilot-mark.svg"),
+    path.join(websitePublicRoot, "brand", "diagrampilot-mark.svg"),
   );
   await copyFile(
     path.join(repoRoot, "llms.txt"),
