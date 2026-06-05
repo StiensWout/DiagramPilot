@@ -52,6 +52,18 @@ The check fails if a public package version, private workspace version, exact
 internal package dependency, lockfile package version, lockfile internal
 dependency, or runtime DiagramPilot version drifts.
 
+Run the package readiness check whenever release licensing or package publish
+metadata changes:
+
+```bash
+npm run check:package-readiness
+```
+
+The package readiness check validates MIT license metadata, private workspace
+boundaries, public package repository/homepage/bugs/keywords/publish settings,
+package-local MIT license files, and `npm pack --dry-run` output for the Public
+Package Set.
+
 ## Closeout
 
 Issue closeout includes:
@@ -71,7 +83,9 @@ Issue closeout includes:
    ```
 
 5. Run and record validation results for the issue's validation plan.
-6. Update the local issue file with completed acceptance criteria,
+6. Run `npm run check:package-readiness` when package publish metadata,
+   licensing, or tarball boundaries are in scope.
+7. Update the local issue file with completed acceptance criteria,
    implementation notes, validation results, and `Status: completed`.
 
 If a version metadata change does not alter a version-sensitive artifact, record

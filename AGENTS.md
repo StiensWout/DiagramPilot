@@ -21,7 +21,7 @@ local files, review-stable rendering, readable specs, and repairable errors.
 
 ## Docs
 
-- Public: `llms.txt`, `docs-public/index.md`,
+- Public: `LICENSE`, `BRAND_USE_POLICY.md`, `llms.txt`, `docs-public/index.md`,
   `docs-public/agents/quickstart.md`, `docs-public/agents/spec.md`,
   `docs-public/agents/error-repair.md`, `docs-public/agents/examples.md`,
   `docs-public/agents/prompting.md`.
@@ -31,7 +31,8 @@ local files, review-stable rendering, readable specs, and repairable errors.
   `docs/development/release-version-workflow.md`,
   `docs/agents/issue-tracker.md`, `docs/agents/triage-labels.md`,
   `docs/agents/domain.md`,
-  `docs/adr/0006-public-docs-live-under-docs-public.md`.
+  `docs/adr/0006-public-docs-live-under-docs-public.md`,
+  `docs/adr/0008-public-alpha-release-and-package-publishing.md`.
 
 ## Agent skills
 
