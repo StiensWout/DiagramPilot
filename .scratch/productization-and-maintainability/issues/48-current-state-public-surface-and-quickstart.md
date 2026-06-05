@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: completed
 
 # Current-state public surface and quickstart
 
@@ -15,25 +15,39 @@ second source of truth.
 
 ## Acceptance criteria
 
-- [ ] Public Documentation contains no public MCP plan or other unbuilt product
+- [x] Public Documentation contains no public MCP plan or other unbuilt product
       capability guide.
-- [ ] Public future-plan content is removed or moved to internal maintainer
+- [x] Public future-plan content is removed or moved to internal maintainer
       docs.
-- [ ] `README.md` describes current DiagramPilot behaviour and public docs only.
-- [ ] `llms.txt` links only current public docs and public artifacts.
-- [ ] Public Website copy contains no MCP, future integration, or internal
+- [x] `README.md` describes current DiagramPilot behaviour and public docs only.
+- [x] `llms.txt` links only current public docs and public artifacts.
+- [x] Public Website copy contains no MCP, future integration, or internal
       design-decision claims.
-- [ ] `docs-public/agents/quickstart.md` is reworked as the canonical beginner
+- [x] `docs-public/agents/quickstart.md` is reworked as the canonical beginner
       quickstart.
-- [ ] The quickstart covers install or local invocation assumptions, `check`,
+- [x] The quickstart covers install or local invocation assumptions, `check`,
       `validate`, `render --out`, `export`, expected outputs, and copying the
       source/render pattern into another repository.
-- [ ] The quickstart keeps DiagramSpec as the source of truth and generated
+- [x] The quickstart keeps DiagramSpec as the source of truth and generated
       artifacts as derived outputs.
-- [ ] The landing page, README, and `llms.txt` point users to the same canonical
+- [x] The landing page, README, and `llms.txt` point users to the same canonical
       quickstart route.
-- [ ] Tests verify the current-state public-surface rule.
-- [ ] Tests verify the quickstart content and route links.
+- [x] Tests verify the current-state public-surface rule.
+- [x] Tests verify the quickstart content and route links.
+
+## Implementation notes
+
+- Removed the public MCP guide from `docs-public/agents/` and removed public
+  MCP/future-plan references from `README.md`, `llms.txt`, and the website
+  landing copy.
+- Reworked `README.md` and `llms.txt` so they describe shipped behavior and
+  route readers to current public docs and artifacts only.
+- Added local invocation assumptions to the canonical quickstart, including
+  `npm install`, `npm run build`, and the local CLI path for the checkout demo.
+- Made the quickstart's source/render pattern copying guidance explicit for
+  another repository.
+- Updated public boundary and website landing tests to enforce current-state
+  public copy and canonical quickstart routing.
 
 ## Validation plan
 

@@ -11,7 +11,6 @@ const publicAgentDocs = [
   "spec.md",
   "error-repair.md",
   "examples.md",
-  "mcp.md",
   "prompting.md",
 ];
 
@@ -78,7 +77,7 @@ test("llms.txt links only public documentation", async () => {
   assert.doesNotMatch(llmsText, /domain\.md/);
 });
 
-test("llms.txt reflects the published schema helper and deferred MCP scope", async () => {
+test("llms.txt reflects current public docs and the published schema helper", async () => {
   const llmsText = await readFile(path.join(repoRoot, "llms.txt"), "utf8");
 
   assert.match(
@@ -87,10 +86,8 @@ test("llms.txt reflects the published schema helper and deferred MCP scope", asy
   );
   assert.match(llmsText, /DiagramSpec v1 JSON Schema is a generated, committed public helper/);
   assert.match(llmsText, /does not replace core validation/);
-  assert.match(llmsText, /`version`, `title`, and `nodes` are required/);
-  assert.match(llmsText, /`nodes` must contain at least one node/);
-  assert.match(llmsText, /lowercase snake case/);
-  assert.match(llmsText, /MCP is deferred/);
+  assert.doesNotMatch(llmsText, /MCP|Model Context Protocol/);
+  assert.doesNotMatch(llmsText, /planned|deferred|future|not implemented|source mutation/i);
   assert.doesNotMatch(
     llmsText,
     /https:\/\/diagrampilot\.com\/schema\/diagrampilot\.schema\.json/,
@@ -155,28 +152,27 @@ test("internal docs and agent guidance treat repo workflow check as shipped", as
   );
 });
 
-test("README keeps public docs hosted and internal docs local", async () => {
+test("README describes current behavior and public docs only", async () => {
   const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
 
   assert.match(
     readme,
     /https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md/,
   );
-  assert.match(readme, /docs\/development\/roadmap\.md/);
-  assert.match(readme, /docs\/development\/architecture\.md/);
-  assert.match(readme, /docs\/development\/public-website-deployment\.md/);
-  assert.match(readme, /docs\/agents\/issue-tracker\.md/);
-  assert.match(readme, /docs\/adr\/0006-public-docs-live-under-docs-public\.md/);
   assert.match(
     readme,
-    /\.scratch\/public-website-publication\/PRD\.md/,
+    /https:\/\/diagrampilot\.com\/schema\/diagramspec-v1\.schema\.json/,
   );
-  assert.match(readme, /Public Website Publication/);
 
   assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/development\//);
   assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/adr\//);
   assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/agents\/deployment\.md/);
   assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/agents\/issue-tracker\.md/);
+  assert.doesNotMatch(readme, /docs\/development\//);
+  assert.doesNotMatch(readme, /docs\/adr\//);
+  assert.doesNotMatch(readme, /\.scratch\//);
+  assert.doesNotMatch(readme, /MCP|Model Context Protocol/);
+  assert.doesNotMatch(readme, /planned|deferred|future|not implemented|source mutation/i);
 });
 
 test("public quickstart and README route users through the checkout demo workflow", async () => {
@@ -193,6 +189,9 @@ test("public quickstart and README route users through the checkout demo workflo
 
   assert.match(quickstart, /Checkout Demo Project/);
   assert.match(quickstart, /demo-projects\/checkout/);
+  assert.match(quickstart, /npm install/);
+  assert.match(quickstart, /npm run build/);
+  assert.match(quickstart, /node \.\.\/\.\.\/packages\/cli\/dist\/index\.js/);
   assert.match(quickstart, /cd demo-projects\/checkout/);
   assert.match(quickstart, /diagrampilot check/);
   assert.match(
@@ -211,6 +210,8 @@ test("public quickstart and README route users through the checkout demo workflo
     quickstart,
     /diagrampilot export docs\/architecture\.dp\.yaml --format d2 --out docs\/architecture\.d2/,
   );
+  assert.match(quickstart, /copy the same source\/render pattern/i);
+  assert.match(quickstart, /another repository/i);
 
   assert.match(readme, /Checkout Demo Project/);
   assert.match(
@@ -229,7 +230,7 @@ test("public quickstart and README route users through the checkout demo workflo
     llmsText,
     /https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md/,
   );
-  assert.match(llmsText, /diagrampilot check/);
+  assert.match(llmsText, /Canonical beginner workflow/);
 
   assert.match(checkoutDemoReadme, /diagrampilot check/);
   assert.match(checkoutDemoReadme, /read-only repo review\/CI command/);
@@ -240,6 +241,25 @@ test("public quickstart and README route users through the checkout demo workflo
   assert.match(
     checkoutDemoReadme,
     /diagrampilot render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/,
+  );
+});
+
+test("landing page, README, and llms.txt share the canonical quickstart route", async () => {
+  const landingPage = await readFile(
+    path.join(repoRoot, "website", "src", "content", "docs", "index.md"),
+    "utf8",
+  );
+  const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
+  const llmsText = await readFile(path.join(repoRoot, "llms.txt"), "utf8");
+
+  assert.match(landingPage, /link: \/docs\/agents\/quickstart\//);
+  assert.match(
+    readme,
+    /https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md/,
+  );
+  assert.match(
+    llmsText,
+    /https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md/,
   );
 });
 
@@ -306,23 +326,33 @@ test("public examples reference current packages and avoid deferred features", a
   }
 });
 
-test("public MCP plan describes MCP as deferred while pointing at the published schema", async () => {
-  const mcpPlan = await readFile(
-    path.join(repoRoot, "docs-public", "agents", "mcp.md"),
-    "utf8",
+test("public surface describes shipped DiagramPilot behavior only", async () => {
+  const publicSurfaceFiles = [
+    "README.md",
+    "llms.txt",
+    "website/src/content/docs/index.md",
+    ...publicAgentDocs.map((fileName) => path.join("docs-public", "agents", fileName)),
+  ];
+
+  assert.equal(
+    await exists(path.join("docs-public", "agents", "mcp.md")),
+    false,
+    "MCP planning should not be published as a public agent guide",
   );
 
-  assert.match(mcpPlan, /MCP is not implemented/);
-  assert.match(mcpPlan, /published DiagramSpec v1 JSON Schema helper route/);
-  assert.match(
-    mcpPlan,
-    /https:\/\/diagrampilot\.com\/schema\/diagramspec-v1\.schema\.json/,
-  );
-  assert.match(mcpPlan, /Source mutation tools are deferred/);
+  for (const repoPath of publicSurfaceFiles) {
+    const source = await readFile(path.join(repoRoot, repoPath), "utf8");
+
+    assert.doesNotMatch(source, /MCP|Model Context Protocol/, repoPath);
+    assert.doesNotMatch(
+      source,
+      /planned|deferred|future|not implemented|source mutation/i,
+      repoPath,
+    );
+  }
 });
 
 test("internal closeout docs record completed planning state and maintainer validation", async () => {
-  const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
   const roadmap = await readFile(
     path.join(repoRoot, "docs", "development", "roadmap.md"),
     "utf8",
@@ -343,12 +373,6 @@ test("internal closeout docs record completed planning state and maintainer vali
   assert.match(mvpPrd, /^Status: completed$/m);
   assert.match(architectureDeepeningPrd, /^Status: completed$/m);
   assert.match(docsDemoPrd, /^Status: completed$/m);
-
-  assert.doesNotMatch(readme, /MVP implementation is in progress/);
-  assert.match(
-    readme,
-    /MVP, architecture deepening, docs\/demo rework, Repo Workflow Check, and Repo\s+Workflow Check deepening checkpoints are complete/,
-  );
 
   assert.match(roadmap, /Release readiness is complete/);
   assert.match(roadmap, /node --test test\/docs-public-boundary\.test\.mjs/);

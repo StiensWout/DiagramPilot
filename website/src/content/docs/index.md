@@ -40,7 +40,3 @@ Generated SVGs include deterministic provenance metadata, including the source
 path, source hash, DiagramPilot version, and renderer. That keeps committed SVG
 artifacts review-stable and lets `diagrampilot check` detect stale same-stem
 SVG artifacts without rewriting files.
-
-First MCP Adapter is the next planned capability. It should wrap the shipped
-read, check, validate, render, and export workflows for local repositories; it
-is not implemented in the current CLI.

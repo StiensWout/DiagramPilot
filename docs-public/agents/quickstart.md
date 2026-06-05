@@ -11,6 +11,23 @@ source problems with `validate`, refresh the committed SVG only with `render
 --out`, inspect SVG provenance, and export when another diagram-as-code format
 is needed.
 
+## Local Invocation
+
+The command examples use `diagrampilot`. In this repository, build the local
+CLI before running the demo:
+
+```bash
+npm install
+npm run build
+```
+
+After `cd demo-projects/checkout`, use this local command if `diagrampilot` is
+not linked on `PATH`:
+
+```bash
+node ../../packages/cli/dist/index.js
+```
+
 ## Demo Files
 
 From the repository root, the demo lives here:
@@ -138,7 +155,8 @@ diagram object back to the code it represents.
 
 ## Create Your Own Diagram
 
-Use the same file shape in another repository:
+To copy the same source/render pattern into another repository, use this file
+shape:
 
 ```text
 docs/architecture.dp.yaml
