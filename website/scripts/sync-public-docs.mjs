@@ -17,7 +17,14 @@ const starlightPublicDocsRoot = path.join(starlightDocsRoot, "docs");
 const websitePublicRoot = path.join(websiteRoot, "public");
 
 async function listMarkdownFiles(root, current = root) {
-  const entries = await readdir(current, { withFileTypes: true });
+  let entries;
+  try {
+    entries = await readdir(current, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === "ENOENT") return [];
+    throw error;
+  }
+
   const files = [];
 
   for (const entry of entries) {
@@ -35,6 +42,19 @@ async function listMarkdownFiles(root, current = root) {
   return files.sort();
 }
 
+async function removeLegacyPublicDocsDirs() {
+  const publicTopLevelEntries = await readdir(publicDocsRoot, { withFileTypes: true });
+
+  for (const entry of publicTopLevelEntries) {
+    if (!entry.isDirectory()) continue;
+
+    await rm(path.join(starlightDocsRoot, entry.name), {
+      force: true,
+      recursive: true,
+    });
+  }
+}
+
 function extractTitle(markdown, relativePath) {
   const h1 = markdown.match(/^#\s+(.+?)\s*$/m);
   if (h1) return h1[1];
@@ -50,27 +70,24 @@ function toStarlightMarkdown(markdown, relativePath) {
 }
 
 async function syncPublicDocs() {
-  const publicTopLevelEntries = await readdir(publicDocsRoot, { withFileTypes: true });
+  const sourceMarkdownFiles = await listMarkdownFiles(publicDocsRoot);
+  const sourceMarkdownFileSet = new Set(sourceMarkdownFiles);
 
-  await Promise.all(
-    publicTopLevelEntries
-      .filter((entry) => entry.isDirectory())
-      .map((entry) =>
-        rm(path.join(starlightDocsRoot, entry.name), {
-          force: true,
-          recursive: true,
-        }),
-      ),
-  );
-  await rm(starlightPublicDocsRoot, { force: true, recursive: true });
+  await removeLegacyPublicDocsDirs();
 
-  for (const relativePath of await listMarkdownFiles(publicDocsRoot)) {
+  for (const relativePath of sourceMarkdownFiles) {
     const sourcePath = path.join(publicDocsRoot, relativePath);
     const targetPath = path.join(starlightPublicDocsRoot, relativePath);
     const sourceMarkdown = await readFile(sourcePath, "utf8");
 
     await mkdir(path.dirname(targetPath), { recursive: true });
     await writeFile(targetPath, toStarlightMarkdown(sourceMarkdown, relativePath));
+  }
+
+  for (const relativePath of await listMarkdownFiles(starlightPublicDocsRoot)) {
+    if (sourceMarkdownFileSet.has(relativePath)) continue;
+
+    await rm(path.join(starlightPublicDocsRoot, relativePath), { force: true });
   }
 }
 

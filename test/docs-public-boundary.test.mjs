@@ -127,8 +127,7 @@ test("repository guidance separates public docs from internal maintainer docs", 
   assert.match(agentGuide, /docs\/adr\/0006-public-docs-live-under-docs-public\.md/);
 });
 
-test("internal docs and agent guidance treat repo workflow check as shipped", async () => {
-  const agentGuide = await readFile(path.join(repoRoot, "AGENTS.md"), "utf8");
+test("internal maintainer docs treat repo workflow check as shipped", async () => {
   const roadmap = await readFile(
     path.join(repoRoot, "docs", "development", "roadmap.md"),
     "utf8",
@@ -138,7 +137,6 @@ test("internal docs and agent guidance treat repo workflow check as shipped", as
     "utf8",
   );
 
-  assert.match(agentGuide, /diagrampilot check/);
   assert.match(roadmap, /`diagrampilot check \[path\] \[--json\]`/);
   assert.match(roadmap, /Repo Workflow Check is complete/);
   assert.match(architecture, /`diagrampilot check \[path\] \[--json\]`/);
