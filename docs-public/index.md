@@ -1,6 +1,9 @@
 # Public Documentation
 
-![DiagramPilot wordmark](https://diagrampilot.com/brand/diagrampilot-logo.svg)
+<span class="brand-wordmark-set" role="img" aria-label="DiagramPilot wordmark">
+  <img class="brand-wordmark brand-wordmark-light-surface" src="https://diagrampilot.com/brand/diagrampilot-logo.svg" alt="" />
+  <img class="brand-wordmark brand-wordmark-dark-surface" src="https://diagrampilot.com/brand/diagrampilot-logo-light.svg" alt="" />
+</span>
 
 DiagramPilot Public Documentation is for developers and AI coding agents using
 DiagramPilot in their own repositories.
@@ -37,4 +40,5 @@ Use `check` as the read-only repo review/CI command. `render` requires
 ## Brand Assets
 
 - [DiagramPilot wordmark](https://diagrampilot.com/brand/diagrampilot-logo.svg)
+- [DiagramPilot light wordmark](https://diagrampilot.com/brand/diagrampilot-logo-light.svg)
 - [DiagramPilot mark](https://diagrampilot.com/brand/diagrampilot-mark.svg)

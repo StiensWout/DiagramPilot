@@ -200,11 +200,19 @@ test("public entrypoints expose canonical DiagramPilot Brand Assets", async () =
   );
   assert.match(
     publicDocsIndex,
+    /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo-light\.svg/,
+  );
+  assert.match(
+    publicDocsIndex,
     /https:\/\/diagrampilot\.com\/brand\/diagrampilot-mark\.svg/,
   );
   assert.match(
     llmsText,
     /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo\.svg/,
+  );
+  assert.match(
+    llmsText,
+    /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo-light\.svg/,
   );
   assert.match(
     llmsText,

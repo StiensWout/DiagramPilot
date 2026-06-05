@@ -63,11 +63,15 @@ function extractTitle(markdown, relativePath) {
   return path.basename(relativePath, ".md").replaceAll("-", " ");
 }
 
+function removeLeadingH1(markdown) {
+  return markdown.replace(/^#\s+.+?\r?\n(?:\r?\n)?/u, "");
+}
+
 function toStarlightMarkdown(markdown, relativePath) {
   if (markdown.startsWith("---\n")) return markdown;
 
   const title = extractTitle(markdown, relativePath);
-  return `---\ntitle: ${JSON.stringify(title)}\n---\n\n${markdown}`;
+  return `---\ntitle: ${JSON.stringify(title)}\n---\n\n${removeLeadingH1(markdown)}`;
 }
 
 async function syncPublicDocs() {
@@ -99,14 +103,14 @@ async function syncStaticPublicFiles() {
     path.join(websitePublicRoot, "demo-projects", "checkout", "docs"),
     { recursive: true },
   );
-  await copyFile(
-    path.join(brandAssetsRoot, "diagrampilot-logo.svg"),
-    path.join(websitePublicRoot, "brand", "diagrampilot-logo.svg"),
-  );
-  await copyFile(
-    path.join(brandAssetsRoot, "diagrampilot-mark.svg"),
-    path.join(websitePublicRoot, "brand", "diagrampilot-mark.svg"),
-  );
+  for (const entry of await readdir(brandAssetsRoot, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".svg")) continue;
+
+    await copyFile(
+      path.join(brandAssetsRoot, entry.name),
+      path.join(websitePublicRoot, "brand", entry.name),
+    );
+  }
   await copyFile(
     path.join(repoRoot, "llms.txt"),
     path.join(websitePublicRoot, "llms.txt"),

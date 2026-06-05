@@ -50,8 +50,8 @@ git diff --check
 ## Implementation notes
 
 - Added canonical DiagramPilot Brand Assets under `assets/brand/`:
-  `diagrampilot-logo.svg` for the wordmark and `diagrampilot-mark.svg` for the
-  mark.
+  `diagrampilot-logo.svg` for light surfaces, `diagrampilot-logo-light.svg`
+  for dark surfaces, and `diagrampilot-mark.svg` for the mark.
 - Updated `website/scripts/sync-public-docs.mjs` so website-public brand files
   are generated from `assets/brand/` alongside the existing public docs, schema,
   llms.txt, and demo artifact sync.
@@ -60,14 +60,21 @@ git diff --check
   source of truth.
 - Updated the landing page and Starlight docs favicon configuration to use
   `/brand/diagrampilot-mark.svg` instead of the missing `/favicon.svg`.
+- Updated the landing page hero to show the light wordmark while retaining one
+  accessible `h1` for the product name.
+- Added Starlight docs CSS so the Public Documentation index switches between
+  the light-surface and dark-surface wordmark assets based on `data-theme`.
+- Updated the public docs sync transform so Starlight uses the source Markdown
+  `h1` as frontmatter title without rendering a duplicate in-page heading.
 - Applied brand assets to README, Public Documentation, `llms.txt`, and the
   Brand Use Policy without linking Internal Documentation or `.scratch/`
   planning content from public surfaces.
 - Added route and boundary tests covering canonical brand asset publication,
-  favicon paths, generated website brand files, and public-surface brand links.
+  favicon paths, generated website brand files, public-surface brand links,
+  theme-compatible wordmarks, and duplicate-title prevention.
 - Validation results on 2026-06-05 UTC:
   - `npm --workspace website run build` passed.
-  - `npm --workspace website run test` passed: 16 tests.
+  - `npm --workspace website run test` passed: 17 tests.
   - `npm --workspace website run check:visual` passed.
-  - `npm test` passed: 143 tests.
+  - `npm test` passed: 144 tests.
   - `git diff --check` passed.

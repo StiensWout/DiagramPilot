@@ -21,13 +21,16 @@ The DiagramPilot brand includes:
 
 Canonical DiagramPilot Brand Assets live in `assets/brand/`:
 
-- `assets/brand/diagrampilot-logo.svg`: the DiagramPilot wordmark for surfaces
-  where the full name remains legible.
+- `assets/brand/diagrampilot-logo.svg`: the DiagramPilot wordmark for light
+  surfaces where the full name remains legible.
+- `assets/brand/diagrampilot-logo-light.svg`: the DiagramPilot light wordmark
+  for dark surfaces where the full name remains legible.
 - `assets/brand/diagrampilot-mark.svg`: the DiagramPilot mark for favicon and
   icon-sized placements.
 
 Published website copies are available at
-`https://diagrampilot.com/brand/diagrampilot-logo.svg` and
+`https://diagrampilot.com/brand/diagrampilot-logo.svg`,
+`https://diagrampilot.com/brand/diagrampilot-logo-light.svg`, and
 `https://diagrampilot.com/brand/diagrampilot-mark.svg`.
 
 ## Allowed Use

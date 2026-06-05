@@ -70,8 +70,10 @@ release identity are covered separately by the
 
 Canonical DiagramPilot Brand Assets live in `assets/brand/`: the
 [DiagramPilot mark](assets/brand/diagrampilot-mark.svg) for icon-sized
-placements and the [DiagramPilot wordmark](assets/brand/diagrampilot-logo.svg)
-for surfaces where it remains legible.
+placements, the [DiagramPilot wordmark](assets/brand/diagrampilot-logo.svg) for
+light surfaces, and the
+[DiagramPilot light wordmark](assets/brand/diagrampilot-logo-light.svg) for
+dark surfaces.
 
 ## CLI Commands
 

@@ -1,0 +1,23 @@
+.brand-wordmark-set {
+  display: block;
+  width: min(32rem, 100%);
+  margin-block: 0 1.25rem;
+}
+
+.brand-wordmark {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.brand-wordmark-dark-surface {
+  display: none;
+}
+
+:root[data-theme="dark"] .brand-wordmark-light-surface {
+  display: none;
+}
+
+:root[data-theme="dark"] .brand-wordmark-dark-surface {
+  display: block;
+}

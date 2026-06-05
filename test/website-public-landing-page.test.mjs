@@ -112,6 +112,10 @@ test("public landing page presents generated product visuals", async () => {
     /repository files an AI coding agent can safely change, validate, and commit/i,
   );
   assert.match(html, /repo-native diagram compiler\s+for AI coding\s+agents/i);
+  assert.match(
+    html,
+    /<img[^>]+class="hero-wordmark"[^>]+src="\/brand\/diagrampilot-logo-light\.svg"[^>]+alt=""/,
+  );
   assert.match(html, /Checkout Demo Project/);
   assert.match(html, /href="\/docs\/agents\/quickstart\/"/);
   assert.match(html, /href="\/docs\/"/);
@@ -173,12 +177,20 @@ test("website publishes canonical brand assets and uses the mark as favicon", as
     path.join(repoRoot, "assets", "brand", "diagrampilot-logo.svg"),
     "utf8",
   );
+  const canonicalLightLogo = await readFile(
+    path.join(repoRoot, "assets", "brand", "diagrampilot-logo-light.svg"),
+    "utf8",
+  );
   const publishedMark = await readFile(
     path.join(repoRoot, "website", "dist", "brand", "diagrampilot-mark.svg"),
     "utf8",
   );
   const publishedLogo = await readFile(
     path.join(repoRoot, "website", "dist", "brand", "diagrampilot-logo.svg"),
+    "utf8",
+  );
+  const publishedLightLogo = await readFile(
+    path.join(repoRoot, "website", "dist", "brand", "diagrampilot-logo-light.svg"),
     "utf8",
   );
   const html = await readFile(
@@ -188,6 +200,7 @@ test("website publishes canonical brand assets and uses the mark as favicon", as
 
   assert.equal(publishedMark, canonicalMark);
   assert.equal(publishedLogo, canonicalLogo);
+  assert.equal(publishedLightLogo, canonicalLightLogo);
   assert.match(
     html,
     /<link rel="(?:shortcut )?icon" href="\/brand\/diagrampilot-mark\.svg" type="image\/svg\+xml">/,
@@ -204,6 +217,8 @@ test("custom landing styles keep accessibility and motion controls explicit", as
   assert.match(landingCss, /:focus-visible/);
   assert.match(landingCss, /prefers-reduced-motion:\s*reduce/);
   assert.match(landingCss, /workflow-shell/);
+  assert.match(landingCss, /hero-wordmark/);
+  assert.match(landingCss, /sr-only/);
   assert.match(landingCss, /image-band/);
   assert.match(landingCss, /@keyframes\s+landing-rise/);
   assert.match(landingCss, /motion-ready/);

@@ -69,7 +69,12 @@ test("website is a static Astro Starlight shell", async () => {
   assert.match(contentConfig, /docsSchema\(\)/);
 
   assert.match(landingPage, /<body class="landing-page">/);
-  assert.match(landingPage, /<h1 id="landing-title">DiagramPilot<\/h1>/);
+  assert.match(
+    landingPage,
+    /<h1 id="landing-title" class="sr-only">DiagramPilot<\/h1>/,
+  );
+  assert.match(landingPage, /class="hero-wordmark"/);
+  assert.match(landingPage, /src="\/brand\/diagrampilot-logo-light\.svg"/);
   assert.match(
     landingPage,
     /Diagrams are repository files an AI coding agent can safely change,\s+validate, and commit\./,

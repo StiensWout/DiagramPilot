@@ -55,6 +55,15 @@ body.landing-page {
   transform: translateY(0);
 }
 
+.sr-only {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 main {
   width: 100%;
   overflow: clip;
@@ -127,6 +136,13 @@ h1 {
   letter-spacing: 0;
   overflow-wrap: normal;
   text-shadow: 0 0 3rem rgb(52 211 153 / 0.2);
+}
+
+.hero-wordmark {
+  display: block;
+  width: min(34rem, 94vw);
+  height: auto;
+  margin: 0 auto;
 }
 
 .promise {
