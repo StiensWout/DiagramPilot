@@ -34,8 +34,7 @@ card-based visual language. The website should be static-only and deployed to
 Vercel Pro using the `website/` project root.
 
 The phase should also add a reviewable DiagramSpec v1 JSON Schema as a
-generated-but-committed public artifact and prepare the later First MCP Adapter
-phase once the public docs and schema routes are stable.
+generated-but-committed public artifact.
 
 ## User Stories
 
@@ -70,10 +69,6 @@ phase once the public docs and schema routes are stable.
 29. As a maintainer, I want the schema generated from the core DiagramSpec contract, so that it does not become hand-written website content.
 30. As a maintainer, I want the generated schema committed, so that public contract changes are reviewable.
 31. As a maintainer, I want tests around the schema, so that required fields, open metadata, and fixture compatibility do not drift silently.
-32. As a future MCP adapter author, I want public docs, examples, and schema routes stable first, so that MCP resources can point at real public artifacts.
-33. As a future MCP adapter author, I want First MCP Adapter scope prepared separately, so that MCP does not get bundled into the website implementation.
-34. As a future MCP adapter author, I want source mutation tools deferred, so that MCP v1 wraps existing read/check/validate/render/export workflows before source rewriting exists.
-
 ## Implementation Decisions
 
 - Public Website, Public Landing Page, and Markdown-First Public Documentation are settled domain terms in `CONTEXT.md`.
@@ -106,9 +101,6 @@ phase once the public docs and schema routes are stable.
 - The generated schema should be committed under `schema/diagramspec-v1.schema.json`.
 - The website should serve the schema at `/schema/diagramspec-v1.schema.json`.
 - The schema should not replace core validation or promise that every semantic rule is expressible in JSON Schema.
-- First MCP Adapter work comes after the public website/docs/schema surface is stable.
-- First MCP Adapter scope should be read-first plus explicit render/export writes.
-- Source mutation MCP tools are deferred.
 
 ## Testing Decisions
 
@@ -140,8 +132,6 @@ phase once the public docs and schema routes are stable.
 - Adding DOT export.
 - Adding PNG rendering.
 - Adding project analyzers.
-- Implementing MCP.
-- Adding MCP source mutation tools.
 
 ## Issue Slices
 
@@ -151,7 +141,6 @@ phase once the public docs and schema routes are stable.
 - [45 Publish docs-public through website routes](./issues/45-publish-docs-public-through-website-routes.md)
 - [46 Build no-card public landing page](./issues/46-build-no-card-public-landing-page.md)
 - [47 Add Vercel deployment guidance and validation](./issues/47-add-vercel-deployment-guidance-and-validation.md)
-- [48 Prepare First MCP Adapter PRD](./issues/48-prepare-first-mcp-adapter-prd.md)
 
 ## Further Notes
 

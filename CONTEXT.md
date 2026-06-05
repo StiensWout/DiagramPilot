@@ -115,6 +115,18 @@ repository, directly editable by AI coding agents, and publishable to both
 human-facing documentation pages and agent-facing Markdown routes.
 _Avoid_: HTML-only docs, app-only documentation, UI-authored content
 
+**Documentation Contract**:
+The maintained agreement between canonical documentation sources, generated
+public outputs, published routes, and drift checks.
+_Avoid_: Manual docs audit, duplicated website content, one-off link cleanup
+
+**Current-State Public Surface**:
+Public Documentation, `README.md`, `llms.txt`, and Public Website copy that
+describe shipped DiagramPilot behavior rather than deferred product plans or
+internal design decisions.
+_Avoid_: Public roadmap copy, planned integration docs, internal architecture
+notes
+
 **Repo Workflow**:
 A DiagramPilot product capability area for operating on DiagramPilot Source
 Files and Derived Artifacts across a local repository, rather than on one
@@ -190,9 +202,24 @@ workspace or prompt-only diagram generation surface.
 _Avoid_: Hosted workspace, visual editor, prompt-to-diagram app
 
 **Public Landing Page**:
-The entry page of the Public Website that introduces DiagramPilot and points
-users toward the demo workflow, installation path, and Public Documentation.
-_Avoid_: Hosted demo, application dashboard, docs index only
+The marketable entry page of the Public Website that introduces DiagramPilot,
+shows its repo-native value, and points users toward the demo workflow,
+installation path, and Public Documentation.
+_Avoid_: Hosted demo, application dashboard, docs index only, generic SaaS card
+grid, glorified roadmap
+
+**Public Landing Page Promise**:
+The primary product promise that diagrams are repository files an AI coding
+agent can safely change, validate, and commit.
+_Avoid_: Generic AI diagram generation, hosted collaboration pitch, roadmap
+summary
+
+**Productization And Maintainability**:
+A release-readiness phase that improves DiagramPilot's public product surface,
+maintainer structure, and documentation contract before the next product
+capability phase.
+_Avoid_: MCP implementation release, hosted workspace launch, source mutation
+phase, refactor-only phase
 
 **Internal Documentation**:
 Documentation for DiagramPilot maintainers that explains project workflow,
