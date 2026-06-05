@@ -1,7 +1,8 @@
 # MCP Plan
 
 DiagramPilot should expose a Model Context Protocol server after the public
-website, Public Documentation, and DiagramSpec v1 JSON Schema route are stable.
+website and Public Documentation routes are stable. The DiagramSpec v1 JSON
+Schema helper route is already published for tooling.
 
 The MCP interface should operate on structured DiagramSpec objects and project
 files. It should not be only a raw Mermaid rendering wrapper.
@@ -48,7 +49,7 @@ Source mutation tools are deferred until the read-first adapter is useful.
 ## Planned Resources
 
 `diagrampilot://schema`
-: planned DiagramSpec v1 JSON Schema route:
+: published DiagramSpec v1 JSON Schema helper route:
   `https://diagrampilot.com/schema/diagramspec-v1.schema.json`.
 
 `diagrampilot://docs/agents/quickstart`

@@ -16,7 +16,7 @@ Public documentation is hosted under `https://diagrampilot.com`.
 - [DiagramSpec](https://diagrampilot.com/docs/agents/spec.md): Structured source model for diagrams.
 - [Error repair](https://diagrampilot.com/docs/agents/error-repair.md): How agents should interpret and fix validation errors.
 - [Examples](https://diagrampilot.com/docs/agents/examples.md): Canonical diagram examples.
-- [MCP tools](https://diagrampilot.com/docs/agents/mcp.md): Deferred Model Context Protocol plan for after the public docs and schema surface are stable.
+- [MCP tools](https://diagrampilot.com/docs/agents/mcp.md): Deferred Model Context Protocol plan that will reuse the published docs and schema surface.
 - [Prompting guide](https://diagrampilot.com/docs/agents/prompting.md): Recommended instructions for agents using DiagramPilot.
 
 ## Current CLI
@@ -48,7 +48,7 @@ diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architectur
 - DOT, PNG, hosted canvas, and project analyzers are deferred.
 - MCP is deferred.
 
-## Planned Public Artifacts
+## Public Artifacts
 
+- [DiagramSpec v1 JSON Schema](https://diagrampilot.com/schema/diagramspec-v1.schema.json): DiagramSpec v1 JSON Schema is a generated, committed public helper for machine-readable source shape. It does not replace core validation.
 - [GitHub repository](https://github.com/StiensWout/DiagramPilot): Source repository once public.
-- [DiagramSpec v1 JSON Schema](https://diagrampilot.com/schema/diagramspec-v1.schema.json): DiagramSpec v1 JSON Schema is planned as a generated, committed public artifact. It will document machine-readable source shape but will not replace core validation.

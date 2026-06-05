@@ -14,6 +14,25 @@ DiagramSpec can be stored as YAML or JSON:
 YAML is the recommended authoring format for humans and agents. JSON is
 supported for tooling and programmatic integrations.
 
+## JSON Schema Helper
+
+DiagramSpec v1 has a generated, committed JSON Schema at:
+
+```text
+https://diagrampilot.com/schema/diagramspec-v1.schema.json
+```
+
+Use the schema as a helper for editors, code generators, and other tooling that
+need machine-readable source shape. The schema captures required top-level
+fields, node cardinality, object field shapes, direction values, stable ID
+patterns, namespaced icon references, and well-known metadata references where
+JSON Schema is practical.
+
+The schema does not replace `diagrampilot validate`; core validation remains authoritative.
+It covers source shape, while validation covers semantic rules such as global ID
+uniqueness, edge endpoint references, group containment references, group
+cycles, and supported Lucide icon names.
+
 ## Principles
 
 - DiagramSpec is the source of truth.

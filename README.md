@@ -49,6 +49,7 @@ DiagramPilot's wedge is:
 - SVG rendering through an included local renderer.
 - Exports to existing ecosystems such as Mermaid and D2.
 - Root `llms.txt` and concise agent documentation from day one.
+- Generated, committed DiagramSpec v1 JSON Schema for tooling.
 
 ## Source Of Truth
 
@@ -58,6 +59,9 @@ as YAML or JSON.
 Mermaid, D2, DOT, SVG, and PNG are derived artifacts. Agents should update
 `*.dp.yaml` or `*.dp.json` source files and regenerate outputs rather than
 hand-editing generated artifacts.
+
+The DiagramSpec v1 JSON Schema is a helper for editors, code generators, and
+other tooling. Core validation remains authoritative for semantic rules.
 
 ## First Product Checkpoint
 
@@ -114,6 +118,7 @@ Included in the MVP:
 - Packaged Lucide icon support.
 - Deterministic SVG provenance metadata without timestamps.
 - Agent docs and `llms.txt`.
+- DiagramSpec v1 JSON Schema helper.
 
 Deferred:
 
@@ -129,6 +134,7 @@ Deferred:
 
 - [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md)
 - [DiagramSpec guide](https://diagrampilot.com/docs/agents/spec.md)
+- [DiagramSpec v1 JSON Schema](https://diagrampilot.com/schema/diagramspec-v1.schema.json)
 - [Error repair guide](https://diagrampilot.com/docs/agents/error-repair.md)
 - [Agent examples](https://diagrampilot.com/docs/agents/examples.md)
 - [MCP plan](https://diagrampilot.com/docs/agents/mcp.md)

@@ -15,6 +15,7 @@
   "scripts": {
     "build": "tsc -b && node packages/cli/scripts/make-bin-executable.mjs",
     "clean": "tsc -b --clean",
+    "generate:schema": "npm run build && node scripts/generate-diagramspec-v1-schema.mjs",
     "test": "npm run build && node --test test/*.test.mjs"
   },
   "devDependencies": {
