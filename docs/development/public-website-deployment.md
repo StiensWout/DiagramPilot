@@ -1,8 +1,11 @@
-# Vercel Deployment
+# Public Website Deployment
 
-Use this guide to publish the DiagramPilot Public Website for the current
-release phase. The site is static-only and deploys from the existing
-`website/` Astro workspace.
+Use this internal maintainer guide to publish the DiagramPilot Public Website
+for the current release phase. The site is static-only and deploys from the
+existing `website/` Astro workspace.
+
+This guide is not Public Documentation and should not be published through the
+website docs routes.
 
 ## Hosting Decision
 
@@ -95,8 +98,6 @@ After production DNS points at the Vercel project, the public surface should be:
 | Checkout quickstart Markdown | `https://diagrampilot.com/docs/agents/quickstart.md` |
 | DiagramSpec HTML | `https://diagrampilot.com/docs/agents/spec/` |
 | DiagramSpec Markdown | `https://diagrampilot.com/docs/agents/spec.md` |
-| Deployment guide HTML | `https://diagrampilot.com/docs/agents/deployment/` |
-| Deployment guide Markdown | `https://diagrampilot.com/docs/agents/deployment.md` |
 | Agent entrypoint | `https://diagrampilot.com/llms.txt` |
 | DiagramSpec v1 JSON Schema | `https://diagrampilot.com/schema/diagramspec-v1.schema.json` |
 

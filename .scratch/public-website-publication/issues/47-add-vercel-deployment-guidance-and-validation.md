@@ -39,8 +39,11 @@ npm test
 
 ## Implementation notes
 
-- Added `docs-public/agents/deployment.md` as the public Vercel deployment
-  guide for the static Public Website phase.
+- Added `docs/development/public-website-deployment.md` as internal maintainer
+  guidance for the static Public Website deployment phase.
+- Kept deployment guidance out of `docs-public/`, `llms.txt`, and the
+  published website routes because deployment settings are not Public
+  Documentation.
 - Documented Vercel Pro as the only planned host, with no Cloudflare Pages
   backup path for this phase.
 - Recorded Vercel project settings for `website/` as the Root Directory,
@@ -56,10 +59,12 @@ npm test
   notifications, and the pause production deployment action when automatic
   spend protection is required.
 - Listed stable public URLs for the landing page, docs index, representative
-  HTML and `.md` docs routes, `llms.txt`, and the DiagramSpec v1 JSON Schema.
-- Linked the new guide from `llms.txt`, `README.md`, and `AGENTS.md`.
-- Added website deployment guidance tests covering the public guide content,
-  credential-free validation commands, and generated HTML plus `.md` routes.
+  HTML and `.md` docs routes, `llms.txt`, and the DiagramSpec v1 JSON Schema
+  without adding a public deployment-guide URL.
+- Linked the internal guide from `README.md` and `AGENTS.md`.
+- Added website deployment guidance tests covering the internal guide content,
+  credential-free validation commands, and explicit exclusion from generated
+  HTML plus `.md` website routes.
 
 ## Validation performed
 

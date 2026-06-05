@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
@@ -8,9 +8,9 @@ import test from "node:test";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const deploymentGuidePath = path.join(
   repoRoot,
-  "docs-public",
-  "agents",
-  "deployment.md",
+  "docs",
+  "development",
+  "public-website-deployment.md",
 );
 
 let websiteBuildPromise;
@@ -60,7 +60,16 @@ async function readDeploymentGuide() {
   return readFile(deploymentGuidePath, "utf8");
 }
 
-test("public deployment guidance documents the static Vercel Pro path", async () => {
+async function exists(repoPath) {
+  try {
+    await access(path.join(repoRoot, repoPath));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+test("internal deployment guidance documents the static Vercel Pro path", async () => {
   const guide = await readDeploymentGuide();
 
   assert.match(guide, /Vercel Pro is the only planned host/i);
@@ -91,7 +100,7 @@ test("public deployment guidance documents the static Vercel Pro path", async ()
   }
 });
 
-test("public deployment guidance lists stable hosted URLs", async () => {
+test("internal deployment guidance lists the stable public website URLs", async () => {
   const guide = await readDeploymentGuide();
 
   for (const publicUrl of [
@@ -101,8 +110,6 @@ test("public deployment guidance lists stable hosted URLs", async () => {
     "https://diagrampilot.com/docs/agents/quickstart.md",
     "https://diagrampilot.com/docs/agents/spec/",
     "https://diagrampilot.com/docs/agents/spec.md",
-    "https://diagrampilot.com/docs/agents/deployment/",
-    "https://diagrampilot.com/docs/agents/deployment.md",
     "https://diagrampilot.com/llms.txt",
     "https://diagrampilot.com/schema/diagramspec-v1.schema.json",
   ]) {
@@ -111,9 +118,11 @@ test("public deployment guidance lists stable hosted URLs", async () => {
       new RegExp(publicUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
     );
   }
+
+  assert.doesNotMatch(guide, /https:\/\/diagrampilot\.com\/docs\/agents\/deployment/);
 });
 
-test("public deployment guidance validation commands are credential-free", async () => {
+test("internal deployment guidance validation commands are credential-free", async () => {
   const guide = await readDeploymentGuide();
   const validationCommands = guide.match(/```bash\n(?<commands>[\s\S]+?)\n```/)?.groups
     ?.commands;
@@ -126,21 +135,17 @@ test("public deployment guidance validation commands are credential-free", async
   assert.doesNotMatch(validationCommands, /\bvercel\s+(?:deploy|build|pull|env)\b/i);
 });
 
-test("website publishes deployment guidance as human HTML and agent Markdown routes", async () => {
+test("website does not publish internal deployment guidance", async () => {
   await websiteBuild();
 
-  const sourceMarkdown = await readDeploymentGuide();
-  const html = await readFile(
-    path.join(repoRoot, "website", "dist", "docs", "agents", "deployment", "index.html"),
-    "utf8",
+  assert.equal(
+    await exists("website/dist/docs/agents/deployment/index.html"),
+    false,
+    "deployment guidance should remain internal maintainer documentation",
   );
-  const markdown = await readFile(
-    path.join(repoRoot, "website", "dist", "docs", "agents", "deployment.md"),
-    "utf8",
+  assert.equal(
+    await exists("website/dist/docs/agents/deployment.md"),
+    false,
+    "deployment guidance should not be published as an agent Markdown route",
   );
-
-  assert.match(html, /Vercel Deployment/);
-  assert.match(html, /Root Directory/);
-  assert.match(html, /website\//);
-  assert.equal(markdown, sourceMarkdown);
 });
