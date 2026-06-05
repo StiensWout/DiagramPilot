@@ -3,19 +3,23 @@
 DiagramPilot is a local-first compiler and validation engine for repo-native
 diagrams authored by AI coding agents.
 
-The current implementation has crossed the MVP, architecture-deepening, and
-docs/demo release-readiness checkpoints recorded in
-`.scratch/diagrampilot-mvp/`, `.scratch/architecture-deepening/`, and
-`.scratch/docs-demo-project-rework/`. The next work is product backlog
-selection. Keep release-readiness maintenance separate from product capability
-work: release readiness keeps the existing product easy to adopt; product
-capability work adds new user-facing behaviour.
+The current implementation has crossed the MVP, architecture-deepening,
+docs/demo release-readiness, Repo Workflow Check, and Repo Workflow Check
+deepening checkpoints recorded in `.scratch/diagrampilot-mvp/`,
+`.scratch/architecture-deepening/`, `.scratch/docs-demo-project-rework/`,
+`.scratch/repo-workflow-check/`, and
+`.scratch/repo-workflow-check-deepening/`. The next work is Public Website
+Publication and product backlog selection. Keep release-readiness maintenance
+separate from product capability work: release readiness keeps the existing
+product easy to adopt; product capability work adds new user-facing behaviour.
 
 ## Current State
 
 The MVP CLI workflow is implemented in the TypeScript workspace:
 
 - `diagrampilot init`
+- `diagrampilot check [path]`
+- `diagrampilot check [path] --json`
 - `diagrampilot validate <path>`
 - `diagrampilot validate <path> --json`
 - `diagrampilot render <path> --out <artifact.svg>`
@@ -37,14 +41,17 @@ The implemented MVP includes:
 - SVG rendering through the included local D2 path.
 - Packaged `lucide:*` Icon Reference validation.
 - Deterministic SVG provenance metadata without wall-clock timestamps.
+- Read-only Repo Workflow Check for DiagramPilot source discovery, source
+  validation, and expected SVG artifact freshness through provenance metadata.
 - A CLI command planning seam for validating command behaviour without
   spawning the executable for every rule.
 - CLI smoke tests and focused validation/export/render/provenance/topology
   coverage.
 
-The MVP issue slices, architecture-deepening issue slices, and docs/demo rework
-issue slices are completed in the local tracker. The current closeout state is
-documentation and demo maintenance, not core CLI implementation.
+The MVP issue slices, architecture-deepening issue slices, docs/demo rework
+issue slices, Repo Workflow Check slices, and Repo Workflow Check deepening
+slices are completed in the local tracker. The current closeout state is public
+website publication and documentation maintenance, not core CLI implementation.
 
 ## Current Contract
 
@@ -58,6 +65,17 @@ them:
 - `validate` validates explicit source file paths only.
 - `validate` does not scan the repository.
 - `validate` does not check generated artifact freshness by default.
+- `check` is the read-only repo review/CI command.
+- `check [path]` discovers DiagramPilot Source Files in the current directory,
+  one explicit directory, or one explicit source file.
+- `check` validates discovered source files through the shared validated
+  DiagramSpec loading path.
+- `check` verifies next-to-source same-stem expected SVG artifacts through
+  provenance metadata only.
+- `check --json` emits aggregate structured repo workflow results to stdout.
+- `check` does not render, write files, update artifacts, rewrite sources, scan
+  from the Git root by default, check Mermaid/D2/DOT/PNG freshness, or support
+  configurable artifact mappings.
 - `render` produces SVG only.
 - `render` requires `--out`.
 - `export` supports Mermaid and D2.
@@ -101,23 +119,39 @@ npm test
 
 ## Active Backlog
 
-### Repo Workflow Check
+### Public Website Publication
 
-The next product capability phase is the first Repo Workflow Check:
-`diagrampilot check`.
+The active release-readiness track is Public Website Publication. It keeps
+Public Documentation in `docs-public/`, keeps Internal Documentation in
+`docs/`, and prepares the Markdown-first public website without introducing a
+hosted-workspace dependency for core workflows.
 
-This phase is tracked in `.scratch/repo-workflow-check/` and focuses on a
-read-only repository health check for diagrams:
+This track is recorded in `.scratch/public-website-publication/` and covers:
 
-1. Discover DiagramPilot Source Files from the current directory, one explicit
+1. Auditing public and internal docs against the shipped CLI.
+2. Adding the DiagramSpec v1 JSON Schema artifact after the docs audit.
+3. Publishing `docs-public/` through website routes under
+   `https://diagrampilot.com`.
+4. Building the public landing page.
+5. Adding deployment guidance.
+6. Preparing the first MCP adapter PRD.
+
+### Completed Repo Workflow Check
+
+Repo Workflow Check is complete. The implementation is recorded in
+`.scratch/repo-workflow-check/` and deepened in
+`.scratch/repo-workflow-check-deepening/`.
+
+The shipped `diagrampilot check [path] [--json]` command:
+
+1. Discovers DiagramPilot Source Files from the current directory, one explicit
    directory, or one explicit source file.
-2. Validate discovered source files through the shared validated DiagramSpec
+2. Validates discovered source files through the shared validated DiagramSpec
    loading path.
-3. Derive the next-to-source same-stem Expected SVG Artifact for each valid
+3. Derives the next-to-source same-stem Expected SVG Artifact for each valid
    source.
-4. Check SVG Artifact Freshness by reading DiagramPilot provenance metadata.
-5. Emit concise text output and aggregate JSON output.
-6. Update Public Documentation after the command is implemented.
+4. Checks SVG Artifact freshness by reading DiagramPilot provenance metadata.
+5. Emits concise text output and aggregate JSON output.
 
 The first `check` command does not render, write files, update artifacts,
 rewrite sources, scan from the Git root by default, check Mermaid/D2/DOT/PNG
@@ -152,9 +186,11 @@ Treat these as current architecture, not future backlog:
 
 ### Repo Workflow
 
-- Add stale artifact checks, such as `diagrampilot check` or
-  `diagrampilot validate --artifacts`.
-- Add diagram discovery across a repository.
+- Add generated artifact checks beyond next-to-source SVG provenance freshness,
+  such as explicit Mermaid or D2 artifact checks.
+- Add configurable artifact mappings and ignore patterns.
+- Add repository-wide discovery controls when the current scope-based discovery
+  is not enough.
 - Add watch mode for local authoring loops.
 - Add generated Markdown embeds.
 - Add explicit source formatting if source rewriting becomes useful.
@@ -232,6 +268,16 @@ with real local commands against the demo source:
 ```bash
 diagrampilot validate <demo-source>.dp.yaml
 diagrampilot render <demo-source>.dp.yaml --out <demo-output>.svg
+```
+
+### Repo Workflow Check Acceptance
+
+The shipped repo review workflow should be checked with the read-only command
+before rendering or rewriting artifacts:
+
+```bash
+diagrampilot check
+diagrampilot check demo-projects/checkout --json
 ```
 
 ### Maintainer Verification

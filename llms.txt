@@ -1,7 +1,7 @@
 # DiagramPilot
 
 > DiagramPilot is a local-first, repo-native diagram compiler for AI coding
-> agents. It helps agents create, validate, repair, update, render, and export
+> agents. It helps agents check, validate, repair, update, render, and export
 > diagrams from structured `*.dp.yaml` and `*.dp.json` source files.
 
 DiagramPilot uses DiagramSpec as its source model. A DiagramPilot source file is
@@ -16,7 +16,7 @@ Public documentation is hosted under `https://diagrampilot.com`.
 - [DiagramSpec](https://diagrampilot.com/docs/agents/spec.md): Structured source model for diagrams.
 - [Error repair](https://diagrampilot.com/docs/agents/error-repair.md): How agents should interpret and fix validation errors.
 - [Examples](https://diagrampilot.com/docs/agents/examples.md): Canonical diagram examples.
-- [MCP tools](https://diagrampilot.com/docs/agents/mcp.md): Planned Model Context Protocol interface after the CLI/core workflow is useful.
+- [MCP tools](https://diagrampilot.com/docs/agents/mcp.md): Deferred Model Context Protocol plan for after the public docs and schema surface are stable.
 - [Prompting guide](https://diagrampilot.com/docs/agents/prompting.md): Recommended instructions for agents using DiagramPilot.
 
 ## Current CLI
@@ -24,6 +24,7 @@ Public documentation is hosted under `https://diagrampilot.com`.
 ```bash
 diagrampilot init
 diagrampilot check
+diagrampilot check docs --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
@@ -40,11 +41,14 @@ diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architectur
 - `export` supports Mermaid and D2.
 - `export` prints to stdout by default and writes files with `--out`.
 - `validate` checks explicit source files and returns repairable errors.
+- `version`, `title`, and `nodes` are required.
+- `nodes` must contain at least one node.
 - IDs are lowercase snake case and globally unique within a DiagramSpec.
 - Icons use namespaced references such as `lucide:database`.
-- DOT, PNG, MCP, hosted canvas, and project analyzers are deferred.
+- DOT, PNG, hosted canvas, and project analyzers are deferred.
+- MCP is deferred.
 
-## Optional
+## Planned Public Artifacts
 
 - [GitHub repository](https://github.com/diagrampilot/diagrampilot): Source repository once public.
-- [JSON Schema](https://diagrampilot.com/schema/diagrampilot.schema.json): Planned machine-readable schema for DiagramSpec.
+- [DiagramSpec v1 JSON Schema](https://diagrampilot.com/schema/diagramspec-v1.schema.json): DiagramSpec v1 JSON Schema is planned as a generated, committed public artifact. It will document machine-readable source shape but will not replace core validation.

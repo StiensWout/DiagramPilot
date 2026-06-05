@@ -77,6 +77,24 @@ test("llms.txt links only public documentation", async () => {
   assert.doesNotMatch(llmsText, /domain\.md/);
 });
 
+test("llms.txt reflects current schema expectations and deferred MCP scope", async () => {
+  const llmsText = await readFile(path.join(repoRoot, "llms.txt"), "utf8");
+
+  assert.match(
+    llmsText,
+    /https:\/\/diagrampilot\.com\/schema\/diagramspec-v1\.schema\.json/,
+  );
+  assert.match(llmsText, /DiagramSpec v1 JSON Schema is planned/);
+  assert.match(llmsText, /`version`, `title`, and `nodes` are required/);
+  assert.match(llmsText, /`nodes` must contain at least one node/);
+  assert.match(llmsText, /lowercase snake case/);
+  assert.match(llmsText, /MCP is deferred/);
+  assert.doesNotMatch(
+    llmsText,
+    /https:\/\/diagrampilot\.com\/schema\/diagrampilot\.schema\.json/,
+  );
+});
+
 test("repository guidance separates public docs from internal maintainer docs", async () => {
   const agentGuide = await readFile(path.join(repoRoot, "AGENTS.md"), "utf8");
 
@@ -94,6 +112,31 @@ test("repository guidance separates public docs from internal maintainer docs", 
   assert.match(agentGuide, /docs\/adr\/0006-public-docs-live-under-docs-public\.md/);
 });
 
+test("internal docs and agent guidance treat repo workflow check as shipped", async () => {
+  const agentGuide = await readFile(path.join(repoRoot, "AGENTS.md"), "utf8");
+  const roadmap = await readFile(
+    path.join(repoRoot, "docs", "development", "roadmap.md"),
+    "utf8",
+  );
+  const architecture = await readFile(
+    path.join(repoRoot, "docs", "development", "architecture.md"),
+    "utf8",
+  );
+
+  assert.match(agentGuide, /diagrampilot check/);
+  assert.match(roadmap, /`diagrampilot check \[path\] \[--json\]`/);
+  assert.match(roadmap, /Repo Workflow Check is complete/);
+  assert.match(architecture, /`diagrampilot check \[path\] \[--json\]`/);
+  assert.doesNotMatch(
+    roadmap,
+    /The next product capability phase is the first Repo Workflow Check/,
+  );
+  assert.doesNotMatch(
+    architecture,
+    /the next architecture work is about deepening the current modules/,
+  );
+});
+
 test("README keeps public docs hosted and internal docs local", async () => {
   const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
 
@@ -105,6 +148,11 @@ test("README keeps public docs hosted and internal docs local", async () => {
   assert.match(readme, /docs\/development\/architecture\.md/);
   assert.match(readme, /docs\/agents\/issue-tracker\.md/);
   assert.match(readme, /docs\/adr\/0006-public-docs-live-under-docs-public\.md/);
+  assert.match(
+    readme,
+    /\.scratch\/public-website-publication\/PRD\.md/,
+  );
+  assert.match(readme, /Public Website Publication/);
 
   assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/development\//);
   assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/adr\//);
@@ -238,6 +286,22 @@ test("public examples reference current packages and avoid deferred features", a
   }
 });
 
+test("public MCP plan describes MCP and schema resources as deferred", async () => {
+  const mcpPlan = await readFile(
+    path.join(repoRoot, "docs-public", "agents", "mcp.md"),
+    "utf8",
+  );
+
+  assert.match(mcpPlan, /MCP is not implemented/);
+  assert.match(mcpPlan, /planned DiagramSpec v1 JSON Schema route/);
+  assert.match(
+    mcpPlan,
+    /https:\/\/diagrampilot\.com\/schema\/diagramspec-v1\.schema\.json/,
+  );
+  assert.match(mcpPlan, /Source mutation tools are deferred/);
+  assert.doesNotMatch(mcpPlan, /Current JSON Schema for DiagramSpec/);
+});
+
 test("internal closeout docs record completed planning state and maintainer validation", async () => {
   const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
   const roadmap = await readFile(
@@ -264,7 +328,7 @@ test("internal closeout docs record completed planning state and maintainer vali
   assert.doesNotMatch(readme, /MVP implementation is in progress/);
   assert.match(
     readme,
-    /MVP, architecture deepening, and docs\/demo rework checkpoints are complete/,
+    /MVP, architecture deepening, docs\/demo rework, Repo Workflow Check, and Repo\s+Workflow Check deepening checkpoints are complete/,
   );
 
   assert.match(roadmap, /Release readiness is complete/);
