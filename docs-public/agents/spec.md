@@ -212,7 +212,7 @@ kebab-case names, such as `database-backup`. MVP renderers support packaged
 Lucide icons. Validation rejects unsupported icon namespaces and unknown icons
 in supported namespaces.
 
-Reserved future namespaces include:
+Reserved icon namespaces include:
 
 ```text
 aws

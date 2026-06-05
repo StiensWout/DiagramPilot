@@ -106,8 +106,8 @@ test("public landing page presents the checkout demo workflow", async () => {
   assert.match(html, /DiagramSpec[^.]+source of truth/i);
   assert.match(html, /review-stable SVG artifacts/i);
   assert.match(html, /deterministic provenance/i);
-  assert.match(html, /First MCP Adapter/i);
-  assert.match(html, /planned/i);
+  assert.doesNotMatch(html, /MCP|Model Context Protocol/i);
+  assert.doesNotMatch(html, /planned|deferred|future|not implemented|source mutation/i);
 
   for (const forbiddenClaim of [
     /pricing/i,

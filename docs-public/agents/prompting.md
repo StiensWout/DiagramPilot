@@ -54,7 +54,7 @@ Make me a nice architecture diagram.
 ```
 
 This is too vague. It does not specify where the source should live, whether to
-validate, or how to preserve future editability.
+validate, or how to preserve durable editability.
 
 ## Good Prompt Pattern
 
