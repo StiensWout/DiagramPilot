@@ -1,13 +1,21 @@
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   MAINTAINABILITY_FILE_SIZE_GATE,
   auditMaintainabilityFileSizes,
 } from "../packages/core/dist/index.js";
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const maintainabilityAuditScriptPath = path.join(
+  repoRoot,
+  "scripts/audit-maintainability-file-sizes.mjs",
+);
 
 async function withTempRepo(run) {
   const tempRoot = await mkdtemp(
@@ -34,6 +42,31 @@ function lines(count) {
   );
 }
 
+async function runMaintainabilityAuditScript(cwd) {
+  const child = spawn(process.execPath, [maintainabilityAuditScriptPath], {
+    cwd,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  let stdout = "";
+  let stderr = "";
+
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", (chunk) => {
+    stdout += chunk;
+  });
+  child.stderr.on("data", (chunk) => {
+    stderr += chunk;
+  });
+
+  return await new Promise((resolve, reject) => {
+    child.on("error", reject);
+    child.on("close", (exitCode) => {
+      resolve({ exitCode, stdout, stderr });
+    });
+  });
+}
+
 test("auditMaintainabilityFileSizes reports included authored files over the 1000 LOC gate", async () => {
   await withTempRepo(async (tempRoot) => {
     await writeRepoFile(tempRoot, "packages/core/src/index.ts", lines(1001));
@@ -50,6 +83,28 @@ test("auditMaintainabilityFileSizes reports included authored files over the 100
         maxLineCount: 1000,
       },
     ]);
+  });
+});
+
+test("maintainability file-size gate passes for the current repository", async () => {
+  const result = await auditMaintainabilityFileSizes(repoRoot);
+
+  assert.deepEqual(result.violations, []);
+});
+
+test("maintainability audit script exits nonzero for gate violations", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await writeRepoFile(tempRoot, "packages/core/src/oversized.ts", lines(1001));
+
+    const result = await runMaintainabilityAuditScript(tempRoot);
+
+    assert.equal(result.exitCode, 1);
+    assert.match(result.stdout, /Violations:/);
+    assert.match(
+      result.stdout,
+      /packages\/core\/src\/oversized\.ts: 1001 LOC \(limit 1000\)/,
+    );
+    assert.equal(result.stderr, "");
   });
 });
 

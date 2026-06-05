@@ -33,6 +33,4 @@ for (const violation of result.violations) {
   );
 }
 
-console.log(
-  "Advisory only: hard enforcement is blocked until the core split removes current violations.",
-);
+process.exit(1);
