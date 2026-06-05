@@ -240,7 +240,7 @@ test("Documentation Contract internal sources are not published and synced websi
     "utf8",
   );
   assert.match(websiteGitignore, /^\/src\/content\/docs\/\*\*$/m);
-  assert.match(websiteGitignore, /^!\/src\/content\/docs\/index\.md$/m);
+  assert.match(websiteGitignore, /^!\/src\/content\/docs\/$/m);
   assert.match(websiteGitignore, /^\/public\/llms\.txt$/m);
   assert.match(websiteGitignore, /^\/public\/schema\/$/m);
   assert.match(websiteGitignore, /^\/public\/demo-projects\/$/m);
@@ -264,7 +264,7 @@ test("Documentation Contract drift checks align commands and canonical public li
   const quickstart = await readRepoFile("docs-public/agents/quickstart.md");
   const contract = await readContract();
   const checkoutDemoReadme = await readRepoFile("demo-projects/checkout/README.md");
-  const websiteLanding = await readRepoFile("website/src/content/docs/index.md");
+  const websiteLanding = await readRepoFile("website/src/pages/index.astro");
   const builtPublicDocsIndex = await readRepoFile("website/dist/docs/index.md");
 
   for (const [label, source] of [
@@ -285,7 +285,6 @@ test("Documentation Contract drift checks align commands and canonical public li
     ["docs-public/index.md", publicDocsIndex],
     ["docs-public/agents/quickstart.md", quickstart],
     ["demo-projects/checkout/README.md", checkoutDemoReadme],
-    ["website/src/content/docs/index.md", websiteLanding],
     ["website/dist/docs/index.md", builtPublicDocsIndex],
   ]) {
     assertIncludesAll(source, demoWorkflowCommands, label);
@@ -300,7 +299,8 @@ test("Documentation Contract drift checks align commands and canonical public li
   );
   assert.match(contract, /https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md/);
   assert.match(contract, /https:\/\/diagrampilot\.com\/schema\/diagramspec-v1\.schema\.json/);
-  assert.match(websiteLanding, /link: \/docs\/agents\/quickstart\//);
-  assert.match(websiteLanding, /\/demo-projects\/checkout\/docs\/architecture\.svg/);
+  assert.match(websiteLanding, /href="\/docs\/agents\/quickstart\/"/);
+  assert.match(websiteLanding, /\/landing\/hero-workflow\.png/);
+  assert.doesNotMatch(websiteLanding, /\/landing\/agent-flow(?:-v2)?\.png/);
   assert.equal(builtPublicDocsIndex, publicDocsIndex);
 });

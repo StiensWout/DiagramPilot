@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
@@ -78,7 +78,16 @@ async function gitLsFiles(paths) {
   });
 }
 
-test("public landing page presents the checkout demo workflow", async () => {
+async function exists(repoPath) {
+  try {
+    await access(path.join(repoRoot, repoPath));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+test("public landing page presents generated product visuals", async () => {
   await websiteBuild();
 
   const html = await readFile(
@@ -88,24 +97,54 @@ test("public landing page presents the checkout demo workflow", async () => {
 
   const diagramPilotHeadings = html.match(/<h1[^>]*>\s*DiagramPilot\s*<\/h1>/g) ?? [];
   assert.equal(diagramPilotHeadings.length, 1);
-  assert.match(html, /repo-native diagram compiler for AI coding agents/i);
+  const heroStart = html.indexOf('<section class="hero-zone"');
+  const artifactStart = html.indexOf("Source files become reviewable artifacts.");
+  const promiseStart = html
+    .slice(heroStart, artifactStart)
+    .search(
+      /repository files an AI coding agent can safely change,\s*validate, and commit/i,
+  );
+  assert.ok(heroStart >= 0);
+  assert.ok(artifactStart > heroStart);
+  assert.ok(promiseStart >= 0);
+  assert.match(
+    html,
+    /repository files an AI coding agent can safely change, validate, and commit/i,
+  );
+  assert.match(html, /repo-native diagram compiler\s+for AI coding\s+agents/i);
   assert.match(html, /Checkout Demo Project/);
   assert.match(html, /href="\/docs\/agents\/quickstart\/"/);
   assert.match(html, /href="\/docs\/"/);
-  assert.match(html, /src="\/demo-projects\/checkout\/docs\/architecture\.svg"/);
+  assert.match(
+    html,
+    /aria-label="DiagramPilot source, validation, and rendered output workflow"/,
+  );
+  assert.match(html, /class="hero-copy motion-rise"/);
+  assert.match(html, /class="workflow-shell motion-rise motion-delay-1"/);
+  assert.match(html, /class="proof-item reveal-motion"/);
+  assert.match(html, /class="image-band reveal-motion"/);
+  assert.match(html, /IntersectionObserver/);
+  assert.match(html, /src="\/landing\/hero-workflow\.png"/);
+  assert.match(
+    html,
+    /Dark developer interface showing repository files, source code, terminal output, and an architecture diagram preview/,
+  );
+  assert.doesNotMatch(html, /\/landing\/agent-flow(?:-v2)?\.png/);
+  assert.match(html, /Bring your own repository\./);
+  assert.match(html, /One command before review\./);
+  assert.match(html, /If it breaks, it says where\./);
+  assert.match(html, /Source files become reviewable artifacts\./);
+  assert.doesNotMatch(html, /starlight-theme-select/);
+  assert.doesNotMatch(html, /class="site-title/);
+  assert.doesNotMatch(html, /Select theme/);
+  assert.doesNotMatch(
+    html,
+    /Real rendered output|DiagramSpec stays source of truth|Generated examples|Examples agents can copy|Shipped workflow|The Workflow Agents Can Commit|shortest shipped workflow/i,
+  );
 
-  for (const command of [
-    "diagrampilot check",
-    "diagrampilot validate docs/architecture.dp.yaml",
-    "diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg",
-    "diagrampilot export docs/architecture.dp.yaml --format mermaid",
-  ]) {
-    assert.match(html, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-  }
-
-  assert.match(html, /DiagramSpec[^.]+source of truth/i);
-  assert.match(html, /review-stable SVG artifacts/i);
-  assert.match(html, /deterministic provenance/i);
+  assert.match(html, /diagrampilot check/);
+  assert.match(html, /review-stable SVG\s+artifacts/i);
+  assert.match(html, /repairable errors/i);
   assert.doesNotMatch(html, /MCP|Model Context Protocol/i);
   assert.doesNotMatch(html, /planned|deferred|future|not implemented|source mutation/i);
 
@@ -114,10 +153,34 @@ test("public landing page presents the checkout demo workflow", async () => {
     /sign up/i,
     /signup/i,
     /hosted workspace/i,
+    /hosted storage/i,
+    /prompt-only/i,
+    /prompt only/i,
     /prompt-to-diagram/i,
   ]) {
     assert.doesNotMatch(html, forbiddenClaim);
   }
+});
+
+test("custom landing styles keep accessibility and motion controls explicit", async () => {
+  const landingCss = await readFile(
+    path.join(repoRoot, "website", "src", "styles", "landing.css"),
+    "utf8",
+  );
+
+  assert.match(landingCss, /:focus-visible/);
+  assert.match(landingCss, /prefers-reduced-motion:\s*reduce/);
+  assert.match(landingCss, /workflow-shell/);
+  assert.match(landingCss, /image-band/);
+  assert.match(landingCss, /@keyframes\s+landing-rise/);
+  assert.match(landingCss, /motion-ready/);
+  assert.match(landingCss, /translate3d/);
+  assert.match(landingCss, /text-align:\s*center/);
+  assert.match(landingCss, /body\.landing-page/);
+  assert.match(landingCss, /\.hero-zone\s*{[^}]*min-height:\s*100svh;/);
+  assert.match(landingCss, /overflow:\s*clip/);
+  assert.doesNotMatch(landingCss, /letter-spacing:\s*-/);
+  assert.doesNotMatch(landingCss, /radial-gradient/);
 });
 
 test("custom website code avoids card-based landing page patterns", async () => {
@@ -138,6 +201,8 @@ test("custom website code avoids card-based landing page patterns", async () => 
   ];
 
   for (const repoPath of customWebsiteFiles) {
+    if (!(await exists(repoPath))) continue;
+
     const source = await readFile(path.join(repoRoot, repoPath), "utf8");
 
     for (const pattern of forbiddenPatterns) {
