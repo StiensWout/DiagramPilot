@@ -7,7 +7,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-import { loadValidatedDiagramSpec } from "../packages/core/dist/index.js";
+import {
+  getDiagramPilotVersion,
+  loadValidatedDiagramSpec,
+} from "../packages/core/dist/index.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cliEntryPoint = path.join(repoRoot, "packages", "cli", "dist", "index.js");
@@ -175,7 +178,7 @@ test("checkout demo project SVG is rendered by the real CLI with deterministic p
     assert.deepEqual(JSON.parse(provenanceMatch.groups.json), {
       sourcePath: checkoutArchitectureSource,
       sourceSha256: sha256Hex(sourceText),
-      diagramPilotVersion: "0.1.0",
+      diagramPilotVersion: getDiagramPilotVersion(),
       renderer: {
         name: "@terrastruct/d2",
         version: "0.1.33",

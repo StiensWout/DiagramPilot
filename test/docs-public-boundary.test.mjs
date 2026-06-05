@@ -20,6 +20,7 @@ const internalDocs = [
   "docs/agents/domain.md",
   "docs/development/roadmap.md",
   "docs/development/architecture.md",
+  "docs/development/release-version-workflow.md",
   "docs/development/public-website-deployment.md",
   "docs/adr/0006-public-docs-live-under-docs-public.md",
 ];

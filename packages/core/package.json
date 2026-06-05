@@ -1,6 +1,6 @@
 {
   "name": "@diagrampilot/core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DiagramSpec types and core behavior for DiagramPilot.",
   "type": "module",
   "main": "./dist/index.js",
@@ -18,7 +18,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@diagrampilot/icons": "0.1.0",
+    "@diagrampilot/icons": "0.1.1",
     "yaml": "^2.9.0"
   }
 }

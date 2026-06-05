@@ -180,6 +180,9 @@ Pre-alpha Issue Versions can be tagged before npm publishing is ready. The
 first package-ready pre-alpha publish uses the `prealpha` npm dist-tag, and
 v0.2.0 is published under `latest`.
 
+Issue Version bumping and closeout are documented in
+`docs/development/release-version-workflow.md`.
+
 ### Completed Repo Workflow Check
 
 Repo Workflow Check is complete. The implementation is recorded in
