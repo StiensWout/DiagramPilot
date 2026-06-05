@@ -15,6 +15,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import { getDiagramPilotVersion } from "../packages/core/dist/index.js";
 import {
   SVG_RENDERER_NAME,
   SVG_RENDERER_VERSION,
@@ -139,7 +140,7 @@ test("diagrampilot executable starts and reports its version", async () => {
   assert.equal(result.signal, null);
   assert.equal(result.code, 0, result.stderr);
   assert.equal(result.stderr, "");
-  assert.equal(result.stdout, "diagrampilot 0.1.0\n");
+  assert.equal(result.stdout, `diagrampilot ${getDiagramPilotVersion()}\n`);
 });
 
 test("diagrampilot init creates adoption support files without generating diagrams", async () => {
@@ -376,7 +377,7 @@ test("diagrampilot render writes SVG with deterministic provenance", async () =>
     assert.deepEqual(JSON.parse(provenanceMatch.groups.json), {
       sourcePath: "docs/architecture.dp.yaml",
       sourceSha256: sha256Hex(sourceText),
-      diagramPilotVersion: "0.1.0",
+      diagramPilotVersion: getDiagramPilotVersion(),
       renderer: {
         name: "@terrastruct/d2",
         version: "0.1.33",

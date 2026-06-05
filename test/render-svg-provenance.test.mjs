@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import test from "node:test";
 
-import { createSvgArtifactProvenance } from "@diagrampilot/core";
+import {
+  createSvgArtifactProvenance,
+  getDiagramPilotVersion,
+} from "@diagrampilot/core";
 import {
   addSvgProvenanceMetadata,
   createSvgRendererProvenance,
@@ -43,7 +46,7 @@ test("SVG provenance construction records deterministic source and renderer meta
   assert.deepEqual(provenance, {
     sourcePath,
     sourceSha256: sha256Hex(sourceContent),
-    diagramPilotVersion: "0.1.0",
+    diagramPilotVersion: getDiagramPilotVersion(),
     renderer: {
       name: "@terrastruct/d2",
       version: "0.1.33",

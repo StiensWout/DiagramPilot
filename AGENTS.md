@@ -28,6 +28,7 @@ local files, review-stable rendering, readable specs, and repairable errors.
 - Internal: `CONTEXT.md`, `docs/development/documentation-contract.md`,
   `docs/development/public-website-deployment.md`,
   `docs/development/architecture.md`, `docs/development/roadmap.md`,
+  `docs/development/release-version-workflow.md`,
   `docs/agents/issue-tracker.md`, `docs/agents/triage-labels.md`,
   `docs/agents/domain.md`,
   `docs/adr/0006-public-docs-live-under-docs-public.md`.
