@@ -122,9 +122,10 @@ p {
 
 h1 {
   color: #ffffff;
-  font-size: clamp(4.5rem, 14vw, 10rem);
-  line-height: 0.88;
+  font-size: 3.35rem;
+  line-height: 1;
   letter-spacing: 0;
+  overflow-wrap: normal;
   text-shadow: 0 0 3rem rgb(52 211 153 / 0.2);
 }
 
@@ -335,6 +336,18 @@ code {
 @media (max-width: 66rem) {
   .proof-strip {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 42rem) {
+  h1 {
+    font-size: 6rem;
+  }
+}
+
+@media (min-width: 68rem) {
+  h1 {
+    font-size: 9rem;
   }
 }
 

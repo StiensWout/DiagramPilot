@@ -8,6 +8,7 @@
     "predev": "node scripts/sync-public-docs.mjs",
     "dev": "astro dev",
     "build": "astro build",
+    "check:visual": "node scripts/check-visual-quality.mjs",
     "test": "node --test --test-concurrency=1 ../test/website-*.test.mjs",
     "preview": "astro preview",
     "astro": "astro"
@@ -15,5 +16,10 @@
   "dependencies": {
     "@astrojs/starlight": "^0.39.3",
     "astro": "^6.4.4"
+  },
+  "devDependencies": {
+    "dejavu-fonts-ttf": "^2.37.3",
+    "playwright": "^1.60.0",
+    "sharp": "^0.34.5"
   }
 }
