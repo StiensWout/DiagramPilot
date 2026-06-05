@@ -186,13 +186,26 @@ test("public entrypoints expose canonical DiagramPilot Brand Assets", async () =
     "utf8",
   );
 
+  assert.match(readme, /<picture>/);
   assert.match(
     readme,
-    /!\[DiagramPilot wordmark\]\(assets\/brand\/diagrampilot-logo\.svg\)/,
+    /<source media="\(prefers-color-scheme: dark\)" srcset="assets\/brand\/diagrampilot-logo-light\.svg">/,
+  );
+  assert.match(
+    readme,
+    /<img src="assets\/brand\/diagrampilot-logo\.svg" alt="DiagramPilot wordmark">/,
   );
   assert.match(
     readme,
     /\[DiagramPilot mark\]\(assets\/brand\/diagrampilot-mark\.svg\)/,
+  );
+  assert.match(
+    publicDocsIndex,
+    /src="\/brand\/diagrampilot-logo\.svg"/,
+  );
+  assert.match(
+    publicDocsIndex,
+    /src="\/brand\/diagrampilot-logo-light\.svg"/,
   );
   assert.match(
     publicDocsIndex,

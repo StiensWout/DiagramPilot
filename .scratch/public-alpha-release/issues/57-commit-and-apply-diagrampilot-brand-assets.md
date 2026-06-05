@@ -62,8 +62,14 @@ git diff --check
   `/brand/diagrampilot-mark.svg` instead of the missing `/favicon.svg`.
 - Updated the landing page hero to show the light wordmark while retaining one
   accessible `h1` for the product name.
+- Removed the green hero eyebrow above the landing logo and increased the
+  landing wordmark size.
 - Added Starlight docs CSS so the Public Documentation index switches between
   the light-surface and dark-surface wordmark assets based on `data-theme`.
+- Switched rendered docs wordmark image sources to root-relative `/brand/...`
+  paths so local preview and production both load the generated website assets.
+- Updated the README hero wordmark to use a `prefers-color-scheme` `<picture>`
+  with the light wordmark in dark mode.
 - Updated the public docs sync transform so Starlight uses the source Markdown
   `h1` as frontmatter title without rendering a duplicate in-page heading.
 - Applied brand assets to README, Public Documentation, `llms.txt`, and the

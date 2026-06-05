@@ -140,7 +140,7 @@ h1 {
 
 .hero-wordmark {
   display: block;
-  width: min(34rem, 94vw);
+  width: min(44rem, 96vw);
   height: auto;
   margin: 0 auto;
 }

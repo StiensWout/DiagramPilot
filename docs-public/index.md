@@ -1,8 +1,8 @@
 # Public Documentation
 
 <span class="brand-wordmark-set" role="img" aria-label="DiagramPilot wordmark">
-  <img class="brand-wordmark brand-wordmark-light-surface" src="https://diagrampilot.com/brand/diagrampilot-logo.svg" alt="" />
-  <img class="brand-wordmark brand-wordmark-dark-surface" src="https://diagrampilot.com/brand/diagrampilot-logo-light.svg" alt="" />
+  <img class="brand-wordmark brand-wordmark-light-surface" src="/brand/diagrampilot-logo.svg" alt="" />
+  <img class="brand-wordmark brand-wordmark-dark-surface" src="/brand/diagrampilot-logo-light.svg" alt="" />
 </span>
 
 DiagramPilot Public Documentation is for developers and AI coding agents using

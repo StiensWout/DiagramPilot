@@ -1,6 +1,9 @@
 # DiagramPilot
 
-![DiagramPilot wordmark](assets/brand/diagrampilot-logo.svg)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/diagrampilot-logo-light.svg">
+  <img src="assets/brand/diagrampilot-logo.svg" alt="DiagramPilot wordmark">
+</picture>
 
 DiagramPilot is a local-first, repo-native diagram compiler for AI coding
 agents. It validates structured DiagramSpec source files, renders review-stable

@@ -194,6 +194,8 @@ test("website docs pages use published DiagramPilot brand assets", async () => {
     html,
     /href="\/brand\/diagrampilot-mark\.svg"[^>]*type="image\/svg\+xml"/,
   );
+  assert.match(html, /src="\/brand\/diagrampilot-logo\.svg"/);
+  assert.match(html, /src="\/brand\/diagrampilot-logo-light\.svg"/);
   assert.match(html, /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo\.svg/);
   assert.match(html, /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo-light\.svg/);
   assert.match(html, /https:\/\/diagrampilot\.com\/brand\/diagrampilot-mark\.svg/);

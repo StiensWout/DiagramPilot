@@ -111,10 +111,13 @@ test("public landing page presents generated product visuals", async () => {
     html,
     /repository files an AI coding agent can safely change, validate, and commit/i,
   );
-  assert.match(html, /repo-native diagram compiler\s+for AI coding\s+agents/i);
   assert.match(
     html,
     /<img[^>]+class="hero-wordmark"[^>]+src="\/brand\/diagrampilot-logo-light\.svg"[^>]+alt=""/,
+  );
+  assert.doesNotMatch(
+    html,
+    /class="eyebrow">\s*Repo-native diagram compiler for AI coding agents\s*<\/p>/,
   );
   assert.match(html, /Checkout Demo Project/);
   assert.match(html, /href="\/docs\/agents\/quickstart\/"/);
@@ -218,6 +221,7 @@ test("custom landing styles keep accessibility and motion controls explicit", as
   assert.match(landingCss, /prefers-reduced-motion:\s*reduce/);
   assert.match(landingCss, /workflow-shell/);
   assert.match(landingCss, /hero-wordmark/);
+  assert.match(landingCss, /\.hero-wordmark\s*{[^}]*width:\s*min\(44rem,\s*96vw\);/);
   assert.match(landingCss, /sr-only/);
   assert.match(landingCss, /image-band/);
   assert.match(landingCss, /@keyframes\s+landing-rise/);
