@@ -10,8 +10,11 @@ Run the repo workflow from this directory:
 diagrampilot check
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
+diagrampilot export docs/architecture.dp.yaml --format mermaid
+diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
 ```
 
 Use `diagrampilot check` as the read-only repo review/CI command. Use
 `validate` for explicit source repair and `render --out` to refresh the
-explicit SVG artifact.
+explicit SVG artifact. `export` prints to stdout by default and writes a file
+only when `--out` is provided.

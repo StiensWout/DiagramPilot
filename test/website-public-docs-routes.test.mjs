@@ -78,6 +78,45 @@ async function gitLsFiles(paths) {
   });
 }
 
+async function publicDocsSync() {
+  return new Promise((resolve, reject) => {
+    const child = spawn("node", ["scripts/sync-public-docs.mjs"], {
+      cwd: path.join(repoRoot, "website"),
+      env: { ...process.env, CI: "true" },
+    });
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      reject(
+        new Error(
+          [
+            `Public docs sync failed with exit code ${code}.`,
+            stdout.trim(),
+            stderr.trim(),
+          ]
+            .filter(Boolean)
+            .join("\n\n"),
+        ),
+      );
+    });
+  });
+}
+
 async function exists(repoPath) {
   try {
     await access(path.join(repoRoot, repoPath));
@@ -86,6 +125,21 @@ async function exists(repoPath) {
     return false;
   }
 }
+
+test("public docs sync can run concurrently without deleting current generated docs", async () => {
+  await Promise.all(Array.from({ length: 8 }, () => publicDocsSync()));
+
+  assert.equal(
+    await exists("website/src/content/docs/docs/index.md"),
+    true,
+    "synced Public Documentation index should remain present",
+  );
+  assert.equal(
+    await exists("website/src/content/docs/docs/agents/quickstart.md"),
+    true,
+    "synced quickstart should remain present",
+  );
+});
 
 test("website publishes public docs as human HTML and agent Markdown routes", async () => {
   await websiteBuild();

@@ -94,6 +94,7 @@ After production DNS points at the Vercel project, the public surface should be:
 | --- | --- |
 | Landing page | `https://diagrampilot.com/` |
 | Public docs index | `https://diagrampilot.com/docs/` |
+| Public docs index Markdown | `https://diagrampilot.com/docs/index.md` |
 | Checkout quickstart HTML | `https://diagrampilot.com/docs/agents/quickstart/` |
 | Checkout quickstart Markdown | `https://diagrampilot.com/docs/agents/quickstart.md` |
 | DiagramSpec HTML | `https://diagrampilot.com/docs/agents/spec/` |
