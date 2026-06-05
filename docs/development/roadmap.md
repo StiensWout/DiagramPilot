@@ -8,10 +8,11 @@ docs/demo release-readiness, Repo Workflow Check, and Repo Workflow Check
 deepening checkpoints recorded in `.scratch/diagrampilot-mvp/`,
 `.scratch/architecture-deepening/`, `.scratch/docs-demo-project-rework/`,
 `.scratch/repo-workflow-check/`, and
-`.scratch/repo-workflow-check-deepening/`. The next work is Public Website
-Publication and product backlog selection. Keep release-readiness maintenance
-separate from product capability work: release readiness keeps the existing
-product easy to adopt; product capability work adds new user-facing behaviour.
+`.scratch/repo-workflow-check-deepening/`. The current closeout work is Public
+Website Publication, followed by Productization And Maintainability. Keep
+release-readiness maintenance separate from product capability work: release
+readiness keeps the existing product easy to adopt; product capability work
+adds new user-facing behaviour.
 
 ## Current State
 
@@ -134,7 +135,25 @@ This track is recorded in `.scratch/public-website-publication/` and covers:
    `https://diagrampilot.com`.
 4. Building the public landing page.
 5. Adding deployment guidance.
-6. Preparing the first MCP adapter PRD.
+
+### Productization And Maintainability
+
+The next release-readiness track is Productization And Maintainability. It
+starts after Public Website Publication closes and is recorded in
+`.scratch/productization-and-maintainability/`.
+
+This track covers:
+
+1. Cleaning the Current-State Public Surface and reworking the canonical
+   quickstart.
+2. Adding a hard 1000 LOC gate for authored implementation and test files.
+3. Splitting large core and CLI modules under the file-size gate.
+4. Formalizing the Documentation Contract.
+5. Redesigning the Public Landing Page around product storytelling.
+6. Adding website visual quality checks.
+
+MCP remains a later product capability phase, not part of this
+release-readiness track.
 
 ### Completed Repo Workflow Check
 
