@@ -127,6 +127,13 @@ internal design decisions.
 _Avoid_: Public roadmap copy, planned integration docs, internal architecture
 notes
 
+**Public Repository Surface**:
+The subset of committed repository content intended for external discovery,
+adoption, and contribution. Maintainer material may be committed without being
+part of the Public Repository Surface.
+_Avoid_: Public website surface, package publish surface, generated review
+reports
+
 **Repo Workflow**:
 A DiagramPilot product capability area for operating on DiagramPilot Source
 Files and Derived Artifacts across a local repository, rather than on one
@@ -214,12 +221,82 @@ agent can safely change, validate, and commit.
 _Avoid_: Generic AI diagram generation, hosted collaboration pitch, roadmap
 summary
 
+**DiagramPilot Brand Assets**:
+The maintained visual identity assets for DiagramPilot, including the product
+mark and wordmark used across the Public Website, Public Documentation, release
+surfaces, and repository entrypoints.
+_Avoid_: Generated demo artifact, visual regression screenshot, throwaway mockup
+
+**Brand Use Policy**:
+The public rules for using DiagramPilot names and Brand Assets separately from
+the software license. It protects official product identity without restricting
+normal software use under the code license.
+_Avoid_: Code license, package license, noncommercial software license
+
+**Code License**:
+The permissive software license for DiagramPilot source, packages,
+documentation, schema, website source, and Brand Assets. DiagramPilot uses
+brand rules rather than a noncommercial software license to protect official
+product identity.
+_Avoid_: Brand Use Policy, noncommercial license, proprietary source grant
+
 **Productization And Maintainability**:
 A release-readiness phase that improves DiagramPilot's public product surface,
 maintainer structure, and documentation contract before the next product
 capability phase.
 _Avoid_: MCP implementation release, hosted workspace launch, source mutation
 phase, refactor-only phase
+
+**Pre-Alpha Release**:
+A versioned DiagramPilot release before the first Public Alpha Release. It may
+be taggable or publishable, but it is not the first public release milestone.
+_Avoid_: Public alpha, first public release, production-ready release
+
+**Issue Version**:
+A DiagramPilot version assigned to the completion of one implementation issue
+after the current planning baseline. Issue Versions advance through pre-alpha
+patch releases until the Public Alpha Release.
+_Avoid_: Unversioned issue closeout, prerelease suffix, code-only milestone
+
+**Public Alpha Release**:
+The first public DiagramPilot release milestone intended for external discovery
+and early adoption, with public repo hygiene, licensing, release workflow, and
+current public documentation aligned.
+_Avoid_: Pre-alpha release, production-ready release, private milestone
+
+**DiagramPilot Release**:
+A versioned DiagramPilot milestone represented by coordinated source,
+package, website, documentation, and release-note state.
+_Avoid_: Code-only tag, docs-only launch, website-only update
+
+**Release Automation**:
+The CI/CD workflow that validates a DiagramPilot release, publishes the Public
+Package Set, and keeps the Public Website deployment path separate from package
+publishing.
+_Avoid_: Local validation only, manual package upload, website-only deployment
+
+**Public Package Set**:
+The installable DiagramPilot packages published together for a release so the
+CLI and runtime package dependencies resolve coherently.
+_Avoid_: CLI-only package, website deployment, source checkout
+
+**Package Publishing Readiness**:
+The release state where package metadata, licensing, tarball contents, package
+name ownership, and CI checks are sufficient to publish the Public Package Set.
+_Avoid_: Source-only release, unverified npm publish, website deployment
+
+**Release-Ready Public Documentation**:
+Public Documentation that is compact, coherent, published, current with the
+release, and includes installation paths for supported ways to adopt
+DiagramPilot.
+_Avoid_: Internal planning notes, stale quickstart, unpublished docs draft
+
+**Installation And Removal Guidance**:
+Public Documentation that explains the supported ways to add DiagramPilot to a
+repository or local environment and how to remove those installation paths
+cleanly. It separates package uninstallation from repository cleanup after
+DiagramPilot adoption.
+_Avoid_: Contributor setup, internal build instructions, ad hoc cleanup notes
 
 **Internal Documentation**:
 Documentation for DiagramPilot maintainers that explains project workflow,

@@ -8,11 +8,11 @@ docs/demo release-readiness, Repo Workflow Check, and Repo Workflow Check
 deepening checkpoints recorded in `.scratch/diagrampilot-mvp/`,
 `.scratch/architecture-deepening/`, `.scratch/docs-demo-project-rework/`,
 `.scratch/repo-workflow-check/`, and
-`.scratch/repo-workflow-check-deepening/`. The current closeout work is Public
-Website Publication, followed by Productization And Maintainability. Keep
-release-readiness maintenance separate from product capability work: release
-readiness keeps the existing product easy to adopt; product capability work
-adds new user-facing behaviour.
+`.scratch/repo-workflow-check-deepening/`. The current release-readiness path
+is Public Website Publication, Productization And Maintainability, and the
+Public Alpha Release track for v0.2.0. Keep release-readiness maintenance
+separate from product capability work: release readiness keeps the existing
+product easy to adopt; product capability work adds new user-facing behaviour.
 
 ## Current State
 
@@ -51,8 +51,8 @@ The implemented MVP includes:
 
 The MVP issue slices, architecture-deepening issue slices, docs/demo rework
 issue slices, Repo Workflow Check slices, and Repo Workflow Check deepening
-slices are completed in the local tracker. The current closeout state is public
-website publication and documentation maintenance, not core CLI implementation.
+slices are completed in the local tracker. The current closeout state is
+release readiness and public alpha packaging, not core CLI implementation.
 
 ## Current Contract
 
@@ -138,8 +138,8 @@ This track is recorded in `.scratch/public-website-publication/` and covers:
 
 ### Productization And Maintainability
 
-The next release-readiness track is Productization And Maintainability. It
-starts after Public Website Publication closes and is recorded in
+The Productization And Maintainability track starts after Public Website
+Publication closes and is recorded in
 `.scratch/productization-and-maintainability/`.
 
 This track covers:
@@ -155,6 +155,30 @@ This track covers:
 
 MCP remains a later product capability phase, not part of this
 release-readiness track.
+
+### Public Alpha Release
+
+The next release-readiness track after Productization And Maintainability is
+Public Alpha Release. It is recorded in `.scratch/public-alpha-release/` and
+prepares v0.2.0 as the first public and published alpha release.
+
+This track covers:
+
+1. Adding release version tooling and the Issue Version workflow.
+2. Adding the MIT Code License, package metadata, package tarball checks, and
+   Brand Use Policy.
+3. Committing and applying DiagramPilot Brand Assets.
+4. Adding installation and removal Public Documentation.
+5. Proving Package Publishing Readiness and reserving npm names with a
+   pre-alpha publish under the `prealpha` dist-tag.
+6. Adding GitHub Actions branch and pull request CI.
+7. Adding GitHub Actions release automation for package publishing.
+8. Closing v0.2.0 as the Public Alpha Release with packages, docs, website,
+   release notes, and public surface checks aligned.
+
+Pre-alpha Issue Versions can be tagged before npm publishing is ready. The
+first package-ready pre-alpha publish uses the `prealpha` npm dist-tag, and
+v0.2.0 is published under `latest`.
 
 ### Completed Repo Workflow Check
 
