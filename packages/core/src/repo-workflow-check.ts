@@ -4,15 +4,19 @@ import type {
   DiagramPilotSourceDiscoveryFailure,
   DiagramPilotSourceDiscoveryResult,
   DiagramPilotSourceDiscoveryScope,
+} from "./source-discovery.js";
+import type {
   DiagramPilotSourceFile,
   RepairableDiagnosticReport,
+  ValidatedDiagramSpecLoadFailure,
+  ValidatedDiagramSpecLoadResult,
+} from "./source-loading.js";
+import type {
   StaleSvgArtifactResult,
   SvgArtifactFreshnessCheckResult,
   SvgArtifactProvenance,
   SvgArtifactRenderer,
-  ValidatedDiagramSpecLoadFailure,
-  ValidatedDiagramSpecLoadResult,
-} from "./index.js";
+} from "./svg-artifact-freshness.js";
 
 export interface RepoWorkflowCheckOptions {
   scopePath?: string;
