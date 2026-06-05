@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prebuild": "node scripts/sync-public-docs.mjs",
+    "predev": "node scripts/sync-public-docs.mjs",
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
