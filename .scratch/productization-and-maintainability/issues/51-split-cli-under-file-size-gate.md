@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: completed
 
 # Split CLI under file-size gate
 
@@ -15,16 +15,16 @@ architecture.
 
 ## Acceptance criteria
 
-- [ ] `packages/cli/src/index.ts` is below 1000 LOC.
-- [ ] CLI command behaviour for `init`, `check`, `validate`, `render`, and
+- [x] `packages/cli/src/index.ts` is below 1000 LOC.
+- [x] CLI command behaviour for `init`, `check`, `validate`, `render`, and
       `export` is unchanged.
-- [ ] Existing command planning seams remain testable without spawning the
+- [x] Existing command planning seams remain testable without spawning the
       executable for every rule.
-- [ ] Files are split by responsibility rather than by arbitrary line chunks.
-- [ ] Validation, diagnostics, render/export orchestration, and filesystem
+- [x] Files are split by responsibility rather than by arbitrary line chunks.
+- [x] Validation, diagnostics, render/export orchestration, and filesystem
       writes remain at the intended package boundaries.
-- [ ] CLI smoke tests and focused command-planning tests continue to pass.
-- [ ] The file-size gate passes for CLI-authored files.
+- [x] CLI smoke tests and focused command-planning tests continue to pass.
+- [x] The file-size gate passes for CLI-authored files.
 
 ## Blocked by
 
@@ -36,4 +36,36 @@ architecture.
 npm run build
 node --test test/cli-command-planning.test.mjs test/cli-smoke.test.mjs
 npm test
+npm run audit:maintainability
 ```
+
+## Implementation notes
+
+- Split `packages/cli/src/index.ts` into responsibility-focused modules:
+  `argument-parsing.ts`, `cli-output.ts`, `command-planning.ts`,
+  `execution.ts`, `init-command.ts`, and `types.ts`.
+- Kept `packages/cli/src/index.ts` as the executable and package export
+  surface for `run`, `planCommand`, and related public types.
+- Added a focused command-planning seam test that imports the planner from
+  `packages/cli/dist/command-planning.js`, so planning behavior remains
+  testable without spawning the CLI executable.
+- Updated CLI architecture boundary tests to inspect the extracted command
+  planning module where validation, diagnostics, and repo workflow delegation
+  now live.
+- Current CLI source file sizes: `index.ts` 55 LOC, `command-planning.ts` 389
+  LOC, `argument-parsing.ts` 289 LOC, `init-command.ts` 135 LOC,
+  `cli-output.ts` 120 LOC, `execution.ts` 24 LOC, and `types.ts` 18 LOC.
+
+## Validation results
+
+```bash
+npm run build
+node --test test/cli-command-planning-seam.test.mjs
+node --test test/cli-command-planning.test.mjs test/cli-smoke.test.mjs
+node --test test/cli-workflow-architecture.test.mjs
+npm test
+npm run audit:maintainability
+```
+
+All commands passed. The maintainability audit checked 51 files and reported no
+violations.
