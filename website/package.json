@@ -8,6 +8,7 @@
     "predev": "node scripts/sync-public-docs.mjs",
     "dev": "astro dev",
     "build": "astro build",
+    "test": "node --test --test-concurrency=1 ../test/website-*.test.mjs",
     "preview": "astro preview",
     "astro": "astro"
   },

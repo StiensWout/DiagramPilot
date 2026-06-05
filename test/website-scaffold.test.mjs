@@ -31,6 +31,7 @@ test("website is an explicit workspace outside the compiler build", async () => 
 
 test("website is a static Astro Starlight shell", async () => {
   const websitePackage = await readJson("website/package.json");
+  const websiteTsconfig = await readJson("website/tsconfig.json");
   const dependencies = {
     ...websitePackage.dependencies,
     ...websitePackage.devDependencies,
@@ -58,6 +59,7 @@ test("website is a static Astro Starlight shell", async () => {
   assert.equal(websitePackage.scripts.build, "astro build");
   assert.equal(dependencies.astro, "^6.4.4");
   assert.equal(dependencies["@astrojs/starlight"], "^0.39.3");
+  assert.equal(websiteTsconfig.extends, "../node_modules/astro/tsconfigs/strict.json");
 
   assert.match(astroConfig, /output:\s*"static"/);
   assert.match(astroConfig, /starlight\(\{/);
@@ -67,7 +69,8 @@ test("website is a static Astro Starlight shell", async () => {
   assert.match(contentConfig, /docsSchema\(\)/);
 
   assert.match(docsIndex, /title:\s*DiagramPilot/);
-  assert.match(docsIndex, /# DiagramPilot/);
+  assert.match(docsIndex, /template:\s*splash/);
+  assert.match(docsIndex, /tagline:\s*Repo-native diagram compiler for AI coding agents\./);
 
   assert.match(websiteGitignore, /^\/dist\/$/m);
 

@@ -76,6 +76,10 @@ async function syncPublicDocs() {
 
 async function syncStaticPublicFiles() {
   await mkdir(path.join(websitePublicRoot, "schema"), { recursive: true });
+  await mkdir(
+    path.join(websitePublicRoot, "demo-projects", "checkout", "docs"),
+    { recursive: true },
+  );
   await copyFile(
     path.join(repoRoot, "llms.txt"),
     path.join(websitePublicRoot, "llms.txt"),
@@ -83,6 +87,16 @@ async function syncStaticPublicFiles() {
   await copyFile(
     path.join(repoRoot, "schema", "diagramspec-v1.schema.json"),
     path.join(websitePublicRoot, "schema", "diagramspec-v1.schema.json"),
+  );
+  await copyFile(
+    path.join(repoRoot, "demo-projects", "checkout", "docs", "architecture.svg"),
+    path.join(
+      websitePublicRoot,
+      "demo-projects",
+      "checkout",
+      "docs",
+      "architecture.svg",
+    ),
   );
 }
 

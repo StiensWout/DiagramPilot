@@ -1,0 +1,118 @@
+html[data-has-hero] {
+  --sl-content-width: 76rem;
+}
+
+html[data-has-hero] .hero {
+  position: relative;
+  isolation: isolate;
+  grid-template-columns: 1fr;
+  align-items: end;
+  min-height: min(34rem, calc(100vh - 8rem));
+  overflow: clip;
+  padding: 4.5rem 0 3rem;
+}
+
+html[data-has-hero] .hero::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  background:
+    linear-gradient(
+      180deg,
+      rgb(7 12 18 / 0.98) 0%,
+      rgb(7 12 18 / 0.86) 38%,
+      rgb(7 12 18 / 0.48) 76%,
+      rgb(7 12 18 / 0.76) 100%
+    );
+}
+
+html[data-has-hero] .hero > .hero-html {
+  position: absolute;
+  inset: 8rem 0 0;
+  z-index: -2;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  align-items: end;
+  justify-content: center;
+}
+
+html[data-has-hero] .hero > .hero-html img {
+  width: 100%;
+  max-width: none;
+  height: auto;
+  filter: saturate(0.92) contrast(1.04);
+}
+
+html[data-has-hero] .hero .stack {
+  max-width: 42rem;
+  gap: 1.5rem;
+  text-align: left;
+}
+
+html[data-has-hero] .hero .copy {
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
+html[data-has-hero] .hero .copy > *,
+html[data-has-hero] .hero h1,
+html[data-has-hero] .hero .tagline {
+  width: 100%;
+  max-width: 36rem;
+}
+
+html[data-has-hero] .hero h1 {
+  color: #ffffff;
+  font-size: 4.5rem;
+  line-height: 0.96;
+  min-height: 1em;
+  letter-spacing: 0;
+}
+
+html[data-has-hero] .hero .tagline {
+  color: #dbe7ef;
+  font-size: 1.25rem;
+  line-height: 1.55;
+  min-height: 1.55em;
+}
+
+html[data-has-hero] .hero .actions {
+  justify-content: flex-start;
+}
+
+@media (max-width: 50rem) {
+  html[data-has-hero] .hero {
+    min-height: 31rem;
+    padding: 3rem 0 2.25rem;
+  }
+
+  html[data-has-hero] .hero > .hero-html {
+    inset: 12rem auto 0 0;
+    width: 62rem;
+    justify-content: flex-start;
+  }
+
+  html[data-has-hero] .hero h1 {
+    font-size: 3.25rem;
+  }
+
+  html[data-has-hero] .hero .tagline {
+    font-size: 1.0625rem;
+  }
+}
+
+@media (max-width: 32rem) {
+  html[data-has-hero] .hero {
+    min-height: 32rem;
+  }
+
+  html[data-has-hero] .hero > .hero-html {
+    width: 54rem;
+  }
+
+  html[data-has-hero] .hero h1 {
+    font-size: 2.65rem;
+  }
+}
