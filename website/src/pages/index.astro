@@ -1,0 +1,144 @@
+---
+import "../styles/landing.css";
+
+const proofPoints = [
+  {
+    title: "Bring your own repository.",
+    text: "DiagramPilot works where agents already work: in a checkout, next to source code, with artifacts a maintainer can review.",
+  },
+  {
+    title: "One command before review.",
+    text: "`diagrampilot check` discovers DiagramPilot source files, validates them, and reports stale same-stem SVG artifacts without rewriting the working tree.",
+  },
+  {
+    title: "If it breaks, it says where.",
+    text: "Repairable errors name the broken field so an AI coding agent can update the DiagramSpec file, validate again, and commit the repaired source plus rendered output.",
+  },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DiagramPilot | Repo-Native Diagrams For AI Coding Agents</title>
+    <meta
+      name="description"
+      content="Diagrams are repository files an AI coding agent can safely change, validate, and commit."
+    />
+    <link rel="canonical" href="https://diagrampilot.com/" />
+    <link rel="shortcut icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:title" content="DiagramPilot" />
+    <meta
+      property="og:description"
+      content="Diagrams are repository files an AI coding agent can safely change, validate, and commit."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://diagrampilot.com/" />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body class="landing-page">
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <main id="main">
+      <section class="hero-zone" aria-labelledby="landing-title">
+        <div class="hero-copy motion-rise">
+          <p class="eyebrow">Repo-native diagram compiler for AI coding agents</p>
+          <h1 id="landing-title">DiagramPilot</h1>
+          <p class="promise">
+            Diagrams are repository files an AI coding agent can safely change,
+            validate, and commit.
+          </p>
+          <div class="hero-actions" aria-label="Primary actions">
+            <a class="action action-primary" href="/docs/agents/quickstart/">
+              Checkout Demo Project
+            </a>
+            <a class="action action-secondary" href="/docs/">Documentation</a>
+          </div>
+        </div>
+
+        <figure
+          class="workflow-shell motion-rise motion-delay-1"
+          aria-label="DiagramPilot source, validation, and rendered output workflow"
+        >
+          <img
+            src="/landing/hero-workflow.png"
+            alt="Dark developer interface showing repository files, source code, terminal output, and an architecture diagram preview for DiagramPilot."
+            width="1792"
+            height="1024"
+            decoding="async"
+            fetchpriority="high"
+          />
+        </figure>
+      </section>
+
+      <section class="intro-copy reveal-motion" aria-label="Product summary">
+        <p>
+          DiagramPilot is a local-first, repo-native diagram compiler for AI
+          coding agents. It turns local DiagramSpec files into review-stable SVG
+          artifacts for software repositories, so diagrams can live in the repo,
+          survive code review, and fail with repairable errors.
+        </p>
+      </section>
+
+      <section class="proof-strip" aria-label="Why DiagramPilot works for agents">
+        {proofPoints.map((point) => (
+          <article class="proof-item reveal-motion">
+            <h2>{point.title}</h2>
+            <p>{point.text}</p>
+          </article>
+        ))}
+      </section>
+
+      <section class="image-band reveal-motion" aria-labelledby="artifact-title">
+        <div class="section-copy">
+          <p class="eyebrow">Local repository path</p>
+          <h2 id="artifact-title">Source files become reviewable artifacts.</h2>
+          <p>
+            Keep DiagramSpec source beside rendered output. Agents can validate
+            changes locally before a maintainer reviews the commit.
+          </p>
+        </div>
+      </section>
+
+      <section class="final-cta reveal-motion" aria-label="Start using DiagramPilot">
+        <h2>Start with the checkout demo.</h2>
+        <p>
+          Validate the source, render the SVG, export text formats when needed,
+          and keep every diagram change reviewable.
+        </p>
+        <div class="hero-actions">
+          <a class="action action-primary" href="/docs/agents/quickstart/">
+            Open Quickstart
+          </a>
+          <a class="action action-secondary" href="/docs/">Read Docs</a>
+        </div>
+      </section>
+    </main>
+    <script>
+      const revealElements = document.querySelectorAll(".reveal-motion");
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      document.body.classList.add("motion-ready");
+
+      if (reduceMotion || !("IntersectionObserver" in window)) {
+        revealElements.forEach((element) => element.classList.add("is-visible"));
+      } else {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (!entry.isIntersecting) continue;
+
+              entry.target.classList.add("is-visible");
+              observer.unobserve(entry.target);
+            }
+          },
+          { rootMargin: "0px 0px -12% 0px", threshold: 0.16 },
+        );
+
+        revealElements.forEach((element) => observer.observe(element));
+      }
+    </script>
+  </body>
+</html>

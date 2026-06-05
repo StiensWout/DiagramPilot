@@ -7,7 +7,6 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "DiagramPilot",
-      customCss: ["./src/styles/landing.css"],
     }),
   ],
 });

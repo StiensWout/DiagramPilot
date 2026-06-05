@@ -44,8 +44,8 @@ test("website is a static Astro Starlight shell", async () => {
     path.join(repoRoot, "website", "src", "content.config.ts"),
     "utf8",
   );
-  const docsIndex = await readFile(
-    path.join(repoRoot, "website", "src", "content", "docs", "index.md"),
+  const landingPage = await readFile(
+    path.join(repoRoot, "website", "src", "pages", "index.astro"),
     "utf8",
   );
   const websiteGitignore = await readFile(
@@ -68,9 +68,12 @@ test("website is a static Astro Starlight shell", async () => {
   assert.match(contentConfig, /docsLoader\(\)/);
   assert.match(contentConfig, /docsSchema\(\)/);
 
-  assert.match(docsIndex, /title:\s*DiagramPilot/);
-  assert.match(docsIndex, /template:\s*splash/);
-  assert.match(docsIndex, /tagline:\s*Repo-native diagram compiler for AI coding agents\./);
+  assert.match(landingPage, /<body class="landing-page">/);
+  assert.match(landingPage, /<h1 id="landing-title">DiagramPilot<\/h1>/);
+  assert.match(
+    landingPage,
+    /Diagrams are repository files an AI coding agent can safely change,\s+validate, and commit\./,
+  );
 
   assert.match(websiteGitignore, /^\/dist\/$/m);
 
