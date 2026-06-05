@@ -77,14 +77,15 @@ test("llms.txt links only public documentation", async () => {
   assert.doesNotMatch(llmsText, /domain\.md/);
 });
 
-test("llms.txt reflects current schema expectations and deferred MCP scope", async () => {
+test("llms.txt reflects the published schema helper and deferred MCP scope", async () => {
   const llmsText = await readFile(path.join(repoRoot, "llms.txt"), "utf8");
 
   assert.match(
     llmsText,
     /https:\/\/diagrampilot\.com\/schema\/diagramspec-v1\.schema\.json/,
   );
-  assert.match(llmsText, /DiagramSpec v1 JSON Schema is planned/);
+  assert.match(llmsText, /DiagramSpec v1 JSON Schema is a generated, committed public helper/);
+  assert.match(llmsText, /does not replace core validation/);
   assert.match(llmsText, /`version`, `title`, and `nodes` are required/);
   assert.match(llmsText, /`nodes` must contain at least one node/);
   assert.match(llmsText, /lowercase snake case/);
@@ -93,6 +94,21 @@ test("llms.txt reflects current schema expectations and deferred MCP scope", asy
     llmsText,
     /https:\/\/diagrampilot\.com\/schema\/diagrampilot\.schema\.json/,
   );
+});
+
+test("public DiagramSpec guide presents JSON Schema as a tooling helper", async () => {
+  const specGuide = await readFile(
+    path.join(repoRoot, "docs-public", "agents", "spec.md"),
+    "utf8",
+  );
+
+  assert.match(
+    specGuide,
+    /https:\/\/diagrampilot\.com\/schema\/diagramspec-v1\.schema\.json/,
+  );
+  assert.match(specGuide, /helper for editors, code generators, and other tooling/);
+  assert.match(specGuide, /does not replace `diagrampilot validate`/);
+  assert.match(specGuide, /core validation remains authoritative/);
 });
 
 test("repository guidance separates public docs from internal maintainer docs", async () => {
@@ -286,20 +302,19 @@ test("public examples reference current packages and avoid deferred features", a
   }
 });
 
-test("public MCP plan describes MCP and schema resources as deferred", async () => {
+test("public MCP plan describes MCP as deferred while pointing at the published schema", async () => {
   const mcpPlan = await readFile(
     path.join(repoRoot, "docs-public", "agents", "mcp.md"),
     "utf8",
   );
 
   assert.match(mcpPlan, /MCP is not implemented/);
-  assert.match(mcpPlan, /planned DiagramSpec v1 JSON Schema route/);
+  assert.match(mcpPlan, /published DiagramSpec v1 JSON Schema helper route/);
   assert.match(
     mcpPlan,
     /https:\/\/diagrampilot\.com\/schema\/diagramspec-v1\.schema\.json/,
   );
   assert.match(mcpPlan, /Source mutation tools are deferred/);
-  assert.doesNotMatch(mcpPlan, /Current JSON Schema for DiagramSpec/);
 });
 
 test("internal closeout docs record completed planning state and maintainer validation", async () => {
