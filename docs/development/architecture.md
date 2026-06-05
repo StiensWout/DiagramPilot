@@ -4,10 +4,10 @@ DiagramPilot uses a compiler-style architecture: load a structured DiagramPilot
 Source File, validate it as DiagramSpec, then render or export Derived
 Artifacts through target adapters.
 
-The current implementation is a TypeScript package workspace. The MVP CLI path
-is implemented; the next architecture work is about deepening the current
-modules so future capabilities can reuse the same source loading, validation,
-topology, diagnostics, and provenance behaviour.
+The current implementation is a TypeScript package workspace. The MVP CLI path,
+first read-only Repo Workflow Check, and architecture-deepening seams are
+implemented. Future architecture work should extend these seams only when a
+new product capability needs them.
 
 ## Current Package Shape
 
@@ -20,7 +20,7 @@ packages/render-svg
 packages/icons
 docs
 docs-public        # public documentation root
-examples           # planned Demo Project and examples root
+demo-projects      # repository-shaped demo fixtures
 ```
 
 Later packages may include:
@@ -42,6 +42,7 @@ make a core workflow testable through a deeper interface.
   -> load DiagramPilot Source File
   -> parse YAML or JSON
   -> validate DiagramSpec
+  -> check expected SVG provenance
   -> export Mermaid or D2
   -> render SVG through D2
 ```
@@ -59,13 +60,14 @@ promise source formatting, comment preservation, or ordering preservation.
 : DiagramSpec types, DiagramPilot Source File loading, YAML and JSON parsing,
 DiagramSpec validation, Repairable Validation Error shape, Stable ID rules,
 Metadata reference rules, Icon Reference validation entrypoints, and version
-metadata.
+metadata. Core also owns DiagramPilot Source File discovery, expected SVG
+Artifact freshness checks, and the read-only Repo Workflow Check lifecycle.
 
 `packages/cli`
 : User-facing commands, argument parsing, filesystem reads and writes, command
 output, exit codes, validation orchestration, export orchestration, render
-orchestration, `init` support-file scaffolding, and CLI text/JSON diagnostic
-presentation.
+orchestration, check orchestration, `init` support-file scaffolding, command
+planning, and CLI text/JSON diagnostic presentation.
 
 `packages/export-mermaid`
 : Export valid DiagramSpec data to Mermaid text. The adapter owns Mermaid
@@ -104,6 +106,13 @@ DiagramPilot in their own repositories. Hosted URLs use
 : Creates or updates DiagramPilot support files only. It does not scan the
 codebase or generate diagrams by default.
 
+`diagrampilot check [path] [--json]`
+: Runs the read-only repo review/CI workflow. It discovers DiagramPilot Source
+Files in the current directory, one explicit directory, or one explicit source
+file; validates each discovered source; and checks the next-to-source same-stem
+expected SVG artifact through DiagramPilot provenance metadata only. The JSON
+form emits aggregate structured repo workflow results to stdout.
+
 `diagrampilot validate <path>`
 : Validates one explicit DiagramPilot Source File path. It collects all safely
 discoverable semantic errors, exits nonzero on failure, and validates source
@@ -124,41 +133,23 @@ correctness only.
 Diagnostics and validation errors should go to stderr in text mode. JSON
 validation output should go to stdout.
 
-## Current Friction
-
-The MVP implementation deliberately kept modules simple while proving the local
-workflow. That made the product checkpoint easier to reach, but a few shallow
-modules now reduce locality:
-
-- `validate`, `export`, and `render` each know too much about the load, parse,
-  validate, cast, and failure-ordering sequence.
-- Mermaid and D2 exporters each rediscover Group roots, Group parentage,
-  contained IDs, emitted objects, and Node paths after validation has already
-  proven related DiagramSpec rules.
-- Repairable Validation Error shape lives in core, while read/parse conversion
-  and text/JSON presentation live in CLI.
-- Review-Stable Rendering provenance is split between CLI source hashing and
-  SVG metadata insertion in the render adapter.
-- Most command behaviour is tested through spawned CLI processes, which is
-  valuable for smoke coverage but too broad as the only practical seam.
-
-## Architecture Deepening Targets
+## Completed Deepening Seams
 
 ### Validated DiagramSpec Loading
 
-Add a deep module that owns the ordered lifecycle from explicit DiagramPilot
+The core package owns the ordered lifecycle from an explicit DiagramPilot
 Source File path to either:
 
 - a valid DiagramSpec with source context, or
 - a diagnostic-friendly read, parse, or semantic validation failure.
 
-`validate`, `export`, `render`, future stale artifact checks, and future MCP
-tools should use this module instead of repeating the lifecycle. This module
-must not write files or rewrite source.
+`validate`, `export`, `render`, `check`, and future MCP tools should use this
+module instead of repeating the lifecycle. This module must not write files or
+rewrite source.
 
 ### DiagramSpec Topology
 
-Add a deep module that owns reusable knowledge about Diagram Objects:
+Core owns reusable topology knowledge about Diagram Objects:
 
 - Stable ID lookup.
 - Node lookup.
@@ -170,24 +161,21 @@ Add a deep module that owns reusable knowledge about Diagram Objects:
 - Node paths for targets that need hierarchical paths.
 - Traversal order for export adapters.
 
-Validation and export adapters should consume topology where it improves
-locality. Mermaid and D2 adapters should still own target-specific syntax and
-escaping.
+Validation and export adapters consume topology where it improves locality.
+Mermaid and D2 adapters still own target-specific syntax and escaping.
 
 ### Diagnostics
 
-Centralize diagnostic modelling so read failures, parse failures, semantic
+Diagnostic modelling is centralized so read failures, parse failures, semantic
 validation failures, text output, and JSON output share one repairable model.
 
-The CLI should become an adapter over diagnostics. Future MCP support should be
-able to reuse the same diagnostic interface rather than reimplementing failure
-mapping.
+The CLI is an adapter over diagnostics. Future MCP support should reuse the
+same diagnostic interface rather than reimplementing failure mapping.
 
 ### Derived Artifact Provenance
 
-Deepen provenance so source hashing, no-timestamp policy, metadata
-construction, and SVG metadata insertion have one place to live or one clearly
-owned seam between CLI and render adapter.
+Provenance now has clear ownership between core freshness checks, CLI source
+hashing for render, and render adapter SVG metadata insertion.
 
 Rendered SVG provenance should continue to include source path, source SHA-256
 hash, DiagramPilot version, renderer name, and renderer version. It must not
@@ -195,9 +183,8 @@ include wall-clock timestamps.
 
 ### Command Planning
 
-Add a command planning seam after validated loading and diagnostics are stable.
-Command planning should represent exit code, stdout, stderr, and file-write
-intent. Filesystem, streams, and process execution should remain adapters.
+Command planning represents exit code, stdout, stderr, and file-write intent.
+Filesystem, streams, and process execution remain adapters.
 
 Keep executable smoke tests for install-level confidence, but move most command
 behaviour tests to the deeper command planning seam.
@@ -259,9 +246,9 @@ Public Documentation lives under `docs-public/` while hosted URLs remain
 under `https://diagrampilot.com/docs/...`. `llms.txt` should link only Public
 Documentation.
 
-The Checkout Demo Project should live in the examples area and demonstrate one
-complete repo-native workflow with a DiagramPilot Source File and SVG Derived
-Artifact.
+The Checkout Demo Project lives under `demo-projects/checkout` and
+demonstrates one complete repo-native workflow with a DiagramPilot Source File
+and SVG Derived Artifact.
 
 ## Constraints
 

@@ -85,6 +85,7 @@ docs/architecture.svg
 ```bash
 diagrampilot init
 diagrampilot check
+diagrampilot check docs --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
@@ -133,6 +134,10 @@ Deferred:
 - [MCP plan](https://diagrampilot.com/docs/agents/mcp.md)
 - [Agent prompting guide](https://diagrampilot.com/docs/agents/prompting.md)
 
+## Current Plan
+
+- [Public Website Publication](.scratch/public-website-publication/PRD.md)
+
 ## Internal Documentation
 
 - [Development roadmap](docs/development/roadmap.md)
@@ -145,9 +150,11 @@ Deferred:
 
 ## Status
 
-MVP, architecture deepening, and docs/demo rework checkpoints are complete. The
-TypeScript workspace includes core source loading and validation, CLI commands
-for `init`, `validate`, `render`, and `export`, Mermaid and D2 export, SVG
-rendering through the included local D2 path, packaged Lucide icon validation,
+MVP, architecture deepening, docs/demo rework, Repo Workflow Check, and Repo
+Workflow Check deepening checkpoints are complete. The TypeScript workspace
+includes core source loading and validation, CLI commands for `init`, `check`,
+`validate`, `render`, and `export`, Mermaid and D2 export, SVG rendering
+through the included local D2 path, packaged Lucide icon validation,
 deterministic SVG provenance metadata, the Checkout Demo Project, and the
-public/internal documentation split.
+public/internal documentation split. Public Website Publication is the active
+release-readiness plan.

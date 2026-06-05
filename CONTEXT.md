@@ -109,6 +109,12 @@ explicit files, commands, and validation expectations, while remaining readable
 to human maintainers.
 _Avoid_: Marketing copy, human-only tutorial, vague onboarding guide
 
+**Markdown-First Public Documentation**:
+Public Documentation authored as Markdown so it remains readable in the
+repository, directly editable by AI coding agents, and publishable to both
+human-facing documentation pages and agent-facing Markdown routes.
+_Avoid_: HTML-only docs, app-only documentation, UI-authored content
+
 **Repo Workflow**:
 A DiagramPilot product capability area for operating on DiagramPilot Source
 Files and Derived Artifacts across a local repository, rather than on one
@@ -176,6 +182,17 @@ Documentation for AI coding agents and developers using DiagramPilot in their
 own repositories.
 _Avoid_: Maintainer workflow notes, implementation planning docs, private
 project process
+
+**Public Website**:
+The public web presence for DiagramPilot, including the product entry point and
+Public Documentation under `diagrampilot.com`. It is not a hosted diagram
+workspace or prompt-only diagram generation surface.
+_Avoid_: Hosted workspace, visual editor, prompt-to-diagram app
+
+**Public Landing Page**:
+The entry page of the Public Website that introduces DiagramPilot and points
+users toward the demo workflow, installation path, and Public Documentation.
+_Avoid_: Hosted demo, application dashboard, docs index only
 
 **Internal Documentation**:
 Documentation for DiagramPilot maintainers that explains project workflow,

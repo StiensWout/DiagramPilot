@@ -103,12 +103,19 @@ This repo uses a single-context domain docs layout. See
 
 ```bash
 diagrampilot init
+diagrampilot check
+diagrampilot check docs --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
 ```
+
+`check` is the read-only repo review/CI command. It discovers DiagramPilot
+source files in the current directory, one explicit directory, or one explicit
+source file; validates them; and checks next-to-source same-stem expected SVG
+artifacts through DiagramPilot provenance metadata only.
 
 `render` requires `--out`. `export` prints to stdout by default and writes a
 file only when `--out` is provided.

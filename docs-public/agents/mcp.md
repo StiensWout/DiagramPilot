@@ -1,26 +1,40 @@
 # MCP Plan
 
-DiagramPilot should expose a Model Context Protocol server after the CLI and
-core validation workflow are useful.
+DiagramPilot should expose a Model Context Protocol server after the public
+website, Public Documentation, and DiagramSpec v1 JSON Schema route are stable.
 
 The MCP interface should operate on structured DiagramSpec objects and project
 files. It should not be only a raw Mermaid rendering wrapper.
 
-MCP is not part of the MVP.
+MCP is not implemented and is not part of the current CLI. The first adapter
+should wrap the shipped read/check/validate/render/export workflows before
+adding source mutation tools.
 
-## Planned Tools
+## Planned First Tools
+
+`list_diagrams`
+: Find DiagramPilot source files in the current repository.
+
+`check_diagrams`
+: Run the read-only repo workflow check and return aggregate source and SVG
+artifact freshness results.
+
+`validate_diagram`
+: Validate one DiagramPilot source file and return repairable errors.
+
+`render_diagram`
+: Render a valid DiagramPilot source file to an explicit SVG path.
+
+`export_diagram`
+: Export DiagramSpec to Mermaid or D2, printing by default and writing only
+when an explicit output path is provided.
+
+## Deferred Mutation Tools
+
+Source mutation tools are deferred until the read-first adapter is useful.
 
 `create_diagram`
 : Create a new DiagramPilot source file from structured input.
-
-`validate_diagram`
-: Validate a DiagramPilot source file and return repairable errors.
-
-`render_diagram`
-: Render a valid DiagramPilot source file to SVG.
-
-`export_diagram`
-: Export DiagramSpec to Mermaid, D2, or another supported target.
 
 `add_node`
 : Add a node while preserving existing IDs.
@@ -31,13 +45,11 @@ MCP is not part of the MVP.
 `update_node`
 : Update label, kind, description, icon, or metadata for an existing node.
 
-`list_diagrams`
-: Find DiagramPilot source files in the current repository.
-
 ## Planned Resources
 
 `diagrampilot://schema`
-: Current JSON Schema for DiagramSpec.
+: planned DiagramSpec v1 JSON Schema route:
+  `https://diagrampilot.com/schema/diagramspec-v1.schema.json`.
 
 `diagrampilot://docs/agents/quickstart`
 : Agent quickstart.
@@ -50,11 +62,12 @@ MCP is not part of the MVP.
 
 ## Behavior Requirements
 
-- Tools should read and write project files with explicit paths.
+- Tools should read project files with explicit paths.
+- Render and export writes should require explicit output paths.
 - Validation should return structured repair messages.
 - Rendering should fail fast if validation fails.
 - Tools should preserve stable IDs by default.
-- Mutation tools should avoid destructive source churn.
+- Future mutation tools should avoid destructive source churn.
 - The server should work locally without a SaaS account.
 
 ## Non-Goals For The First MCP
@@ -65,3 +78,4 @@ MCP is not part of the MVP.
 - Account management.
 - Full workspace collaboration.
 - Project analyzers.
+- Source mutation tools in the first adapter.
