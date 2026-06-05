@@ -146,7 +146,8 @@ This track covers:
 
 1. Cleaning the Current-State Public Surface and reworking the canonical
    quickstart.
-2. Adding a hard 1000 LOC gate for authored implementation and test files.
+2. Adding a hard 1000 LOC gate for authored implementation and test files,
+   defined in `docs/development/maintainability.md`.
 3. Splitting large core and CLI modules under the file-size gate.
 4. Formalizing the Documentation Contract.
 5. Redesigning the Public Landing Page around product storytelling.

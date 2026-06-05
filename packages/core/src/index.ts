@@ -15,6 +15,10 @@ import {
 } from "./repo-workflow-check.js";
 
 export { checkDiagramPilotRepoWorkflowWithDependencies } from "./repo-workflow-check.js";
+export {
+  MAINTAINABILITY_FILE_SIZE_GATE,
+  auditMaintainabilityFileSizes,
+} from "./maintainability-file-size-gate.js";
 export type {
   RepoWorkflowCheckDependencies,
   RepoWorkflowCheckOptions,
@@ -22,6 +26,12 @@ export type {
   RepoWorkflowCheckSourceResult,
   RepoWorkflowCheckSummary,
 } from "./repo-workflow-check.js";
+export type {
+  MaintainabilityFileSizeAuditFile,
+  MaintainabilityFileSizeAuditResult,
+  MaintainabilityFileSizeGateDefinition,
+  MaintainabilityFileSizeViolation,
+} from "./maintainability-file-size-gate.js";
 
 export const DIAGRAMPILOT_VERSION = "0.1.0";
 
