@@ -148,6 +148,7 @@ Deferred:
 
 - [Development roadmap](docs/development/roadmap.md)
 - [Architecture notes](docs/development/architecture.md)
+- [Public website deployment](docs/development/public-website-deployment.md)
 - [Market research](docs/development/market-research.md)
 - [Issue tracker workflow](docs/agents/issue-tracker.md)
 - [Triage labels](docs/agents/triage-labels.md)

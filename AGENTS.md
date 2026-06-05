@@ -73,6 +73,8 @@ source of truth.
 - `docs-public/agents/examples.md`: canonical diagram examples.
 - `docs-public/agents/mcp.md`: planned MCP interface notes.
 - `docs-public/agents/prompting.md`: recommended prompts for agents.
+- `docs/development/public-website-deployment.md`: static Vercel Pro
+  deployment guidance.
 - `docs/agents/issue-tracker.md`: local markdown issue and PRD workflow.
 - `docs/agents/triage-labels.md`: status vocabulary for triage.
 - `docs/agents/domain.md`: domain-doc lookup rules for engineering skills.

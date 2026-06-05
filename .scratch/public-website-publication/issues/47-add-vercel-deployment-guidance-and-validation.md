@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: completed
 
 # Add Vercel deployment guidance and validation
 
@@ -14,16 +14,16 @@ and should not add a parallel backup host in this phase.
 
 ## Acceptance criteria
 
-- [ ] Deployment guidance identifies Vercel Pro as the only planned host for this phase.
-- [ ] Deployment guidance sets `website/` as the Vercel project root.
-- [ ] Deployment guidance uses the Astro framework preset.
-- [ ] Deployment guidance uses the website build command and static output directory.
-- [ ] Deployment guidance keeps root product tests separate from Vercel site builds.
-- [ ] Deployment guidance states that the site is static-only.
-- [ ] Deployment guidance excludes Vercel Functions, server rendering, databases, object storage, and forms backend.
-- [ ] Deployment guidance recommends spend-management guardrails appropriate for Vercel Pro.
-- [ ] Public URLs for landing page, docs, `.md` docs, `llms.txt`, and schema are listed.
-- [ ] Local validation commands prove the website can build without deployment credentials.
+- [x] Deployment guidance identifies Vercel Pro as the only planned host for this phase.
+- [x] Deployment guidance sets `website/` as the Vercel project root.
+- [x] Deployment guidance uses the Astro framework preset.
+- [x] Deployment guidance uses the website build command and static output directory.
+- [x] Deployment guidance keeps root product tests separate from Vercel site builds.
+- [x] Deployment guidance states that the site is static-only.
+- [x] Deployment guidance excludes Vercel Functions, server rendering, databases, object storage, and forms backend.
+- [x] Deployment guidance recommends spend-management guardrails appropriate for Vercel Pro.
+- [x] Public URLs for landing page, docs, `.md` docs, `llms.txt`, and schema are listed.
+- [x] Local validation commands prove the website can build without deployment credentials.
 
 ## Blocked by
 
@@ -36,3 +36,40 @@ and should not add a parallel backup host in this phase.
 npm --workspace website run build
 npm test
 ```
+
+## Implementation notes
+
+- Added `docs/development/public-website-deployment.md` as internal maintainer
+  guidance for the static Public Website deployment phase.
+- Kept deployment guidance out of `docs-public/`, `llms.txt`, and the
+  published website routes because deployment settings are not Public
+  Documentation.
+- Documented Vercel Pro as the only planned host, with no Cloudflare Pages
+  backup path for this phase.
+- Recorded Vercel project settings for `website/` as the Root Directory,
+  `Astro` as the framework preset, `npm run build` as the website build
+  command, and `dist` as the static output directory.
+- Added the Root Directory note to keep "Include source files outside of the
+  Root Directory" enabled because the website prebuild sync reads canonical
+  public docs, `llms.txt`, schema, and demo SVG files from the repository.
+- Documented the static-only boundary and explicit exclusions for Vercel
+  Functions, server rendering, databases, object storage, forms backend, and
+  Cloudflare Pages.
+- Added Vercel Pro spend-management guardrails, including spend thresholds,
+  notifications, and the pause production deployment action when automatic
+  spend protection is required.
+- Listed stable public URLs for the landing page, docs index, representative
+  HTML and `.md` docs routes, `llms.txt`, and the DiagramSpec v1 JSON Schema
+  without adding a public deployment-guide URL.
+- Linked the internal guide from `README.md` and `AGENTS.md`.
+- Added website deployment guidance tests covering the internal guide content,
+  credential-free validation commands, and explicit exclusion from generated
+  HTML plus `.md` website routes.
+
+## Validation performed
+
+- `node --test test/website-vercel-deployment-guidance.test.mjs` passed.
+- `node --test test/docs-public-boundary.test.mjs` passed.
+- `npm --workspace website run build` passed.
+- `npm --workspace website run test` passed.
+- `npm test` passed 118 tests.

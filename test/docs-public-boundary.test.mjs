@@ -21,6 +21,7 @@ const internalDocs = [
   "docs/agents/domain.md",
   "docs/development/roadmap.md",
   "docs/development/architecture.md",
+  "docs/development/public-website-deployment.md",
   "docs/adr/0006-public-docs-live-under-docs-public.md",
 ];
 
@@ -124,6 +125,7 @@ test("repository guidance separates public docs from internal maintainer docs", 
   assert.match(agentGuide, /docs\/agents\/issue-tracker\.md/);
   assert.match(agentGuide, /docs\/agents\/triage-labels\.md/);
   assert.match(agentGuide, /docs\/agents\/domain\.md/);
+  assert.match(agentGuide, /docs\/development\/public-website-deployment\.md/);
   assert.match(agentGuide, /docs\/development\/roadmap\.md/);
   assert.match(agentGuide, /docs\/adr\/0006-public-docs-live-under-docs-public\.md/);
 });
@@ -162,6 +164,7 @@ test("README keeps public docs hosted and internal docs local", async () => {
   );
   assert.match(readme, /docs\/development\/roadmap\.md/);
   assert.match(readme, /docs\/development\/architecture\.md/);
+  assert.match(readme, /docs\/development\/public-website-deployment\.md/);
   assert.match(readme, /docs\/agents\/issue-tracker\.md/);
   assert.match(readme, /docs\/adr\/0006-public-docs-live-under-docs-public\.md/);
   assert.match(
@@ -172,6 +175,7 @@ test("README keeps public docs hosted and internal docs local", async () => {
 
   assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/development\//);
   assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/adr\//);
+  assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/agents\/deployment\.md/);
   assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/agents\/issue-tracker\.md/);
 });
 
