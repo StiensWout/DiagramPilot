@@ -69,6 +69,7 @@ source of truth.
 - `llms.txt`: public agent documentation index.
 - `docs-public/agents/quickstart.md`: shortest path for creating a diagram.
 - `docs-public/agents/spec.md`: expected spec structure.
+- `docs-public/agents/deployment.md`: static Vercel Pro deployment guidance.
 - `docs-public/agents/error-repair.md`: how to fix invalid specs.
 - `docs-public/agents/examples.md`: canonical diagram examples.
 - `docs-public/agents/mcp.md`: planned MCP interface notes.

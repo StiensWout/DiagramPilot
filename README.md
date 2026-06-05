@@ -134,6 +134,7 @@ Deferred:
 
 - [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md)
 - [DiagramSpec guide](https://diagrampilot.com/docs/agents/spec.md)
+- [Vercel deployment guide](https://diagrampilot.com/docs/agents/deployment.md)
 - [DiagramSpec v1 JSON Schema](https://diagrampilot.com/schema/diagramspec-v1.schema.json)
 - [Error repair guide](https://diagrampilot.com/docs/agents/error-repair.md)
 - [Agent examples](https://diagrampilot.com/docs/agents/examples.md)

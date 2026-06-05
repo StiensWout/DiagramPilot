@@ -14,6 +14,7 @@ Public documentation is hosted under `https://diagrampilot.com`.
 
 - [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md): Worked demo workflow for repo checks, source repair, SVG refresh, and exports.
 - [DiagramSpec](https://diagrampilot.com/docs/agents/spec.md): Structured source model for diagrams.
+- [Vercel deployment](https://diagrampilot.com/docs/agents/deployment.md): Static-only Vercel Pro deployment settings and local validation.
 - [Error repair](https://diagrampilot.com/docs/agents/error-repair.md): How agents should interpret and fix validation errors.
 - [Examples](https://diagrampilot.com/docs/agents/examples.md): Canonical diagram examples.
 - [MCP tools](https://diagrampilot.com/docs/agents/mcp.md): Deferred Model Context Protocol plan that will reuse the published docs and schema surface.

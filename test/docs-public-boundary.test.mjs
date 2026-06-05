@@ -9,6 +9,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const publicAgentDocs = [
   "quickstart.md",
   "spec.md",
+  "deployment.md",
   "error-repair.md",
   "examples.md",
   "mcp.md",
@@ -69,6 +70,10 @@ test("llms.txt links only public documentation", async () => {
   assert.match(
     llmsText,
     /https:\/\/diagrampilot\.com\/docs\/agents\/spec\.md/,
+  );
+  assert.match(
+    llmsText,
+    /https:\/\/diagrampilot\.com\/docs\/agents\/deployment\.md/,
   );
   assert.doesNotMatch(llmsText, /docs\/development\//);
   assert.doesNotMatch(llmsText, /docs\/adr\//);
