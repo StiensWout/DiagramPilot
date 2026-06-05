@@ -59,6 +59,13 @@ other tooling. Core validation remains authoritative for semantic rules.
 - [Agent prompting guide](https://diagrampilot.com/docs/agents/prompting.md)
 - [DiagramSpec v1 JSON Schema](https://diagrampilot.com/schema/diagramspec-v1.schema.json)
 
+## License And Brand
+
+DiagramPilot code and repository materials use the [MIT Code License](LICENSE).
+The DiagramPilot name, mark, wordmark, `diagrampilot.com` domain, and official
+release identity are covered separately by the
+[Brand Use Policy](BRAND_USE_POLICY.md).
+
 ## CLI Commands
 
 ```bash

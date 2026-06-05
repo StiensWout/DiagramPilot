@@ -1,8 +1,25 @@
 {
   "name": "@diagrampilot/core",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "DiagramSpec types and core behavior for DiagramPilot.",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/StiensWout/DiagramPilot.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://diagrampilot.com",
+  "bugs": {
+    "url": "https://github.com/StiensWout/DiagramPilot/issues"
+  },
+  "keywords": [
+    "diagrampilot",
+    "diagramspec",
+    "diagram",
+    "architecture",
+    "validation"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -12,13 +29,20 @@
     }
   },
   "files": [
-    "dist"
+    "dist/**/*.d.ts",
+    "dist/**/*.d.ts.map",
+    "dist/**/*.js",
+    "dist/**/*.js.map",
+    "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -b"
   },
   "dependencies": {
-    "@diagrampilot/icons": "0.1.1",
+    "@diagrampilot/icons": "0.1.2",
     "yaml": "^2.9.0"
   }
 }
