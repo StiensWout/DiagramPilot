@@ -7,6 +7,8 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "DiagramPilot",
+      customCss: ["/src/styles/docs.css"],
+      favicon: "/brand/diagrampilot-mark.svg",
     }),
   ],
 });

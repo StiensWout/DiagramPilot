@@ -182,6 +182,60 @@ test("website publishes public docs as human HTML and agent Markdown routes", as
   );
 });
 
+test("website docs pages use published DiagramPilot brand assets", async () => {
+  await websiteBuild();
+
+  const html = await readFile(
+    path.join(repoRoot, "website", "dist", "docs", "index.html"),
+    "utf8",
+  );
+
+  assert.match(
+    html,
+    /href="\/brand\/diagrampilot-mark\.svg"[^>]*type="image\/svg\+xml"/,
+  );
+  assert.match(html, /src="\/brand\/diagrampilot-logo\.svg"/);
+  assert.match(html, /src="\/brand\/diagrampilot-logo-light\.svg"/);
+  assert.match(html, /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo\.svg/);
+  assert.match(html, /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo-light\.svg/);
+  assert.match(html, /https:\/\/diagrampilot\.com\/brand\/diagrampilot-mark\.svg/);
+  assert.doesNotMatch(html, /href="\/favicon\.svg"/);
+  assert.equal(await exists("website/dist/brand/diagrampilot-logo.svg"), true);
+  assert.equal(await exists("website/dist/brand/diagrampilot-logo-light.svg"), true);
+  assert.equal(await exists("website/dist/brand/diagrampilot-mark.svg"), true);
+});
+
+test("website docs pages render one page title and theme-compatible wordmark", async () => {
+  await websiteBuild();
+
+  const html = await readFile(
+    path.join(repoRoot, "website", "dist", "docs", "index.html"),
+    "utf8",
+  );
+  const logo = await readFile(
+    path.join(repoRoot, "website", "dist", "brand", "diagrampilot-logo.svg"),
+    "utf8",
+  );
+  const docsCss = await readFile(
+    path.join(repoRoot, "website", "src", "styles", "docs.css"),
+    "utf8",
+  );
+
+  assert.equal(
+    (html.match(/<h1[^>]*>\s*Public Documentation\s*<\/h1>/g) ?? []).length,
+    1,
+  );
+  assert.doesNotMatch(
+    html,
+    /<h1[^>]*>\s*Public Documentation\s*<\/h1>[\s\S]*<h1[^>]*>\s*Public Documentation\s*<\/h1>/,
+  );
+  assert.match(logo, /fill="#0f172a"/);
+  assert.match(html, /brand-wordmark-light-surface/);
+  assert.match(html, /brand-wordmark-dark-surface/);
+  assert.match(docsCss, /:root\[data-theme="dark"\]\s+\.brand-wordmark-light-surface/);
+  assert.match(docsCss, /:root\[data-theme="dark"\]\s+\.brand-wordmark-dark-surface/);
+});
+
 test("website publishes llms.txt and the public DiagramSpec schema", async () => {
   await websiteBuild();
 
@@ -237,6 +291,7 @@ test("website build excludes internal docs and keeps synced copies untracked", a
 
   const trackedGeneratedFiles = await gitLsFiles([
     "website/src/content/docs/docs",
+    "website/public/brand",
     "website/public/llms.txt",
     "website/public/schema",
   ]);
