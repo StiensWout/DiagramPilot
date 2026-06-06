@@ -88,6 +88,7 @@ dark surfaces.
 
 ```bash
 diagrampilot init
+diagrampilot init --docs
 diagrampilot check
 diagrampilot check docs --json
 diagrampilot validate docs/architecture.dp.yaml
@@ -96,6 +97,10 @@ diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
 ```
+
+`init` does not create local agent docs by default. Use `init --docs` only
+when the repository intentionally wants managed `llms.txt` and
+`docs/diagrampilot.md` guidance.
 
 `check` discovers DiagramPilot source files in the current directory, one
 explicit directory, or one explicit source file. It validates them and checks

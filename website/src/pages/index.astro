@@ -1,6 +1,8 @@
 ---
 import "../styles/landing.css";
 
+const quickCommand = "npx diagrampilot check";
+
 const proofPoints = [
   {
     title: "Bring your own repository.",
@@ -61,9 +63,23 @@ const proofPoints = [
             <a class="action action-primary" href="/docs/agents/installation/">
               Install DiagramPilot
             </a>
-            <a class="action action-secondary" href="/docs/agents/quickstart/">
-              Checkout Demo Project
+            <a
+              class="action action-secondary"
+              href="https://github.com/StiensWout/DiagramPilot"
+            >
+              GitHub repository
             </a>
+          </div>
+          <div class="quick-command" aria-label="Quick command">
+            <code>{quickCommand}</code>
+            <button
+              type="button"
+              class="command-copy"
+              data-copy-command={quickCommand}
+              aria-label="Copy npx diagrampilot check"
+            >
+              Copy
+            </button>
           </div>
         </div>
 
@@ -121,12 +137,16 @@ const proofPoints = [
           <a class="action action-primary" href="/docs/agents/installation/">
             Install Guide
           </a>
+          <a class="action action-secondary" href="/docs/agents/quickstart/">
+            Checkout Demo Project
+          </a>
           <a class="action action-secondary" href="/docs/">Documentation</a>
         </div>
       </section>
     </main>
     <script>
       const revealElements = document.querySelectorAll(".reveal-motion");
+      const copyButtons = document.querySelectorAll("[data-copy-command]");
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
       document.body.classList.add("motion-ready");
@@ -148,6 +168,20 @@ const proofPoints = [
 
         revealElements.forEach((element) => observer.observe(element));
       }
+
+      copyButtons.forEach((button) => {
+        button.addEventListener("click", async () => {
+          const command = button.getAttribute("data-copy-command");
+
+          if (!command || !navigator.clipboard) return;
+
+          await navigator.clipboard.writeText(command);
+          button.textContent = "Copied";
+          window.setTimeout(() => {
+            button.textContent = "Copy";
+          }, 1600);
+        });
+      });
     </script>
   </body>
 </html>

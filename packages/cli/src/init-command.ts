@@ -78,6 +78,10 @@ const supportFiles = [
 const managedSectionStart = "<!-- diagrampilot:init:start -->";
 const managedSectionEnd = "<!-- diagrampilot:init:end -->";
 
+function initUsageText(): string {
+  return "Usage: diagrampilot init [--docs]";
+}
+
 function managedSection(lines: readonly string[]): string {
   return [managedSectionStart, ...lines, managedSectionEnd, ""].join("\n");
 }
@@ -106,7 +110,19 @@ function replaceManagedSection(existingContent: string, section: string): string
   return `${existingContent.slice(0, startIndex)}${section}${contentAfterEnd}`;
 }
 
-export function runInit(streams: CliStreams): number {
+export function runInit(args: readonly string[], streams: CliStreams): number {
+  if (args.length === 0) {
+    writeLine(streams.stdout, "Local agent docs were not installed.");
+    writeLine(streams.stdout, "Run `diagrampilot init --docs` to add them.");
+    return 0;
+  }
+
+  if (args.length > 1 || args[0] !== "--docs") {
+    writeLine(streams.stderr, `Unknown init option: ${args[0] ?? ""}`);
+    writeLine(streams.stderr, initUsageText());
+    return 1;
+  }
+
   for (const supportFile of supportFiles) {
     const filePath = path.resolve(process.cwd(), supportFile.path);
     const section = managedSection(supportFile.lines);

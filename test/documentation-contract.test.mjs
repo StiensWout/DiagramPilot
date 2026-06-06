@@ -14,6 +14,7 @@ const contractPath = path.join(
 );
 const implementedCliCommands = [
   "diagrampilot init",
+  "diagrampilot init --docs",
   "diagrampilot check",
   "diagrampilot check docs --json",
   "diagrampilot validate docs/architecture.dp.yaml",
@@ -24,6 +25,7 @@ const implementedCliCommands = [
 ];
 const quickstartCliCommands = [
   "diagrampilot init",
+  "diagrampilot init --docs",
   "diagrampilot check",
   "diagrampilot check demo-projects/checkout --json",
   "diagrampilot validate docs/architecture.dp.yaml",
@@ -343,6 +345,9 @@ test("canonical public install and removal guidance is complete and linked", asy
       "yarn remove diagrampilot",
       "bun remove diagrampilot",
       "Package installation does not create `llms.txt` or `docs/diagrampilot.md`",
+      "Normal `diagrampilot init` does not create or update local agent docs",
+      "`diagrampilot init --docs` creates or updates the managed local agent docs",
+      "Use `diagrampilot init --docs` only when the repository intentionally wants",
       "diagrampilot:init:start",
       "diagrampilot:init:end",
       "llms.txt",

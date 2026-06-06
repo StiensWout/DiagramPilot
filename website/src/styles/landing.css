@@ -196,6 +196,46 @@ h1 {
   color: var(--text);
 }
 
+.quick-command {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 3rem;
+  margin-top: 0.85rem;
+  overflow: hidden;
+  border: 1px solid rgb(148 163 184 / 0.34);
+  border-radius: 0.5rem;
+  background: rgb(2 6 23 / 0.76);
+  color: var(--text);
+  box-shadow: 0 1rem 3rem rgb(0 0 0 / 0.22);
+}
+
+.quick-command code {
+  min-width: 0;
+  padding: 0.85rem 1rem;
+  overflow-wrap: anywhere;
+  font-family:
+    "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.96rem;
+  line-height: 1.25;
+}
+
+.command-copy {
+  align-self: stretch;
+  border: 0;
+  border-left: 1px solid rgb(148 163 184 / 0.28);
+  padding: 0 1rem;
+  background: rgb(52 211 153 / 0.14);
+  color: var(--text);
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.command-copy:hover {
+  background: rgb(52 211 153 / 0.22);
+}
+
 .workflow-shell {
   position: relative;
   overflow: hidden;
@@ -379,6 +419,15 @@ code {
 
   .action {
     width: 100%;
+  }
+
+  .quick-command {
+    display: flex;
+    width: 100%;
+  }
+
+  .quick-command code {
+    flex: 1;
   }
 
   .workflow-shell {

@@ -88,6 +88,8 @@ test("llms.txt reflects current public docs and the published schema helper", as
   );
   assert.match(llmsText, /DiagramSpec v1 JSON Schema is a generated, committed public helper/);
   assert.match(llmsText, /does not replace core validation/);
+  assert.match(llmsText, /normal `diagrampilot init` does not create local agent docs/i);
+  assert.match(llmsText, /`diagrampilot init --docs` is opt-in/i);
   assert.doesNotMatch(llmsText, /MCP|Model Context Protocol/);
   assert.doesNotMatch(llmsText, /planned|deferred|future|not implemented|source mutation/i);
   assert.doesNotMatch(
@@ -350,6 +352,14 @@ test("public quickstart explains current DiagramPilot artifact and CLI behavior"
   assert.match(quickstart, /does not include wall-clock timestamps/);
   assert.match(quickstart, /export` prints to stdout by default/);
   assert.match(quickstart, /Use `--out` only when you want to write/);
+  assert.match(
+    quickstart,
+    /`diagrampilot init` does not create or update `llms\.txt` or `docs\/diagrampilot\.md` by default/,
+  );
+  assert.match(
+    quickstart,
+    /Use `diagrampilot init --docs` only when the repository intentionally wants managed local agent docs/,
+  );
 });
 
 test("public examples reference current packages and avoid deferred features", async () => {
@@ -407,6 +417,38 @@ test("public surface describes shipped DiagramPilot behavior only", async () => 
       /planned|deferred|future|not implemented|source mutation/i,
       repoPath,
     );
+  }
+});
+
+test("public install and removal details stay centralized in the canonical guide", async () => {
+  const canonicalInstallGuidePath = path.join(
+    "docs-public",
+    "agents",
+    "installation.md",
+  );
+  const publicSurfaceFiles = [
+    "README.md",
+    "llms.txt",
+    "docs-public/index.md",
+    ...publicAgentDocs
+      .map((fileName) => path.join("docs-public", "agents", fileName))
+      .filter((repoPath) => repoPath !== canonicalInstallGuidePath),
+  ];
+  const longFormInstallPatterns = [
+    /pnpm dlx diagrampilot check/,
+    /yarn dlx diagrampilot check/,
+    /bunx diagrampilot check/,
+    /npm install --global diagrampilot/,
+    /npm uninstall diagrampilot/,
+    /diagrampilot:init:start/,
+  ];
+
+  for (const repoPath of publicSurfaceFiles) {
+    const source = await readFile(path.join(repoRoot, repoPath), "utf8");
+
+    for (const pattern of longFormInstallPatterns) {
+      assert.doesNotMatch(source, pattern, repoPath);
+    }
   }
 });
 
