@@ -9,7 +9,8 @@ const DEPENDENCY_FIELDS = [
   "optionalDependencies",
 ];
 const VERSION_SOURCE_PATH = "packages/core/src/version.ts";
-const RELEASE_VERSION_PATTERN = /^\d+\.\d+\.\d+$/u;
+const RELEASE_VERSION_PATTERN =
+  /^\d+\.\d+\.\d+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?$/u;
 
 function readJson(filePath) {
   return JSON.parse(readFileSync(filePath, "utf8"));
@@ -200,7 +201,7 @@ function checkReleaseVersion(rootPath, explicitExpectedVersion) {
     return {
       expectedVersion,
       issues: [
-        `Expected release version ${expectedVersion} is not a plain semver release like 0.1.1.`,
+        `Expected release version ${expectedVersion} is not a semver release or prerelease like 0.1.1 or 0.1.1-nightly.1.1.abcdef0.`,
       ],
     };
   }

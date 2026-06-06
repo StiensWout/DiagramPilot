@@ -209,6 +209,51 @@ test("release version bump updates DiagramPilot metadata consistently", async ()
   });
 });
 
+test("release version bump supports nightly prerelease publish metadata", async () => {
+  await withReleaseMetadataFixture(async (fixtureRoot) => {
+    const bumpedVersion = "1.2.3-nightly.4.5.abcdef0";
+    const bumpResult = await runReleaseScript(
+      "bump-release-version.mjs",
+      [bumpedVersion],
+      { cwd: fixtureRoot },
+    );
+
+    assert.equal(bumpResult.signal, null);
+    assert.equal(bumpResult.code, 0, bumpResult.stderr);
+    assert.equal(bumpResult.stderr, "");
+    assert.equal(
+      bumpResult.stdout,
+      `Updated DiagramPilot release version metadata to ${bumpedVersion}.\n`,
+    );
+
+    const checkResult = await runReleaseScript(
+      "check-release-version.mjs",
+      [bumpedVersion],
+      { cwd: fixtureRoot },
+    );
+    const cliManifest = await readFixtureJson(
+      fixtureRoot,
+      "packages/cli/package.json",
+    );
+    const lockfile = await readFixtureJson(fixtureRoot, "package-lock.json");
+
+    assert.equal(checkResult.signal, null);
+    assert.equal(checkResult.code, 0, checkResult.stderr);
+    assert.equal(checkResult.stderr, "");
+    assert.equal(
+      checkResult.stdout,
+      `DiagramPilot release version metadata is consistent at ${bumpedVersion}.\n`,
+    );
+    assert.equal(cliManifest.version, bumpedVersion);
+    assert.equal(cliManifest.dependencies["@diagrampilot/core"], bumpedVersion);
+    assert.equal(lockfile.version, bumpedVersion);
+    assert.equal(
+      lockfile.packages["packages/cli"].dependencies["@diagrampilot/core"],
+      bumpedVersion,
+    );
+  });
+});
+
 test("release version workflow documents issue versions and closeout requirements", async () => {
   const workflow = await readFile(
     path.join(repoRoot, "docs/development/release-version-workflow.md"),

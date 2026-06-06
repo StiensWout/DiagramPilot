@@ -43,7 +43,8 @@ node scripts/check-release-version.mjs
 ```
 
 The check uses the root `package.json` version as the expected version by
-default. Release automation may pass an explicit version:
+default. Release automation may pass an explicit version, including the
+ephemeral nightly prerelease version used for package publish metadata:
 
 ```bash
 node scripts/check-release-version.mjs <expected-version>
@@ -93,6 +94,64 @@ npm publish --workspace @diagrampilot/render-svg --tag prealpha --access public
 
 Run the publish commands only from an authenticated npm account that owns the
 `diagrampilot` package name and `@diagrampilot` scope.
+
+## Release Automation
+
+`.github/workflows/release.yml` is the guarded package release workflow. It
+runs the same release validation suite as branch and pull request CI before any
+publish step: dependency install, release-version consistency, root build and
+tests, schema drift generation, website build/tests, checkout demo render plus
+`diagrampilot check`, and Public Package Set readiness. GitHub-hosted release
+automation does not run the website visual quality check because that check can
+create runner-specific font-cache noise; keep visual review as a local/manual
+validation step when changing landing page or docs presentation.
+
+The workflow uses `scripts/plan-release-publish.mjs` to select one publish
+plan from the GitHub event:
+
+- Trusted pushes to `issue-*` branches publish unique prerelease package
+  versions under the `nightly` dist-tag.
+- Trusted pull requests publish unique prerelease package versions under the
+  `nightly` dist-tag.
+- Fork pull requests and `workflow_dispatch` runs perform manual dry-run
+  validation only.
+- Trusted pushes to `main` publish the clean shared Issue Version under the
+  `latest` dist-tag.
+
+Nightly versions are derived from the shared Issue Version plus GitHub run
+identity: `<issue-version>-nightly.<run-number>.<run-attempt>.<short-sha>`.
+This keeps npm's immutable clean Issue Version available for the merged
+`latest` publish.
+
+Release publishing uses npm trusted publishing through GitHub OIDC rather than
+a long-lived npm token. The workflow grants `id-token: write`, configures
+`actions/setup-node` with `registry-url: https://registry.npmjs.org`, and does
+not set `NODE_AUTH_TOKEN`; npm automatically generates provenance for trusted
+publishes.
+
+Real publish is disabled until the repository variable
+`DIAGRAMPILOT_NPM_PUBLISH_ENABLED` is set to `true`. Keep the variable unset
+while reviewing the workflow or before npm trusted publishers exist; the
+workflow still runs validation and package publish dry-runs. After setup,
+trusted `issue-*` and pull request runs publish `nightly`, and trusted `main`
+pushes publish `latest`.
+
+Configure a trusted publisher in npm for each package in the Public Package Set
+with repository `StiensWout/DiagramPilot`, workflow
+`.github/workflows/release.yml`, and the package's public name:
+
+```text
+diagrampilot
+@diagrampilot/core
+@diagrampilot/icons
+@diagrampilot/export-mermaid
+@diagrampilot/export-d2
+@diagrampilot/render-svg
+```
+
+The workflow does not require Vercel or npm token secrets. Vercel remains the
+Public Website production deployment path; release automation only validates
+website output before package publish.
 
 ## Closeout
 

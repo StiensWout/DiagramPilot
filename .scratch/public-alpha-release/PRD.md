@@ -219,8 +219,10 @@ This phase will:
 - Documentation boundary tests should verify the final docs refinement keeps
   public release surfaces compact, current, and free of duplicated long-form
   install sources.
-- CI tests should cover root build/tests, website build/tests, visual checks,
-  schema drift, demo workflow checks, and npm package dry-run checks.
+- CI tests should cover root build/tests, website build/tests, schema drift,
+  demo workflow checks, and npm package dry-run checks. Website visual checks
+  remain local/manual validation because GitHub-hosted runners can produce
+  runner-specific font-cache noise.
 - Release workflow tests should verify version/tag consistency, `nightly`
   prerelease version uniqueness, `latest` publishing only from merged `main`
   release builds, and dry-run or guarded paths before a real publish.
