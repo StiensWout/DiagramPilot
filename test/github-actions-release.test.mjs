@@ -112,7 +112,7 @@ test("GitHub Actions release workflow validates releases before guarded publishi
   assert.match(workflow, /git diff --exit-code -- demo-projects\/checkout\/docs\/architecture\.svg/u);
   assert.match(workflow, /npm run check:package-readiness/u);
   assert.match(workflow, /node scripts\/plan-release-publish\.mjs --github-output/u);
-  assert.match(workflow, /RELEASE_SHOULD_PUBLISH == 'true'/u);
+  assert.match(workflow, /needs\.validate-release\.outputs\.should_publish == 'true'/u);
   assert.match(workflow, /RELEASE_DIST_TAG == 'nightly'/u);
   assert.match(workflow, /node scripts\/bump-release-version\.mjs "\$RELEASE_PUBLISH_VERSION"/u);
   assert.match(workflow, /npm publish --workspace "\$workspace" --tag "\$RELEASE_DIST_TAG" --access public/u);
@@ -123,6 +123,76 @@ test("GitHub Actions release workflow validates releases before guarded publishi
   for (const packageName of publicPackageSet) {
     assert.match(workflow, new RegExp(packageName.replace("/", "\\/"), "u"));
   }
+});
+
+test("release workflow gates CD side effects behind CI and validates reviewed GitHub Release drafts", async () => {
+  const workflow = await readFile(releaseWorkflowPath, "utf8");
+  const publishPackagesStart = workflow.indexOf("  publish-packages:");
+  const prepareGithubReleaseStart = workflow.indexOf(
+    "  prepare-github-release-draft:",
+  );
+  const publishGithubReleaseStart = workflow.indexOf("  publish-github-release:");
+  const publishPackagesJob = workflow.slice(
+    publishPackagesStart,
+    prepareGithubReleaseStart,
+  );
+  const prepareGithubReleaseJob = workflow.slice(
+    prepareGithubReleaseStart,
+    publishGithubReleaseStart,
+  );
+  const publishGithubReleaseJob = workflow.slice(publishGithubReleaseStart);
+
+  assert.match(workflow, /^  validate-release:$/m);
+  assert.match(workflow, /^  publish-packages:$/m);
+  assert.match(workflow, /^  prepare-github-release-draft:$/m);
+  assert.match(workflow, /^  publish-github-release:$/m);
+  assert.match(workflow, /publish-packages:\n(?:    .+\n)*    needs: validate-release/u);
+  assert.match(workflow, /prepare-github-release-draft:\n(?:    .+\n)*    needs: \[validate-release, publish-packages\]/u);
+  assert.match(workflow, /publish-github-release:\n(?:    .+\n)*    needs: \[validate-release, prepare-github-release-draft\]/u);
+  assert.match(workflow, /ref: \$\{\{ github\.sha \}\}/u);
+  assert.match(workflow, /contents: write/u);
+  assert.match(workflow, /needs\.validate-release\.outputs\.dist_tag == 'latest'/u);
+  assert.match(workflow, /environment: github-release-publication/u);
+  assert.match(workflow, /node scripts\/generate-release-notes\.mjs/u);
+  assert.match(workflow, /gh release view "\$RELEASE_TAG" --json tagName,name,body,isDraft,isPrerelease/u);
+  assert.match(workflow, /node scripts\/validate-github-release-draft\.mjs/u);
+  assert.match(workflow, /git tag "\$RELEASE_TAG" "\$GITHUB_SHA"/u);
+  assert.match(workflow, /git push origin "\$RELEASE_TAG"/u);
+  assert.match(workflow, /gh release create "\$RELEASE_TAG"/u);
+  assert.match(workflow, /gh release edit "\$RELEASE_TAG" --draft=false --verify-tag --latest/u);
+
+  assert.match(publishPackagesJob, /needs: validate-release/u);
+  assert.match(publishPackagesJob, /npm publish --workspace/u);
+
+  const tagCreation = prepareGithubReleaseJob.indexOf('git tag "$RELEASE_TAG" "$GITHUB_SHA"');
+  const draftCreation = prepareGithubReleaseJob.indexOf('gh release create "$RELEASE_TAG"');
+  const generatedDraftValidation = prepareGithubReleaseJob.indexOf(
+    "node scripts/validate-github-release-draft.mjs",
+  );
+  assert.notEqual(tagCreation, -1);
+  assert.notEqual(draftCreation, -1);
+  assert.notEqual(generatedDraftValidation, -1);
+  assert.ok(
+    tagCreation < draftCreation,
+    "tag creation must run before GitHub Release draft creation",
+  );
+  assert.ok(
+    draftCreation < generatedDraftValidation,
+    "generated draft must be validated before the review gate",
+  );
+
+  const draftValidation = publishGithubReleaseJob.indexOf(
+    "node scripts/validate-github-release-draft.mjs",
+  );
+  const releasePublication = publishGithubReleaseJob.indexOf(
+    'gh release edit "$RELEASE_TAG" --draft=false',
+  );
+  assert.notEqual(draftValidation, -1);
+  assert.notEqual(releasePublication, -1);
+  assert.ok(
+    draftValidation < releasePublication,
+    "reviewed draft validation must run before GitHub Release publication",
+  );
 });
 
 test("release publish planner routes issue branch pushes to unique nightly versions", async () => {
@@ -334,6 +404,12 @@ test("release workflow docs explain npm trusted publisher setup", async () => {
   assert.match(workflow, /`latest`/u);
   assert.match(workflow, /Pull requests perform validation and npm publish dry-runs only/u);
   assert.match(workflow, /manual dry-run/u);
+  assert.match(workflow, /Issue Release/u);
+  assert.match(workflow, /GitHub Release draft/u);
+  assert.match(workflow, /scripts\/generate-release-notes\.mjs/u);
+  assert.match(workflow, /scripts\/validate-github-release-draft\.mjs/u);
+  assert.match(workflow, /npm `latest` publish succeeds/u);
+  assert.match(workflow, /Nightly .*skip GitHub Releases/u);
 
   for (const packageName of publicPackageSet) {
     assert.match(workflow, new RegExp(packageName.replace("/", "\\/"), "u"));

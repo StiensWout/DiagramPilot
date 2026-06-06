@@ -1,7 +1,13 @@
 # Release Version Workflow
 
 DiagramPilot Issue Versions are release versions assigned to implementation
-issue closeout in the Public Alpha Release track.
+issue closeout. Each implementation issue that merges to `main` should produce
+an Issue Release with its assigned version. PRD-scoped milestones, such as
+`0.3.0`, can use intermediate Issue Releases for individual issues and reserve
+the milestone version for the final closeout release where the scoped feature
+set is fully functional for that release line. For the v0.3.0 Alpha Capability
+Release, individual scoped issues should use `0.2.x` Issue Versions and
+`0.3.0` should be reserved for PRD closeout.
 
 ## Issue Version Schedule
 
@@ -19,6 +25,11 @@ Issues 55 through 61 and issue 63 are Pre-Alpha Releases:
 | 63 | `0.1.9` | Pre-Alpha Release |
 
 Issue 62 is `0.2.0`, the first Public Alpha Release.
+
+The v0.3.0 Alpha Capability Release train starts after `0.2.0`. Its
+implementation issues are Issue Releases with assigned `0.2.x` Issue Versions,
+and its final closeout issue reserves `0.3.0` for the complete scoped release.
+Issue 64 is `0.2.1`, the Release Operations foundation Issue Release.
 
 ## Version Tooling
 
@@ -95,13 +106,54 @@ npm publish --workspace @diagrampilot/render-svg --tag prealpha --access public
 Run the publish commands only from an authenticated npm account that owns the
 `diagrampilot` package name and `@diagrampilot` scope.
 
+## GitHub Release Notes
+
+Each Issue Release needs reviewed release notes in a GitHub Release draft. The
+draft body is generated from the completed local issue closeout fields and is
+reviewed on GitHub; generated release-note files are not committed and are not
+written under `.scratch/`.
+
+Preview the draft body locally from the completed issue file after the issue has
+`Status: completed`, the assigned `Issue Version`, implementation notes, and
+validation results:
+
+```bash
+node scripts/generate-release-notes.mjs \
+  --issue .scratch/v0-3-0-alpha-capability-release/issues/64-release-ops-foundation-and-github-releases.md \
+  --version 0.2.1 \
+  --tag v0.2.1 > "$TMPDIR/diagrampilot-v0.2.1-release-notes.md"
+```
+
+Do not commit that temporary file. Do not manually create the GitHub Release
+draft before the workflow creates the release tag; GitHub release creation can
+also create or bind a tag, and DiagramPilot's release workflow must create
+`vX.Y.Z` only after npm `latest` publish succeeds. The workflow generates the
+same draft body from `.scratch/`, creates or updates the GitHub Release draft
+after tag creation, and then waits at the `github-release-publication`
+environment before publishing. Configure that environment with required
+reviewers so maintainers can review and, if needed, edit the GitHub Release
+draft body before approving publication.
+
+The reviewed draft must keep the generated version and tag metadata lines:
+`# DiagramPilot vX.Y.Z`, `Issue Version: X.Y.Z`, and `Tag: vX.Y.Z`. The release
+workflow validates that reviewed draft before publishing the GitHub Release:
+
+```bash
+gh release view v0.2.1 --json tagName,name,body,isDraft,isPrerelease > "$TMPDIR/diagrampilot-v0.2.1-draft.json"
+node scripts/validate-github-release-draft.mjs \
+  --draft-json "$TMPDIR/diagrampilot-v0.2.1-draft.json" \
+  --version 0.2.1 \
+  --tag v0.2.1
+```
+
 ## Release Automation
 
-`.github/workflows/release.yml` is the guarded package release workflow. It
-runs the same release validation suite as branch and pull request CI before any
-publish step: dependency install, release-version consistency, root build and
-tests, schema drift generation, website build/tests, checkout demo render plus
-`diagrampilot check`, and Public Package Set readiness. GitHub-hosted release
+`.github/workflows/release.yml` is the guarded package and GitHub Release
+workflow. Its `validate-release` job runs the same release validation suite as
+branch and pull request CI before any CD side effect: dependency install,
+release-version consistency, root build and tests, schema drift generation,
+website build/tests, checkout demo render plus `diagrampilot check`, Public
+Package Set readiness, and package publish dry-runs. GitHub-hosted release
 automation does not run the website visual quality check because that check can
 create runner-specific font-cache noise; keep visual review as a local/manual
 validation step when changing landing page or docs presentation.
@@ -121,6 +173,31 @@ Nightly versions are derived from the shared Issue Version plus GitHub run
 identity: `<issue-version>-nightly.<run-number>.<run-attempt>.<short-sha>`.
 This keeps npm's immutable clean Issue Version available for the merged
 `latest` publish.
+
+Nightly branch publishes skip GitHub Releases. They only publish npm prerelease
+packages under the `nightly` dist-tag after `validate-release` succeeds.
+Pull requests and manual runs stay dry-run only.
+
+The `publish-packages` job is the only npm side-effect job. It needs
+`validate-release`, checks out the same `${{ github.sha }}` release commit,
+verifies the intended Issue Version with
+`npm run check:release-version -- "$RELEASE_PUBLISH_VERSION"`, rebuilds package
+artifacts, reruns package readiness, and then publishes the Public Package Set.
+For trusted `main` pushes, GitHub Release publication only starts after npm `latest` publish succeeds for that same Issue Version.
+
+The `prepare-github-release-draft` job runs only for `latest` releases after
+package publish succeeds. It checks out the same release commit, verifies the
+intended Issue Version again, creates `vX.Y.Z` for that commit, generates the
+GitHub Release draft body with `scripts/generate-release-notes.mjs`, creates or
+updates the GitHub Release draft, and validates the generated draft shape.
+
+The `publish-github-release` job needs the draft preparation job and uses the
+`github-release-publication` environment as the maintainer review point. After
+that review, it validates the reviewed GitHub Release draft again with
+`scripts/validate-github-release-draft.mjs` and then publishes the matching
+GitHub Release draft. The workflow fails before GitHub Release publication when
+the reviewed draft is missing, empty, still mismatched with the version or tag,
+not a draft, or marked as a prerelease.
 
 Release publishing uses npm trusted publishing through GitHub OIDC rather than
 a long-lived npm token. The workflow grants `id-token: write`, configures
@@ -180,7 +257,12 @@ Issue closeout includes:
 5. Run and record validation results for the issue's validation plan.
 6. Run `npm run check:package-readiness` when package publish metadata,
    licensing, or tarball boundaries are in scope.
-7. Update the local issue file with completed acceptance criteria,
+7. Preview release notes with `scripts/generate-release-notes.mjs` into a
+   temporary file if desired. Do not commit generated release-note files and do
+   not write them under `.scratch/`. The workflow creates or updates the GitHub
+   Release draft after npm `latest` and tag creation; review the draft body in
+   GitHub before approving the `github-release-publication` environment.
+8. Update the local issue file with completed acceptance criteria,
    implementation notes, validation results, and `Status: completed`.
 
 If a version metadata change does not alter a version-sensitive artifact, record

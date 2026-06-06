@@ -12,13 +12,17 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
-  release:
-    name: Validate and publish packages
+  validate-release:
+    name: Validate release and publish dry-run
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    outputs:
+      base_version: ${{ steps.release-plan.outputs.base_version }}
+      publish_version: ${{ steps.release-plan.outputs.publish_version }}
+      dist_tag: ${{ steps.release-plan.outputs.dist_tag }}
+      should_publish: ${{ steps.release-plan.outputs.should_publish }}
     env:
       CI: "true"
       FORCE_COLOR: "0"
@@ -104,8 +108,55 @@ jobs:
             npm publish --dry-run --workspace "$workspace" --tag "$RELEASE_DIST_TAG" --access public
           done
 
+  publish-packages:
+    name: Publish public packages
+    needs: validate-release
+    if: needs.validate-release.outputs.should_publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      CI: "true"
+      FORCE_COLOR: "0"
+      NO_COLOR: "1"
+      RELEASE_PUBLISH_VERSION: ${{ needs.validate-release.outputs.publish_version }}
+      RELEASE_DIST_TAG: ${{ needs.validate-release.outputs.dist_tag }}
+
+    steps:
+      - name: Check out release commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Use workspace npm version
+        run: npm install --global npm@11.16.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare nightly package metadata
+        if: env.RELEASE_DIST_TAG == 'nightly'
+        run: node scripts/bump-release-version.mjs "$RELEASE_PUBLISH_VERSION"
+
+      - name: Verify intended Issue Version before package publish
+        run: npm run check:release-version -- "$RELEASE_PUBLISH_VERSION"
+
+      - name: Build publish artifacts
+        run: npm run build
+
+      - name: Check publish package readiness
+        run: npm run check:package-readiness
+
       - name: Publish public packages
-        if: env.RELEASE_SHOULD_PUBLISH == 'true'
         run: |
           packages=(
             "diagrampilot"
@@ -119,3 +170,130 @@ jobs:
           for workspace in "${packages[@]}"; do
             npm publish --workspace "$workspace" --tag "$RELEASE_DIST_TAG" --access public
           done
+
+  prepare-github-release-draft:
+    name: Prepare GitHub Release draft
+    needs: [validate-release, publish-packages]
+    if: needs.validate-release.outputs.should_publish == 'true' && needs.validate-release.outputs.dist_tag == 'latest'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      CI: "true"
+      FORCE_COLOR: "0"
+      NO_COLOR: "1"
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_PUBLISH_VERSION: ${{ needs.validate-release.outputs.publish_version }}
+      RELEASE_TAG: v${{ needs.validate-release.outputs.publish_version }}
+
+    steps:
+      - name: Check out release commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Verify intended Issue Version before GitHub Release
+        run: node scripts/check-release-version.mjs "$RELEASE_PUBLISH_VERSION"
+
+      - name: Create release tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG" > "$RUNNER_TEMP/release-tag.txt"; then
+            remote_tag_sha="$(cut -f1 "$RUNNER_TEMP/release-tag.txt")"
+            if [ "$remote_tag_sha" != "$GITHUB_SHA" ]; then
+              echo "Remote tag $RELEASE_TAG points at $remote_tag_sha, expected $GITHUB_SHA." >&2
+              exit 1
+            fi
+          else
+            git tag "$RELEASE_TAG" "$GITHUB_SHA"
+            git push origin "$RELEASE_TAG"
+          fi
+
+      - name: Generate GitHub Release draft body
+        run: |
+          node scripts/generate-release-notes.mjs \
+            --version "$RELEASE_PUBLISH_VERSION" \
+            --tag "$RELEASE_TAG" > "$RUNNER_TEMP/release-notes.md"
+          test -s "$RUNNER_TEMP/release-notes.md"
+
+      - name: Create or update GitHub Release draft
+        run: |
+          if gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft > "$RUNNER_TEMP/release-draft-state.txt" 2>/dev/null; then
+            if [ "$(cat "$RUNNER_TEMP/release-draft-state.txt")" != "true" ]; then
+              echo "GitHub Release $RELEASE_TAG already exists and is not a draft." >&2
+              exit 1
+            fi
+
+            gh release edit "$RELEASE_TAG" \
+              --draft \
+              --title "DiagramPilot $RELEASE_TAG" \
+              --notes-file "$RUNNER_TEMP/release-notes.md" \
+              --target "$GITHUB_SHA"
+          else
+            gh release create "$RELEASE_TAG" \
+              --draft \
+              --verify-tag \
+              --title "DiagramPilot $RELEASE_TAG" \
+              --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi
+
+      - name: Validate generated GitHub Release draft
+        run: |
+          gh release view "$RELEASE_TAG" --json tagName,name,body,isDraft,isPrerelease > "$RUNNER_TEMP/release-draft.json"
+          node scripts/validate-github-release-draft.mjs \
+            --draft-json "$RUNNER_TEMP/release-draft.json" \
+            --version "$RELEASE_PUBLISH_VERSION" \
+            --tag "$RELEASE_TAG"
+
+  publish-github-release:
+    name: Publish reviewed GitHub Release
+    needs: [validate-release, prepare-github-release-draft]
+    if: needs.validate-release.outputs.should_publish == 'true' && needs.validate-release.outputs.dist_tag == 'latest'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    environment: github-release-publication
+    env:
+      CI: "true"
+      FORCE_COLOR: "0"
+      NO_COLOR: "1"
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_PUBLISH_VERSION: ${{ needs.validate-release.outputs.publish_version }}
+      RELEASE_TAG: v${{ needs.validate-release.outputs.publish_version }}
+
+    steps:
+      - name: Check out release commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Verify intended Issue Version before GitHub Release publication
+        run: node scripts/check-release-version.mjs "$RELEASE_PUBLISH_VERSION"
+
+      - name: Validate reviewed GitHub Release draft
+        run: |
+          gh release view "$RELEASE_TAG" --json tagName,name,body,isDraft,isPrerelease > "$RUNNER_TEMP/release-draft.json"
+          node scripts/validate-github-release-draft.mjs \
+            --draft-json "$RUNNER_TEMP/release-draft.json" \
+            --version "$RELEASE_PUBLISH_VERSION" \
+            --tag "$RELEASE_TAG"
+
+      - name: Publish reviewed GitHub Release draft
+        run: gh release edit "$RELEASE_TAG" --draft=false --verify-tag --latest --target "$GITHUB_SHA"
