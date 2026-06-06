@@ -11,6 +11,13 @@ or other configured context providers instead.
 Do not copy DiagramPilot public docs into a consuming repository as part of
 installation. Keep repository docs for project-owned guidance.
 
+## Release Status
+
+DiagramPilot is preparing `0.2.0` as the first Public Alpha Release. If `0.1.x`
+packages are discoverable on npm, `0.1.x packages are pre-alpha` packages used
+to prove package publishing under the `prealpha` dist-tag before the public
+alpha release.
+
 ## One-Off Use
 
 Run DiagramPilot without adding it to the repository:

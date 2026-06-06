@@ -1,6 +1,6 @@
 {
   "name": "@diagrampilot/export-d2",
-  "version": "0.1.2",
+  "version": "0.1.6",
   "description": "D2 export adapter for DiagramPilot.",
   "type": "module",
   "license": "MIT",
@@ -33,7 +33,8 @@
     "dist/**/*.d.ts.map",
     "dist/**/*.js",
     "dist/**/*.js.map",
-    "LICENSE"
+    "LICENSE",
+    "README.md"
   ],
   "publishConfig": {
     "access": "public"
@@ -42,6 +43,6 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@diagrampilot/core": "0.1.2"
+    "@diagrampilot/core": "0.1.6"
   }
 }

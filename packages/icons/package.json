@@ -1,6 +1,6 @@
 {
   "name": "@diagrampilot/icons",
-  "version": "0.1.2",
+  "version": "0.1.6",
   "description": "Packaged icon metadata for DiagramPilot.",
   "type": "module",
   "license": "MIT",
@@ -33,7 +33,8 @@
     "dist/**/*.d.ts.map",
     "dist/**/*.js",
     "dist/**/*.js.map",
-    "LICENSE"
+    "LICENSE",
+    "README.md"
   ],
   "publishConfig": {
     "access": "public"

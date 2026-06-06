@@ -13,10 +13,10 @@ Issues 55 through 61 and issue 63 are Pre-Alpha Releases:
 | 56 | `0.1.2` | Pre-Alpha Release |
 | 57 | `0.1.3` | Pre-Alpha Release |
 | 58 | `0.1.4` | Pre-Alpha Release |
-| 59 | `0.1.5` | Pre-Alpha Release |
-| 60 | `0.1.6` | Pre-Alpha Release |
-| 61 | `0.1.7` | Pre-Alpha Release |
-| 63 | `0.1.8` | Pre-Alpha Release |
+| 59 | `0.1.6` | Pre-Alpha Release |
+| 60 | `0.1.7` | Pre-Alpha Release |
+| 61 | `0.1.8` | Pre-Alpha Release |
+| 63 | `0.1.9` | Pre-Alpha Release |
 
 Issue 62 is `0.2.0`, the first Public Alpha Release.
 
@@ -64,6 +64,35 @@ The package readiness check validates MIT license metadata, private workspace
 boundaries, public package repository/homepage/bugs/keywords/publish settings,
 package-local MIT license files, and `npm pack --dry-run` output for the Public
 Package Set.
+
+Run the package publish-state check before the first pre-alpha publish to prove
+the package names are still available on the public npm registry:
+
+```bash
+npm run check:package-publish-state -- --expect available
+```
+
+After a maintainer with npm ownership publishes the Public Package Set under the
+`prealpha` dist-tag, rerun the publish-state check to prove the package names
+are reserved and `latest` was not moved:
+
+```bash
+npm run check:package-publish-state -- --expect prealpha
+```
+
+The pre-alpha publish commands are:
+
+```bash
+npm publish --workspace diagrampilot --tag prealpha --access public
+npm publish --workspace @diagrampilot/core --tag prealpha --access public
+npm publish --workspace @diagrampilot/icons --tag prealpha --access public
+npm publish --workspace @diagrampilot/export-mermaid --tag prealpha --access public
+npm publish --workspace @diagrampilot/export-d2 --tag prealpha --access public
+npm publish --workspace @diagrampilot/render-svg --tag prealpha --access public
+```
+
+Run the publish commands only from an authenticated npm account that owns the
+`diagrampilot` package name and `@diagrampilot` scope.
 
 ## Closeout
 
