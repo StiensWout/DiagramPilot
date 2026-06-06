@@ -20,10 +20,11 @@ DiagramPilot also needs release discipline before public alpha. Each remaining
 issue before v0.2.0 should be an Issue Version. Pre-alpha versions may be
 tagged, and the first clean package-ready pre-alpha should reserve npm names
 under a non-default dist-tag. After names are reserved, release automation
-should publish pre-merge builds under `nightly` with unique prerelease
-versions, then publish merged release builds from `main` under `latest`. The
-v0.2.0 release should be the first Public Alpha Release and publish the Public
-Package Set under `latest`.
+should publish trusted issue branch builds under `nightly` with unique
+prerelease versions, keep pull request runs as validation and dry-run only,
+then publish merged release builds from `main` under `latest`. The v0.2.0
+release should be the first Public Alpha Release and publish the Public Package
+Set under `latest`.
 
 Before v0.2.0, DiagramPilot also needs one final behavior and public surface
 gate. Package install and normal initialization should not copy DiagramPilot
@@ -58,8 +59,9 @@ This phase will:
    reserve npm names with a pre-alpha publish under the `prealpha` dist-tag.
 6. Add GitHub Actions CI for branch and pull request validation.
 7. Add GitHub Actions release automation using npm trusted publishing where
-   available, publishing pre-merge builds under `nightly` and merged `main`
-   release builds under `latest`.
+   available, publishing trusted issue branch builds under `nightly`, keeping
+   pull request runs dry-run only, and publishing merged `main` release builds
+   under `latest`.
 8. Finalize alpha behavior and public surface so `diagrampilot init` does not
    install local agent docs by default, `diagrampilot init --docs` is the
    explicit local agent docs path, the Public Website exposes a repository CTA
@@ -96,9 +98,10 @@ This phase will:
 11. As a release maintainer, I want package publishing to use trusted
     publishing rather than long-lived npm tokens where possible, so that future
     releases have lower credential risk.
-12. As a contributor, I want pre-merge package builds published under
+12. As a contributor, I want issue branch package builds published under
     `nightly`, so that integration testing can use real npm packages before a
-    merge changes the public release channel.
+    merge changes the public release channel without double-publishing the pull
+    request validation run.
 13. As a release maintainer, I want merges to `main` to publish the clean
     shared version under `latest`, so that the default npm install path follows
     reviewed release commits.
@@ -135,8 +138,10 @@ This phase will:
   package name ownership, and CI checks are ready.
 - After Package Publishing Readiness, publish the first clean pre-alpha package
   set under the `prealpha` dist-tag to reserve package names.
-- Release Automation publishes trusted pre-merge branch or pull request builds
-  under the `nightly` dist-tag.
+- Release Automation publishes trusted `issue-*` branch builds under the
+  `nightly` dist-tag.
+- Pull request release workflow runs validate and perform npm publish dry-runs
+  only; they do not publish real npm package versions.
 - Nightly publishes must use unique npm prerelease versions derived from the
   shared Issue Version plus CI identity, because npm package versions are
   immutable and the clean merged version must remain available for `latest`.

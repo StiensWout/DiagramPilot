@@ -47,17 +47,6 @@ function isForkPullRequest(event) {
   return headRepo !== undefined && baseRepo !== undefined && headRepo !== baseRepo;
 }
 
-function isTrustedPullRequest(event, env) {
-  const headRepo = event.pull_request?.head?.repo?.full_name;
-  const baseRepo = event.pull_request?.base?.repo?.full_name;
-
-  return (
-    isOfficialRepository(env) &&
-    headRepo === OFFICIAL_REPOSITORY &&
-    baseRepo === OFFICIAL_REPOSITORY
-  );
-}
-
 function isPublishEnabled(env) {
   return env.DIAGRAMPILOT_NPM_PUBLISH_ENABLED === "true";
 }
@@ -131,23 +120,24 @@ function createPlan(env, event) {
     }, env);
   }
 
-  if (eventName === "pull_request" && isTrustedPullRequest(event, env)) {
-    return guardPublish({
-      baseVersion,
-      distTag: "nightly",
-      publishVersion: nightlyVersion,
-      shouldPublish: true,
-      reason: "trusted pull request publishes a unique nightly version",
-    }, env);
-  }
+  if (eventName === "pull_request") {
+    if (isForkPullRequest(event)) {
+      return {
+        baseVersion,
+        distTag: "nightly",
+        publishVersion: nightlyVersion,
+        shouldPublish: false,
+        reason: "fork pull request uses dry-run validation only",
+      };
+    }
 
-  if (eventName === "pull_request" && isForkPullRequest(event)) {
     return {
       baseVersion,
       distTag: "nightly",
       publishVersion: nightlyVersion,
       shouldPublish: false,
-      reason: "fork pull request uses dry-run validation only",
+      reason:
+        "pull request validation uses dry-run only; issue branch pushes publish nightly",
     };
   }
 

@@ -11,12 +11,13 @@ Issue Version: 0.1.8
 
 Add release automation for future DiagramPilot releases. The release workflow
 should validate the release, verify publish/version consistency, publish
-pre-merge builds to `nightly`, and publish merged `main` release builds to
-`latest` through npm trusted publishing where available.
+trusted issue branch builds to `nightly`, keep pull requests dry-run only, and
+publish merged `main` release builds to `latest` through npm trusted publishing
+where available.
 
 ## Acceptance criteria
 
-- [x] A GitHub Actions release workflow runs for trusted pre-merge branches or
+- [x] A GitHub Actions release workflow runs for trusted pre-merge branches,
       pull requests, merges to `main`, and manual dry-run validation with clear
       guardrails.
 - [x] The workflow reruns the full release validation suite before publishing.
@@ -29,14 +30,14 @@ pre-merge builds to `nightly`, and publish merged `main` release builds to
 - [x] The workflow publishes all Public Package Set packages together.
 - [x] The workflow uses npm trusted publishing/OIDC where available instead of
       long-lived npm tokens.
-- [x] Pre-merge publishing uses the `nightly` dist-tag.
+- [x] Trusted issue branch publishing uses the `nightly` dist-tag.
 - [x] Nightly publishing uses unique npm prerelease versions derived from the
       shared Issue Version plus CI identity, so a nightly publish cannot consume
       the clean version intended for `latest`.
 - [x] Merges to `main` publish the clean shared version under the `latest`
       dist-tag.
-- [x] Real `nightly` or `latest` publishing cannot run from forks; fork pull
-      requests use dry-run validation only.
+- [x] Real `nightly` or `latest` publishing cannot run from pull requests or
+      forks; pull requests use dry-run validation only.
 - [x] `latest` publishing cannot run from pull requests, issue branches, or
       manual dry-run paths.
 - [x] The workflow does not deploy the Public Website directly; Vercel remains
@@ -76,12 +77,12 @@ git diff --check
   automation for pull requests, `issue-*` branch pushes, `main` pushes, and
   manual dry-run validation.
 - Added `scripts/plan-release-publish.mjs` to derive the publish plan from the
-  GitHub event. Trusted pre-merge refs publish unique
+  GitHub event. Trusted `issue-*` branch pushes publish unique
   `<issue-version>-nightly.<run-number>.<run-attempt>.<short-sha>` versions
-  under `nightly` after `DIAGRAMPILOT_NPM_PUBLISH_ENABLED=true`; trusted
-  `main` pushes publish the clean shared version under `latest` after the same
-  setup guard; fork pull requests, manual runs, and setup-disabled runs stay
-  dry-run only.
+  under `nightly` after `DIAGRAMPILOT_NPM_PUBLISH_ENABLED=true`; pull request
+  runs stay dry-run only to avoid duplicate npm versions; trusted `main` pushes
+  publish the clean shared version under `latest` after the same setup guard;
+  manual runs and setup-disabled runs stay dry-run only.
 - The workflow reruns release validation before publish: release-version
   consistency, build, root tests, schema drift, website build/tests, checkout
   demo render plus `diagrampilot check`, and package readiness.
@@ -95,14 +96,18 @@ git diff --check
 - Added a publish-enable guard so GitHub validation can pass before npm trusted
   publishers exist. Real publish requires repository variable
   `DIAGRAMPILOT_NPM_PUBLISH_ENABLED=true`.
+- Updated the release planner so pull request events always stay dry-run only,
+  even when real publishing is enabled, preventing duplicate npm versions for
+  the same branch update.
 - Dry-run publish validation runs before real publish so release behavior can be
   reviewed without moving npm dist-tags.
 - Updated `docs/development/release-version-workflow.md` with release
   automation routing, nightly version derivation, manual dry-run guardrails,
   and the trusted publisher setup required for each public package.
 - Added `test/github-actions-release.test.mjs` covering workflow contract,
-  `nightly`/`latest` routing, unique prerelease derivation, fork/manual
-  boundaries, tag/version consistency, and trusted publisher docs.
+  `nightly`/`latest` routing, unique prerelease derivation, pull request
+  dry-run boundaries, fork/manual boundaries, tag/version consistency, and
+  trusted publisher docs.
 - Bumped DiagramPilot Issue Version metadata to `0.1.8` and refreshed checkout
   demo SVG provenance at `0.1.8`.
 - Issue 60 has a separate completed branch; merge this issue after issue 60 so
@@ -116,11 +121,12 @@ git diff --check
 - `cd demo-projects/checkout && node ../../packages/cli/dist/index.js check`
   passed: 1 DiagramPilot Source File fresh.
 - `node --test --test-concurrency=1 test/github-actions-release.test.mjs`
-  passed: 7 tests.
+  passed: 8 tests after adding coverage that pull request events stay dry-run
+  even when `DIAGRAMPILOT_NPM_PUBLISH_ENABLED=true`.
 - `npm run check:release-version` passed at `0.1.8`.
-- `npm test` passed: 156 tests after removing the GitHub-hosted visual quality
+- `npm test` passed: 158 tests after removing the GitHub-hosted visual quality
   gate from the root suite and adding nightly prerelease release-version
-  tooling and publish-enable guard coverage.
+  tooling, publish-enable guard coverage, and pull request dry-run coverage.
 - `npm run generate:schema` passed.
 - `git diff --exit-code -- schema/diagramspec-v1.schema.json` passed.
 - `npm --workspace website run build` passed. Astro emitted the existing

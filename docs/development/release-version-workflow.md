@@ -111,10 +111,9 @@ plan from the GitHub event:
 
 - Trusted pushes to `issue-*` branches publish unique prerelease package
   versions under the `nightly` dist-tag.
-- Trusted pull requests publish unique prerelease package versions under the
-  `nightly` dist-tag.
-- Fork pull requests and `workflow_dispatch` runs perform manual dry-run
-  validation only.
+- Pull requests perform validation and npm publish dry-runs only, including
+  same-repository pull requests.
+- `workflow_dispatch` runs perform manual dry-run validation only.
 - Trusted pushes to `main` publish the clean shared Issue Version under the
   `latest` dist-tag.
 
@@ -133,8 +132,8 @@ Real publish is disabled until the repository variable
 `DIAGRAMPILOT_NPM_PUBLISH_ENABLED` is set to `true`. Keep the variable unset
 while reviewing the workflow or before npm trusted publishers exist; the
 workflow still runs validation and package publish dry-runs. After setup,
-trusted `issue-*` and pull request runs publish `nightly`, and trusted `main`
-pushes publish `latest`.
+trusted `issue-*` branch pushes publish `nightly`, pull requests stay dry-run
+only, and trusted `main` pushes publish `latest`.
 
 Configure a trusted publisher in npm for each package in the Public Package Set
 with repository `StiensWout/DiagramPilot`, workflow

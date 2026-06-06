@@ -208,6 +208,41 @@ test("release publish planner keeps trusted pushes dry-run until publishing is e
   assert.match(plan.reason, /real publish disabled/u);
 });
 
+test("release publish planner keeps pull requests dry-run even when publishing is enabled", async () => {
+  const baseVersion = await readWorkspaceVersion();
+  const result = await withGithubEvent(
+    {
+      pull_request: {
+        head: { repo: { full_name: "StiensWout/DiagramPilot" } },
+        base: { repo: { full_name: "StiensWout/DiagramPilot" } },
+      },
+    },
+    (eventPath) =>
+      runReleasePlan({
+        GITHUB_EVENT_NAME: "pull_request",
+        GITHUB_EVENT_PATH: eventPath,
+        GITHUB_REF: "refs/pull/64/merge",
+        GITHUB_REF_NAME: "64/merge",
+        GITHUB_REPOSITORY: "StiensWout/DiagramPilot",
+        GITHUB_RUN_NUMBER: "48",
+        GITHUB_RUN_ATTEMPT: "1",
+        GITHUB_SHA: "123abc456def7890",
+        DIAGRAMPILOT_NPM_PUBLISH_ENABLED: "true",
+      }),
+  );
+
+  assert.equal(result.signal, null);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stderr, "");
+
+  const plan = JSON.parse(result.stdout);
+  assert.equal(plan.baseVersion, baseVersion);
+  assert.equal(plan.distTag, "nightly");
+  assert.equal(plan.shouldPublish, false);
+  assert.equal(plan.publishVersion, `${baseVersion}-nightly.48.1.123abc4`);
+  assert.match(plan.reason, /pull request validation uses dry-run/u);
+});
+
 test("release publish planner keeps fork pull requests and manual runs dry-run only", async () => {
   const baseVersion = await readWorkspaceVersion();
   const forkPullRequest = await withGithubEvent(
@@ -297,6 +332,7 @@ test("release workflow docs explain npm trusted publisher setup", async () => {
   assert.match(workflow, /OIDC/u);
   assert.match(workflow, /`nightly`/u);
   assert.match(workflow, /`latest`/u);
+  assert.match(workflow, /Pull requests perform validation and npm publish dry-runs only/u);
   assert.match(workflow, /manual dry-run/u);
 
   for (const packageName of publicPackageSet) {
