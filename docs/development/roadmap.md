@@ -173,7 +173,10 @@ This track covers:
    pre-alpha publish under the `prealpha` dist-tag.
 6. Adding GitHub Actions branch and pull request CI.
 7. Adding GitHub Actions release automation for package publishing.
-8. Closing v0.2.0 as the Public Alpha Release with packages, docs, website,
+8. Finalizing alpha behavior and the public surface gate, including
+   `diagrampilot init --docs`, a website repository CTA, a quick install command
+   bar, and a full docs refinement and simplification pass.
+9. Closing v0.2.0 as the Public Alpha Release with packages, docs, website,
    release notes, and public surface checks aligned.
 
 Pre-alpha Issue Versions can be tagged before npm publishing is ready. The

@@ -97,6 +97,8 @@ After production DNS points at the Vercel project, the public surface should be:
 | Public docs index Markdown | `https://diagrampilot.com/docs/index.md` |
 | Checkout quickstart HTML | `https://diagrampilot.com/docs/agents/quickstart/` |
 | Checkout quickstart Markdown | `https://diagrampilot.com/docs/agents/quickstart.md` |
+| Installation and removal HTML | `https://diagrampilot.com/docs/agents/installation/` |
+| Installation and removal Markdown | `https://diagrampilot.com/docs/agents/installation.md` |
 | DiagramSpec HTML | `https://diagrampilot.com/docs/agents/spec/` |
 | DiagramSpec Markdown | `https://diagrampilot.com/docs/agents/spec.md` |
 | Agent entrypoint | `https://diagrampilot.com/llms.txt` |

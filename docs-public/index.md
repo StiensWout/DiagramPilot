@@ -14,6 +14,7 @@ Start with the Checkout Demo Project quickstart:
 
 Core public references:
 
+- [Installation and removal guide](agents/installation.md)
 - [DiagramSpec guide](agents/spec.md)
 - [Error repair guide](agents/error-repair.md)
 - [Agent examples](agents/examples.md)
@@ -37,8 +38,3 @@ Use `check` as the read-only repo review/CI command. `render` requires
 `--out`. `export` prints to stdout by default and writes a file only when
 `--out` is provided.
 
-## Brand Assets
-
-- [DiagramPilot wordmark](https://diagrampilot.com/brand/diagrampilot-logo.svg)
-- [DiagramPilot light wordmark](https://diagrampilot.com/brand/diagrampilot-logo-light.svg)
-- [DiagramPilot mark](https://diagrampilot.com/brand/diagrampilot-mark.svg)

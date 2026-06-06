@@ -22,8 +22,8 @@ v0.2.0 Public Alpha Release.
 - [x] A version consistency check fails when any public package version,
       internal dependency version, lockfile package version, or runtime
       DiagramPilot version drifts from the expected release version.
-- [x] The workflow documents that issues 55 through 61 are Pre-Alpha Releases
-      and issue 62 is the `0.2.0` Public Alpha Release.
+- [x] The workflow documents that issues 55 through 61 and issue 63 are
+      Pre-Alpha Releases and issue 62 is the `0.2.0` Public Alpha Release.
 - [x] The workflow documents that issue closeout includes a version bump,
       refreshed version-sensitive artifacts, validation results, and local
       issue status updates.

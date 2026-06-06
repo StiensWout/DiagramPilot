@@ -47,7 +47,7 @@ release notes, and public surface audit.
 
 ## Blocked by
 
-- [61 Add GitHub Actions release workflow](./61-add-github-actions-release-workflow.md)
+- [63 Finalize alpha behavior and public surface gate](./63-finalize-alpha-behavior-and-public-surface-gate.md)
 
 ## Validation plan
 

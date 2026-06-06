@@ -139,6 +139,11 @@ test("public docs sync can run concurrently without deleting current generated d
     true,
     "synced quickstart should remain present",
   );
+  assert.equal(
+    await exists("website/src/content/docs/docs/agents/installation.md"),
+    true,
+    "synced installation guide should remain present",
+  );
 });
 
 test("website publishes public docs as human HTML and agent Markdown routes", async () => {
@@ -180,6 +185,16 @@ test("website publishes public docs as human HTML and agent Markdown routes", as
     true,
     "Starlight should receive synced public Markdown during the build",
   );
+  assert.equal(
+    await exists("website/dist/docs/agents/installation/index.html"),
+    true,
+    "installation guide should publish as HTML",
+  );
+  assert.equal(
+    await exists("website/dist/docs/agents/installation.md"),
+    true,
+    "installation guide should publish as Markdown",
+  );
 });
 
 test("website docs pages use published DiagramPilot brand assets", async () => {
@@ -196,9 +211,6 @@ test("website docs pages use published DiagramPilot brand assets", async () => {
   );
   assert.match(html, /src="\/brand\/diagrampilot-logo\.svg"/);
   assert.match(html, /src="\/brand\/diagrampilot-logo-light\.svg"/);
-  assert.match(html, /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo\.svg/);
-  assert.match(html, /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo-light\.svg/);
-  assert.match(html, /https:\/\/diagrampilot\.com\/brand\/diagrampilot-mark\.svg/);
   assert.doesNotMatch(html, /href="\/favicon\.svg"/);
   assert.equal(await exists("website/dist/brand/diagrampilot-logo.svg"), true);
   assert.equal(await exists("website/dist/brand/diagrampilot-logo-light.svg"), true);

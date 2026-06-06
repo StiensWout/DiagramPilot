@@ -108,6 +108,8 @@ test("internal deployment guidance lists the stable public website URLs", async 
     "https://diagrampilot.com/docs/",
     "https://diagrampilot.com/docs/agents/quickstart/",
     "https://diagrampilot.com/docs/agents/quickstart.md",
+    "https://diagrampilot.com/docs/agents/installation/",
+    "https://diagrampilot.com/docs/agents/installation.md",
     "https://diagrampilot.com/docs/agents/spec/",
     "https://diagrampilot.com/docs/agents/spec.md",
     "https://diagrampilot.com/llms.txt",
