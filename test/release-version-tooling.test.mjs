@@ -216,13 +216,15 @@ test("release version workflow documents issue versions and closeout requirement
   );
 
   assert.match(workflow, /55\s*\|\s*`0\.1\.1`\s*\|\s*Pre-Alpha Release/u);
-  assert.match(workflow, /61\s*\|\s*`0\.1\.7`\s*\|\s*Pre-Alpha Release/u);
+  assert.match(workflow, /61\s*\|\s*`0\.1\.8`\s*\|\s*Pre-Alpha Release/u);
+  assert.match(workflow, /63\s*\|\s*`0\.1\.9`\s*\|\s*Pre-Alpha Release/u);
   assert.match(
     workflow,
     /Issue 62 is `0\.2\.0`, the first Public Alpha Release/u,
   );
   assert.match(workflow, /node scripts\/bump-release-version\.mjs <issue-version>/u);
   assert.match(workflow, /node scripts\/check-release-version\.mjs/u);
+  assert.match(workflow, /npm run check:package-publish-state -- --expect prealpha/u);
   assert.match(workflow, /render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/u);
   assert.match(workflow, /validation results/u);
   assert.match(workflow, /Status: completed/u);

@@ -1,5 +1,5 @@
 Status: ready-for-agent
-Issue Version: 0.1.7
+Issue Version: 0.1.8
 
 # Add GitHub Actions release workflow
 

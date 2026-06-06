@@ -1,6 +1,6 @@
 {
   "name": "@diagrampilot/website",
-  "version": "0.1.2",
+  "version": "0.1.6",
   "private": true,
   "type": "module",
   "license": "MIT",

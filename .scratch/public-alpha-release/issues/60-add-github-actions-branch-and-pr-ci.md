@@ -1,5 +1,5 @@
 Status: ready-for-agent
-Issue Version: 0.1.6
+Issue Version: 0.1.7
 
 # Add GitHub Actions branch and PR CI
 

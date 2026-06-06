@@ -1,5 +1,5 @@
 Status: ready-for-agent
-Issue Version: 0.1.8
+Issue Version: 0.1.9
 
 # Finalize alpha behavior and public surface gate
 

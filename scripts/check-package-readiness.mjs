@@ -12,6 +12,7 @@ const REQUIRED_FILES = [
   "dist/**/*.js",
   "dist/**/*.js.map",
   "LICENSE",
+  "README.md",
 ];
 const REQUIRED_KEYWORDS = ["diagrampilot", "diagramspec", "diagram"];
 const PUBLIC_PACKAGE_SET = [
@@ -19,6 +20,9 @@ const PUBLIC_PACKAGE_SET = [
     name: "diagrampilot",
     repoPath: "packages/cli/package.json",
     directory: "packages/cli",
+    bin: {
+      diagrampilot: "dist/index.js",
+    },
   },
   {
     name: "@diagrampilot/core",
@@ -57,7 +61,7 @@ const PRIVATE_WORKSPACES = [
   },
 ];
 const ALLOWED_TARBALL_FILE_PATTERN =
-  /^(?:package\.json|LICENSE|dist\/.+\.(?:d\.ts|d\.ts\.map|js|js\.map))$/u;
+  /^(?:package\.json|LICENSE|README\.md|dist\/.+\.(?:d\.ts|d\.ts\.map|js|js\.map))$/u;
 const FORBIDDEN_TARBALL_FILE_PATTERNS = [
   /^\.scratch\//u,
   /^CONTEXT\.md$/u,
@@ -82,6 +86,14 @@ function readJson(rootPath, repoPath) {
 
 function sortedJson(values) {
   return JSON.stringify([...values].sort());
+}
+
+function sortedObjectJson(value) {
+  return JSON.stringify(
+    Object.fromEntries(Object.entries(value ?? {}).sort(([left], [right]) => {
+      return left.localeCompare(right);
+    })),
+  );
 }
 
 function collectPrivateWorkspaceIssues(rootPath) {
@@ -172,7 +184,16 @@ function collectPublicPackageMetadataIssues(rootPath) {
 
     if (sortedJson(manifest.files ?? []) !== sortedJson(REQUIRED_FILES)) {
       issues.push(
-        `${packageRecord.repoPath} files must publish dist JS/types, maps, and LICENSE only.`,
+        `${packageRecord.repoPath} files must publish dist JS/types, maps, LICENSE, and README.md only.`,
+      );
+    }
+
+    if (
+      packageRecord.bin !== undefined &&
+      sortedObjectJson(manifest.bin) !== sortedObjectJson(packageRecord.bin)
+    ) {
+      issues.push(
+        `${packageRecord.repoPath} bin must publish the diagrampilot executable without npm manifest auto-correction.`,
       );
     }
   }
@@ -236,7 +257,13 @@ function collectTarballFileIssues(packageRecord, files) {
   const issues = [];
   const fileSet = new Set(files);
 
-  for (const requiredPath of ["package.json", "LICENSE", "dist/index.js", "dist/index.d.ts"]) {
+  for (const requiredPath of [
+    "package.json",
+    "LICENSE",
+    "README.md",
+    "dist/index.js",
+    "dist/index.d.ts",
+  ]) {
     if (!fileSet.has(requiredPath)) {
       issues.push(`${packageRecord.name} tarball must include ${requiredPath}.`);
     }

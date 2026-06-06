@@ -6,6 +6,14 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const publicPackageReadmes = [
+  ["diagrampilot", "packages/cli/README.md"],
+  ["@diagrampilot/core", "packages/core/README.md"],
+  ["@diagrampilot/icons", "packages/icons/README.md"],
+  ["@diagrampilot/export-mermaid", "packages/export-mermaid/README.md"],
+  ["@diagrampilot/export-d2", "packages/export-d2/README.md"],
+  ["@diagrampilot/render-svg", "packages/render-svg/README.md"],
+];
 
 function runPackageReadinessCheck() {
   return new Promise((resolve, reject) => {
@@ -46,6 +54,25 @@ test("package readiness check passes for release-ready public package metadata a
     result.stdout,
     "DiagramPilot package readiness checks passed for 6 public packages.\n",
   );
+});
+
+test("CLI package publishes the diagrampilot binary without npm manifest auto-correction", async () => {
+  const manifest = JSON.parse(
+    await readFile(path.join(repoRoot, "packages", "cli", "package.json"), "utf8"),
+  );
+
+  assert.deepEqual(manifest.bin, {
+    diagrampilot: "dist/index.js",
+  });
+});
+
+test("public packages publish npm README files", async () => {
+  for (const [packageName, readmePath] of publicPackageReadmes) {
+    const readme = await readFile(path.join(repoRoot, readmePath), "utf8");
+
+    assert.match(readme, new RegExp(`# ${packageName.replace("/", "\\/")}`));
+    assert.match(readme, /https:\/\/diagrampilot\.com/);
+  }
 });
 
 test("repository entrypoints separate the MIT Code License from the Brand Use Policy", async () => {
