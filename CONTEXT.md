@@ -109,6 +109,13 @@ explicit files, commands, and validation expectations, while remaining readable
 to human maintainers.
 _Avoid_: Marketing copy, human-only tutorial, vague onboarding guide
 
+**Local Agent Documentation**:
+Project-owned documentation inside a consuming repository that gives AI coding
+agents repository-specific DiagramPilot guidance. It is distinct from Public
+Documentation and should be intentionally adopted rather than treated as package
+install output.
+_Avoid_: Package payload, vendor docs copied by default, generated artifact
+
 **Markdown-First Public Documentation**:
 Public Documentation authored as Markdown so it remains readable in the
 repository, directly editable by AI coding agents, and publishable to both

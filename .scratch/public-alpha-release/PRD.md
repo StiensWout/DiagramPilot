@@ -22,6 +22,13 @@ tagged, and the first clean package-ready pre-alpha should reserve npm names
 under a non-default dist-tag. The v0.2.0 release should be the first Public
 Alpha Release and publish the Public Package Set under `latest`.
 
+Before v0.2.0, DiagramPilot also needs one final behavior and public surface
+gate. Package install and normal initialization should not copy DiagramPilot
+agent docs into consuming repositories by default. The public website should
+make the install path and source repository easier to find. Public docs should
+get a full refinement and simplification pass before the alpha release is
+declared complete.
+
 Finally, DiagramPilot needs brand and repository hygiene. The uncommitted
 DiagramPilot Brand Assets should become canonical committed assets and be used
 where needed before release. Maintainer docs and planning trackers may remain
@@ -49,7 +56,11 @@ This phase will:
 6. Add GitHub Actions CI for branch and pull request validation.
 7. Add GitHub Actions release automation using npm trusted publishing where
    available.
-8. Close v0.2.0 as the first Public Alpha Release, with packages, docs,
+8. Finalize alpha behavior and public surface so `diagrampilot init` does not
+   install local agent docs by default, `diagrampilot init --docs` is the
+   explicit local agent docs path, the Public Website exposes a repository CTA
+   and quick install command bar, and docs pass a simplification gate.
+9. Close v0.2.0 as the first Public Alpha Release, with packages, docs,
    website, release notes, and public surface checks aligned.
 
 ## User Stories
@@ -84,6 +95,18 @@ This phase will:
 12. As a maintainer, I want Internal Documentation and planning trackers to stay
     committed for now but excluded from public release surfaces, so that project
     history remains available without confusing users.
+13. As a repository maintainer, I want package install and normal
+    `diagrampilot init` to avoid copying vendor agent docs into my repository,
+    so that my repo-owned `llms.txt` and docs stay under my control.
+14. As an AI coding agent setting up a repository, I want
+    `diagrampilot init --docs` when local DiagramPilot agent docs are
+    intentionally desired, so that support-file writes are explicit.
+15. As a developer landing on the website, I want an obvious quick install
+    command and GitHub repository button, so that I can try or inspect
+    DiagramPilot without hunting through docs.
+16. As a release maintainer, I want a full public docs refinement and
+    simplification pass before v0.2.0, so that the first alpha release is
+    coherent rather than just feature-complete.
 
 ## Implementation Decisions
 
@@ -92,7 +115,8 @@ This phase will:
 - Existing packages remain at the shared version until issue 55 adds the
   version bump workflow.
 - Every issue in this track has an Issue Version.
-- Issues 55 through 61 advance through `0.1.x` Pre-Alpha Releases.
+- Issues 55 through 61 and issue 63 advance through `0.1.x` Pre-Alpha
+  Releases.
 - Issue 62 closes as `0.2.0`, the first Public Alpha Release.
 - Do not use `0.2.0-alpha.N`; `0.2.0` itself is the first alpha milestone.
 - Tag Issue Versions as `v0.1.x` and `v0.2.0`.
@@ -126,8 +150,21 @@ This phase will:
 - Repository cleanup removes `diagrampilot:init` managed sections from
   `llms.txt` and `docs/diagrampilot.md`; deleting those files is optional only
   when DiagramPilot created them and they contain no other project content.
+- Package installation provides command availability only. It must not create
+  `llms.txt`, `docs/diagrampilot.md`, or any other local agent docs in a
+  consuming repository.
+- Normal `diagrampilot init` should not create local agent docs by default.
+- `diagrampilot init --docs` is the explicit path for creating or updating
+  managed local agent docs such as `llms.txt` and `docs/diagrampilot.md`.
 - Do not tell users to delete `*.dp.yaml`, SVGs, or exported artifacts by
   default, because adopted diagram files are project-owned.
+- The Public Website landing page should expose a copyable quick install
+  command bar for the canonical one-off command.
+- The Public Website landing page should include a GitHub repository button in
+  the CTA position that currently points at the Checkout Demo Project. The demo
+  remains available through Public Documentation.
+- A full Public Documentation, README, `llms.txt`, and website copy refinement
+  and simplification pass is required before v0.2.0 closeout.
 - Internal Documentation, ADRs, agent workflow docs, and `.scratch/` planning
   trackers may remain committed for now.
 - Internal Documentation, ADRs, agent workflow docs, and `.scratch/` planning
@@ -158,6 +195,13 @@ This phase will:
   and brand routes resolve from the built site.
 - Documentation tests should verify install and removal guidance includes
   supported paths and does not expose unverified package-manager equivalents.
+- CLI tests should verify `diagrampilot init` does not write local agent docs by
+  default and `diagrampilot init --docs` writes managed agent docs explicitly.
+- Website tests or visual checks should verify the landing page exposes the
+  GitHub repository button and quick install command bar.
+- Documentation boundary tests should verify the final docs refinement keeps
+  public release surfaces compact, current, and free of duplicated long-form
+  install sources.
 - CI tests should cover root build/tests, website build/tests, visual checks,
   schema drift, demo workflow checks, and npm package dry-run checks.
 - Release workflow tests should verify version/tag consistency and use dry-run
@@ -193,6 +237,7 @@ This phase will:
 - [59 Prove package publishing readiness and reserve npm names](./issues/59-prove-package-publishing-readiness-and-reserve-npm-names.md)
 - [60 Add GitHub Actions branch and PR CI](./issues/60-add-github-actions-branch-and-pr-ci.md)
 - [61 Add GitHub Actions release workflow](./issues/61-add-github-actions-release-workflow.md)
+- [63 Finalize alpha behavior and public surface gate](./issues/63-finalize-alpha-behavior-and-public-surface-gate.md)
 - [62 Close v0.2.0 Public Alpha Release](./issues/62-close-v0-2-0-public-alpha-release.md)
 
 ## Validation Plan
@@ -200,6 +245,6 @@ This phase will:
 ```bash
 find .scratch -path '*/issues/[0-9][0-9]-*.md' -type f | sed -E 's#^.*issues/([0-9]+)-.*#\1 #' | sort -n | uniq -d
 rg -n "Public Alpha Release|Issue Version|Public Package Set|Package Publishing Readiness|Brand Use Policy" CONTEXT.md .scratch/public-alpha-release docs/development/roadmap.md
-rg -n "55-add-release-version-tooling|62-close-v0-2-0-public-alpha-release" .scratch/public-alpha-release/PRD.md
+rg -n "55-add-release-version-tooling|63-finalize-alpha-behavior|62-close-v0-2-0-public-alpha-release" .scratch/public-alpha-release/PRD.md
 git diff --check
 ```

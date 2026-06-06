@@ -13,10 +13,10 @@ instructions, or configured context providers without requiring copied vendor
 docs in the repo.
 
 The current `diagrampilot init` support-file behavior is historical MVP
-scaffolding and should not be treated as the long-term install path. A future
-product slice should make normal initialization avoid local agent docs by
-default. This ADR intentionally does not choose a new flag, mode name, or
-explicit opt-in command shape yet.
+scaffolding and should not be treated as the long-term install path. Normal
+`diagrampilot init` should avoid local agent docs by default.
+`diagrampilot init --docs` is the explicit path for creating or updating
+managed local agent docs.
 
 Repository cleanup docs should continue to explain how to remove existing
 `diagrampilot:init` managed sections, because users may already have support

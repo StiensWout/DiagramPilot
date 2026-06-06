@@ -173,18 +173,11 @@ This track covers:
    pre-alpha publish under the `prealpha` dist-tag.
 6. Adding GitHub Actions branch and pull request CI.
 7. Adding GitHub Actions release automation for package publishing.
-8. Closing v0.2.0 as the Public Alpha Release with packages, docs, website,
+8. Finalizing alpha behavior and the public surface gate, including
+   `diagrampilot init --docs`, a website repository CTA, a quick install command
+   bar, and a full docs refinement and simplification pass.
+9. Closing v0.2.0 as the Public Alpha Release with packages, docs, website,
    release notes, and public surface checks aligned.
-
-### Post-Alpha Product Backlog
-
-After the public alpha release, revisit `diagrampilot init` so normal
-initialization does not create local agent documentation such as `llms.txt` or
-`docs/diagrampilot.md` by default. Package install should provide command
-availability only, while agents use `https://diagrampilot.com/llms.txt`, Public
-Documentation, repository instructions, or configured context providers for
-DiagramPilot guidance. ADR 0009 records this direction without choosing an
-explicit opt-in command shape yet.
 
 Pre-alpha Issue Versions can be tagged before npm publishing is ready. The
 first package-ready pre-alpha publish uses the `prealpha` npm dist-tag, and

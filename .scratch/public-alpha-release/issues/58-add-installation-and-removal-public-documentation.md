@@ -71,9 +71,8 @@ git diff --check
   DiagramPilot agent docs such as `llms.txt` or `docs/diagrampilot.md`; agents
   can use the hosted `llms.txt`, Public Documentation, repo instructions, or
   configured context providers instead.
-- Added ADR 0009 and a roadmap backlog entry for changing normal
-  `diagrampilot init` behavior later without choosing an explicit opt-in shape
-  in this issue.
+- Added ADR 0009 and later updated it to record `diagrampilot init --docs` as
+  the explicit local agent docs path owned by issue 63.
 - Linked the guide from README, `llms.txt`, Public Documentation index, landing
   CTAs, AGENTS public docs inventory, and internal public route inventories.
 - Added tests for the canonical guide content, links, route publication, and

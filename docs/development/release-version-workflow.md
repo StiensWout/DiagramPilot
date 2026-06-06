@@ -5,7 +5,7 @@ issue closeout in the Public Alpha Release track.
 
 ## Issue Version Schedule
 
-Issues 55 through 61 are Pre-Alpha Releases:
+Issues 55 through 61 and issue 63 are Pre-Alpha Releases:
 
 | Issue | Issue Version | Release type |
 | --- | --- | --- |
@@ -16,6 +16,7 @@ Issues 55 through 61 are Pre-Alpha Releases:
 | 59 | `0.1.5` | Pre-Alpha Release |
 | 60 | `0.1.6` | Pre-Alpha Release |
 | 61 | `0.1.7` | Pre-Alpha Release |
+| 63 | `0.1.8` | Pre-Alpha Release |
 
 Issue 62 is `0.2.0`, the first Public Alpha Release.
 
