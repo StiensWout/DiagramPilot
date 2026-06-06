@@ -8,6 +8,13 @@ Those files are not required to use DiagramPilot. Agents can read
 `https://diagrampilot.com/llms.txt`, the public docs, repository instructions,
 or other configured context providers instead.
 
+Normal `diagrampilot init` does not create or update local agent docs.
+`diagrampilot init --docs` creates or updates the managed local agent docs in
+`llms.txt` and `docs/diagrampilot.md`.
+
+Use `diagrampilot init --docs` only when the repository intentionally wants
+managed local agent docs checked into the project.
+
 Do not copy DiagramPilot public docs into a consuming repository as part of
 installation. Keep repository docs for project-owned guidance.
 

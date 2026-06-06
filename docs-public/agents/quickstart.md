@@ -180,6 +180,7 @@ Agent rules:
 
 ```bash
 diagrampilot init
+diagrampilot init --docs
 diagrampilot check
 diagrampilot check demo-projects/checkout --json
 diagrampilot validate docs/architecture.dp.yaml
@@ -189,9 +190,11 @@ diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
 ```
 
-`diagrampilot init`
-: Creates or updates DiagramPilot support files only. It does not scan the
-codebase or generate a diagram by default.
+`diagrampilot init` does not create or update `llms.txt` or `docs/diagrampilot.md` by default.
+It does not scan the codebase or generate a diagram.
+
+`diagrampilot init --docs`
+: Creates or updates the managed local agent docs. Use `diagrampilot init --docs` only when the repository intentionally wants managed local agent docs.
 
 `diagrampilot check [path]`
 : Read-only repo review/CI command. Discovers DiagramPilot source files in the

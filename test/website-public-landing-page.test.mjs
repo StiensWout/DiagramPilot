@@ -119,9 +119,13 @@ test("public landing page presents generated product visuals", async () => {
     html,
     /class="eyebrow">\s*Repo-native diagram compiler for AI coding agents\s*<\/p>/,
   );
-  assert.match(html, /Checkout Demo Project/);
+  assert.match(html, /GitHub repository/);
+  assert.match(html, /href="https:\/\/github\.com\/StiensWout\/DiagramPilot"/);
   assert.match(html, /href="\/docs\/agents\/quickstart\/"/);
   assert.match(html, /href="\/docs\/"/);
+  assert.match(html, /npx diagrampilot check/);
+  assert.match(html, /class="quick-command"/);
+  assert.match(html, /data-copy-command="npx diagrampilot check"/);
   assert.match(
     html,
     /aria-label="DiagramPilot source, validation, and rendered output workflow"/,

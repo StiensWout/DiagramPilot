@@ -143,9 +143,22 @@ test("diagrampilot executable starts and reports its version", async () => {
   assert.equal(result.stdout, `diagrampilot ${getDiagramPilotVersion()}\n`);
 });
 
-test("diagrampilot init creates adoption support files without generating diagrams", async () => {
+test("diagrampilot init does not install local agent docs by default", async () => {
   await withTempRepo(async (tempRoot) => {
     const result = await runBuiltCli(["init"], tempRoot);
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.match(result.stdout, /Local agent docs were not installed/);
+    assert.match(result.stdout, /Run `diagrampilot init --docs`/);
+    assert.deepEqual(await readdir(tempRoot), []);
+  });
+});
+
+test("diagrampilot init --docs creates adoption support files without generating diagrams", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const result = await runBuiltCli(["init", "--docs"], tempRoot);
 
     assert.equal(result.signal, null);
     assert.equal(result.code, 0, result.stderr);
@@ -189,7 +202,7 @@ test("diagrampilot init creates adoption support files without generating diagra
   });
 });
 
-test("diagrampilot init preserves existing support-file content and is idempotent", async () => {
+test("diagrampilot init --docs preserves existing support-file content and is idempotent", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });
     await writeFile(
@@ -203,8 +216,8 @@ test("diagrampilot init preserves existing support-file content and is idempoten
       "utf8",
     );
 
-    const firstRun = await runBuiltCli(["init"], tempRoot);
-    const secondRun = await runBuiltCli(["init"], tempRoot);
+    const firstRun = await runBuiltCli(["init", "--docs"], tempRoot);
+    const secondRun = await runBuiltCli(["init", "--docs"], tempRoot);
 
     assert.equal(firstRun.code, 0, firstRun.stderr);
     assert.equal(secondRun.code, 0, secondRun.stderr);
@@ -221,6 +234,19 @@ test("diagrampilot init preserves existing support-file content and is idempoten
     assert.match(guideText, /Keep this local rendering convention/);
     assert.equal(occurrenceCount(llmsText, /diagrampilot:init:start/g), 1);
     assert.equal(occurrenceCount(guideText, /diagrampilot:init:start/g), 1);
+  });
+});
+
+test("diagrampilot init rejects unknown options without writing support files", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const result = await runBuiltCli(["init", "--doc"], tempRoot);
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(result.stderr, /Unknown init option: --doc/);
+    assert.match(result.stderr, /Usage: diagrampilot init \[--docs\]/);
+    assert.deepEqual(await readdir(tempRoot), []);
   });
 });
 

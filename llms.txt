@@ -10,6 +10,10 @@ outputs.
 
 Public documentation is hosted under `https://diagrampilot.com`.
 
+Package install does not create local agent docs.
+Normal `diagrampilot init` does not create local agent docs.
+`diagrampilot init --docs` is opt-in for managed repository guidance.
+
 ## Public Documentation
 
 - [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md): Canonical beginner workflow for repo checks, source repair, SVG refresh, exports, and copying the source/render pattern into another repository.

@@ -23,7 +23,7 @@ export async function run(
   const [firstArg] = args;
 
   if (firstArg === "init") {
-    return runInit(streams);
+    return runInit(args.slice(1), streams);
   }
 
   return executeCommandPlan(await planCommand(args), streams);
