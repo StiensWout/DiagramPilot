@@ -330,9 +330,8 @@ test("canonical public install and removal guidance is complete and linked", asy
       "npx diagrampilot check",
       "npm install --save-dev diagrampilot",
       "npm install --global diagrampilot",
-      "0.1.x packages are pre-alpha",
-      "prealpha",
-      "0.2.0",
+      "DiagramPilot `0.2.0` is the first Public Alpha Release.",
+      "npm `latest` release",
       "pnpm dlx diagrampilot check",
       "pnpm add -D diagrampilot",
       "yarn dlx diagrampilot check",
@@ -368,6 +367,7 @@ test("canonical public install and removal guidance is complete and linked", asy
     /Do not copy DiagramPilot public docs into a consuming repository as part of\s+installation/i,
   );
   assert.doesNotMatch(installationGuide, /npm run build|packages\/cli\/dist/);
+  assert.doesNotMatch(installationGuide, /prealpha|preparing `0\.2\.0`/i);
 
   for (const [label, source] of [
     ["README.md", readme],

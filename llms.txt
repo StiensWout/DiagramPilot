@@ -29,4 +29,6 @@ Normal `diagrampilot init` does not create local agent docs.
 - [DiagramPilot wordmark](https://diagrampilot.com/brand/diagrampilot-logo.svg): Official wordmark for light surfaces where the full DiagramPilot name remains legible.
 - [DiagramPilot light wordmark](https://diagrampilot.com/brand/diagrampilot-logo-light.svg): Official light-text wordmark for dark surfaces where the full DiagramPilot name remains legible.
 - [DiagramPilot mark](https://diagrampilot.com/brand/diagrampilot-mark.svg): Official mark for favicon and icon-sized placements.
+- [MIT Code License](https://github.com/StiensWout/DiagramPilot/blob/main/LICENSE): License for DiagramPilot code and repository materials.
+- [Brand Use Policy](https://github.com/StiensWout/DiagramPilot/blob/main/BRAND_USE_POLICY.md): Policy for the DiagramPilot name, mark, wordmark, domain, and official release identity.
 - [GitHub repository](https://github.com/StiensWout/DiagramPilot): Source repository.

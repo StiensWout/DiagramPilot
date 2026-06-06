@@ -106,3 +106,24 @@ process.stdout.write(JSON.stringify({ prealpha: "${workspaceManifest.version}" }
     );
   });
 });
+
+test("package publish-state check accepts latest public release publication", async () => {
+  const workspaceManifest = JSON.parse(
+    await readFile(path.join(repoRoot, "package.json"), "utf8"),
+  );
+  const fakeNpm = `#!/usr/bin/env node
+process.stdout.write(JSON.stringify({ latest: "${workspaceManifest.version}" }) + "\\n");
+`;
+
+  await withFakeNpm(fakeNpm, async ({ env }) => {
+    const result = await runPublishStateCheck(["--expect", "latest"], env);
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.equal(
+      result.stdout,
+      `DiagramPilot npm publish-state check passed: 6 packages publish ${workspaceManifest.version} under latest.\n`,
+    );
+  });
+});

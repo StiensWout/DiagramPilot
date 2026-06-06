@@ -20,10 +20,9 @@ installation. Keep repository docs for project-owned guidance.
 
 ## Release Status
 
-DiagramPilot is preparing `0.2.0` as the first Public Alpha Release. If `0.1.x`
-packages are discoverable on npm, `0.1.x packages are pre-alpha` packages used
-to prove package publishing under the `prealpha` dist-tag before the public
-alpha release.
+DiagramPilot `0.2.0` is the first Public Alpha Release. The install commands
+below use the current npm `latest` release unless a consuming repository pins a
+specific package version.
 
 ## One-Off Use
 
