@@ -225,6 +225,24 @@ test("public entrypoints expose canonical DiagramPilot Brand Assets", async () =
     llmsText,
     /https:\/\/diagrampilot\.com\/brand\/diagrampilot-mark\.svg/,
   );
+  assert.match(readme, /\[MIT Code License]\(LICENSE\)/);
+  assert.match(readme, /\[Brand Use Policy]\(BRAND_USE_POLICY\.md\)/);
+  assert.match(
+    publicDocsIndex,
+    /https:\/\/github\.com\/StiensWout\/DiagramPilot\/blob\/main\/LICENSE/,
+  );
+  assert.match(
+    publicDocsIndex,
+    /https:\/\/github\.com\/StiensWout\/DiagramPilot\/blob\/main\/BRAND_USE_POLICY\.md/,
+  );
+  assert.match(
+    llmsText,
+    /https:\/\/github\.com\/StiensWout\/DiagramPilot\/blob\/main\/LICENSE/,
+  );
+  assert.match(
+    llmsText,
+    /https:\/\/github\.com\/StiensWout\/DiagramPilot\/blob\/main\/BRAND_USE_POLICY\.md/,
+  );
   assert.match(brandUsePolicy, /assets\/brand\/diagrampilot-logo\.svg/);
   assert.match(brandUsePolicy, /assets\/brand\/diagrampilot-mark\.svg/);
 

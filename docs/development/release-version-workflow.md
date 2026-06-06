@@ -135,6 +135,13 @@ workflow still runs validation and package publish dry-runs. After setup,
 trusted `issue-*` branch pushes publish `nightly`, pull requests stay dry-run
 only, and trusted `main` pushes publish `latest`.
 
+After a clean public release publishes under `latest`, verify all Public
+Package Set dist-tags point at the shared workspace version:
+
+```bash
+npm run check:package-publish-state -- --expect latest
+```
+
 Configure a trusted publisher in npm for each package in the Public Package Set
 with repository `StiensWout/DiagramPilot`, workflow
 `.github/workflows/release.yml`, and the package's public name:

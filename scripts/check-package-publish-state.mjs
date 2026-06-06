@@ -20,11 +20,11 @@ function parseArgs(argv) {
 
   const expectedState = argv[expectIndex + 1];
 
-  if (!["available", "prealpha"].includes(expectedState)) {
+  if (!["available", "prealpha", "latest"].includes(expectedState)) {
     return {
       issues: [
         `Unsupported expected publish state ${expectedState ?? "<missing>"}.`,
-        "Usage: node scripts/check-package-publish-state.mjs --expect <available|prealpha>",
+        "Usage: node scripts/check-package-publish-state.mjs --expect <available|prealpha|latest>",
       ],
     };
   }
@@ -118,6 +118,29 @@ function collectPrealphaStateIssues(expectedVersion) {
   return issues;
 }
 
+function collectLatestStateIssues(expectedVersion) {
+  const issues = [];
+
+  for (const packageName of PUBLIC_PACKAGE_SET) {
+    const result = runNpmView(packageName);
+    const { distTags, issues: packageIssues } = parseDistTags(packageName, result);
+
+    issues.push(...packageIssues);
+
+    if (distTags === undefined) {
+      continue;
+    }
+
+    if (distTags.latest !== expectedVersion) {
+      issues.push(
+        `${packageName} latest dist-tag is ${distTags.latest ?? "<missing>"}; expected ${expectedVersion}.`,
+      );
+    }
+  }
+
+  return issues;
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
 
@@ -130,7 +153,9 @@ function main() {
   const issues =
     args.expectedState === "prealpha"
       ? collectPrealphaStateIssues(expectedVersion)
-      : collectAvailableStateIssues();
+      : args.expectedState === "latest"
+        ? collectLatestStateIssues(expectedVersion)
+        : collectAvailableStateIssues();
 
   if (issues.length > 0) {
     process.stderr.write(
@@ -145,6 +170,13 @@ function main() {
   if (args.expectedState === "prealpha") {
     process.stdout.write(
       `DiagramPilot npm publish-state check passed: ${PUBLIC_PACKAGE_SET.length} packages publish ${expectedVersion} under prealpha and latest is not moved.\n`,
+    );
+    return 0;
+  }
+
+  if (args.expectedState === "latest") {
+    process.stdout.write(
+      `DiagramPilot npm publish-state check passed: ${PUBLIC_PACKAGE_SET.length} packages publish ${expectedVersion} under latest.\n`,
     );
     return 0;
   }
