@@ -1,0 +1,121 @@
+name: Release
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+      - "issue-*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  release:
+    name: Validate and publish packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: "true"
+      FORCE_COLOR: "0"
+      NO_COLOR: "1"
+      DIAGRAMPILOT_NPM_PUBLISH_ENABLED: ${{ vars.DIAGRAMPILOT_NPM_PUBLISH_ENABLED }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Use workspace npm version
+        run: npm install --global npm@11.16.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify shared release version metadata
+        run: npm run check:release-version
+
+      - name: Build workspace
+        run: npm run build
+
+      - name: Run root test suite
+        run: npm test
+
+      - name: Check DiagramSpec schema drift
+        run: |
+          npm run generate:schema
+          git diff --exit-code -- schema/diagramspec-v1.schema.json
+
+      - name: Build website
+        run: npm --workspace website run build
+
+      - name: Run website tests
+        run: npm --workspace website run test
+
+      - name: Verify checkout demo workflow
+        run: |
+          cd demo-projects/checkout
+          node ../../packages/cli/dist/index.js render docs/architecture.dp.yaml --out docs/architecture.svg
+          node ../../packages/cli/dist/index.js check
+          cd ../..
+          git diff --exit-code -- demo-projects/checkout/docs/architecture.svg
+
+      - name: Check public package readiness
+        run: npm run check:package-readiness
+
+      - name: Plan release publish channel
+        id: release-plan
+        run: node scripts/plan-release-publish.mjs --github-output
+
+      - name: Prepare nightly package metadata
+        if: env.RELEASE_DIST_TAG == 'nightly'
+        run: |
+          node scripts/bump-release-version.mjs "$RELEASE_PUBLISH_VERSION"
+          npm run build
+
+      - name: Verify publish version metadata
+        run: npm run check:release-version -- "$RELEASE_PUBLISH_VERSION"
+
+      - name: Check publish package readiness
+        run: npm run check:package-readiness
+
+      - name: Verify package publish dry-run
+        run: |
+          packages=(
+            "diagrampilot"
+            "@diagrampilot/core"
+            "@diagrampilot/icons"
+            "@diagrampilot/export-mermaid"
+            "@diagrampilot/export-d2"
+            "@diagrampilot/render-svg"
+          )
+
+          for workspace in "${packages[@]}"; do
+            npm publish --dry-run --workspace "$workspace" --tag "$RELEASE_DIST_TAG" --access public
+          done
+
+      - name: Publish public packages
+        if: env.RELEASE_SHOULD_PUBLISH == 'true'
+        run: |
+          packages=(
+            "diagrampilot"
+            "@diagrampilot/core"
+            "@diagrampilot/icons"
+            "@diagrampilot/export-mermaid"
+            "@diagrampilot/export-d2"
+            "@diagrampilot/render-svg"
+          )
+
+          for workspace in "${packages[@]}"; do
+            npm publish --workspace "$workspace" --tag "$RELEASE_DIST_TAG" --access public
+          done

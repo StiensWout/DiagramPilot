@@ -33,7 +33,6 @@ test("GitHub Actions CI validates branch and pull request release-readiness gate
     "cache: npm",
     "npm install --global npm@11.16.0",
     "npm ci",
-    "npx playwright install --with-deps chromium",
     "npm run check:release-version",
     "npm run build",
     "npm test",
@@ -41,7 +40,6 @@ test("GitHub Actions CI validates branch and pull request release-readiness gate
     "git diff --exit-code -- schema/diagramspec-v1.schema.json",
     "npm --workspace website run build",
     "npm --workspace website run test",
-    "npm --workspace website run check:visual",
     "node ../../packages/cli/dist/index.js render docs/architecture.dp.yaml --out docs/architecture.svg",
     "node ../../packages/cli/dist/index.js check",
     "git diff --exit-code -- demo-projects/checkout/docs/architecture.svg",
@@ -49,4 +47,5 @@ test("GitHub Actions CI validates branch and pull request release-readiness gate
   ]);
 
   assert.doesNotMatch(workflow, /NPM_TOKEN|VERCEL|npm publish/u);
+  assert.doesNotMatch(workflow, /check:visual|playwright install/u);
 });

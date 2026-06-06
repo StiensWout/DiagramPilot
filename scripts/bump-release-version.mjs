@@ -9,7 +9,8 @@ const DEPENDENCY_FIELDS = [
   "optionalDependencies",
 ];
 const VERSION_SOURCE_PATH = "packages/core/src/version.ts";
-const RELEASE_VERSION_PATTERN = /^\d+\.\d+\.\d+$/u;
+const RELEASE_VERSION_PATTERN =
+  /^\d+\.\d+\.\d+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?$/u;
 
 function readJson(filePath) {
   return JSON.parse(readFileSync(filePath, "utf8"));

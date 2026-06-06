@@ -19,8 +19,12 @@ only local source-checkout invocation.
 DiagramPilot also needs release discipline before public alpha. Each remaining
 issue before v0.2.0 should be an Issue Version. Pre-alpha versions may be
 tagged, and the first clean package-ready pre-alpha should reserve npm names
-under a non-default dist-tag. The v0.2.0 release should be the first Public
-Alpha Release and publish the Public Package Set under `latest`.
+under a non-default dist-tag. After names are reserved, release automation
+should publish trusted issue branch builds under `nightly` with unique
+prerelease versions, keep pull request runs as validation and dry-run only,
+then publish merged release builds from `main` under `latest`. The v0.2.0
+release should be the first Public Alpha Release and publish the Public Package
+Set under `latest`.
 
 Before v0.2.0, DiagramPilot also needs one final behavior and public surface
 gate. Package install and normal initialization should not copy DiagramPilot
@@ -55,7 +59,9 @@ This phase will:
    reserve npm names with a pre-alpha publish under the `prealpha` dist-tag.
 6. Add GitHub Actions CI for branch and pull request validation.
 7. Add GitHub Actions release automation using npm trusted publishing where
-   available.
+   available, publishing trusted issue branch builds under `nightly`, keeping
+   pull request runs dry-run only, and publishing merged `main` release builds
+   under `latest`.
 8. Finalize alpha behavior and public surface so `diagrampilot init` does not
    install local agent docs by default, `diagrampilot init --docs` is the
    explicit local agent docs path, the Public Website exposes a repository CTA
@@ -92,19 +98,26 @@ This phase will:
 11. As a release maintainer, I want package publishing to use trusted
     publishing rather than long-lived npm tokens where possible, so that future
     releases have lower credential risk.
-12. As a maintainer, I want Internal Documentation and planning trackers to stay
+12. As a contributor, I want issue branch package builds published under
+    `nightly`, so that integration testing can use real npm packages before a
+    merge changes the public release channel without double-publishing the pull
+    request validation run.
+13. As a release maintainer, I want merges to `main` to publish the clean
+    shared version under `latest`, so that the default npm install path follows
+    reviewed release commits.
+14. As a maintainer, I want Internal Documentation and planning trackers to stay
     committed for now but excluded from public release surfaces, so that project
     history remains available without confusing users.
-13. As a repository maintainer, I want package install and normal
+15. As a repository maintainer, I want package install and normal
     `diagrampilot init` to avoid copying vendor agent docs into my repository,
     so that my repo-owned `llms.txt` and docs stay under my control.
-14. As an AI coding agent setting up a repository, I want
+16. As an AI coding agent setting up a repository, I want
     `diagrampilot init --docs` when local DiagramPilot agent docs are
     intentionally desired, so that support-file writes are explicit.
-15. As a developer landing on the website, I want an obvious quick install
+17. As a developer landing on the website, I want an obvious quick install
     command and GitHub repository button, so that I can try or inspect
     DiagramPilot without hunting through docs.
-16. As a release maintainer, I want a full public docs refinement and
+18. As a release maintainer, I want a full public docs refinement and
     simplification pass before v0.2.0, so that the first alpha release is
     coherent rather than just feature-complete.
 
@@ -125,6 +138,15 @@ This phase will:
   package name ownership, and CI checks are ready.
 - After Package Publishing Readiness, publish the first clean pre-alpha package
   set under the `prealpha` dist-tag to reserve package names.
+- Release Automation publishes trusted `issue-*` branch builds under the
+  `nightly` dist-tag.
+- Pull request release workflow runs validate and perform npm publish dry-runs
+  only; they do not publish real npm package versions.
+- Nightly publishes must use unique npm prerelease versions derived from the
+  shared Issue Version plus CI identity, because npm package versions are
+  immutable and the clean merged version must remain available for `latest`.
+- Release Automation publishes merged `main` release builds under the `latest`
+  dist-tag.
 - Publish v0.2.0 under the `latest` dist-tag.
 - The Public Package Set is `diagrampilot`, `@diagrampilot/core`,
   `@diagrampilot/icons`, `@diagrampilot/export-mermaid`,
@@ -176,8 +198,8 @@ This phase will:
   reason exists.
 - The Public Website remains static and deployed separately through the Vercel
   path already documented for the website.
-- Release Automation publishes packages; Vercel handles the Public Website
-  production deployment path.
+- Release Automation publishes packages to npm; Vercel handles the Public
+  Website production deployment path.
 
 ## Testing Decisions
 
@@ -202,10 +224,13 @@ This phase will:
 - Documentation boundary tests should verify the final docs refinement keeps
   public release surfaces compact, current, and free of duplicated long-form
   install sources.
-- CI tests should cover root build/tests, website build/tests, visual checks,
-  schema drift, demo workflow checks, and npm package dry-run checks.
-- Release workflow tests should verify version/tag consistency and use dry-run
-  or guarded paths before a real publish.
+- CI tests should cover root build/tests, website build/tests, schema drift,
+  demo workflow checks, and npm package dry-run checks. Website visual checks
+  remain local/manual validation because GitHub-hosted runners can produce
+  runner-specific font-cache noise.
+- Release workflow tests should verify version/tag consistency, `nightly`
+  prerelease version uniqueness, `latest` publishing only from merged `main`
+  release builds, and dry-run or guarded paths before a real publish.
 - Final release validation should include npm package metadata, GitHub release
   notes, website route checks, public docs route checks, and public surface
   checks.
