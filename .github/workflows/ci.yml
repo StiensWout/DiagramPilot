@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+      - "issue-*"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Release readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: "true"
+      FORCE_COLOR: "0"
+      NO_COLOR: "1"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Use workspace npm version
+        run: npm install --global npm@11.16.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify release version metadata
+        run: npm run check:release-version
+
+      - name: Build workspace
+        run: npm run build
+
+      - name: Run root test suite
+        run: npm test
+
+      - name: Check DiagramSpec schema drift
+        run: |
+          npm run generate:schema
+          git diff --exit-code -- schema/diagramspec-v1.schema.json
+
+      - name: Build website
+        run: npm --workspace website run build
+
+      - name: Run website tests
+        run: npm --workspace website run test
+
+      - name: Verify checkout demo workflow
+        run: |
+          cd demo-projects/checkout
+          node ../../packages/cli/dist/index.js render docs/architecture.dp.yaml --out docs/architecture.svg
+          node ../../packages/cli/dist/index.js check
+          cd ../..
+          git diff --exit-code -- demo-projects/checkout/docs/architecture.svg
+
+      - name: Check public package readiness
+        run: npm run check:package-readiness
