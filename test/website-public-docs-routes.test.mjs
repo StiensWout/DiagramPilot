@@ -139,6 +139,11 @@ test("public docs sync can run concurrently without deleting current generated d
     true,
     "synced quickstart should remain present",
   );
+  assert.equal(
+    await exists("website/src/content/docs/docs/agents/installation.md"),
+    true,
+    "synced installation guide should remain present",
+  );
 });
 
 test("website publishes public docs as human HTML and agent Markdown routes", async () => {
@@ -179,6 +184,16 @@ test("website publishes public docs as human HTML and agent Markdown routes", as
     await exists("website/src/content/docs/docs/agents/quickstart.md"),
     true,
     "Starlight should receive synced public Markdown during the build",
+  );
+  assert.equal(
+    await exists("website/dist/docs/agents/installation/index.html"),
+    true,
+    "installation guide should publish as HTML",
+  );
+  assert.equal(
+    await exists("website/dist/docs/agents/installation.md"),
+    true,
+    "installation guide should publish as Markdown",
   );
 });
 

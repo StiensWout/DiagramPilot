@@ -8,6 +8,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 
 const publicAgentDocs = [
   "quickstart.md",
+  "installation.md",
   "spec.md",
   "error-repair.md",
   "examples.md",
@@ -114,9 +115,11 @@ test("repository guidance separates public docs from internal maintainer docs", 
   const agentGuide = await readFile(path.join(repoRoot, "AGENTS.md"), "utf8");
 
   assert.match(agentGuide, /docs-public\/agents\/quickstart\.md/);
+  assert.match(agentGuide, /docs-public\/agents\/installation\.md/);
   assert.match(agentGuide, /docs-public\/agents\/spec\.md/);
   assert.match(agentGuide, /docs-public\/agents\/error-repair\.md/);
   assert.doesNotMatch(agentGuide, /docs\/agents\/quickstart\.md/);
+  assert.doesNotMatch(agentGuide, /docs\/agents\/installation\.md/);
   assert.doesNotMatch(agentGuide, /docs\/agents\/spec\.md/);
   assert.doesNotMatch(agentGuide, /docs\/agents\/error-repair\.md/);
 

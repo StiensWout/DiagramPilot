@@ -13,14 +13,19 @@ Public documentation is hosted at `https://diagrampilot.com`.
 
 ## Try DiagramPilot
 
+Install, run, or remove the package with the canonical public guide:
+
+- [Installation and removal guide](https://diagrampilot.com/docs/agents/installation.md)
+
 Start with the canonical Checkout Demo Project quickstart:
 
 - [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md)
 - Demo source file: `demo-projects/checkout/docs/architecture.dp.yaml`
 - Demo SVG artifact: `demo-projects/checkout/docs/architecture.svg`
 
-The examples below assume `diagrampilot` is available on `PATH`. In this
-repository, run `npm install` and `npm run build`; from
+The examples below assume `diagrampilot` is available on `PATH`. For
+contributor source checkouts of this repository, run `npm install` and
+`npm run build`; from
 `demo-projects/checkout`, use `node ../../packages/cli/dist/index.js` in place
 of `diagrampilot` if the binary is not linked.
 
@@ -58,6 +63,7 @@ other tooling. Core validation remains authoritative for semantic rules.
 ## Public Documentation
 
 - [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md)
+- [Installation and removal guide](https://diagrampilot.com/docs/agents/installation.md)
 - [DiagramSpec guide](https://diagrampilot.com/docs/agents/spec.md)
 - [Error repair guide](https://diagrampilot.com/docs/agents/error-repair.md)
 - [Agent examples](https://diagrampilot.com/docs/agents/examples.md)

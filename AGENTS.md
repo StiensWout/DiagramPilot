@@ -22,7 +22,8 @@ local files, review-stable rendering, readable specs, and repairable errors.
 ## Docs
 
 - Public: `LICENSE`, `BRAND_USE_POLICY.md`, `llms.txt`, `docs-public/index.md`,
-  `docs-public/agents/quickstart.md`, `docs-public/agents/spec.md`,
+  `docs-public/agents/quickstart.md`,
+  `docs-public/agents/installation.md`, `docs-public/agents/spec.md`,
   `docs-public/agents/error-repair.md`, `docs-public/agents/examples.md`,
   `docs-public/agents/prompting.md`.
 - Internal: `CONTEXT.md`, `docs/development/documentation-contract.md`,

@@ -13,6 +13,7 @@ Public documentation is hosted under `https://diagrampilot.com`.
 ## Public Documentation
 
 - [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md): Canonical beginner workflow for repo checks, source repair, SVG refresh, exports, and copying the source/render pattern into another repository.
+- [Installation and removal](https://diagrampilot.com/docs/agents/installation.md): Canonical package install paths, uninstall commands, and repository cleanup guidance.
 - [DiagramSpec](https://diagrampilot.com/docs/agents/spec.md): Structured source model for diagrams.
 - [Error repair](https://diagrampilot.com/docs/agents/error-repair.md): How agents should interpret and fix validation errors.
 - [Examples](https://diagrampilot.com/docs/agents/examples.md): Canonical diagram examples.

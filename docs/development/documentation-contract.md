@@ -57,6 +57,8 @@ The current public website route inventory is:
 | Public docs index Markdown | `https://diagrampilot.com/docs/index.md` |
 | Checkout quickstart HTML | `https://diagrampilot.com/docs/agents/quickstart/` |
 | Checkout quickstart Markdown | `https://diagrampilot.com/docs/agents/quickstart.md` |
+| Installation and removal HTML | `https://diagrampilot.com/docs/agents/installation/` |
+| Installation and removal Markdown | `https://diagrampilot.com/docs/agents/installation.md` |
 | DiagramSpec HTML | `https://diagrampilot.com/docs/agents/spec/` |
 | DiagramSpec Markdown | `https://diagrampilot.com/docs/agents/spec.md` |
 | Error repair HTML | `https://diagrampilot.com/docs/agents/error-repair/` |

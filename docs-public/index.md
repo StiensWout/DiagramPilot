@@ -14,6 +14,7 @@ Start with the Checkout Demo Project quickstart:
 
 Core public references:
 
+- [Installation and removal guide](agents/installation.md)
 - [DiagramSpec guide](agents/spec.md)
 - [Error repair guide](agents/error-repair.md)
 - [Agent examples](agents/examples.md)

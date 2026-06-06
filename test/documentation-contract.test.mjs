@@ -41,6 +41,7 @@ const demoWorkflowCommands = [
 ];
 const canonicalPublicLinks = [
   "https://diagrampilot.com/docs/agents/quickstart.md",
+  "https://diagrampilot.com/docs/agents/installation.md",
   "https://diagrampilot.com/schema/diagramspec-v1.schema.json",
 ];
 
@@ -184,6 +185,8 @@ test("Documentation Contract public route inventory is served by the website bui
       "https://diagrampilot.com/docs/index.md",
       "https://diagrampilot.com/docs/agents/quickstart/",
       "https://diagrampilot.com/docs/agents/quickstart.md",
+      "https://diagrampilot.com/docs/agents/installation/",
+      "https://diagrampilot.com/docs/agents/installation.md",
       "https://diagrampilot.com/docs/agents/spec/",
       "https://diagrampilot.com/docs/agents/spec.md",
       "https://diagrampilot.com/docs/agents/error-repair/",
@@ -303,4 +306,71 @@ test("Documentation Contract drift checks align commands and canonical public li
   assert.match(websiteLanding, /\/landing\/hero-workflow\.png/);
   assert.doesNotMatch(websiteLanding, /\/landing\/agent-flow(?:-v2)?\.png/);
   assert.equal(builtPublicDocsIndex, publicDocsIndex);
+});
+
+test("canonical public install and removal guidance is complete and linked", async () => {
+  await websiteBuild();
+
+  const installationGuide = await readRepoFile("docs-public/agents/installation.md");
+  const readme = await readRepoFile("README.md");
+  const llmsText = await readRepoFile("llms.txt");
+  const publicDocsIndex = await readRepoFile("docs-public/index.md");
+  const contract = await readContract();
+  const websiteLanding = await readRepoFile("website/src/pages/index.astro");
+  const builtInstallationGuide = await readRepoFile(
+    "website/dist/docs/agents/installation.md",
+  );
+
+  assert.equal(builtInstallationGuide, installationGuide);
+  assertIncludesAll(
+    installationGuide,
+    [
+      "npx diagrampilot check",
+      "npm install --save-dev diagrampilot",
+      "npm install --global diagrampilot",
+      "pnpm dlx diagrampilot check",
+      "pnpm add -D diagrampilot",
+      "yarn dlx diagrampilot check",
+      "yarn add -D diagrampilot",
+      "bunx diagrampilot check",
+      "bun add -D diagrampilot",
+      "npm uninstall diagrampilot",
+      "npm uninstall --global diagrampilot",
+      "pnpm remove diagrampilot",
+      "yarn remove diagrampilot",
+      "bun remove diagrampilot",
+      "diagrampilot:init:start",
+      "diagrampilot:init:end",
+      "llms.txt",
+      "docs/diagrampilot.md",
+    ],
+    "docs-public/agents/installation.md",
+  );
+  assert.match(
+    installationGuide,
+    /delete `llms\.txt` or `docs\/diagrampilot\.md` only if DiagramPilot created the\s+file and it contains no other project content/i,
+  );
+  assert.match(
+    installationGuide,
+    /Do not delete adopted `\*\.dp\.yaml`, `\*\.dp\.json`, SVG, Mermaid, D2, DOT, or PNG\s+artifacts by default/i,
+  );
+  assert.doesNotMatch(installationGuide, /npm run build|packages\/cli\/dist/);
+
+  for (const [label, source] of [
+    ["README.md", readme],
+    ["llms.txt", llmsText],
+    ["docs/development/documentation-contract.md", contract],
+  ]) {
+    assertIncludesAll(
+      source,
+      ["https://diagrampilot.com/docs/agents/installation.md"],
+      label,
+    );
+  }
+
+  assert.match(
+    publicDocsIndex,
+    /\[Installation and removal guide]\(agents\/installation\.md\)/,
+  );
+  assert.match(websiteLanding, /href="\/docs\/agents\/installation\/"/);
 });
