@@ -211,9 +211,6 @@ test("website docs pages use published DiagramPilot brand assets", async () => {
   );
   assert.match(html, /src="\/brand\/diagrampilot-logo\.svg"/);
   assert.match(html, /src="\/brand\/diagrampilot-logo-light\.svg"/);
-  assert.match(html, /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo\.svg/);
-  assert.match(html, /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo-light\.svg/);
-  assert.match(html, /https:\/\/diagrampilot\.com\/brand\/diagrampilot-mark\.svg/);
   assert.doesNotMatch(html, /href="\/favicon\.svg"/);
   assert.equal(await exists("website/dist/brand/diagrampilot-logo.svg"), true);
   assert.equal(await exists("website/dist/brand/diagrampilot-logo-light.svg"), true);

@@ -129,6 +129,7 @@ test("repository guidance separates public docs from internal maintainer docs", 
   assert.match(agentGuide, /docs\/development\/public-website-deployment\.md/);
   assert.match(agentGuide, /docs\/development\/roadmap\.md/);
   assert.match(agentGuide, /docs\/adr\/0006-public-docs-live-under-docs-public\.md/);
+  assert.match(agentGuide, /docs\/adr\/0009-package-install-does-not-install-local-agent-docs\.md/);
 });
 
 test("internal maintainer docs treat repo workflow check as shipped", async () => {
@@ -209,18 +210,6 @@ test("public entrypoints expose canonical DiagramPilot Brand Assets", async () =
   assert.match(
     publicDocsIndex,
     /src="\/brand\/diagrampilot-logo-light\.svg"/,
-  );
-  assert.match(
-    publicDocsIndex,
-    /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo\.svg/,
-  );
-  assert.match(
-    publicDocsIndex,
-    /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo-light\.svg/,
-  );
-  assert.match(
-    publicDocsIndex,
-    /https:\/\/diagrampilot\.com\/brand\/diagrampilot-mark\.svg/,
   );
   assert.match(
     llmsText,

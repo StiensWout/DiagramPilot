@@ -3,6 +3,14 @@
 Use the package install path for repositories that consume DiagramPilot. Source
 checkout setup is contributor workflow, not the public installation path.
 
+Package installation does not create `llms.txt` or `docs/diagrampilot.md`.
+Those files are not required to use DiagramPilot. Agents can read
+`https://diagrampilot.com/llms.txt`, the public docs, repository instructions,
+or other configured context providers instead.
+
+Do not copy DiagramPilot public docs into a consuming repository as part of
+installation. Keep repository docs for project-owned guidance.
+
 ## One-Off Use
 
 Run DiagramPilot without adding it to the repository:
@@ -102,8 +110,9 @@ dependency to uninstall.
 Package uninstall removes the package dependency. It does not remove repository
 content that DiagramPilot created or that the project adopted.
 
-If `diagrampilot init` added support sections, remove only the managed section
-between these markers from `llms.txt` and `docs/diagrampilot.md`:
+If an earlier `diagrampilot init` run added support sections, remove only the
+managed section between these markers from `llms.txt` and
+`docs/diagrampilot.md`:
 
 ```html
 <!-- diagrampilot:init:start -->

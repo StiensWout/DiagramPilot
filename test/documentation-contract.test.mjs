@@ -339,6 +339,7 @@ test("canonical public install and removal guidance is complete and linked", asy
       "pnpm remove diagrampilot",
       "yarn remove diagrampilot",
       "bun remove diagrampilot",
+      "Package installation does not create `llms.txt` or `docs/diagrampilot.md`",
       "diagrampilot:init:start",
       "diagrampilot:init:end",
       "llms.txt",
@@ -353,6 +354,10 @@ test("canonical public install and removal guidance is complete and linked", asy
   assert.match(
     installationGuide,
     /Do not delete adopted `\*\.dp\.yaml`, `\*\.dp\.json`, SVG, Mermaid, D2, DOT, or PNG\s+artifacts by default/i,
+  );
+  assert.match(
+    installationGuide,
+    /Do not copy DiagramPilot public docs into a consuming repository as part of\s+installation/i,
   );
   assert.doesNotMatch(installationGuide, /npm run build|packages\/cli\/dist/);
 

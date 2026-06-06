@@ -67,6 +67,13 @@ git diff --check
 - Added uninstall and repository cleanup guidance for package removal,
   `diagrampilot:init` managed sections, optional deletion of generated support
   files, and retained adopted diagram sources/artifacts by default.
+- Clarified that package installation does not create or require local
+  DiagramPilot agent docs such as `llms.txt` or `docs/diagrampilot.md`; agents
+  can use the hosted `llms.txt`, Public Documentation, repo instructions, or
+  configured context providers instead.
+- Added ADR 0009 and a roadmap backlog entry for changing normal
+  `diagrampilot init` behavior later without choosing an explicit opt-in shape
+  in this issue.
 - Linked the guide from README, `llms.txt`, Public Documentation index, landing
   CTAs, AGENTS public docs inventory, and internal public route inventories.
 - Added tests for the canonical guide content, links, route publication, and
@@ -85,3 +92,5 @@ git diff --check
   - `rg -n "npx diagrampilot|npm install --save-dev diagrampilot|npm install --global diagrampilot|npm uninstall" README.md llms.txt docs-public website/src`
     passed with matches in `docs-public/agents/installation.md`.
   - `git diff --check` passed.
+  - Follow-up validation after ADR 0009 on 2026-06-06 UTC:
+    `npm test` passed: 145 tests; `git diff --check` passed.
