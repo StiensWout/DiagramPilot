@@ -186,6 +186,22 @@ v0.2.0 is published under `latest`.
 Issue Version bumping and closeout are documented in
 `docs/development/release-version-workflow.md`.
 
+### v0.3.0 Release Operations
+
+After v0.2.0 proves the first public alpha package and website release path,
+v0.3.0 should add GitHub Releases for public release visibility.
+
+This track should cover:
+
+1. Creating a GitHub Release for each clean public release tag, starting with
+   `v0.3.0`.
+2. Publishing concise release notes that link the npm `latest` package version,
+   the public website, and the relevant public docs.
+3. Keeping npm package publishing on the public npm registry; GitHub Packages
+   remains out of scope unless a later distribution decision explicitly adds it.
+4. Making GitHub Release creation a guarded release workflow step, after the
+   npm `latest` publish succeeds.
+
 ### Completed Repo Workflow Check
 
 Repo Workflow Check is complete. The implementation is recorded in
