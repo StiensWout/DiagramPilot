@@ -28,6 +28,10 @@ export type {
   RepoWorkflowCheckSourceResult,
   RepoWorkflowCheckSummary,
 } from "./repo-workflow-check.js";
+export type {
+  ConfiguredTextArtifactFormat,
+  RepoWorkflowCheckConfiguredArtifactResult,
+} from "./repo-workflow-configured-artifact-result.js";
 export type { JsonSchemaDocument } from "./diagramspec-schema.js";
 export type {
   DiagramSpec,
@@ -61,6 +65,11 @@ export type {
   DiagramPilotSourceDiscoveryResult,
   DiagramPilotSourceDiscoveryScope,
 } from "./source-discovery.js";
+export type {
+  RepoWorkflowArtifactMapping,
+  RepoWorkflowArtifactOutput,
+  RepoWorkflowArtifactOutputFormat,
+} from "./repo-workflow-config.js";
 export type {
   CheckExpectedSvgArtifactFreshnessForValidatedSourceOptions,
   CheckExpectedSvgArtifactFreshnessOptions,

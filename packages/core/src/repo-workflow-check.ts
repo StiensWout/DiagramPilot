@@ -4,6 +4,16 @@ import type {
   RepoWorkflowConfigDiscoveryResult,
   RepoWorkflowConfigFailure,
 } from "./repo-workflow-config.js";
+import {
+  checkConfiguredArtifactsForValidatedSource,
+  configuredExplicitSourcesForScope,
+  configuredOutputsForSource,
+  mergeDiscoveredAndConfiguredSources,
+} from "./repo-workflow-configured-artifacts.js";
+import type {
+  ConfiguredTextArtifactFormat,
+  RepoWorkflowCheckConfiguredArtifactResult,
+} from "./repo-workflow-configured-artifact-result.js";
 import type {
   DiagramPilotSourceDiscoveryFailure,
   DiagramPilotSourceDiscoveryOptions,
@@ -16,6 +26,7 @@ import type {
   ValidatedDiagramSpecLoadFailure,
   ValidatedDiagramSpecLoadResult,
 } from "./source-loading.js";
+import type { DiagramSpec } from "./diagramspec-topology.js";
 import type {
   StaleSvgArtifactResult,
   SvgArtifactFreshnessCheckResult,
@@ -27,6 +38,10 @@ export interface RepoWorkflowCheckOptions {
   scopePath?: string;
   diagramPilotVersion?: string;
   renderer: SvgArtifactRenderer;
+  exportConfiguredTextArtifact?(options: {
+    format: ConfiguredTextArtifactFormat;
+    spec: DiagramSpec;
+  }): string;
 }
 
 export interface RepoWorkflowCheckDependencies {
@@ -40,10 +55,15 @@ export interface RepoWorkflowCheckDependencies {
   loadValidatedDiagramSpec(path: string): ValidatedDiagramSpecLoadResult;
   checkExpectedSvgArtifactFreshnessForValidatedSource(options: {
     source: DiagramPilotSourceFile;
+    artifactPath?: string;
     provenanceSourcePath: string;
     diagramPilotVersion?: string;
     renderer: SvgArtifactRenderer;
   }): Promise<SvgArtifactFreshnessCheckResult>;
+  exportConfiguredTextArtifact?(options: {
+    format: ConfiguredTextArtifactFormat;
+    spec: DiagramSpec;
+  }): string;
   createRepairableDiagnosticReport(
     failure: ValidatedDiagramSpecLoadFailure,
   ): RepairableDiagnosticReport;
@@ -91,7 +111,9 @@ export interface RepoWorkflowCheckSourceResult {
       }
     | {
         status: "unchecked";
-      };
+      }
+    | RepoWorkflowCheckConfiguredArtifactResult;
+  artifacts?: RepoWorkflowCheckConfiguredArtifactResult[];
 }
 
 export type RepoWorkflowCheckResult =
@@ -162,7 +184,26 @@ function deriveConfigDisplayPath(
 }
 
 function isWorkflowIssue(source: RepoWorkflowCheckSourceResult): boolean {
+  if (source.artifacts !== undefined) {
+    return (
+      source.validation.ok === false ||
+      source.artifacts.some((artifact) => artifact.status !== "fresh")
+    );
+  }
+
   return source.validation.ok === false || source.artifact.status !== "fresh";
+}
+
+function isFreshSource(source: RepoWorkflowCheckSourceResult): boolean {
+  if (source.validation.ok === false) {
+    return false;
+  }
+
+  if (source.artifacts !== undefined) {
+    return source.artifacts.every((artifact) => artifact.status === "fresh");
+  }
+
+  return source.artifact.status === "fresh";
 }
 
 function summarizeSources(
@@ -170,9 +211,7 @@ function summarizeSources(
 ): RepoWorkflowCheckSummary {
   return {
     checkedSourceCount: sources.length,
-    freshSourceCount: sources.filter(
-      (source) => source.artifact.status === "fresh",
-    ).length,
+    freshSourceCount: sources.filter(isFreshSource).length,
     issueCount: sources.filter(isWorkflowIssue).length,
   };
 }
@@ -264,8 +303,12 @@ export async function checkDiagramPilotRepoWorkflowWithDependencies(
 
   const currentWorkingDirectory = dependencies.getCurrentWorkingDirectory();
   const sources: RepoWorkflowCheckSourceResult[] = [];
+  const discoveredSources = mergeDiscoveredAndConfiguredSources(
+    discoveryResult.sources,
+    configuredExplicitSourcesForScope(configResult.config, discoveryResult.scope),
+  );
 
-  for (const source of discoveryResult.sources) {
+  for (const source of discoveredSources) {
     const sourcePath = deriveCheckSourcePath(
       discoveryResult.scope,
       source.absolutePath,
@@ -290,6 +333,43 @@ export async function checkDiagramPilotRepoWorkflowWithDependencies(
         artifact: {
           status: "unchecked",
         },
+      });
+      continue;
+    }
+
+    const configuredOutputs = configuredOutputsForSource(
+      configResult.config,
+      source.absolutePath,
+    );
+
+    if (configuredOutputs.length > 0 && configResult.config !== undefined) {
+      const artifacts = await checkConfiguredArtifactsForValidatedSource({
+        config: configResult.config,
+        source: loadResult.source,
+        sourceAbsolutePath: source.absolutePath,
+        provenanceSourcePath: sourcePath,
+        spec: loadResult.spec,
+        outputs: configuredOutputs,
+        currentWorkingDirectory,
+        diagramPilotVersion: options.diagramPilotVersion,
+        renderer: options.renderer,
+        checkExpectedSvgArtifactFreshnessForValidatedSource:
+          dependencies.checkExpectedSvgArtifactFreshnessForValidatedSource,
+        exportConfiguredTextArtifact:
+          dependencies.exportConfiguredTextArtifact,
+      });
+      const [artifact] = artifacts;
+
+      sources.push({
+        sourcePath,
+        validation: {
+          ok: true,
+          errors: [],
+        },
+        artifact: artifact ?? {
+          status: "unchecked",
+        },
+        artifacts,
       });
       continue;
     }

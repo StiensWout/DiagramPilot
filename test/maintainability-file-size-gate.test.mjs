@@ -67,20 +67,20 @@ async function runMaintainabilityAuditScript(cwd) {
   });
 }
 
-test("auditMaintainabilityFileSizes reports included authored files over the 1000 LOC gate", async () => {
+test("auditMaintainabilityFileSizes reports included authored files over the 500 LOC gate", async () => {
   await withTempRepo(async (tempRoot) => {
-    await writeRepoFile(tempRoot, "packages/core/src/index.ts", lines(1001));
-    await writeRepoFile(tempRoot, "test/small.test.mjs", lines(1000));
+    await writeRepoFile(tempRoot, "packages/core/src/index.ts", lines(501));
+    await writeRepoFile(tempRoot, "test/small.test.mjs", lines(500));
 
     const result = await auditMaintainabilityFileSizes(tempRoot);
 
-    assert.equal(MAINTAINABILITY_FILE_SIZE_GATE.maxLineCount, 1000);
+    assert.equal(MAINTAINABILITY_FILE_SIZE_GATE.maxLineCount, 500);
     assert.equal(result.ok, false);
     assert.deepEqual(result.violations, [
       {
         path: "packages/core/src/index.ts",
-        lineCount: 1001,
-        maxLineCount: 1000,
+        lineCount: 501,
+        maxLineCount: 500,
       },
     ]);
   });
@@ -94,7 +94,7 @@ test("maintainability file-size gate passes for the current repository", async (
 
 test("maintainability audit script exits nonzero for gate violations", async () => {
   await withTempRepo(async (tempRoot) => {
-    await writeRepoFile(tempRoot, "packages/core/src/oversized.ts", lines(1001));
+    await writeRepoFile(tempRoot, "packages/core/src/oversized.ts", lines(501));
 
     const result = await runMaintainabilityAuditScript(tempRoot);
 
@@ -102,7 +102,7 @@ test("maintainability audit script exits nonzero for gate violations", async () 
     assert.match(result.stdout, /Violations:/);
     assert.match(
       result.stdout,
-      /packages\/core\/src\/oversized\.ts: 1001 LOC \(limit 1000\)/,
+      /packages\/core\/src\/oversized\.ts: 501 LOC \(limit 500\)/,
     );
     assert.equal(result.stderr, "");
   });
@@ -143,8 +143,8 @@ test("auditMaintainabilityFileSizes checks authored package, test, website sourc
       "website/scripts/sync-public-docs.mjs",
       lines(1),
     );
-    await writeRepoFile(tempRoot, "docs/ignored.ts", lines(1001));
-    await writeRepoFile(tempRoot, "packages/core/package.json", lines(1001));
+    await writeRepoFile(tempRoot, "docs/ignored.ts", lines(501));
+    await writeRepoFile(tempRoot, "packages/core/package.json", lines(501));
 
     const result = await auditMaintainabilityFileSizes(tempRoot);
 
@@ -163,47 +163,47 @@ test("auditMaintainabilityFileSizes checks authored package, test, website sourc
 
 test("auditMaintainabilityFileSizes excludes generated output, docs, synced Starlight content, lockfiles, schema artifacts, SVGs, and vendored assets", async () => {
   await withTempRepo(async (tempRoot) => {
-    await writeRepoFile(tempRoot, "website/src/pages/index.astro", lines(1001));
-    await writeRepoFile(tempRoot, "packages/core/dist/index.ts", lines(1001));
+    await writeRepoFile(tempRoot, "website/src/pages/index.astro", lines(501));
+    await writeRepoFile(tempRoot, "packages/core/dist/index.ts", lines(501));
     await writeRepoFile(
       tempRoot,
       "packages/core/src/generated/schema.ts",
-      lines(1001),
+      lines(501),
     );
     await writeRepoFile(
       tempRoot,
       "packages/core/src/schema.generated.ts",
-      lines(1001),
+      lines(501),
     );
-    await writeRepoFile(tempRoot, "packages/core/src/types.d.ts", lines(1001));
+    await writeRepoFile(tempRoot, "packages/core/src/types.d.ts", lines(501));
     await writeRepoFile(
       tempRoot,
       "website/src/content/docs/index.md.ts",
-      lines(1001),
+      lines(501),
     );
     await writeRepoFile(
       tempRoot,
       "website/src/content/docs/index.md",
-      lines(1001),
+      lines(501),
     );
-    await writeRepoFile(tempRoot, "website/src/diagram.svg", lines(1001));
-    await writeRepoFile(tempRoot, "website/src/vendor/library.js", lines(1001));
+    await writeRepoFile(tempRoot, "website/src/diagram.svg", lines(501));
+    await writeRepoFile(tempRoot, "website/src/vendor/library.js", lines(501));
     await writeRepoFile(
       tempRoot,
       ".scratch/productization-and-maintainability/PRD.md",
-      lines(1001),
+      lines(501),
     );
     await writeRepoFile(
       tempRoot,
       ".scratch/productization-and-maintainability/issues/49-issue.md",
-      lines(1001),
+      lines(501),
     );
     await writeRepoFile(
       tempRoot,
       "schema/diagramspec-v1.schema.json",
-      lines(1001),
+      lines(501),
     );
-    await writeRepoFile(tempRoot, "package-lock.json", lines(1001));
+    await writeRepoFile(tempRoot, "package-lock.json", lines(501));
 
     const result = await auditMaintainabilityFileSizes(tempRoot);
 
@@ -214,8 +214,8 @@ test("auditMaintainabilityFileSizes excludes generated output, docs, synced Star
     assert.deepEqual(result.violations, [
       {
         path: "website/src/pages/index.astro",
-        lineCount: 1001,
-        maxLineCount: 1000,
+        lineCount: 501,
+        maxLineCount: 500,
       },
     ]);
   });

@@ -69,13 +69,17 @@ changes them:
   command scope to the Git root or filesystem root.
 - `check` validates Repo Workflow Configuration before source processing and
   applies `sources.ignore` patterns only to source discovery.
-- `check` verifies next-to-source same-stem expected SVG artifacts through
-  provenance metadata only.
+- `check` supports configured artifact mappings. Matched mappings replace the
+  zero-config SVG expectation for that source; unmatched sources keep the
+  zero-config SVG expectation.
+- Without config, `check` verifies next-to-source same-stem expected SVG
+  artifacts through provenance metadata.
+- Configured SVG freshness uses provenance, Mermaid/D2/DOT freshness uses
+  content comparison, and configured PNG freshness is presence-only in v0.3.0.
 - `check --json` emits aggregate structured repo workflow results to stdout,
   including the config path when config is used.
 - `check` does not render, write files, update artifacts, rewrite sources, scan
-  from the Git root by default, check Mermaid/D2/DOT/PNG freshness, or support
-  configurable artifact mappings.
+  from the Git root by default, or generate configured artifacts.
 - `render` defaults to SVG.
 - `render --format svg|png` supports SVG and PNG output.
 - `render` requires `--out`.

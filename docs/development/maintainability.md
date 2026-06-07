@@ -6,7 +6,7 @@ without oversized modules.
 
 ## File-Size Gate
 
-The file-size gate threshold is **1000 LOC**.
+The file-size gate threshold is **500 LOC**.
 
 Included paths:
 

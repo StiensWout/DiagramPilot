@@ -1,138 +1,22 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
-import { createHash } from "node:crypto";
 import {
   chmod,
   mkdir,
-  mkdtemp,
   readFile,
   readdir,
-  rm,
   writeFile,
 } from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import { getDiagramPilotVersion } from "../packages/core/dist/index.js";
 import {
-  SVG_RENDERER_NAME,
-  SVG_RENDERER_VERSION,
-  addSvgProvenanceMetadata,
-  createSvgRendererProvenance,
-} from "../packages/render-svg/dist/index.js";
-
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const cliEntryPoint = path.join(repoRoot, "packages", "cli", "dist", "index.js");
-const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
-
-function testEnv() {
-  const env = { ...process.env };
-  delete env.FORCE_COLOR;
-  delete env.NO_COLOR;
-  return env;
-}
-
-function runDiagramPilot(args) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(
-      npmCommand,
-      ["exec", "--workspace", "diagrampilot", "--", "diagrampilot", ...args],
-      {
-        cwd: repoRoot,
-        env: testEnv(),
-      },
-    );
-
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk;
-    });
-    child.on("error", reject);
-    child.on("close", (code, signal) => {
-      resolve({ code, signal, stdout, stderr });
-    });
-  });
-}
-
-function runBuiltCli(args, cwd) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [cliEntryPoint, ...args], {
-      cwd,
-      env: testEnv(),
-    });
-
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk;
-    });
-    child.on("error", reject);
-    child.on("close", (code, signal) => {
-      resolve({ code, signal, stdout, stderr });
-    });
-  });
-}
-
-async function withTempRepo(run) {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "diagrampilot-cli-"));
-
-  try {
-    return await run(tempRoot);
-  } finally {
-    await rm(tempRoot, { recursive: true, force: true });
-  }
-}
-
-function occurrenceCount(text, pattern) {
-  return text.match(pattern)?.length ?? 0;
-}
-
-function sha256Hex(text) {
-  return createHash("sha256").update(text).digest("hex");
-}
-
-async function writeFreshDiagramArtifact(tempRoot) {
-  await mkdir(path.join(tempRoot, "docs"), { recursive: true });
-  const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
-  const sourceText = [
-    "version: 1",
-    "title: Checkout Architecture",
-    "nodes:",
-    "  - id: web_app",
-    "    label: Web App",
-    "",
-  ].join("\n");
-
-  await writeFile(sourcePath, sourceText, "utf8");
-  await writeFile(
-    path.join(tempRoot, "docs", "architecture.svg"),
-    addSvgProvenanceMetadata(
-      '<svg xmlns="http://www.w3.org/2000/svg"><g /></svg>',
-      createSvgRendererProvenance({
-        sourcePath: "docs/architecture.dp.yaml",
-        sourceContent: sourceText,
-      }),
-    ),
-    "utf8",
-  );
-
-  return { sourcePath, sourceText };
-}
+  occurrenceCount,
+  runBuiltCli,
+  runDiagramPilot,
+  sha256Hex,
+  withTempRepo,
+} from "./cli-smoke-helpers.mjs";
 
 test("diagrampilot executable starts and reports its version", async () => {
   const result = await runDiagramPilot(["--version"]);
@@ -575,94 +459,5 @@ test("diagrampilot render writes a valid non-empty PNG", async () => {
     assert.deepEqual([...pngBytes.subarray(0, 8)], [
       0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
     ]);
-  });
-});
-
-test("diagrampilot check uses the current working directory by default", async () => {
-  await withTempRepo(async (tempRoot) => {
-    await writeFreshDiagramArtifact(tempRoot);
-
-    const result = await runBuiltCli(["check"], tempRoot);
-
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
-    assert.equal(
-      result.stdout,
-      "Checked 1 DiagramPilot Source File. All expected SVG artifacts are fresh.\n",
-    );
-  });
-});
-
-test("diagrampilot check supports an explicit directory scope with aggregate json output", async () => {
-  await withTempRepo(async (tempRoot) => {
-    await writeFreshDiagramArtifact(tempRoot);
-
-    const result = await runBuiltCli(["check", ".", "--json"], tempRoot);
-
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
-
-    const payload = JSON.parse(result.stdout);
-
-    assert.equal(payload.ok, true);
-    assert.deepEqual(payload.scope, {
-      kind: "directory",
-      path: ".",
-    });
-    assert.deepEqual(payload.summary, {
-      checkedSourceCount: 1,
-      freshSourceCount: 1,
-      issueCount: 0,
-    });
-    assert.equal(payload.sources.length, 1);
-    assert.equal(payload.sources[0].sourcePath, "docs/architecture.dp.yaml");
-    assert.equal(payload.sources[0].artifact.status, "fresh");
-    assert.equal(payload.sources[0].artifact.path, "docs/architecture.svg");
-  });
-});
-
-test("diagrampilot check --json includes the config path when config is used", async () => {
-  await withTempRepo(async (tempRoot) => {
-    await writeFreshDiagramArtifact(tempRoot);
-    await writeFile(
-      path.join(tempRoot, "diagrampilot.config.yaml"),
-      "version: 1\n",
-      "utf8",
-    );
-
-    const result = await runBuiltCli(["check", "--json"], tempRoot);
-
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
-
-    const payload = JSON.parse(result.stdout);
-
-    assert.equal(payload.ok, true);
-    assert.deepEqual(payload.config, {
-      path: "diagrampilot.config.yaml",
-    });
-    assert.equal(payload.sources[0].sourcePath, "docs/architecture.dp.yaml");
-  });
-});
-
-test("diagrampilot check supports one explicit source file", async () => {
-  await withTempRepo(async (tempRoot) => {
-    await writeFreshDiagramArtifact(tempRoot);
-
-    const result = await runBuiltCli(
-      ["check", "docs/architecture.dp.yaml"],
-      tempRoot,
-    );
-
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
-    assert.equal(
-      result.stdout,
-      "Checked 1 DiagramPilot Source File. All expected SVG artifacts are fresh.\n",
-    );
   });
 });

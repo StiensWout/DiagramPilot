@@ -16,6 +16,7 @@ export async function checkDiagramPilotRepoWorkflow(
     discoverDiagramPilotSourceFiles,
     loadValidatedDiagramSpec,
     checkExpectedSvgArtifactFreshnessForValidatedSource,
+    exportConfiguredTextArtifact: options.exportConfiguredTextArtifact,
     createRepairableDiagnosticReport,
     getCurrentWorkingDirectory: () => process.cwd(),
   });

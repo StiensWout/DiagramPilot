@@ -80,18 +80,19 @@ Checked 1 DiagramPilot Source File. All expected SVG artifacts are fresh.
 ```
 
 `diagrampilot check` is the repo-level review/CI command. It is read-only: it
-discovers DiagramPilot source files, validates them, and checks the expected
-SVG artifact without rendering, fixing, or writing files.
+discovers DiagramPilot source files, validates them, and checks expected
+artifacts without rendering, fixing, or writing files.
 
-In v1, `check` uses the next-to-source same-stem Expected SVG Artifact. For
-`docs/architecture.dp.yaml`, the expected SVG artifact is
-`docs/architecture.svg`.
+Without Repo Workflow Configuration, `check` uses the next-to-source same-stem
+Expected SVG Artifact. For `docs/architecture.dp.yaml`, the expected SVG
+artifact is `docs/architecture.svg`.
 
-SVG freshness is provenance-only in v1. `check` reads DiagramPilot provenance
+SVG freshness is provenance-based. `check` reads DiagramPilot provenance
 metadata from the expected SVG artifact; it does not render to compare output.
-
-`check` does not check Mermaid, D2, DOT, or PNG artifact freshness. v1 also
-does not support configurable artifact mappings.
+Configured Mermaid, D2, and DOT artifacts use content comparison against the
+current export output. Configured PNG freshness is presence-only in v0.3.0:
+`check` verifies the configured PNG file exists and defers PNG byte comparison
+until readable PNG provenance is available.
 
 Repo Workflow Configuration is optional. `check` discovers the nearest
 `diagrampilot.config.yaml` from the command scope upward to the Git root or
@@ -116,6 +117,32 @@ sources:
 
 Absolute ignore patterns and patterns that leave the config directory tree are
 invalid config.
+
+Configured artifact mappings live under `artifacts`. Each mapping uses exactly
+one of `source` or `sourceGlob`; matched mappings replace the default SVG
+expectation for that source, while unmatched sources keep the default SVG
+expectation:
+
+```yaml
+version: 1
+artifacts:
+  - source: docs/architecture.dp.yaml
+    outputs:
+      - format: svg
+        path: docs/architecture.svg
+      - format: mermaid
+        path: docs/architecture.mmd
+      - format: png
+        path: docs/architecture.png
+  - sourceGlob: docs/diagrams/*.dp.yaml
+    outputs:
+      - format: d2
+        path: artifacts/{sourceDir}/{stem}.{format}
+```
+
+Configured output formats are limited to `svg`, `png`, `mermaid`, `d2`, `dot`,
+and `markdown`. Output path templates support only `{stem}`, `{sourceDir}`,
+`{sourcePath}`, and `{format}`.
 
 When `check` reports a source problem, use `validate` on the explicit source
 file to get the detailed repair loop:
@@ -249,10 +276,11 @@ fails with repair guidance when the config already exists.
 
 `diagrampilot check [path]`
 : Read-only repo review/CI command. Discovers DiagramPilot source files in the
-given scope, validates them, and checks next-to-source same-stem expected SVG
-artifacts through provenance metadata only. When `diagrampilot.config.yaml` is
-found, `check` validates config first and applies `sources.ignore` only to
-source discovery.
+given scope, validates them, and checks expected artifacts. Without config it
+checks next-to-source same-stem expected SVG artifacts through provenance
+metadata. When `diagrampilot.config.yaml` is found, `check` validates config
+first, applies `sources.ignore` only to source discovery, and checks configured
+artifact mappings for matched sources.
 
 `diagrampilot check [path] --json`
 : Emits structured repo check results to stdout for agents and CI scripts,
