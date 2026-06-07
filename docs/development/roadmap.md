@@ -3,20 +3,13 @@
 DiagramPilot is a local-first compiler and validation engine for repo-native
 diagrams authored by AI coding agents.
 
-The current implementation has crossed the MVP, architecture-deepening,
-docs/demo release-readiness, Repo Workflow Check, and Repo Workflow Check
-deepening checkpoints recorded in `.scratch/diagrampilot-mvp/`,
-`.scratch/architecture-deepening/`, `.scratch/docs-demo-project-rework/`,
-`.scratch/repo-workflow-check/`, and
-`.scratch/repo-workflow-check-deepening/`. The current release-readiness path
-is Public Website Publication, Productization And Maintainability, and the
-Public Alpha Release track for v0.2.0. Keep release-readiness maintenance
-separate from product capability work: release readiness keeps the existing
-product easy to adopt; product capability work adds new user-facing behaviour.
+This roadmap is a direction document. Completed tracks are recorded at the end;
+active planning should focus on the next release train and the next PRD.
 
-## Current State
+## Current Position
 
-The MVP CLI workflow is implemented in the TypeScript workspace:
+DiagramPilot is closing the `0.2.0` Public Alpha Release. The implemented
+product surface is a local TypeScript workspace with these CLI workflows:
 
 - `diagrampilot init`
 - `diagrampilot check [path]`
@@ -28,7 +21,7 @@ The MVP CLI workflow is implemented in the TypeScript workspace:
 - `diagrampilot export <path> --format d2`
 - `diagrampilot export <path> --format mermaid|d2 --out <path>`
 
-The implemented MVP includes:
+The current implementation includes:
 
 - DiagramSpec v1 source loading from YAML and JSON DiagramPilot Source Files.
 - Validated DiagramSpec loading through a shared core lifecycle.
@@ -36,37 +29,31 @@ The implemented MVP includes:
 - Stable lowercase snake case IDs across nodes, edges, and groups.
 - Node, Edge, Group, Metadata, Source Reference, External Reference, and Icon
   Reference validation.
-- Reusable DiagramSpec topology for Group roots, Group parentage, containment,
-  traversal order, and Node paths.
+- Reusable DiagramSpec topology for group roots, group parentage, containment,
+  traversal order, and node paths.
 - Mermaid and D2 text export.
 - SVG rendering through the included local D2 path.
 - Packaged `lucide:*` Icon Reference validation.
 - Deterministic SVG provenance metadata without wall-clock timestamps.
-- Read-only Repo Workflow Check for DiagramPilot source discovery, source
-  validation, and expected SVG artifact freshness through provenance metadata.
-- A CLI command planning seam for validating command behaviour without
-  spawning the executable for every rule.
-- CLI smoke tests and focused validation/export/render/provenance/topology
-  coverage.
-
-The MVP issue slices, architecture-deepening issue slices, docs/demo rework
-issue slices, Repo Workflow Check slices, and Repo Workflow Check deepening
-slices are completed in the local tracker. The current closeout state is
-release readiness and public alpha packaging, not core CLI implementation.
+- Read-only Repo Workflow Check for source discovery, validation, and expected
+  SVG artifact freshness through provenance metadata.
+- CLI command planning for validating command behavior without spawning the
+  executable for every rule.
 
 ## Current Contract
 
-These behaviours are product contracts unless a future PRD explicitly changes
-them:
+These behaviors are the `0.2.0` product contract unless a future PRD explicitly
+changes them:
 
 - DiagramSpec remains the source of truth.
-- DiagramPilot Source Files are `*.dp.yaml` and `*.dp.json`.
+- DiagramPilot Source Files are currently `*.dp.yaml` and `*.dp.json`.
 - YAML is preferred for human- and agent-authored source.
-- Derived Artifacts include SVG, Mermaid, D2, DOT, and PNG.
+- Derived Artifact categories include SVG, Mermaid, D2, DOT, and PNG; current
+  `0.2.0` commands implement SVG, Mermaid, and D2.
 - `validate` validates explicit source file paths only.
 - `validate` does not scan the repository.
 - `validate` does not check generated artifact freshness by default.
-- `check` is the read-only repo review/CI command.
+- `check` is the read-only repo review and CI command.
 - `check [path]` discovers DiagramPilot Source Files in the current directory,
   one explicit directory, or one explicit source file.
 - `check` validates discovered source files through the shared validated
@@ -89,18 +76,361 @@ them:
 - Generated SVG provenance must not include wall-clock timestamps.
 - Core workflows must remain local and must not depend on a hosted workspace.
 
-## Completed Release Readiness
+## Release Train
 
-This track turns the implemented MVP into a clear first user workflow.
+Each implementation issue that merges to `main` should produce an Issue Release
+with its assigned Issue Version. PRD-scoped milestones use intermediate Issue
+Releases for individual issue merges and reserve the milestone version for the
+final PRD closeout.
 
-1. Split Public Documentation from Internal Documentation.
-2. Keep public URLs under `https://diagrampilot.com`.
-3. Ensure `llms.txt` links only Public Documentation.
-4. Add the Checkout Demo Project fixture.
-5. Include one excellent Demo Project DiagramPilot Source File.
-6. Render and commit its SVG Derived Artifact.
-7. Rework the public quickstart around the Demo Project workflow.
-8. Clean up internal docs and planning state after the docs/demo work lands.
+For the v0.3.0 Alpha Capability Release:
+
+- The v0.3.0 PRD defines the complete feature scope.
+- Each implementation issue in that PRD should merge to `main` as an Issue
+  Release with a `0.2.x` Issue Version.
+- `0.3.0` is reserved for the final closeout release where the scoped feature
+  set is fully functional for the alpha release line.
+- The PRD must be backed by primary-source research and local code-seam scoring
+  before issue slicing begins.
+- Feature scoring separates upside from cost: user impact is scored `1-5`
+  where higher is better; implementation risk, dependency risk, public contract
+  risk, and documentation burden are scored `1-5` where lower is better.
+- Confidence is recorded as `low`, `medium`, or `high`.
+
+Issue Version bumping and closeout are documented in
+`docs/development/release-version-workflow.md`.
+
+## Next Milestone: v0.3.0
+
+v0.3.0 should be the next Alpha Capability Release. It is a feature release,
+not a release-operations-only milestone. Release operations are part of the
+scope because each feature release needs public visibility, release notes, and
+repeatable publishing.
+
+### Mandatory Scope
+
+**Release Operations**
+
+- Create a GitHub Release for each clean public release tag, including
+  intermediate `0.2.x` Issue Releases and the `v0.3.0` milestone closeout
+  release.
+- Do not create GitHub Releases for `nightly` branch publishes; nightly builds
+  remain npm `nightly` dist-tag integration artifacts.
+- Publish release notes for each GitHub Release, including intermediate Issue
+  Releases and milestone closeout releases. Release notes should link the npm
+  package version, the Public Website, and relevant Public Documentation when
+  those links apply.
+- Derive GitHub Release notes from local issue closeout fields, including issue
+  title, Issue Version, summary, implementation notes, validation results,
+  user-facing docs links, known limitations, and follow-up where present.
+- Generate release-note text with a checked-in script, then require maintainer
+  review in the GitHub Release draft body before publishing.
+- The release workflow should fail before GitHub Release publication when the
+  reviewed GitHub Release draft for the Issue Version is missing, empty, or
+  does not match the package version/tag.
+- Keep npm package publishing on the public npm registry.
+- Keep GitHub Packages out of scope unless a later distribution decision adds
+  it explicitly.
+- Make GitHub Release publication a guarded release workflow step that runs
+  only after the npm `latest` publish succeeds for the same version.
+- CI validation must complete before any CD side effect, including package
+  publishing, tag creation, or GitHub Release publication.
+- After CI passes on the reviewed `main` commit, CD should verify the Issue
+  Version and reviewed GitHub Release draft, publish npm `latest`, create the
+  `vX.Y.Z` tag for that commit, and then publish the GitHub Release.
+
+**Export And Rendering**
+
+- Add DOT export.
+- Add `diagrampilot export <path> --format dot`, preserving the existing
+  stdout-by-default behavior and file writes only with `--out`.
+- DOT export should use `digraph` by default, encode undirected DiagramSpec
+  edges with `dir=none`, and map groups to Graphviz clusters where practical.
+- Add PNG rendering if it can be provided locally and predictably.
+- Add `diagrampilot render <path> --format svg|png --out <path>`, defaulting
+  to `svg` so existing render commands keep working.
+- PNG rendering should rasterize the SVG produced by the existing local render
+  path rather than introducing a second layout or rendering engine.
+- Keep external renderer/export dependencies behind adapter seams so future
+  Native Rendering Engine work can replace the primary render path without
+  removing export interop.
+- Avoid adding D2-specific layout semantics beyond what is needed for SVG/PNG
+  output and interop. DiagramSpec should remain renderer-neutral.
+- Keep DOT as an exported artifact, not a DiagramPilot Source File.
+- Keep PNG as a rendered artifact, not an editable source.
+
+**YAML-Only Source Support**
+
+- Remove `*.dp.json` as a DiagramPilot Source File format in v0.3.0.
+- Keep DiagramSpec source files at numeric `version: 1` in v0.3.0 unless an
+  incompatible DiagramSpec source contract requires `version: 2`; do not use
+  fractional source versions such as `1.1`.
+- Do not add new DiagramSpec fields in v0.3.0 unless PRD research proves a
+  field is required for the scoped release.
+- Keep JSON for structured CLI output, the DiagramSpec JSON Schema helper, SVG
+  provenance metadata, package manifests, and other tooling surfaces.
+- In v0.3.0, `*.dp.json` source files should produce repairable diagnostics
+  that explain JSON source files are no longer supported and should be
+  converted to `*.dp.yaml`.
+- Do not add a JSON-to-YAML migration command in v0.3.0; current expected usage
+  does not justify a dedicated migration surface.
+- Mention JSON source removal prominently in v0.3.0 release notes and public
+  docs, but do not create a large migration guide.
+- In v0.4.0, repo workflow discovery should ignore `*.dp.json` files as
+  non-source files.
+- In v0.4.0, explicit commands such as
+  `diagrampilot validate docs/old.dp.json` should still return a repairable
+  unsupported-source-format diagnostic instead of silently doing nothing.
+
+**Repo Workflow Deepening**
+
+- Introduce optional Repo Workflow Configuration, expected as
+  `diagrampilot.config.yaml`.
+- `diagrampilot init` should not create Repo Workflow Configuration by default.
+- Add `diagrampilot init --config` to create a minimal valid
+  `diagrampilot.config.yaml` without scanning the repository or inferring
+  mappings.
+- `diagrampilot init --config` should fail with a repairable message when the
+  config already exists. Updating or overwriting existing config requires a
+  later explicit `--force` decision.
+- Discover Repo Workflow Configuration by searching upward from the command
+  scope until the Git root or filesystem root, using the first config found.
+- Include the config path used in structured `--json` output.
+- Require top-level `version: 1` for the first Repo Workflow Configuration
+  schema.
+- Validate Repo Workflow Configuration before source processing in `check` and
+  `generate`. Invalid config should fail with repairable diagnostics that name
+  the config path and invalid field.
+- Keep the zero-config default: `docs/foo.dp.yaml` expects `docs/foo.svg`.
+- Add configurable artifact mappings with explicit `source` entries and
+  `sourceGlob` entries. Each mapping entry must use exactly one mapping mode.
+- Limit configured output formats to known Derived Artifact formats for v0.3.0:
+  `svg`, `png`, `mermaid`, `d2`, `dot`, and `markdown`.
+- A matching artifact mapping replaces the zero-config expected SVG artifact
+  for that source. Unmatched sources keep the zero-config SVG expectation.
+- Output path templates support a small fixed variable set for v0.3.0:
+  `{stem}`, `{sourceDir}`, `{sourcePath}`, and `{format}`. Templates should not
+  become a general expression language.
+- Add configurable ignore patterns.
+- In v0.3.0, ignore patterns apply to source discovery only. They should not
+  suppress missing or stale configured artifact expectations for sources that
+  remain in scope.
+- Ignore patterns use gitignore-style globs relative to the Repo Workflow
+  Configuration file directory. Absolute ignore paths are invalid.
+- Add broader DOT/PNG artifact freshness checks where practical.
+- PNG freshness should use readable provenance metadata when feasible. If
+  stable PNG metadata cannot be embedded and read locally in v0.3.0, `check`
+  should verify configured PNG presence and defer PNG byte-compare freshness.
+- Keep `check` read-only. Even with Repo Workflow Configuration, embeds, and
+  broader artifact checks, `check` reports missing or stale outputs and does
+  not generate files.
+- Add `diagrampilot generate [path]` as the explicit repo workflow command that
+  renders or exports configured artifacts and generated embeds. Without config,
+  `generate` should refresh the zero-config expected SVG artifact.
+- `generate` should rewrite all expected outputs for the selected scope by
+  default, not only outputs currently detected as stale or missing.
+- The `generate` command name is sufficient write intent; do not require an
+  additional `--write` flag. It should print a concise count or list of written
+  outputs.
+- Support `diagrampilot generate [path] --json` with structured scope, config,
+  source, output, written path, and failure details for agents and CI.
+- `generate` should create parent directories for expected output paths, while
+  refusing writes outside the selected repo/config boundary unless a later
+  explicit decision allows them.
+- Configured output paths must stay within the Repo Workflow Configuration
+  directory tree in v0.3.0. Cross-boundary outputs need a later explicit
+  escape-hatch decision.
+- Configured `source` and `sourceGlob` paths must also stay within the Repo
+  Workflow Configuration directory tree.
+- Add generated Markdown embeds.
+- Generated Markdown embeds are standalone generated files, not in-place edits
+  to existing documentation files.
+- Markdown embed generation depends on the referenced artifact expectation. A
+  generated embed should not be treated as fresh when it points at a stale or
+  missing artifact.
+
+**MCP And Structured Agent Operations**
+
+- Add `@diagrampilot/mcp` as a new public package in the v0.3.0 Public Package
+  Set.
+- Once `@diagrampilot/mcp` lands, include it in every Public Package Set
+  version bump, package readiness check, publish-state check, release workflow
+  package list, and npm publish.
+- Publish `@diagrampilot/mcp` through the same `latest` flow as the rest of the
+  Public Package Set. Document the MCP server as alpha rather than using a
+  separate MCP dist-tag.
+- Add an alpha MCP server.
+- Support launching MCP through `diagrampilot mcp` and a dedicated package-level
+  executable, with `diagrampilot mcp` as the documented user-facing path.
+- The MCP implementation issue should include maintainer setup instructions for
+  package publishing, package readiness, release workflow package lists, MCP
+  client configuration, and local smoke validation.
+- Add resources for schema, docs, examples, discovered sources, and check
+  results.
+- Add a small documented MCP prompt set for creating or updating a DiagramPilot
+  Source File from repo context, repairing validation errors, and refreshing
+  configured artifacts after source changes.
+- Treat shipped MCP prompts as public behavior with tests for prompt names,
+  arguments, and intended workflow coverage.
+- Add read tools for validation, repo workflow checks, export, and render.
+- Add MCP access to Repo Workflow Configuration validation with the same
+  repairable diagnostics as CLI `check` and `generate`.
+- Add a side-effecting MCP write tool for repo output generation that wraps the
+  same core behavior as `diagrampilot generate`.
+- Require explicit file paths or scope for MCP write tools. Source mutation and
+  repo output generation should not default to whole-repo writes.
+- MCP write tools should return structured before/after summaries and written
+  paths in v0.3.0, not full diff output.
+- Add a read-only helper that suggests Stable IDs from labels and reports
+  collisions when source context is provided.
+- Add Source Creation through Structured Diagram Operations.
+- Add Source Mutation through Structured Diagram Operations rather than
+  free-form source replacement.
+- Include fine-grained mutation operations for nodes, edges, groups, top-level
+  title/description/direction, top-level metadata keys, and object metadata
+  keys.
+- Treat each MCP mutation tool call as atomic. Validate after mutation, do not
+  commit invalid writes, and return repairable diagnostics for failed mutation
+  attempts.
+- Target MCP object mutations by Stable ID. Labels can be returned for context
+  but must not be used as mutation identity.
+- Require caller-provided Stable IDs during MCP Source Creation; do not generate
+  object identities from labels in v0.3.0.
+- Write YAML from MCP Source Creation and Source Mutation.
+- Mutate existing valid YAML source files only.
+- Treat invalid existing source files as diagnostic targets before mutation
+  rather than attempting to patch semantically invalid input.
+- Preserve existing object order and unknown metadata where practical.
+- Rewritten YAML should use canonical key order for review stability:
+  top-level `version`, `title`, `description`, `direction`, `nodes`, `edges`,
+  `groups`, `metadata`; node `id`, `label`, `description`, `kind`, `icon`,
+  `metadata`; edge `id`, `from`, `to`, `label`, `directed`, `metadata`; group
+  `id`, `label`, `description`, `contains`, `metadata`.
+- Preserve array order for `nodes`, `edges`, `groups`, and `contains` unless a
+  mutation explicitly inserts, removes, or reorders entries. New objects append
+  by default unless a positioning option is provided.
+- Support `beforeId` and `afterId` positioning for top-level node, edge, and
+  group insertion in v0.3.0. Keep `contains` positioning out of scope; append
+  group containment entries by default.
+- Do not promise source comment preservation until the source rewrite model can
+  prove it.
+
+**Release-Aligned Documentation Rework**
+
+- Rework all docs so they describe v0.3.0 behavior and terminology.
+- Public docs, `README.md`, `llms.txt`, website copy, package READMEs, and
+  maintainer docs are in scope.
+- Publish public MCP docs in v0.3.0, with the MCP server clearly labeled as
+  alpha.
+- Update `llms.txt` to link the public MCP guide once MCP ships.
+- Update the Public Website to mention MCP as a shipped agent integration path,
+  while keeping the primary product story centered on repo-native source files,
+  validation, artifacts, and repo workflow.
+- Add a concise public upgrade section for `0.2 -> 0.3` covering JSON source
+  removal, `render --format`, `export --format dot`, optional config,
+  `generate`, MCP alpha setup, and release notes.
+- ADRs should be checked for continued applicability.
+- ADRs should generally not be changed unless a new ADR-worthy decision needs
+  to be recorded.
+
+### Stretch Scope
+
+- Watch mode for local authoring loops.
+
+Watch mode is useful, but it has cross-platform filesystem, process
+orchestration, debounce, and terminal UX risk. It should not block v0.3.0
+closeout.
+
+### Out Of Scope For v0.3.0
+
+- Project analyzers.
+- Cloud/provider icon catalogs.
+- Arbitrary per-object styling.
+- Major layout engine overhaul.
+- Hosted workspace dependency.
+- Visual editor or drag-and-drop canvas.
+- Prompt-only SaaS generation.
+
+### First-Pass Scorecard
+
+| Track | Impact | Impl Risk | Dep Risk | Contract Risk | Docs Burden | Confidence |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Release operations | 3 | 2 | 2 | 2 | 3 | high |
+| DOT export | 3 | 1 | 1 | 2 | 2 | high |
+| PNG rendering | 4 | 3 | 3 | 3 | 3 | medium |
+| YAML-only source | 4 | 3 | 1 | 5 | 4 | high |
+| Artifact mappings, ignores, and generate | 5 | 4 | 1 | 4 | 4 | medium |
+| DOT/PNG freshness checks | 4 | 4 | 2 | 4 | 4 | medium |
+| Markdown embeds | 4 | 3 | 1 | 3 | 4 | medium |
+| MCP resources and read tools | 5 | 3 | 2 | 3 | 4 | medium |
+| MCP Source Creation | 5 | 3 | 2 | 4 | 4 | medium |
+| MCP Source Mutation | 5 | 5 | 2 | 5 | 5 | medium |
+| Full docs rework | 5 | 3 | 1 | 3 | 5 | high |
+| Watch mode stretch | 3 | 4 | 1 | 3 | 3 | medium |
+
+### Candidate Issue Release Sequence
+
+The v0.3.0 PRD should confirm or revise this sequence:
+
+1. `0.2.1` - Release operations foundation and GitHub Release workflow.
+2. `0.2.2` - DOT export.
+3. `0.2.3` - PNG rendering.
+4. `0.2.4` - YAML-only source support and JSON-source diagnostics.
+5. `0.2.5` - Repo Workflow Configuration with artifact mappings, ignores, and
+   `generate`.
+6. `0.2.6` - DOT/PNG freshness checks.
+7. `0.2.7` - Generated Markdown embeds.
+8. `0.2.8` - MCP resources and read tools.
+9. `0.2.9` - MCP Source Creation.
+10. `0.2.10` - MCP Source Mutation.
+11. `0.3.0` - Release-Aligned Documentation Rework and PRD closeout.
+
+## After v0.3.0
+
+### v0.4.0 Direction
+
+- Stop repo workflow discovery from treating `*.dp.json` files as source files.
+- Keep explicit unsupported-source diagnostics for direct `*.dp.json` command
+  inputs.
+- Revisit watch mode if it did not ship in v0.3.0.
+
+### Later Product Backlog
+
+These are intentionally after the v0.3.0 PRD unless that PRD changes them:
+
+- Project analyzers: package dependency graphs, OpenAPI flows, database schema
+  diagrams, infrastructure summaries, and monorepo package maps.
+- Cloud/provider icon namespaces after packaging and licensing are clear.
+- Stronger layout configuration beyond top-level `direction`.
+- Dedicated layout package evaluation when renderer defaults are not enough.
+- Native Rendering Engine work that makes DiagramPilot's own renderer the
+  primary render path while preserving external export targets where useful.
+- Larger specialized diagram-type catalogs.
+
+## Completed History
+
+The completed history is useful context, but it is not the active backlog.
+
+### MVP
+
+The MVP issue slices under `.scratch/diagrampilot-mvp/` are complete. The MVP
+established DiagramSpec v1 validation, Mermaid/D2 export, SVG rendering, local
+CLI workflows, repairable diagnostics, and review-stable provenance.
+
+### Architecture Deepening
+
+The architecture-deepening tracker under `.scratch/architecture-deepening/` is
+complete. Treat these as current architecture:
+
+- Validated DiagramSpec loading.
+- Shared validation loading in `export` and `render`.
+- Centralized Repairable Validation Error diagnostics.
+- DiagramSpec topology.
+- Group containment validation through topology where useful.
+- Isolated SVG provenance construction and insertion.
+- CLI command planning with filesystem work at execution edges.
+
+### Release Readiness
 
 Release readiness is complete. An AI coding agent can start at
 `https://diagrampilot.com/llms.txt`, follow only Public Documentation, inspect
@@ -118,91 +448,23 @@ git diff --exit-code demo-projects/checkout/docs/architecture.svg
 npm test
 ```
 
-## Active Backlog
-
 ### Public Website Publication
 
-The active release-readiness track is Public Website Publication. It keeps
-Public Documentation in `docs-public/`, keeps Internal Documentation in
-`docs/`, and prepares the Markdown-first public website without introducing a
-hosted-workspace dependency for core workflows.
-
-This track is recorded in `.scratch/public-website-publication/` and covers:
-
-1. Auditing public and internal docs against the shipped CLI.
-2. Adding the DiagramSpec v1 JSON Schema artifact after the docs audit.
-3. Publishing `docs-public/` through website routes under
-   `https://diagrampilot.com`.
-4. Building the public landing page.
-5. Adding deployment guidance.
+The Public Website Publication track under
+`.scratch/public-website-publication/` is complete. It split public and
+internal docs, added the DiagramSpec v1 JSON Schema artifact, published
+`docs-public/` through website routes, built the public landing page, and added
+deployment guidance.
 
 ### Productization And Maintainability
 
-The Productization And Maintainability track starts after Public Website
-Publication closes and is recorded in
-`.scratch/productization-and-maintainability/`.
+The Productization And Maintainability track under
+`.scratch/productization-and-maintainability/` is complete. It cleaned the
+current-state public surface, added the maintainability file-size gate, split
+large modules, formalized the Documentation Contract, redesigned the landing
+page, and added website visual quality checks.
 
-This track covers:
-
-1. Cleaning the Current-State Public Surface and reworking the canonical
-   quickstart.
-2. Adding a hard 1000 LOC gate for authored implementation and test files,
-   defined in `docs/development/maintainability.md`.
-3. Splitting large core and CLI modules under the file-size gate.
-4. Formalizing the Documentation Contract.
-5. Redesigning the Public Landing Page around product storytelling.
-6. Adding website visual quality checks.
-
-MCP remains a later product capability phase, not part of this
-release-readiness track.
-
-### Public Alpha Release
-
-The next release-readiness track after Productization And Maintainability is
-Public Alpha Release. It is recorded in `.scratch/public-alpha-release/` and
-prepares v0.2.0 as the first public and published alpha release.
-
-This track covers:
-
-1. Adding release version tooling and the Issue Version workflow.
-2. Adding the MIT Code License, package metadata, package tarball checks, and
-   Brand Use Policy.
-3. Committing and applying DiagramPilot Brand Assets.
-4. Adding installation and removal Public Documentation.
-5. Proving Package Publishing Readiness and reserving npm names with a
-   pre-alpha publish under the `prealpha` dist-tag.
-6. Adding GitHub Actions branch and pull request CI.
-7. Adding GitHub Actions release automation for package publishing.
-8. Finalizing alpha behavior and the public surface gate, including
-   `diagrampilot init --docs`, a website repository CTA, a quick install command
-   bar, and a full docs refinement and simplification pass.
-9. Closing v0.2.0 as the Public Alpha Release with packages, docs, website,
-   release notes, and public surface checks aligned.
-
-Pre-alpha Issue Versions can be tagged before npm publishing is ready. The
-first package-ready pre-alpha publish uses the `prealpha` npm dist-tag, and
-v0.2.0 is published under `latest`.
-
-Issue Version bumping and closeout are documented in
-`docs/development/release-version-workflow.md`.
-
-### v0.3.0 Release Operations
-
-After v0.2.0 proves the first public alpha package and website release path,
-v0.3.0 should add GitHub Releases for public release visibility.
-
-This track should cover:
-
-1. Creating a GitHub Release for each clean public release tag, starting with
-   `v0.3.0`.
-2. Publishing concise release notes that link the npm `latest` package version,
-   the public website, and the relevant public docs.
-3. Keeping npm package publishing on the public npm registry; GitHub Packages
-   remains out of scope unless a later distribution decision explicitly adds it.
-4. Making GitHub Release creation a guarded release workflow step, after the
-   npm `latest` publish succeeds.
-
-### Completed Repo Workflow Check
+### Repo Workflow Check
 
 Repo Workflow Check is complete. The implementation is recorded in
 `.scratch/repo-workflow-check/` and deepened in
@@ -223,96 +485,13 @@ The first `check` command does not render, write files, update artifacts,
 rewrite sources, scan from the Git root by default, check Mermaid/D2/DOT/PNG
 freshness, or use configurable artifact mappings.
 
-## Completed Architecture Deepening
+### Public Alpha Release
 
-The architecture-deepening tracker slices under
-`.scratch/architecture-deepening/issues/` are completed in the current checkout.
-Treat these as current architecture, not future backlog:
-
-1. Validated DiagramSpec loading: the core package owns the ordered lifecycle
-   from an explicit DiagramPilot Source File path to a valid DiagramSpec or a
-   diagnostic-friendly failure.
-2. Shared validation loading in `export` and `render`, so those commands
-   validate before producing derived artifacts through the same path as
-   `validate`.
-3. Centralized Repairable Validation Error diagnostics for read, parse, and
-   semantic validation failures.
-4. DiagramSpec topology: the core package owns reusable knowledge about Diagram
-   Objects, including Stable ID lookup, Group roots, Group parentage,
-   containment relationships, Node paths, and traversal order.
-5. Group containment validation reuses the shared topology where it improves
-   locality while preserving repairable validation behaviour.
-6. SVG provenance construction and SVG metadata insertion are isolated in the
-   render package and covered without requiring D2 rendering.
-7. CLI command planning represents exit code, stdout, stderr, and file-write
-   intent for `validate`, `export`, and `render`; filesystem reads and writes
-   remain at command execution edges.
-
-## Product Backlog
-
-### Repo Workflow
-
-- Add generated artifact checks beyond next-to-source SVG provenance freshness,
-  such as explicit Mermaid or D2 artifact checks.
-- Add configurable artifact mappings and ignore patterns.
-- Add repository-wide discovery controls when the current scope-based discovery
-  is not enough.
-- Add watch mode for local authoring loops.
-- Add generated Markdown embeds.
-- Add explicit source formatting if source rewriting becomes useful.
-
-### Export And Rendering
-
-- Add DOT export.
-- Add PNG rendering if it can be provided locally and predictably.
-- Add stronger layout configuration beyond top-level `direction`.
-- Evaluate dedicated layout packages when renderer defaults are not enough.
-
-Later layout candidates:
-
-- ELKJS for compound directed diagrams.
-- Dagre for simpler directed graphs.
-- Graphviz for DOT output workflows.
-
-### Icons
-
-- Add cloud/provider icon namespaces only after packaging and licensing are
-  clear.
-- Keep namespaced Icon References as the long-term shape.
-- Avoid unqualified icon names.
-
-### MCP And Structured Agent Operations
-
-MCP comes after release readiness and the public demo workflow are stable.
-
-- Add MCP server.
-- Add resources for schema, docs, and examples.
-- Add tool calls for structured diagram operations.
-- Add support for incremental updates from agents.
-- Preserve source comments and ordering in mutation tools where practical.
-
-### Project Analyzers
-
-Project analyzers come after the compiler workflow is useful without analysis.
-
-- Package dependency graphs.
-- OpenAPI flows.
-- Database schema diagrams.
-- Infrastructure summaries.
-- Monorepo package maps.
-
-## Deferred
-
-These are intentionally outside the current product path:
-
-- Hosted canvas.
-- Drag-and-drop editor.
-- Prompt-only SaaS generation.
-- Full custom renderer before compiler targets prove useful.
-- Large catalog of specialized diagram types.
-- Arbitrary per-object styling in DiagramSpec v1.
-- Project analyzers in the core MVP workflow.
-- Hosted workspace dependency for core workflows.
+The Public Alpha Release track under `.scratch/public-alpha-release/` prepares
+`0.2.0` as the first public and published alpha release. Its implementation
+issues are complete, and final external closeout depends on release-state work
+such as npm `latest`, the release tag, GitHub release visibility, and production
+website deployment.
 
 ## Acceptance Checkpoints
 
@@ -328,12 +507,11 @@ diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 
 ### Demo Project Acceptance
 
-After the Checkout Demo Project lands, the public workflow should be checked
-with real local commands against the demo source:
+The Checkout Demo Project workflow should be checked with real local commands:
 
 ```bash
-diagrampilot validate <demo-source>.dp.yaml
-diagrampilot render <demo-source>.dp.yaml --out <demo-output>.svg
+diagrampilot validate demo-projects/checkout/docs/architecture.dp.yaml
+diagrampilot render demo-projects/checkout/docs/architecture.dp.yaml --out demo-projects/checkout/docs/architecture.svg
 ```
 
 ### Repo Workflow Check Acceptance

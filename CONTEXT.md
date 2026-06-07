@@ -22,9 +22,15 @@ _Avoid_: Generated diagram, rendered artifact, output file
 
 **Authoring Format**:
 The concrete syntax used for a DiagramPilot Source File. YAML is the recommended
-authoring format for humans and agents, while JSON is supported for tooling and
-programmatic integrations.
+authoring format for humans and agents, while JSON is currently supported for
+tooling and programmatic integrations.
 _Avoid_: Separate model, renderer format, export target
+
+**YAML-Only Source Support**:
+The source-format direction where DiagramPilot Source Files use YAML as the
+only supported source syntax. It is about source files, not structured CLI
+output, schema helpers, provenance metadata, or package manifests.
+_Avoid_: JSON output removal, JSON Schema removal, provenance metadata removal
 
 **Derived Artifact**:
 Any file or text generated from a DiagramPilot Source File rather than edited as
@@ -36,6 +42,12 @@ _Avoid_: Source file, primary diagram, editable diagram
 Rendered output that is stable enough for code review for the same DiagramPilot
 version, renderer version, input, and environment.
 _Avoid_: Perfect determinism, timestamped output, environment-dependent output
+
+**Native Rendering Engine**:
+A future DiagramPilot-owned rendering engine that turns DiagramSpec directly
+into rendered artifacts without depending on external diagram renderers for the
+primary render path. External formats may remain export targets for interop.
+_Avoid_: D2 wrapper, export adapter, hosted renderer
 
 **Stable ID**:
 A globally unique identifier for a diagram object within one DiagramSpec. Stable
@@ -85,6 +97,21 @@ _Avoid_: Validation schema, annotations-only field, renderer config
 A local repository path or path-like glob that connects a diagram concept to the
 repo content it represents.
 _Avoid_: External URL, hosted project link, provenance note
+
+**Source Mutation**:
+A product capability that changes a DiagramPilot Source File as the editable
+source of truth rather than only producing Derived Artifacts.
+_Avoid_: Artifact refresh, generated output update, source formatting only
+
+**Source Creation**:
+A product capability that creates a new DiagramPilot Source File from
+DiagramSpec concepts rather than deriving an artifact from an existing source.
+_Avoid_: Artifact generation, init scaffolding, renderer export
+
+**Structured Diagram Operation**:
+An agent-facing operation that reads or changes DiagramSpec concepts through
+Diagram Objects, Stable IDs, and well-known fields rather than raw source text.
+_Avoid_: Free-form YAML edit, full-file replacement, renderer-specific edit
 
 **External Reference**:
 A URL outside the local repository that points to supporting context for a
@@ -146,6 +173,20 @@ A DiagramPilot product capability area for operating on DiagramPilot Source
 Files and Derived Artifacts across a local repository, rather than on one
 explicit source file at a time.
 _Avoid_: Hosted workspace workflow, visual editor workflow, project analyzer
+
+**Repo Workflow Deepening**:
+A product capability area that expands local repository operations around
+artifact expectations, generated embeds, authoring loops, and repo workflow
+health without adding project analyzers or hosted editor behaviour.
+_Avoid_: Project analyzer, visual editor, hosted workspace workflow
+
+**Repo Workflow Configuration**:
+An optional repo-owned configuration file, expected to be
+`diagrampilot.config.yaml`, that defines repo workflow behaviour such as
+artifact mappings, ignore patterns, generated embeds, and freshness
+expectations.
+_Avoid_: Required project manifest, CLI-only flags, hosted workspace settings,
+renderer configuration
 
 **Artifact Freshness**:
 The relationship between a DiagramPilot Source File and a Derived Artifact when
@@ -261,15 +302,40 @@ _Avoid_: Public alpha, first public release, production-ready release
 
 **Issue Version**:
 A DiagramPilot version assigned to the completion of one implementation issue
-after the current planning baseline. Issue Versions advance through pre-alpha
-patch releases until the Public Alpha Release.
+after the current planning baseline. Issue Versions advance release history
+through pre-alpha releases, the Public Alpha Release, and later alpha releases.
 _Avoid_: Unversioned issue closeout, prerelease suffix, code-only milestone
+
+**Issue Release**:
+A clean DiagramPilot Release produced when one completed implementation issue
+merges to `main` with its assigned Issue Version.
+_Avoid_: Unreleased merge, nightly build, PR dry run
 
 **Public Alpha Release**:
 The first public DiagramPilot release milestone intended for external discovery
 and early adoption, with public repo hygiene, licensing, release workflow, and
 current public documentation aligned.
 _Avoid_: Pre-alpha release, production-ready release, private milestone
+
+**Alpha Patch Release**:
+A post-Public Alpha DiagramPilot Release in the same minor line that can ship
+small user-facing improvements or hardening while preserving current public
+contracts.
+_Avoid_: Major capability release, release-operations milestone, breaking release
+
+**Alpha Capability Release**:
+A post-Public Alpha DiagramPilot Release centered on new user-facing diagram or
+repo workflow capabilities scoped by a PRD while still setting early-adopter
+expectations. It may include Release Operations needed to ship and explain
+those capabilities publicly.
+_Avoid_: Beta release, production-ready release, release-only milestone
+
+**Release Operations**:
+DiagramPilot release work that improves public release visibility, release
+notes, tags, and guarded publishing workflows rather than core diagram
+capabilities.
+_Avoid_: Alpha Capability Release, hosted workspace workflow, diagram feature
+itself
 
 **DiagramPilot Release**:
 A versioned DiagramPilot milestone represented by coordinated source,
@@ -297,6 +363,14 @@ Public Documentation that is compact, coherent, published, current with the
 release, and includes installation paths for supported ways to adopt
 DiagramPilot.
 _Avoid_: Internal planning notes, stale quickstart, unpublished docs draft
+
+**Release-Aligned Documentation Rework**:
+A release closeout effort that updates Public Documentation, public entrypoints,
+package documentation, and maintainer documentation so they describe the scoped
+release accurately and use its current product language. ADRs are reviewed for
+continued applicability during this work, but they are not rewritten unless a
+new hard-to-reverse decision needs a record.
+_Avoid_: Copy-edit pass, public roadmap rewrite, ADR churn, docs-only release
 
 **Installation And Removal Guidance**:
 Public Documentation that explains the supported ways to add DiagramPilot to a
