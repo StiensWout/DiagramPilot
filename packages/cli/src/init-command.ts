@@ -75,11 +75,13 @@ const supportFiles = [
   },
 ] as const;
 
+const repoWorkflowConfigPath = "diagrampilot.config.yaml";
+const repoWorkflowConfigContent = "version: 1\n";
 const managedSectionStart = "<!-- diagrampilot:init:start -->";
 const managedSectionEnd = "<!-- diagrampilot:init:end -->";
 
 function initUsageText(): string {
-  return "Usage: diagrampilot init [--docs]";
+  return "Usage: diagrampilot init [--docs] [--config]";
 }
 
 function managedSection(lines: readonly string[]): string {
@@ -110,19 +112,7 @@ function replaceManagedSection(existingContent: string, section: string): string
   return `${existingContent.slice(0, startIndex)}${section}${contentAfterEnd}`;
 }
 
-export function runInit(args: readonly string[], streams: CliStreams): number {
-  if (args.length === 0) {
-    writeLine(streams.stdout, "Local agent docs were not installed.");
-    writeLine(streams.stdout, "Run `diagrampilot init --docs` to add them.");
-    return 0;
-  }
-
-  if (args.length > 1 || args[0] !== "--docs") {
-    writeLine(streams.stderr, `Unknown init option: ${args[0] ?? ""}`);
-    writeLine(streams.stderr, initUsageText());
-    return 1;
-  }
-
+function writeSupportFiles(streams: CliStreams): void {
   for (const supportFile of supportFiles) {
     const filePath = path.resolve(process.cwd(), supportFile.path);
     const section = managedSection(supportFile.lines);
@@ -145,6 +135,60 @@ export function runInit(args: readonly string[], streams: CliStreams): number {
 
     writeFileSync(filePath, nextContent, "utf8");
     writeLine(streams.stdout, `Updated ${supportFile.path}`);
+  }
+}
+
+export function runInit(args: readonly string[], streams: CliStreams): number {
+  if (args.length === 0) {
+    writeLine(streams.stdout, "Local agent docs were not installed.");
+    writeLine(streams.stdout, "Run `diagrampilot init --docs` to add them.");
+    writeLine(
+      streams.stdout,
+      "Run `diagrampilot init --config` to add Repo Workflow Configuration.",
+    );
+    return 0;
+  }
+
+  let shouldWriteDocs = false;
+  let shouldWriteConfig = false;
+
+  for (const arg of args) {
+    if (arg === "--docs") {
+      shouldWriteDocs = true;
+      continue;
+    }
+
+    if (arg === "--config") {
+      shouldWriteConfig = true;
+      continue;
+    }
+
+    writeLine(streams.stderr, `Unknown init option: ${arg}`);
+    writeLine(streams.stderr, initUsageText());
+    return 1;
+  }
+
+  const configPath = path.resolve(process.cwd(), repoWorkflowConfigPath);
+
+  if (shouldWriteConfig && existsSync(configPath)) {
+    writeLine(
+      streams.stderr,
+      `Repo Workflow Configuration already exists: ${repoWorkflowConfigPath}`,
+    );
+    writeLine(
+      streams.stderr,
+      "Suggestion: edit the existing config, or remove it before rerunning `diagrampilot init --config`.",
+    );
+    return 1;
+  }
+
+  if (shouldWriteConfig) {
+    writeFileSync(configPath, repoWorkflowConfigContent, "utf8");
+    writeLine(streams.stdout, `Created ${repoWorkflowConfigPath}`);
+  }
+
+  if (shouldWriteDocs) {
+    writeSupportFiles(streams);
   }
 
   return 0;

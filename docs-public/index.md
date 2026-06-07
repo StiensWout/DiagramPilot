@@ -28,6 +28,7 @@ Current CLI commands:
 ```bash
 diagrampilot init
 diagrampilot init --docs
+diagrampilot init --config
 diagrampilot check
 diagrampilot check docs --json
 diagrampilot validate docs/architecture.dp.yaml
@@ -40,6 +41,8 @@ diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architectu
 ```
 
 Use `init --docs` only when a repository intentionally wants managed local
-agent docs. Use `check` as the read-only repo review/CI command. `render`
-requires `--out`, defaults to SVG, and supports `--format svg|png`. `export`
-prints to stdout by default and writes a file only when `--out` is provided.
+agent docs. Use `init --config` only when a repository intentionally wants
+`diagrampilot.config.yaml`. Use `check` as the read-only repo review/CI
+command. `render` requires `--out`, defaults to SVG, and supports `--format
+svg|png`. `export` prints to stdout by default and writes a file only when
+`--out` is provided.

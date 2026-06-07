@@ -65,9 +65,14 @@ changes them:
   one explicit directory, or one explicit source file.
 - `check` validates discovered source files through the shared validated
   DiagramSpec loading path.
+- `check` discovers optional Repo Workflow Configuration upward from the
+  command scope to the Git root or filesystem root.
+- `check` validates Repo Workflow Configuration before source processing and
+  applies `sources.ignore` patterns only to source discovery.
 - `check` verifies next-to-source same-stem expected SVG artifacts through
   provenance metadata only.
-- `check --json` emits aggregate structured repo workflow results to stdout.
+- `check --json` emits aggregate structured repo workflow results to stdout,
+  including the config path when config is used.
 - `check` does not render, write files, update artifacts, rewrite sources, scan
   from the Git root by default, check Mermaid/D2/DOT/PNG freshness, or support
   configurable artifact mappings.
@@ -77,7 +82,9 @@ changes them:
 - `export` supports Mermaid, D2, and DOT.
 - `export` prints to stdout by default.
 - `export` writes a file only when `--out` is provided.
-- `init` creates or updates support files only.
+- `init` does not write by default. `init --docs` creates or updates managed
+  local agent docs, and `init --config` creates a minimal
+  `diagrampilot.config.yaml`.
 - `init` does not scan the codebase or generate diagrams.
 - Generated SVG provenance records source path, source SHA-256 hash,
   DiagramPilot version, renderer name, and renderer version.

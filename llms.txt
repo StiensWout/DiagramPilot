@@ -18,6 +18,9 @@ Public documentation is hosted under `https://diagrampilot.com`.
 Package install does not create local agent docs.
 Normal `diagrampilot init` does not create local agent docs.
 `diagrampilot init --docs` is opt-in for managed repository guidance.
+Normal `diagrampilot init` does not create Repo Workflow Configuration.
+`diagrampilot init --config` is opt-in for a minimal
+`diagrampilot.config.yaml`.
 
 ## Public Documentation
 

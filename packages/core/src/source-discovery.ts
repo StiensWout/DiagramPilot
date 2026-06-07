@@ -28,6 +28,11 @@ export type DiagramPilotSourceDiscoveryResult =
       failure: DiagramPilotSourceDiscoveryFailure;
     };
 
+export interface DiagramPilotSourceDiscoveryOptions {
+  ignorePatterns?: readonly string[];
+  ignorePatternsRoot?: string;
+}
+
 function isDiagramPilotSourcePath(filePath: string): boolean {
   return /\.dp\.yaml$/iu.test(filePath);
 }
@@ -55,8 +60,66 @@ function normalizeRelativePath(filePath: string): string {
   return filePath.split(path.sep).join("/");
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+}
+
+function normalizeIgnorePattern(pattern: string): string {
+  return pattern
+    .replace(/\\/gu, "/")
+    .replace(/^\.\//u, "")
+    .replace(/\/$/u, "/**");
+}
+
+function globPatternToRegExp(pattern: string): RegExp {
+  const normalizedPattern = normalizeIgnorePattern(pattern);
+  const hasDirectoryBoundary = normalizedPattern.includes("/");
+  const expression = normalizedPattern
+    .split("/")
+    .map((segment) => {
+      if (segment === "**") {
+        return ".*";
+      }
+
+      return escapeRegExp(segment)
+        .replace(/\\\*/gu, "[^/]*")
+        .replace(/\\\?/gu, "[^/]");
+    })
+    .join("/");
+
+  if (hasDirectoryBoundary) {
+    return new RegExp(`^${expression}$`, "u");
+  }
+
+  return new RegExp(`(?:^|/)${expression}$`, "u");
+}
+
+function createSourceIgnoreMatcher(
+  options: DiagramPilotSourceDiscoveryOptions,
+): (absolutePath: string, fallbackRelativePath: string) => boolean {
+  const patterns = options.ignorePatterns ?? [];
+
+  if (patterns.length === 0) {
+    return () => false;
+  }
+
+  const root = options.ignorePatternsRoot;
+  const expressions = patterns.map(globPatternToRegExp);
+
+  return (absolutePath, fallbackRelativePath) => {
+    const relativePath = normalizeRelativePath(
+      root === undefined
+        ? fallbackRelativePath
+        : path.relative(root, absolutePath),
+    );
+
+    return expressions.some((expression) => expression.test(relativePath));
+  };
+}
+
 export async function discoverDiagramPilotSourceFiles(
   scopePath = process.cwd(),
+  options: DiagramPilotSourceDiscoveryOptions = {},
 ): Promise<DiagramPilotSourceDiscoveryResult> {
   let stat;
 
@@ -112,6 +175,7 @@ export async function discoverDiagramPilotSourceFiles(
   }
 
   const sources: DiscoveredDiagramPilotSourceFile[] = [];
+  const isIgnoredSourcePath = createSourceIgnoreMatcher(options);
 
   function visitDirectory(directoryPath: string): void {
     for (const entry of readdirSync(directoryPath, { withFileTypes: true })) {
@@ -130,11 +194,17 @@ export async function discoverDiagramPilotSourceFiles(
         continue;
       }
 
+      const relativePath = normalizeRelativePath(
+        path.relative(scopePath, absolutePath),
+      );
+
+      if (isIgnoredSourcePath(absolutePath, relativePath)) {
+        continue;
+      }
+
       sources.push({
         absolutePath,
-        relativePath: normalizeRelativePath(
-          path.relative(scopePath, absolutePath),
-        ),
+        relativePath,
       });
     }
   }

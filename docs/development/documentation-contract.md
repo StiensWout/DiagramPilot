@@ -81,6 +81,7 @@ The current implemented CLI shape used by public and internal docs is:
 ```bash
 diagrampilot init
 diagrampilot init --docs
+diagrampilot init --config
 diagrampilot check
 diagrampilot check docs --json
 diagrampilot validate docs/architecture.dp.yaml
@@ -105,9 +106,13 @@ The drift checks should verify these public contract points:
 - `README.md`, `llms.txt`, Public Documentation, Internal Documentation, demo
   docs, and website routes agree on current commands and canonical public
   links.
-- `diagrampilot init` does not create Local Agent Documentation by default;
-  `diagrampilot init --docs` is the explicit managed-docs path.
+- `diagrampilot init` does not create Local Agent Documentation or Repo
+  Workflow Configuration by default; `diagrampilot init --docs` is the
+  explicit managed-docs path and `diagrampilot init --config` is the explicit
+  config creation path.
 - `diagrampilot check` remains the read-only repo review/CI command.
+- `diagrampilot check --json` includes the config path when optional
+  `diagrampilot.config.yaml` is discovered.
 - `diagrampilot render <path> --out <artifact.svg>` requires `--out` and
   defaults to SVG.
 - `diagrampilot render <path> --format svg|png --out <path>` renders SVG

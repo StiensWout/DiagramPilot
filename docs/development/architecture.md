@@ -115,15 +115,21 @@ DiagramPilot in their own repositories. Hosted URLs use
 ## CLI Contract
 
 `diagrampilot init`
-: Creates or updates DiagramPilot support files only. It does not scan the
-codebase or generate diagrams by default.
+: Does not write by default. `diagrampilot init --docs` creates or updates
+managed local agent docs. `diagrampilot init --config` creates a minimal
+`diagrampilot.config.yaml` and fails with repair guidance if one already
+exists. Init does not scan the codebase or generate diagrams.
 
 `diagrampilot check [path] [--json]`
 : Runs the read-only repo review/CI workflow. It discovers DiagramPilot Source
 Files in the current directory, one explicit directory, or one explicit source
 file; validates each discovered source; and checks the next-to-source same-stem
-expected SVG artifact through DiagramPilot provenance metadata only. The JSON
-form emits aggregate structured repo workflow results to stdout.
+expected SVG artifact through DiagramPilot provenance metadata only. Optional
+`diagrampilot.config.yaml` is discovered upward from the command scope to the
+Git root or filesystem root, validated before source processing, and may apply
+`sources.ignore` patterns to source discovery only. The JSON form emits
+aggregate structured repo workflow results to stdout and includes the config
+path when config is used.
 
 `diagrampilot validate <path>`
 : Validates one explicit DiagramPilot Source File path. It collects all safely
