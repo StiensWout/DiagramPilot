@@ -46,6 +46,9 @@ None - can start immediately.
 ```bash
 npm test
 node packages/cli/dist/index.js export demo-projects/checkout/docs/architecture.dp.yaml --format dot
+npm run check:release-version -- 0.2.2
+npm run check:package-readiness
+npm publish --dry-run --workspace diagrampilot --tag latest --access public
 git diff --check
 ```
 
@@ -78,6 +81,11 @@ git diff --check
 - Confirmed npm trusted publishing was configured for `@diagrampilot/export-dot`
   with repository `StiensWout/DiagramPilot` and workflow
   `.github/workflows/release.yml`, matching the other public packages.
+- Diagnosed the post-PR release dry-run failure as stale shared release
+  metadata: the workflow tried to publish already-published
+  `diagrampilot@0.2.1` on `main`. Bumped the shared DiagramPilot release
+  metadata to `0.2.2` with `scripts/bump-release-version.mjs` and refreshed
+  checkout demo SVG provenance at the new version.
 
 ## npm package reservation
 
@@ -104,4 +112,15 @@ npm view @diagrampilot/export-dot@0.2.1 version dist-tags --json --registry=http
   passed after browser passkey authentication.
 - `npm view @diagrampilot/export-dot@0.2.1 version dist-tags --json --registry=https://registry.npmjs.org/`
   passed and returned version `0.2.1` with `prealpha` and `latest` dist-tags.
+- `npm run check:release-version -- 0.2.2` passed.
+- `npm publish --dry-run --workspace diagrampilot --tag latest --access public`
+  passed for `diagrampilot@0.2.2`, matching the release job command that had
+  failed at `0.2.1`.
+- `npm publish --dry-run --workspace <package> --tag latest --access public`
+  passed for all public workspaces: `diagrampilot`, `@diagrampilot/core`,
+  `@diagrampilot/icons`, `@diagrampilot/export-mermaid`,
+  `@diagrampilot/export-d2`, `@diagrampilot/export-dot`, and
+  `@diagrampilot/render-svg`.
+- `node scripts/generate-release-notes.mjs --version 0.2.2 --tag v0.2.2`
+  passed.
 - `git diff --check` passed.
