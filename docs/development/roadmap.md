@@ -17,6 +17,7 @@ product surface is a local TypeScript workspace with these CLI workflows:
 - `diagrampilot validate <path>`
 - `diagrampilot validate <path> --json`
 - `diagrampilot render <path> --out <artifact.svg>`
+- `diagrampilot render <path> --format svg|png --out <path>`
 - `diagrampilot export <path> --format mermaid`
 - `diagrampilot export <path> --format d2`
 - `diagrampilot export <path> --format dot`
@@ -34,6 +35,8 @@ The current implementation includes:
   traversal order, and node paths.
 - Mermaid, D2, and DOT text export.
 - SVG rendering through the included local D2 path.
+- PNG rendering by rasterizing the SVG output from the included local render
+  path.
 - Packaged `lucide:*` Icon Reference validation.
 - Deterministic SVG provenance metadata without wall-clock timestamps.
 - Read-only Repo Workflow Check for source discovery, validation, and expected
@@ -50,7 +53,7 @@ changes them:
 - DiagramPilot Source Files are currently `*.dp.yaml` and `*.dp.json`.
 - YAML is preferred for human- and agent-authored source.
 - Derived Artifact categories include SVG, Mermaid, D2, DOT, and PNG; current
-  commands implement SVG, Mermaid, D2, and DOT.
+  commands implement SVG, PNG, Mermaid, D2, and DOT.
 - `validate` validates explicit source file paths only.
 - `validate` does not scan the repository.
 - `validate` does not check generated artifact freshness by default.
@@ -65,7 +68,8 @@ changes them:
 - `check` does not render, write files, update artifacts, rewrite sources, scan
   from the Git root by default, check Mermaid/D2/DOT/PNG freshness, or support
   configurable artifact mappings.
-- `render` produces SVG only.
+- `render` defaults to SVG.
+- `render --format svg|png` supports SVG and PNG output.
 - `render` requires `--out`.
 - `export` supports Mermaid, D2, and DOT.
 - `export` prints to stdout by default.
@@ -146,11 +150,9 @@ repeatable publishing.
   stdout-by-default behavior, writes files only with `--out`, uses `digraph`,
   encodes undirected DiagramSpec edges with `dir=none`, and maps groups to
   Graphviz clusters where practical.
-- Add PNG rendering if it can be provided locally and predictably.
-- Add `diagrampilot render <path> --format svg|png --out <path>`, defaulting
-  to `svg` so existing render commands keep working.
-- PNG rendering should rasterize the SVG produced by the existing local render
-  path rather than introducing a second layout or rendering engine.
+- PNG rendering is complete: `diagrampilot render <path> --format png --out
+  <path>` rasterizes the SVG produced by the existing local render path rather
+  than introducing a second layout or rendering engine.
 - Keep external renderer/export dependencies behind adapter seams so future
   Native Rendering Engine work can replace the primary render path without
   removing export interop.

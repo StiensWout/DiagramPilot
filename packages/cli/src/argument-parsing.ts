@@ -10,6 +10,7 @@ export interface ExportOptions {
 }
 
 export interface RenderCommandOptions {
+  format: "svg" | "png";
   outPath: string;
   sourcePath: string;
 }
@@ -191,11 +192,27 @@ export function parseExportArgs(args: readonly string[]): ExportArgsResult {
 }
 
 export function parseRenderArgs(args: readonly string[]): RenderArgsResult {
+  let format = "svg";
   let outPath: string | undefined;
   let sourcePath: string | undefined;
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
+
+    if (arg === "--format") {
+      const nextArg = args[index + 1];
+
+      if (nextArg === undefined) {
+        return {
+          ok: false,
+          message: "Missing render format.",
+        };
+      }
+
+      format = nextArg;
+      index += 1;
+      continue;
+    }
 
     if (arg === "--out") {
       const nextArg = args[index + 1];
@@ -243,9 +260,17 @@ export function parseRenderArgs(args: readonly string[]): RenderArgsResult {
     };
   }
 
+  if (format !== "svg" && format !== "png") {
+    return {
+      ok: false,
+      message: `Unsupported render format: ${format}`,
+    };
+  }
+
   return {
     ok: true,
     options: {
+      format,
       outPath,
       sourcePath,
     },
