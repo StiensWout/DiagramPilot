@@ -70,30 +70,25 @@ git diff --check
   package readiness checks, package publish-state checks, and docs drift tests
   to treat DOT as a shipped export target and `@diagrampilot/export-dot` as a
   public package.
-- Checked current npm state: `@diagrampilot/export-dot` returns npm `E404`, so
-  the name is not currently published. This shell is not authenticated with
-  npm (`npm whoami` returned `ENEEDAUTH`, and `NPM_TOKEN`,
-  `NODE_AUTH_TOKEN`, and `NPM_CONFIG_TOKEN` were unset), so no first publish was
-  performed here.
+- Created the `@diagrampilot/export-dot` package on npm from an authenticated
+  passkey-backed CLI publish so npm trusted publishing can be configured for
+  the package. The package is visible at `0.2.1`; npm reported both
+  `prealpha` and `latest` dist-tags pointing at `0.2.1` after the first
+  publish.
+- Confirmed npm trusted publishing was configured for `@diagrampilot/export-dot`
+  with repository `StiensWout/DiagramPilot` and workflow
+  `.github/workflows/release.yml`, matching the other public packages.
 
-## npm first-publish handoff
-
-Before GitHub trusted publishing can publish `@diagrampilot/export-dot`, create
-the package once from an authenticated npm session after the branch is merged
-and release metadata is bumped to the intended Issue Version:
+## npm package reservation
 
 ```bash
-npm login
+npm whoami
 npm run build
-npm run check:release-version -- 0.2.2
+npm run check:release-version
 npm run check:package-readiness
-npm publish --workspace @diagrampilot/export-dot --tag latest --access public
-npm view @diagrampilot/export-dot dist-tags --json
+npm publish --workspace @diagrampilot/export-dot --tag prealpha --access public --auth-type=web
+npm view @diagrampilot/export-dot@0.2.1 version dist-tags --json --registry=https://registry.npmjs.org/
 ```
-
-After that first token-backed publish, configure npm trusted publishing for
-`@diagrampilot/export-dot` with repository `StiensWout/DiagramPilot` and
-workflow `.github/workflows/release.yml`, matching the other public packages.
 
 ## Validation results
 
@@ -104,4 +99,9 @@ workflow `.github/workflows/release.yml`, matching the other public packages.
 - `node packages/cli/dist/index.js export demo-projects/checkout/docs/architecture.dp.yaml --format dot`
   passed and printed DOT with `digraph`, nested clusters, labels, and metadata
   tooltips.
+- `npm whoami` passed as `stienswout`.
+- `npm publish --workspace @diagrampilot/export-dot --tag prealpha --access public --auth-type=web`
+  passed after browser passkey authentication.
+- `npm view @diagrampilot/export-dot@0.2.1 version dist-tags --json --registry=https://registry.npmjs.org/`
+  passed and returned version `0.2.1` with `prealpha` and `latest` dist-tags.
 - `git diff --check` passed.
