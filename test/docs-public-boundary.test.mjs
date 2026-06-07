@@ -288,6 +288,10 @@ test("public quickstart and README route users through the checkout demo workflo
     quickstart,
     /diagrampilot export docs\/architecture\.dp\.yaml --format d2 --out docs\/architecture\.d2/,
   );
+  assert.match(
+    quickstart,
+    /diagrampilot export docs\/architecture\.dp\.yaml --format dot --out docs\/architecture\.dot/,
+  );
   assert.match(quickstart, /copy the same source\/render pattern/i);
   assert.match(quickstart, /another repository/i);
 
@@ -391,8 +395,8 @@ test("public examples reference current packages and avoid deferred features", a
   assert.match(examples, /packages\/render-svg/);
   assert.match(examples, /packages\/export-mermaid/);
   assert.match(examples, /packages\/export-d2/);
+  assert.match(examples, /packages\/export-dot/);
   assert.doesNotMatch(examples, /packages\/layout/);
-  assert.doesNotMatch(examples, /\bDOT\b/);
   assert.doesNotMatch(examples, /\bPNG\b/);
   assert.doesNotMatch(examples, /\bMCP\b/);
 

@@ -7,7 +7,8 @@
 
 DiagramPilot is a local-first, repo-native diagram compiler for AI coding
 agents. It validates structured DiagramSpec source files, renders review-stable
-SVG artifacts, and exports Mermaid or D2 text from the same source of truth.
+SVG artifacts, and exports Mermaid, D2, or DOT text from the same source of
+truth.
 
 Public documentation is hosted at `https://diagrampilot.com`.
 
@@ -38,6 +39,7 @@ diagrampilot validate docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
+diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot
 ```
 
 Use `check` as the read-only repo review/CI command. Use `validate` when you
@@ -96,6 +98,7 @@ diagrampilot validate docs/architecture.dp.yaml --json
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
+diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot
 ```
 
 `init` does not create local agent docs by default. Use `init --docs` only

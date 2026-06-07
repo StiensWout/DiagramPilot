@@ -120,6 +120,10 @@ nodes:
     label: packages/export-d2
     kind: package
     icon: lucide:file-code
+  - id: export_dot
+    label: packages/export-dot
+    kind: package
+    icon: lucide:file-code
   - id: icons
     label: packages/icons
     kind: package
@@ -137,6 +141,9 @@ edges:
   - id: cli_to_export_d2
     from: cli
     to: export_d2
+  - id: cli_to_export_dot
+    from: cli
+    to: export_dot
   - id: render_svg_to_export_d2
     from: render_svg
     to: export_d2
@@ -148,6 +155,9 @@ edges:
     to: core
   - id: export_d2_to_core
     from: export_d2
+    to: core
+  - id: export_dot_to_core
+    from: export_dot
     to: core
   - id: core_to_icons
     from: core

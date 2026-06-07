@@ -19,7 +19,8 @@ product surface is a local TypeScript workspace with these CLI workflows:
 - `diagrampilot render <path> --out <artifact.svg>`
 - `diagrampilot export <path> --format mermaid`
 - `diagrampilot export <path> --format d2`
-- `diagrampilot export <path> --format mermaid|d2 --out <path>`
+- `diagrampilot export <path> --format dot`
+- `diagrampilot export <path> --format mermaid|d2|dot --out <path>`
 
 The current implementation includes:
 
@@ -31,7 +32,7 @@ The current implementation includes:
   Reference validation.
 - Reusable DiagramSpec topology for group roots, group parentage, containment,
   traversal order, and node paths.
-- Mermaid and D2 text export.
+- Mermaid, D2, and DOT text export.
 - SVG rendering through the included local D2 path.
 - Packaged `lucide:*` Icon Reference validation.
 - Deterministic SVG provenance metadata without wall-clock timestamps.
@@ -49,7 +50,7 @@ changes them:
 - DiagramPilot Source Files are currently `*.dp.yaml` and `*.dp.json`.
 - YAML is preferred for human- and agent-authored source.
 - Derived Artifact categories include SVG, Mermaid, D2, DOT, and PNG; current
-  `0.2.0` commands implement SVG, Mermaid, and D2.
+  commands implement SVG, Mermaid, D2, and DOT.
 - `validate` validates explicit source file paths only.
 - `validate` does not scan the repository.
 - `validate` does not check generated artifact freshness by default.
@@ -66,7 +67,7 @@ changes them:
   configurable artifact mappings.
 - `render` produces SVG only.
 - `render` requires `--out`.
-- `export` supports Mermaid and D2.
+- `export` supports Mermaid, D2, and DOT.
 - `export` prints to stdout by default.
 - `export` writes a file only when `--out` is provided.
 - `init` creates or updates support files only.
@@ -141,11 +142,10 @@ repeatable publishing.
 
 **Export And Rendering**
 
-- Add DOT export.
-- Add `diagrampilot export <path> --format dot`, preserving the existing
-  stdout-by-default behavior and file writes only with `--out`.
-- DOT export should use `digraph` by default, encode undirected DiagramSpec
-  edges with `dir=none`, and map groups to Graphviz clusters where practical.
+- DOT export is complete: `diagrampilot export <path> --format dot` preserves
+  stdout-by-default behavior, writes files only with `--out`, uses `digraph`,
+  encodes undirected DiagramSpec edges with `dir=none`, and maps groups to
+  Graphviz clusters where practical.
 - Add PNG rendering if it can be provided locally and predictably.
 - Add `diagrampilot render <path> --format svg|png --out <path>`, defaulting
   to `svg` so existing render commands keep working.

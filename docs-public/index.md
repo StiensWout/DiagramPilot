@@ -35,6 +35,7 @@ diagrampilot validate docs/architecture.dp.yaml --json
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
+diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot
 ```
 
 Use `init --docs` only when a repository intentionally wants managed local

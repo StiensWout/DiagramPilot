@@ -20,6 +20,7 @@ const releaseMetadataPaths = [
   "packages/core/package.json",
   "packages/core/src/version.ts",
   "packages/export-d2/package.json",
+  "packages/export-dot/package.json",
   "packages/export-mermaid/package.json",
   "packages/icons/package.json",
   "packages/render-svg/package.json",

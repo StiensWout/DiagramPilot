@@ -100,6 +100,7 @@ npm publish --workspace @diagrampilot/core --tag prealpha --access public
 npm publish --workspace @diagrampilot/icons --tag prealpha --access public
 npm publish --workspace @diagrampilot/export-mermaid --tag prealpha --access public
 npm publish --workspace @diagrampilot/export-d2 --tag prealpha --access public
+npm publish --workspace @diagrampilot/export-dot --tag prealpha --access public
 npm publish --workspace @diagrampilot/render-svg --tag prealpha --access public
 ```
 
@@ -229,6 +230,7 @@ diagrampilot
 @diagrampilot/icons
 @diagrampilot/export-mermaid
 @diagrampilot/export-d2
+@diagrampilot/export-dot
 @diagrampilot/render-svg
 ```
 

@@ -47,10 +47,12 @@ Derived Artifacts produced or refreshed by this workflow:
 ```text
 demo-projects/checkout/docs/architecture.svg
 demo-projects/checkout/docs/architecture.d2
+demo-projects/checkout/docs/architecture.dot
 ```
 
-`architecture.svg` is committed with the demo. `architecture.d2` is an optional
-export file created only when the D2 export command uses `--out`.
+`architecture.svg` is committed with the demo. `architecture.d2` and
+`architecture.dot` are optional export files created only when their export
+commands use `--out`.
 `architecture.dp.yaml` is the editable source of truth. SVG, Mermaid, D2, DOT,
 and PNG are derived artifacts; regenerate them from the source instead of
 hand-editing generated output.
@@ -115,6 +117,7 @@ Export to another diagram-as-code format when needed:
 ```bash
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
+diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot
 ```
 
 `export` prints to stdout by default. Use `--out` only when you want to write a
@@ -188,6 +191,7 @@ diagrampilot validate docs/architecture.dp.yaml --json
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
+diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot
 ```
 
 `diagrampilot init` does not create or update `llms.txt` or `docs/diagrampilot.md` by default.
@@ -213,10 +217,10 @@ artifacts through provenance metadata only.
 `diagrampilot render <path> --out <artifact.svg>`
 : Renders a valid DiagramPilot source file to SVG. `--out` is required.
 
-`diagrampilot export <path> --format mermaid|d2`
+`diagrampilot export <path> --format mermaid|d2|dot`
 : Prints an exported text format to stdout.
 
-`diagrampilot export <path> --format mermaid|d2 --out <path>`
+`diagrampilot export <path> --format mermaid|d2|dot --out <path>`
 : Writes an exported text format to a file.
 
 Diagnostics and validation errors should go to stderr, not stdout.

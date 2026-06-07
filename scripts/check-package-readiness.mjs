@@ -45,6 +45,11 @@ const PUBLIC_PACKAGE_SET = [
     directory: "packages/export-d2",
   },
   {
+    name: "@diagrampilot/export-dot",
+    repoPath: "packages/export-dot/package.json",
+    directory: "packages/export-dot",
+  },
+  {
     name: "@diagrampilot/render-svg",
     repoPath: "packages/render-svg/package.json",
     directory: "packages/render-svg",

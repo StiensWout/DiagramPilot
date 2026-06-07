@@ -81,7 +81,7 @@ process.exit(1);
     assert.equal(result.stderr, "");
     assert.equal(
       result.stdout,
-      "DiagramPilot npm publish-state check passed: 6 package names are available on npm.\n",
+      "DiagramPilot npm publish-state check passed: 7 package names are available on npm.\n",
     );
   });
 });
@@ -102,7 +102,7 @@ process.stdout.write(JSON.stringify({ prealpha: "${workspaceManifest.version}" }
     assert.equal(result.stderr, "");
     assert.equal(
       result.stdout,
-      `DiagramPilot npm publish-state check passed: 6 packages publish ${workspaceManifest.version} under prealpha and latest is not moved.\n`,
+      `DiagramPilot npm publish-state check passed: 7 packages publish ${workspaceManifest.version} under prealpha and latest is not moved.\n`,
     );
   });
 });
@@ -123,7 +123,7 @@ process.stdout.write(JSON.stringify({ latest: "${workspaceManifest.version}" }) 
     assert.equal(result.stderr, "");
     assert.equal(
       result.stdout,
-      `DiagramPilot npm publish-state check passed: 6 packages publish ${workspaceManifest.version} under latest.\n`,
+      `DiagramPilot npm publish-state check passed: 7 packages publish ${workspaceManifest.version} under latest.\n`,
     );
   });
 });
