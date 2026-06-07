@@ -16,6 +16,7 @@ import { exportDiagramSpecToMermaid } from "@diagrampilot/export-mermaid";
 import {
   createSvgRendererProvenance,
   type CreateSvgRendererProvenanceOptions,
+  rasterizeSvgToPng,
   renderDiagramSpecToSvg,
   SVG_RENDERER_NAME,
   SVG_RENDERER_VERSION,
@@ -34,6 +35,7 @@ import {
   formatCheckTextReport,
   helpText,
   jsonTextLine,
+  renderUsageText,
   textLine,
 } from "./cli-output.js";
 import type { CommandPlan } from "./types.js";
@@ -53,6 +55,7 @@ export interface CommandPlanningDependencies {
     spec: DiagramSpec,
     options: { provenance?: SvgRendererProvenance },
   ): Promise<string>;
+  rasterizeSvgToPng(svg: string): Uint8Array;
   createSvgRendererProvenance(
     options: CreateSvgRendererProvenanceOptions,
   ): SvgRendererProvenance;
@@ -67,6 +70,7 @@ const defaultCommandPlanningDependencies: CommandPlanningDependencies = {
   exportDiagramSpecToDot,
   readSourceContent: (sourcePath) => readFileSync(sourcePath),
   renderDiagramSpecToSvg,
+  rasterizeSvgToPng,
   createSvgRendererProvenance,
   getDiagramPilotVersion,
 };
@@ -207,11 +211,7 @@ async function planRender(
     return {
       exitCode: 1,
       stdout: "",
-      stderr: [
-        argsResult.message,
-        "Usage: diagrampilot render <path> --out <path>",
-        "",
-      ].join("\n"),
+      stderr: [argsResult.message, renderUsageText(), ""].join("\n"),
       writes: [],
     };
   }
@@ -239,6 +239,11 @@ async function planRender(
       }),
     });
 
+    const renderedContent =
+      argsResult.options.format === "png"
+        ? dependencies.rasterizeSvgToPng(renderedSvg)
+        : renderedSvg;
+
     return {
       exitCode: 0,
       stdout: "",
@@ -246,7 +251,7 @@ async function planRender(
       writes: [
         {
           path: argsResult.options.outPath,
-          content: renderedSvg,
+          content: renderedContent,
         },
       ],
     };

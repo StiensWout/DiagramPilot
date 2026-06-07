@@ -4,6 +4,7 @@ import {
   type SvgArtifactProvenance,
 } from "@diagrampilot/core";
 import { exportDiagramSpecToD2 } from "@diagrampilot/export-d2";
+import { Resvg } from "@resvg/resvg-js";
 import { D2 } from "@terrastruct/d2";
 
 export const RENDER_SVG_PACKAGE_NAME = "@diagrampilot/render-svg";
@@ -89,4 +90,8 @@ export async function renderDiagramSpecToSvg(
   } finally {
     await terminateD2Worker(d2);
   }
+}
+
+export function rasterizeSvgToPng(svg: string | Buffer): Uint8Array {
+  return new Resvg(svg).render().asPng();
 }

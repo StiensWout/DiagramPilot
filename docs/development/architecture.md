@@ -45,6 +45,7 @@ make a core workflow testable through a deeper interface.
   -> check expected SVG provenance
   -> export Mermaid, D2, or DOT
   -> render SVG through D2
+  -> rasterize rendered SVG to PNG
 ```
 
 DiagramSpec remains the source of truth. Mermaid, D2, SVG, DOT, and PNG are
@@ -88,7 +89,8 @@ metadata keys.
 `packages/render-svg`
 : Render valid DiagramSpec data to SVG through the included local D2 rendering
 path. The adapter owns D2 invocation, worker cleanup, SVG render output, and
-SVG metadata insertion for provenance.
+SVG metadata insertion for provenance. It also owns SVG-to-PNG rasterization for
+the current PNG render path.
 
 `packages/icons`
 : Packaged Lucide icon metadata and local validation support for supported
@@ -128,7 +130,12 @@ correctness only.
 : Emits structured validation output suitable for agents and scripts.
 
 `diagrampilot render <path> --out <artifact.svg>`
-: Validates and renders SVG. The `--out` flag is required.
+: Validates and renders SVG. The `--out` flag is required and SVG is the
+default render format.
+
+`diagrampilot render <path> --format svg|png --out <path>`
+: Validates and renders SVG explicitly or renders PNG by rasterizing the current
+SVG render output.
 
 `diagrampilot export <path> --format mermaid|d2|dot`
 : Exports text to stdout by default.
@@ -206,6 +213,7 @@ Current targets:
 - D2 export.
 - DOT export.
 - SVG render through D2.
+- PNG render by rasterizing the SVG output.
 
 The DiagramPilot install includes a pinned, platform-specific D2 rendering
 dependency. Users should not need a separate manual D2 installation or a

@@ -314,12 +314,9 @@ MVP export targets:
 - D2
 - DOT
 
-MVP rendering target:
+MVP rendering targets:
 
 - SVG
-
-Later targets:
-
 - PNG
 
 Interop targets are not the source of truth.

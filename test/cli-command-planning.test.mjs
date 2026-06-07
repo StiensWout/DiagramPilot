@@ -92,6 +92,7 @@ function createPlanningDependencies(overrides = {}) {
     exportDiagramSpecToDot: () => "digraph checkout_architecture {\n}\n",
     readSourceContent: () => "version: 1\n",
     renderDiagramSpecToSvg: async () => "<svg></svg>",
+    rasterizeSvgToPng: () => Buffer.from([]),
     createSvgRendererProvenance: () => ({
       sourcePath: "docs/architecture.dp.yaml",
       sourceSha256: "hash",
@@ -333,6 +334,67 @@ test("plans render success as an SVG file write", async () => {
   });
 });
 
+test("plans render explicit SVG format as an SVG file write", async () => {
+  const plan = await planCommand(
+    ["render", "docs/architecture.dp.yaml", "--format", "svg", "--out", "docs/architecture.svg"],
+    createPlanningDependencies({
+      renderDiagramSpecToSvg: async () => "<svg><title>Checkout</title></svg>",
+    }),
+  );
+
+  assert.deepEqual(plan, {
+    exitCode: 0,
+    stdout: "",
+    stderr: "",
+    writes: [
+      {
+        path: "docs/architecture.svg",
+        content: "<svg><title>Checkout</title></svg>",
+      },
+    ],
+  });
+});
+
+test("plans render PNG by rasterizing the current SVG render output", async () => {
+  const renderedSvg = "<svg><title>Checkout</title></svg>";
+  const pngBytes = Buffer.from([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+  ]);
+  let rasterizedSvg;
+
+  const plan = await planCommand(
+    [
+      "render",
+      "docs/architecture.dp.yaml",
+      "--format",
+      "png",
+      "--out",
+      "docs/architecture.png",
+    ],
+    createPlanningDependencies({
+      renderDiagramSpecToSvg: async () => renderedSvg,
+      rasterizeSvgToPng: (svg) => {
+        rasterizedSvg = svg;
+
+        return pngBytes;
+      },
+    }),
+  );
+
+  assert.equal(rasterizedSvg, renderedSvg);
+  assert.deepEqual(plan, {
+    exitCode: 0,
+    stdout: "",
+    stderr: "",
+    writes: [
+      {
+        path: "docs/architecture.png",
+        content: pngBytes,
+      },
+    ],
+  });
+});
+
 test("plans render missing output path as usage on stderr", async () => {
   const plan = await planCommand(
     ["render", "docs/architecture.dp.yaml"],
@@ -342,8 +404,46 @@ test("plans render missing output path as usage on stderr", async () => {
   assert.deepEqual(plan, {
     exitCode: 1,
     stdout: "",
-    stderr:
-      "Missing render output path.\nUsage: diagrampilot render <path> --out <path>\n",
+    stderr: [
+      "Missing render output path.",
+      "Usage:",
+      "  diagrampilot render <path> --out <path>",
+      "  diagrampilot render <path> --format svg --out <path>",
+      "  diagrampilot render <path> --format png --out <path>",
+      "",
+    ].join("\n"),
+    writes: [],
+  });
+});
+
+test("plans unsupported render format as repairable usage without loading the source", async () => {
+  const plan = await planCommand(
+    [
+      "render",
+      "docs/architecture.dp.yaml",
+      "--format",
+      "pdf",
+      "--out",
+      "docs/architecture.pdf",
+    ],
+    createPlanningDependencies({
+      loadValidatedDiagramSpec: () => {
+        throw new Error("unsupported format should fail before source loading");
+      },
+    }),
+  );
+
+  assert.deepEqual(plan, {
+    exitCode: 1,
+    stdout: "",
+    stderr: [
+      "Unsupported render format: pdf",
+      "Usage:",
+      "  diagrampilot render <path> --out <path>",
+      "  diagrampilot render <path> --format svg --out <path>",
+      "  diagrampilot render <path> --format png --out <path>",
+      "",
+    ].join("\n"),
     writes: [],
   });
 });
@@ -353,6 +453,33 @@ test("plans render validation failures without an SVG write", async () => {
     ["render", "docs/invalid.dp.yaml", "--out", "docs/invalid.svg"],
     createPlanningDependencies({
       loadValidatedDiagramSpec: () => validationFailure(),
+    }),
+  );
+
+  assert.equal(plan.exitCode, 1);
+  assert.equal(plan.stdout, "");
+  assert.deepEqual(plan.writes, []);
+  assert.match(plan.stderr, /DiagramSpec validation error in docs\/invalid/);
+});
+
+test("plans render PNG validation failures before render adapter side effects", async () => {
+  const plan = await planCommand(
+    [
+      "render",
+      "docs/invalid.dp.yaml",
+      "--format",
+      "png",
+      "--out",
+      "docs/invalid.png",
+    ],
+    createPlanningDependencies({
+      loadValidatedDiagramSpec: () => validationFailure(),
+      renderDiagramSpecToSvg: async () => {
+        throw new Error("invalid source should not render SVG");
+      },
+      rasterizeSvgToPng: () => {
+        throw new Error("invalid source should not rasterize PNG");
+      },
     }),
   );
 

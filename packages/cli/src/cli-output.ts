@@ -27,6 +27,8 @@ export function helpText(version: string): string {
     "  validate <path> [--json]",
     "  check [path] [--json]",
     "  render <path> --out <path>",
+    "  render <path> --format svg --out <path>",
+    "  render <path> --format png --out <path>",
     "  export <path> --format mermaid [--out <path>]",
     "  export <path> --format d2 [--out <path>]",
     "  export <path> --format dot [--out <path>]",
@@ -43,6 +45,15 @@ export function exportUsageText(): string {
     "  diagrampilot export <path> --format mermaid [--out <path>]",
     "  diagrampilot export <path> --format d2 [--out <path>]",
     "  diagrampilot export <path> --format dot [--out <path>]",
+  ].join("\n");
+}
+
+export function renderUsageText(): string {
+  return [
+    "Usage:",
+    "  diagrampilot render <path> --out <path>",
+    "  diagrampilot render <path> --format svg --out <path>",
+    "  diagrampilot render <path> --format png --out <path>",
   ].join("\n");
 }
 

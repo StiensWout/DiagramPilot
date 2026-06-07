@@ -455,6 +455,55 @@ test("diagrampilot render writes SVG with deterministic provenance", async () =>
   });
 });
 
+test("diagrampilot render writes a valid non-empty PNG", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "architecture.dp.yaml"),
+      [
+        "version: 1",
+        "title: Checkout Architecture",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "  - id: api_gateway",
+        "    label: API Gateway",
+        "edges:",
+        "  - id: web_app_to_api_gateway",
+        "    from: web_app",
+        "    to: api_gateway",
+        "    label: HTTPS",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      [
+        "render",
+        "docs/architecture.dp.yaml",
+        "--format",
+        "png",
+        "--out",
+        "docs/architecture.png",
+      ],
+      tempRoot,
+    );
+    const pngBytes = await readFile(
+      path.join(tempRoot, "docs", "architecture.png"),
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stdout, "");
+    assert.equal(result.stderr, "");
+    assert.ok(pngBytes.length > 8);
+    assert.deepEqual([...pngBytes.subarray(0, 8)], [
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+    ]);
+  });
+});
+
 test("diagrampilot check uses the current working directory by default", async () => {
   await withTempRepo(async (tempRoot) => {
     await writeFreshDiagramArtifact(tempRoot);

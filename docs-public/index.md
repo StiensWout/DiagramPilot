@@ -33,6 +33,7 @@ diagrampilot check docs --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
+diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
 diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot
@@ -40,5 +41,5 @@ diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architectu
 
 Use `init --docs` only when a repository intentionally wants managed local
 agent docs. Use `check` as the read-only repo review/CI command. `render`
-requires `--out`. `export` prints to stdout by default and writes a file only
-when `--out` is provided.
+requires `--out`, defaults to SVG, and supports `--format svg|png`. `export`
+prints to stdout by default and writes a file only when `--out` is provided.

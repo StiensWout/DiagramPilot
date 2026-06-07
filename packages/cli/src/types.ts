@@ -7,7 +7,7 @@ export interface CliStreams {
 
 export interface CommandWriteIntent {
   path: string;
-  content: string;
+  content: string | Uint8Array;
 }
 
 export interface CommandPlan {

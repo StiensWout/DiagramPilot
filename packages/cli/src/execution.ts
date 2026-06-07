@@ -17,7 +17,11 @@ export function executeCommandPlan(
 
   for (const write of plan.writes) {
     mkdirSync(path.dirname(write.path), { recursive: true });
-    writeFileSync(write.path, write.content, "utf8");
+    writeFileSync(
+      write.path,
+      write.content,
+      typeof write.content === "string" ? "utf8" : undefined,
+    );
   }
 
   return plan.exitCode;

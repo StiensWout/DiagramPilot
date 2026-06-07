@@ -7,8 +7,8 @@
 
 DiagramPilot is a local-first, repo-native diagram compiler for AI coding
 agents. It validates structured DiagramSpec source files, renders review-stable
-SVG artifacts, and exports Mermaid, D2, or DOT text from the same source of
-truth.
+SVG or PNG artifacts, and exports Mermaid, D2, or DOT text from the same source
+of truth.
 
 Public documentation is hosted at `https://diagrampilot.com`.
 
@@ -37,14 +37,16 @@ cd demo-projects/checkout
 diagrampilot check
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
+diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
 diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot
 ```
 
 Use `check` as the read-only repo review/CI command. Use `validate` when you
-need explicit source repair output. `render` requires `--out`; `export` prints
-to stdout by default and writes a file only when `--out` is provided.
+need explicit source repair output. `render` requires `--out`, defaults to SVG,
+and supports `--format svg|png`; `export` prints to stdout by default and
+writes a file only when `--out` is provided.
 
 ## Source Of Truth
 
@@ -57,7 +59,8 @@ as YAML or JSON:
 Agents should update DiagramPilot source files and regenerate outputs rather
 than hand-editing generated artifacts. Rendered SVG artifacts include
 deterministic provenance metadata with the source path, source SHA-256 hash,
-DiagramPilot version, and renderer version.
+DiagramPilot version, and renderer version. PNG rendering rasterizes the SVG
+render output from the same local render path.
 
 The DiagramSpec v1 JSON Schema is a helper for editors, code generators, and
 other tooling. Core validation remains authoritative for semantic rules.
@@ -96,6 +99,7 @@ diagrampilot check docs --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
+diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
 diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot

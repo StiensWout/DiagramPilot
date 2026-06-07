@@ -9,7 +9,8 @@ DiagramPilot diagrams.
 Create or update a DiagramPilot diagram in this repository.
 Use a structured .dp.yaml source file, run the read-only repo check first,
 preserve stable IDs, validate the spec, and render an SVG artifact with an
-explicit --out path. Do not hand-edit generated artifacts.
+explicit --out path. Render PNG with `--format png` only when a raster artifact
+is needed. Do not hand-edit generated artifacts.
 ```
 
 ## Architecture Prompt

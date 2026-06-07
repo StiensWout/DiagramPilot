@@ -1,7 +1,7 @@
 {
   "name": "@diagrampilot/render-svg",
-  "version": "0.2.2",
-  "description": "SVG rendering adapter for DiagramPilot.",
+  "version": "0.2.3",
+  "description": "SVG rendering and PNG rasterization adapter for DiagramPilot.",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -18,7 +18,8 @@
     "diagramspec",
     "diagram",
     "architecture",
-    "svg"
+    "svg",
+    "png"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -43,8 +44,9 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@diagrampilot/core": "0.2.2",
-    "@diagrampilot/export-d2": "0.2.2",
+    "@diagrampilot/core": "0.2.3",
+    "@diagrampilot/export-d2": "0.2.3",
+    "@resvg/resvg-js": "2.6.2",
     "@terrastruct/d2": "0.1.33"
   }
 }

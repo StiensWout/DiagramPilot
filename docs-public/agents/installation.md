@@ -32,6 +32,7 @@ Run DiagramPilot without adding it to the repository:
 npx diagrampilot check
 npx diagrampilot validate docs/architecture.dp.yaml
 npx diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
+npx diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
 ```
 
 Verified package-manager equivalents:

@@ -86,6 +86,7 @@ diagrampilot check docs --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
+diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
 diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot
@@ -107,7 +108,10 @@ The drift checks should verify these public contract points:
 - `diagrampilot init` does not create Local Agent Documentation by default;
   `diagrampilot init --docs` is the explicit managed-docs path.
 - `diagrampilot check` remains the read-only repo review/CI command.
-- `diagrampilot render <path> --out <artifact.svg>` requires `--out`.
+- `diagrampilot render <path> --out <artifact.svg>` requires `--out` and
+  defaults to SVG.
+- `diagrampilot render <path> --format svg|png --out <path>` renders SVG
+  explicitly or renders PNG by rasterizing the SVG output.
 - `diagrampilot export <path> --format mermaid|d2|dot` prints to stdout by
   default and writes only when `--out` is provided.
 - Public URLs use `https://diagrampilot.com`.
