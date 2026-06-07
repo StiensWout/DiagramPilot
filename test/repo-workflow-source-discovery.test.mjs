@@ -59,7 +59,31 @@ test("discoverDiagramPilotSourceFiles rejects an explicit unsupported source ext
   });
 });
 
-test("discoverDiagramPilotSourceFiles recursively finds supported sources in stable normalized relative path order", async () => {
+test("discoverDiagramPilotSourceFiles rejects an explicit JSON source path with a YAML repair hint", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.json");
+    await mkdir(path.dirname(sourcePath), { recursive: true });
+    await writeFile(
+      sourcePath,
+      JSON.stringify({
+        version: 1,
+        title: "Checkout Architecture",
+        nodes: [{ id: "web_app", label: "Web App" }],
+      }),
+      "utf8",
+    );
+
+    const result = await discoverDiagramPilotSourceFiles(sourcePath);
+
+    assert.equal(result.ok, false);
+    assert.equal(result.failure.kind, "unsupported-source-path");
+    assert.equal(result.failure.path, sourcePath);
+    assert.match(result.failure.message, /YAML is the supported source format/);
+    assert.match(result.failure.message, /\*\.dp\.yaml/);
+  });
+});
+
+test("discoverDiagramPilotSourceFiles recursively finds YAML sources in stable normalized relative path order", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs", "nested"), { recursive: true });
     await mkdir(path.join(tempRoot, "node_modules", "pkg"), {
@@ -80,11 +104,11 @@ test("discoverDiagramPilotSourceFiles recursively finds supported sources in sta
       "utf8",
     );
     await writeFile(
-      path.join(tempRoot, "docs", "nested", "a.dp.json"),
+      path.join(tempRoot, "docs", "nested", "legacy.dp.json"),
       JSON.stringify({
         version: 1,
-        title: "A",
-        nodes: [{ id: "a", label: "A" }],
+        title: "Legacy JSON Source",
+        nodes: [{ id: "legacy", label: "Legacy JSON Source" }],
       }),
       "utf8",
     );
@@ -141,11 +165,7 @@ test("discoverDiagramPilotSourceFiles recursively finds supported sources in sta
     assert.equal(result.scope.path, tempRoot);
     assert.deepEqual(
       result.sources.map((source) => source.relativePath),
-      [
-        "docs/b.dp.yaml",
-        "docs/nested/a.dp.json",
-        "src/invalid.dp.yaml",
-      ],
+      ["docs/b.dp.yaml", "src/invalid.dp.yaml"],
     );
     assert.equal(
       result.sources.every((source) => source.absolutePath.startsWith(tempRoot)),

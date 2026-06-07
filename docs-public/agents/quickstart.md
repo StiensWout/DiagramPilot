@@ -36,7 +36,7 @@ From the repository root, the demo lives here:
 demo-projects/checkout
 ```
 
-DiagramPilot Source Files use `*.dp.yaml` or `*.dp.json`. The demo uses:
+DiagramPilot Source Files use `*.dp.yaml`. The demo uses:
 
 ```text
 demo-projects/checkout/docs/architecture.dp.yaml
@@ -57,6 +57,12 @@ only when their render or export commands use `--out`.
 `architecture.dp.yaml` is the editable source of truth. SVG, Mermaid, D2, DOT,
 and PNG are derived artifacts; regenerate them from the source instead of
 hand-editing generated output.
+
+`*.dp.json` is no longer a DiagramPilot source format. If an older repository
+has JSON source files, convert them to `*.dp.yaml`; explicit JSON source inputs
+return a repairable diagnostic. JSON remains available for `--json` command
+output, the DiagramSpec JSON Schema helper, SVG provenance metadata, package
+manifests, and other tooling surfaces.
 
 ## Demo Workflow
 
@@ -178,8 +184,7 @@ docs/architecture.svg
 
 Agent rules:
 
-- Create or update `*.dp.yaml` or `*.dp.json` as the editable source.
-- Prefer YAML for human- and agent-authored diagrams.
+- Create or update `*.dp.yaml` as the editable source.
 - Use stable lowercase snake case IDs for nodes, edges, and groups.
 - Keep IDs globally unique within one DiagramSpec.
 - Preserve existing IDs when updating diagrams.

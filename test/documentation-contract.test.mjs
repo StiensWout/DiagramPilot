@@ -366,7 +366,11 @@ test("canonical public install and removal guidance is complete and linked", asy
   );
   assert.match(
     installationGuide,
-    /Do not delete adopted `\*\.dp\.yaml`, `\*\.dp\.json`, SVG, Mermaid, D2, DOT, or PNG\s+artifacts by default/i,
+    /Do not delete adopted `\*\.dp\.yaml`, SVG, Mermaid, D2, DOT, or PNG artifacts by\s+default/i,
+  );
+  assert.match(
+    installationGuide,
+    /Legacy `\*\.dp\.json` source files are\s+not supported by current DiagramPilot commands; convert them to `\*\.dp\.yaml`/i,
   );
   assert.match(
     installationGuide,

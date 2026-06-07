@@ -38,9 +38,9 @@ make a core workflow testable through a deeper interface.
 ## Current Data Flow
 
 ```text
-*.dp.yaml / *.dp.json
+*.dp.yaml
   -> load DiagramPilot Source File
-  -> parse YAML or JSON
+  -> parse YAML
   -> validate DiagramSpec
   -> check expected SVG provenance
   -> export Mermaid, D2, or DOT
@@ -58,11 +58,15 @@ promise source formatting, comment preservation, or ordering preservation.
 ## Current Responsibilities
 
 `packages/core`
-: DiagramSpec types, DiagramPilot Source File loading, YAML and JSON parsing,
+: DiagramSpec types, DiagramPilot Source File loading, YAML parsing,
 DiagramSpec validation, Repairable Validation Error shape, Stable ID rules,
 Metadata reference rules, Icon Reference validation entrypoints, and version
 metadata. Core also owns DiagramPilot Source File discovery, expected SVG
 Artifact freshness checks, and the read-only Repo Workflow Check lifecycle.
+Explicit legacy `*.dp.json` source inputs return repairable unsupported-source
+diagnostics; JSON remains available for structured CLI output, the
+DiagramSpec JSON Schema helper, SVG provenance metadata, package manifests, and
+other tooling surfaces.
 
 `packages/cli`
 : User-facing commands, argument parsing, filesystem reads and writes, command
