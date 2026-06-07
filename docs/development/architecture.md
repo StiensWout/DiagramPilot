@@ -16,6 +16,7 @@ packages/core
 packages/cli
 packages/export-mermaid
 packages/export-d2
+packages/export-dot
 packages/render-svg
 packages/icons
 docs
@@ -26,7 +27,6 @@ demo-projects      # repository-shaped demo fixtures
 Later packages may include:
 
 ```text
-packages/export-dot
 packages/layout
 packages/mcp
 ```
@@ -43,7 +43,7 @@ make a core workflow testable through a deeper interface.
   -> parse YAML or JSON
   -> validate DiagramSpec
   -> check expected SVG provenance
-  -> export Mermaid or D2
+  -> export Mermaid, D2, or DOT
   -> render SVG through D2
 ```
 
@@ -78,6 +78,12 @@ rendering.
 : Export valid DiagramSpec data to D2 text. The adapter owns D2 syntax,
 escaping, direction names, Group rendering, Node rendering, Edge rendering, and
 D2-specific path output.
+
+`packages/export-dot`
+: Export valid DiagramSpec data to DOT text. The adapter owns DOT syntax,
+escaping, direction names, Graphviz cluster output for Groups, Node rendering,
+Edge rendering, and metadata-derived DOT attributes for existing DiagramSpec
+metadata keys.
 
 `packages/render-svg`
 : Render valid DiagramSpec data to SVG through the included local D2 rendering
@@ -124,10 +130,10 @@ correctness only.
 `diagrampilot render <path> --out <artifact.svg>`
 : Validates and renders SVG. The `--out` flag is required.
 
-`diagrampilot export <path> --format mermaid|d2`
+`diagrampilot export <path> --format mermaid|d2|dot`
 : Exports text to stdout by default.
 
-`diagrampilot export <path> --format mermaid|d2 --out <path>`
+`diagrampilot export <path> --format mermaid|d2|dot --out <path>`
 : Writes exported text to a file.
 
 Diagnostics and validation errors should go to stderr in text mode. JSON
@@ -162,7 +168,7 @@ Core owns reusable topology knowledge about Diagram Objects:
 - Traversal order for export adapters.
 
 Validation and export adapters consume topology where it improves locality.
-Mermaid and D2 adapters still own target-specific syntax and escaping.
+Mermaid, D2, and DOT adapters still own target-specific syntax and escaping.
 
 ### Diagnostics
 
@@ -198,6 +204,7 @@ Current targets:
 
 - Mermaid export.
 - D2 export.
+- DOT export.
 - SVG render through D2.
 
 The DiagramPilot install includes a pinned, platform-specific D2 rendering

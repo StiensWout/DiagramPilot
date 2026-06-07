@@ -22,6 +22,7 @@ const implementedCliCommands = [
   "diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg",
   "diagrampilot export docs/architecture.dp.yaml --format mermaid",
   "diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2",
+  "diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot",
 ];
 const quickstartCliCommands = [
   "diagrampilot init",
@@ -33,6 +34,7 @@ const quickstartCliCommands = [
   "diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg",
   "diagrampilot export docs/architecture.dp.yaml --format mermaid",
   "diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2",
+  "diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot",
 ];
 const demoWorkflowCommands = [
   "diagrampilot check",
@@ -40,6 +42,7 @@ const demoWorkflowCommands = [
   "diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg",
   "diagrampilot export docs/architecture.dp.yaml --format mermaid",
   "diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2",
+  "diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot",
 ];
 const canonicalPublicLinks = [
   "https://diagrampilot.com/docs/agents/quickstart.md",

@@ -11,6 +11,7 @@ import {
   type ValidatedDiagramSpecLoadResult,
 } from "@diagrampilot/core";
 import { exportDiagramSpecToD2 } from "@diagrampilot/export-d2";
+import { exportDiagramSpecToDot } from "@diagrampilot/export-dot";
 import { exportDiagramSpecToMermaid } from "@diagrampilot/export-mermaid";
 import {
   createSvgRendererProvenance,
@@ -46,6 +47,7 @@ export interface CommandPlanningDependencies {
   loadValidatedDiagramSpec(path: string): ValidatedDiagramSpecLoadResult;
   exportDiagramSpecToMermaid(spec: DiagramSpec): string;
   exportDiagramSpecToD2(spec: DiagramSpec): string;
+  exportDiagramSpecToDot(spec: DiagramSpec): string;
   readSourceContent(path: string): string | Uint8Array;
   renderDiagramSpecToSvg(
     spec: DiagramSpec,
@@ -62,6 +64,7 @@ const defaultCommandPlanningDependencies: CommandPlanningDependencies = {
   loadValidatedDiagramSpec,
   exportDiagramSpecToMermaid,
   exportDiagramSpecToD2,
+  exportDiagramSpecToDot,
   readSourceContent: (sourcePath) => readFileSync(sourcePath),
   renderDiagramSpecToSvg,
   createSvgRendererProvenance,
@@ -165,10 +168,12 @@ function planExport(
     };
   }
 
-  const exportedText =
-    argsResult.options.format === "mermaid"
-      ? dependencies.exportDiagramSpecToMermaid(result.spec)
-      : dependencies.exportDiagramSpecToD2(result.spec);
+  const exporters = {
+    d2: dependencies.exportDiagramSpecToD2,
+    dot: dependencies.exportDiagramSpecToDot,
+    mermaid: dependencies.exportDiagramSpecToMermaid,
+  };
+  const exportedText = exporters[argsResult.options.format](result.spec);
 
   if (argsResult.options.outPath !== undefined) {
     return {

@@ -88,6 +88,7 @@ diagrampilot validate docs/architecture.dp.yaml --json
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
+diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot
 ```
 
 The Checkout Demo Project may use `demo-projects/checkout` as the sample
@@ -107,7 +108,7 @@ The drift checks should verify these public contract points:
   `diagrampilot init --docs` is the explicit managed-docs path.
 - `diagrampilot check` remains the read-only repo review/CI command.
 - `diagrampilot render <path> --out <artifact.svg>` requires `--out`.
-- `diagrampilot export <path> --format mermaid|d2` prints to stdout by
+- `diagrampilot export <path> --format mermaid|d2|dot` prints to stdout by
   default and writes only when `--out` is provided.
 - Public URLs use `https://diagrampilot.com`.
 

@@ -16,6 +16,7 @@ The Public Package Set is:
 - `@diagrampilot/icons`
 - `@diagrampilot/export-mermaid`
 - `@diagrampilot/export-d2`
+- `@diagrampilot/export-dot`
 - `@diagrampilot/render-svg`
 
 The root workspace and `website` workspace remain private and unpublished. They

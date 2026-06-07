@@ -69,7 +69,7 @@ DiagramPilot should focus on:
 - Stable globally unique object IDs.
 - Local CLI workflow.
 - Review-stable SVG artifacts.
-- Mermaid and D2 export.
+- Mermaid, D2, and DOT export.
 - Namespaced packaged icon references.
 - Compact agent documentation.
 - MCP tools later that operate on diagram objects, not raw diagram strings.

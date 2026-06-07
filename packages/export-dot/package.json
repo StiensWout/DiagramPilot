@@ -1,13 +1,13 @@
 {
-  "name": "diagrampilot",
+  "name": "@diagrampilot/export-dot",
   "version": "0.2.1",
-  "description": "DiagramPilot command line interface.",
+  "description": "DOT export adapter for DiagramPilot.",
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/StiensWout/DiagramPilot.git",
-    "directory": "packages/cli"
+    "directory": "packages/export-dot"
   },
   "homepage": "https://diagrampilot.com",
   "bugs": {
@@ -18,11 +18,9 @@
     "diagramspec",
     "diagram",
     "architecture",
-    "cli"
+    "dot",
+    "graphviz"
   ],
-  "bin": {
-    "diagrampilot": "dist/index.js"
-  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -43,13 +41,9 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc -b && node scripts/make-bin-executable.mjs"
+    "build": "tsc -b"
   },
   "dependencies": {
-    "@diagrampilot/core": "0.2.1",
-    "@diagrampilot/export-d2": "0.2.1",
-    "@diagrampilot/export-dot": "0.2.1",
-    "@diagrampilot/export-mermaid": "0.2.1",
-    "@diagrampilot/render-svg": "0.2.1"
+    "@diagrampilot/core": "0.2.1"
   }
 }

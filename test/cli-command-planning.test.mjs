@@ -89,6 +89,7 @@ function createPlanningDependencies(overrides = {}) {
     }),
     exportDiagramSpecToMermaid: () => "flowchart LR\n",
     exportDiagramSpecToD2: () => "direction: right\n",
+    exportDiagramSpecToDot: () => "digraph checkout_architecture {\n}\n",
     readSourceContent: () => "version: 1\n",
     renderDiagramSpecToSvg: async () => "<svg></svg>",
     createSvgRendererProvenance: () => ({
@@ -218,6 +219,7 @@ test("plans export missing format as usage on stderr", async () => {
       "Usage:",
       "  diagrampilot export <path> --format mermaid [--out <path>]",
       "  diagrampilot export <path> --format d2 [--out <path>]",
+      "  diagrampilot export <path> --format dot [--out <path>]",
       "",
     ].join("\n"),
     writes: [],
@@ -247,6 +249,50 @@ test("plans export D2 success as a file write when out is provided", async () =>
       {
         path: "docs/architecture.d2",
         content: "direction: right\n",
+      },
+    ],
+  });
+});
+
+test("plans export DOT success as stdout with no file writes", async () => {
+  const plan = await planCommand(
+    ["export", "docs/architecture.dp.yaml", "--format", "dot"],
+    createPlanningDependencies({
+      exportDiagramSpecToDot: () => "digraph checkout_architecture {\n}\n",
+    }),
+  );
+
+  assert.deepEqual(plan, {
+    exitCode: 0,
+    stdout: "digraph checkout_architecture {\n}\n",
+    stderr: "",
+    writes: [],
+  });
+});
+
+test("plans export DOT success as a file write when out is provided", async () => {
+  const plan = await planCommand(
+    [
+      "export",
+      "docs/architecture.dp.yaml",
+      "--format",
+      "dot",
+      "--out",
+      "docs/architecture.dot",
+    ],
+    createPlanningDependencies({
+      exportDiagramSpecToDot: () => "digraph checkout_architecture {\n}\n",
+    }),
+  );
+
+  assert.deepEqual(plan, {
+    exitCode: 0,
+    stdout: "",
+    stderr: "",
+    writes: [
+      {
+        path: "docs/architecture.dot",
+        content: "digraph checkout_architecture {\n}\n",
       },
     ],
   });

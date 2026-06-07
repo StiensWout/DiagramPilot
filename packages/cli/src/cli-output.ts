@@ -29,6 +29,7 @@ export function helpText(version: string): string {
     "  render <path> --out <path>",
     "  export <path> --format mermaid [--out <path>]",
     "  export <path> --format d2 [--out <path>]",
+    "  export <path> --format dot [--out <path>]",
   ].join("\n");
 }
 
@@ -41,6 +42,7 @@ export function exportUsageText(): string {
     "Usage:",
     "  diagrampilot export <path> --format mermaid [--out <path>]",
     "  diagrampilot export <path> --format d2 [--out <path>]",
+    "  diagrampilot export <path> --format dot [--out <path>]",
   ].join("\n");
 }
 

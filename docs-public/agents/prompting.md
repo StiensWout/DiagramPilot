@@ -41,11 +41,12 @@ the issues directly related to DiagramPilot diagrams.
 ## Export Prompt
 
 ```text
-Export docs/architecture.dp.yaml to Mermaid and show me the output. Do not write
-an exported file unless I ask for one.
+Export docs/architecture.dp.yaml to DOT and show me the output. Do not write an
+exported file unless I ask for one.
 ```
 
-Use `--out` when the exported Mermaid or D2 artifact should be written to disk.
+Use `--out` when the exported Mermaid, D2, or DOT artifact should be written to
+disk.
 
 ## Bad Prompt Pattern
 

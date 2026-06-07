@@ -12,18 +12,6 @@
   "references": [
     {
       "path": "../core"
-    },
-    {
-      "path": "../export-d2"
-    },
-    {
-      "path": "../export-dot"
-    },
-    {
-      "path": "../export-mermaid"
-    },
-    {
-      "path": "../render-svg"
     }
   ]
 }

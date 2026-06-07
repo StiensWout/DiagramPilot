@@ -348,6 +348,48 @@ test("diagrampilot export prints Mermaid for a valid DiagramSpec", async () => {
   });
 });
 
+test("diagrampilot export prints DOT for a valid DiagramSpec", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
+    const sourceText = [
+      "version: 1",
+      "title: Checkout Architecture",
+      "nodes:",
+      "  - id: web_app",
+      "    label: Web App",
+      "  - id: api_gateway",
+      "    label: API Gateway",
+      "groups:",
+      "  - id: frontend",
+      "    label: Frontend",
+      "    contains:",
+      "      - web_app",
+      "edges:",
+      "  - id: web_app_to_api_gateway",
+      "    from: web_app",
+      "    to: api_gateway",
+      "    directed: false",
+      "",
+    ].join("\n");
+
+    await writeFile(sourcePath, sourceText, "utf8");
+
+    const result = await runBuiltCli(
+      ["export", "docs/architecture.dp.yaml", "--format", "dot"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.match(result.stdout, /^digraph "Checkout Architecture"/);
+    assert.match(result.stdout, /subgraph "cluster_frontend"/);
+    assert.match(result.stdout, /"web_app" -> "api_gateway" \[dir=none\];/);
+    assert.equal(await readFile(sourcePath, "utf8"), sourceText);
+  });
+});
+
 test("diagrampilot render writes SVG with deterministic provenance", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });

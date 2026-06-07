@@ -312,6 +312,7 @@ MVP export targets:
 
 - Mermaid
 - D2
+- DOT
 
 MVP rendering target:
 
@@ -319,7 +320,6 @@ MVP rendering target:
 
 Later targets:
 
-- DOT
 - PNG
 
 Interop targets are not the source of truth.

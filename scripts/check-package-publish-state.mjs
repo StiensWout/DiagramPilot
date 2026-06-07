@@ -8,6 +8,7 @@ const PUBLIC_PACKAGE_SET = [
   "@diagrampilot/icons",
   "@diagrampilot/export-mermaid",
   "@diagrampilot/export-d2",
+  "@diagrampilot/export-dot",
   "@diagrampilot/render-svg",
 ];
 

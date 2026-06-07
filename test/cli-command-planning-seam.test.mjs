@@ -34,6 +34,9 @@ test("command planning remains testable through a focused module", async () => {
       exportDiagramSpecToD2: () => {
         throw new Error("validate planning should not export D2");
       },
+      exportDiagramSpecToDot: () => {
+        throw new Error("validate planning should not export DOT");
+      },
       readSourceContent: () => {
         throw new Error("validate planning should not read source content");
       },

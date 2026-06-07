@@ -4,7 +4,7 @@ export interface ValidateOptions {
 }
 
 export interface ExportOptions {
-  format: "d2" | "mermaid";
+  format: "d2" | "dot" | "mermaid";
   outPath?: string;
   sourcePath: string;
 }
@@ -173,7 +173,7 @@ export function parseExportArgs(args: readonly string[]): ExportArgsResult {
     };
   }
 
-  if (format !== "mermaid" && format !== "d2") {
+  if (format !== "mermaid" && format !== "d2" && format !== "dot") {
     return {
       ok: false,
       message: `Unsupported export format: ${format}`,

@@ -5,8 +5,8 @@
 > from structured `*.dp.yaml` and `*.dp.json` source files.
 
 DiagramPilot uses DiagramSpec as its source model. A DiagramPilot source file is
-the editable artifact. Rendered SVG and exported Mermaid or D2 text are derived
-outputs.
+the editable artifact. Rendered SVG and exported Mermaid, D2, or DOT text are
+derived outputs.
 
 Public documentation is hosted under `https://diagrampilot.com`.
 
