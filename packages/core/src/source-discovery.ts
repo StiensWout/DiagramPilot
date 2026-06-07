@@ -29,7 +29,15 @@ export type DiagramPilotSourceDiscoveryResult =
     };
 
 function isDiagramPilotSourcePath(filePath: string): boolean {
-  return /\.dp\.(yaml|json)$/iu.test(filePath);
+  return /\.dp\.yaml$/iu.test(filePath);
+}
+
+function unsupportedSourceFileMessage(filePath: string): string {
+  if (filePath.toLowerCase().endsWith(".dp.json")) {
+    return `Unsupported DiagramPilot source file: ${filePath}. YAML is the supported source format; use a *.dp.yaml source file.`;
+  }
+
+  return `Unsupported DiagramPilot source file: ${filePath}`;
 }
 
 const ignoredDiagramPilotDiscoveryDirectories = new Set([
@@ -72,7 +80,7 @@ export async function discoverDiagramPilotSourceFiles(
         failure: {
           kind: "unsupported-source-path",
           path: scopePath,
-          message: `Unsupported DiagramPilot source file: ${scopePath}`,
+          message: unsupportedSourceFileMessage(scopePath),
         },
       };
     }

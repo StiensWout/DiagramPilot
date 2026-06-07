@@ -51,6 +51,7 @@ export type {
   SourceLoadResult,
   SourceParseFailure,
   SourceReadFailure,
+  SourceUnsupportedFormatFailure,
   ValidatedDiagramSpecLoadFailure,
   ValidatedDiagramSpecLoadResult,
 } from "./source-loading.js";

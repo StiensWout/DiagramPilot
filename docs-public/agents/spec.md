@@ -6,13 +6,17 @@ update than raw Mermaid, D2, DOT, or SVG.
 
 ## Source Files
 
-DiagramSpec can be stored as YAML or JSON:
+DiagramSpec is stored as YAML:
 
 - `*.dp.yaml`
-- `*.dp.json`
 
-YAML is the recommended authoring format for humans and agents. JSON is
-supported for tooling and programmatic integrations.
+`*.dp.json` is no longer a DiagramPilot source file format. Explicit legacy
+JSON source inputs fail with repair guidance that points to `*.dp.yaml`.
+DiagramPilot does not include a JSON-to-YAML migration command.
+
+JSON remains supported for tooling surfaces such as `--json` CLI output, the
+DiagramSpec JSON Schema helper, SVG provenance metadata, package manifests, and
+other structured integration data.
 
 ## JSON Schema Helper
 

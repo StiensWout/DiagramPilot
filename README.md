@@ -51,16 +51,21 @@ writes a file only when `--out` is provided.
 ## Source Of Truth
 
 DiagramSpec is the source model. A DiagramPilot source file stores DiagramSpec
-as YAML or JSON:
+as YAML:
 
 - `*.dp.yaml`
-- `*.dp.json`
 
 Agents should update DiagramPilot source files and regenerate outputs rather
 than hand-editing generated artifacts. Rendered SVG artifacts include
 deterministic provenance metadata with the source path, source SHA-256 hash,
 DiagramPilot version, and renderer version. PNG rendering rasterizes the SVG
 render output from the same local render path.
+
+DiagramPilot no longer accepts `*.dp.json` as a source file format. Explicit
+legacy JSON source inputs fail with repair guidance that points to
+`*.dp.yaml`. JSON remains supported for `--json` CLI output, the DiagramSpec
+JSON Schema, SVG provenance metadata, package manifests, and other tooling
+surfaces.
 
 The DiagramSpec v1 JSON Schema is a helper for editors, code generators, and
 other tooling. Core validation remains authoritative for semantic rules.

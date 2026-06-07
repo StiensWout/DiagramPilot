@@ -113,6 +113,33 @@ test("public DiagramSpec guide presents JSON Schema as a tooling helper", async 
   assert.match(specGuide, /core validation remains authoritative/);
 });
 
+test("public docs present YAML-only source support and JSON tooling compatibility", async () => {
+  const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
+  const llmsText = await readFile(path.join(repoRoot, "llms.txt"), "utf8");
+  const specGuide = await readFile(
+    path.join(repoRoot, "docs-public", "agents", "spec.md"),
+    "utf8",
+  );
+  const quickstart = await readFile(
+    path.join(repoRoot, "docs-public", "agents", "quickstart.md"),
+    "utf8",
+  );
+
+  for (const publicSurface of [readme, llmsText, specGuide, quickstart]) {
+    assert.match(publicSurface, /\*\.dp\.yaml/);
+    assert.match(publicSurface, /\*\.dp\.json/);
+    assert.match(publicSurface, /no longer/i);
+    assert.match(publicSurface, /repair/i);
+    assert.match(publicSurface, /--json/);
+    assert.match(publicSurface, /JSON Schema/);
+    assert.match(publicSurface, /provenance/i);
+  }
+
+  assert.doesNotMatch(specGuide, /stored as YAML or JSON/i);
+  assert.doesNotMatch(quickstart, /use `\*\.dp\.yaml` or `\*\.dp\.json`/i);
+  assert.doesNotMatch(readme, /as YAML or JSON/i);
+});
+
 test("repository guidance separates public docs from internal maintainer docs", async () => {
   const agentGuide = await readFile(path.join(repoRoot, "AGENTS.md"), "utf8");
 

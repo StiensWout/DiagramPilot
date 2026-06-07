@@ -33,10 +33,10 @@ edges required, validate, and render the SVG again.
 ## Review Prompt
 
 ```text
-Run diagrampilot check for this repository. Review .dp.yaml and .dp.json files
-for broken references, duplicate IDs, invalid group containment, unknown icons,
-unclear labels, and stale expected SVG artifacts. Report findings and fix only
-the issues directly related to DiagramPilot diagrams.
+Run diagrampilot check for this repository. Review .dp.yaml files for broken
+references, duplicate IDs, invalid group containment, unknown icons, unclear
+labels, and stale expected SVG artifacts. Report findings and fix only the
+issues directly related to DiagramPilot diagrams.
 ```
 
 ## Export Prompt

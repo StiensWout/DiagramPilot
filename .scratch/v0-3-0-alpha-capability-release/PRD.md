@@ -17,12 +17,13 @@ generate configured outputs across a repo, publish generated Markdown embeds,
 or expose structured agent operations through MCP. Repo workflow checks also
 cannot express intentional artifact mappings or ignore patterns.
 
-The source-format contract also needs to tighten. YAML is the preferred
-Authoring Format for humans and agents, but `*.dp.json` remains supported as a
-source format. That split increases documentation, validation, mutation, and
-MCP complexity. For the next feature release, DiagramPilot should move to
-YAML-only source support while keeping JSON for structured CLI output, schema
-helpers, provenance metadata, package manifests, and other tooling surfaces.
+The source-format contract also needs to tighten. YAML is the supported
+Authoring Format for humans and agents, while `*.dp.json` is no longer a source
+format. Keeping JSON source compatibility would increase documentation,
+validation, mutation, and MCP complexity. For the next feature release,
+DiagramPilot should move to YAML-only source support while keeping JSON for
+structured CLI output, schema helpers, provenance metadata, package manifests,
+and other tooling surfaces.
 
 Release operations need to improve at the same time. Every implementation issue
 that merges to `main` should be a clean Issue Release with its own Issue
@@ -262,9 +263,9 @@ The release will:
 - Do not add a JSON-to-YAML migration command in v0.3.0.
 - Mention JSON source removal prominently in v0.3.0 release notes and public
   docs, without a large migration guide.
-- v0.4.0 should stop repo workflow discovery from treating `*.dp.json` as a
-  source format while preserving explicit unsupported-source diagnostics for
-  direct `*.dp.json` command inputs.
+- Repo workflow discovery ignores `*.dp.json` files as non-source files while
+  preserving explicit unsupported-source diagnostics for direct `*.dp.json`
+  command inputs.
 - Repo Workflow Configuration is optional and expected at
   `diagrampilot.config.yaml`.
 - `diagrampilot init` does not create config by default.

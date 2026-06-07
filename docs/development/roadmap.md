@@ -25,7 +25,9 @@ product surface is a local TypeScript workspace with these CLI workflows:
 
 The current implementation includes:
 
-- DiagramSpec v1 source loading from YAML and JSON DiagramPilot Source Files.
+- DiagramSpec v1 source loading from YAML DiagramPilot Source Files.
+- Repairable unsupported-source diagnostics for explicit legacy `*.dp.json`
+  source inputs.
 - Validated DiagramSpec loading through a shared core lifecycle.
 - Repairable text and JSON validation errors.
 - Stable lowercase snake case IDs across nodes, edges, and groups.
@@ -50,8 +52,9 @@ These behaviors are the `0.2.0` product contract unless a future PRD explicitly
 changes them:
 
 - DiagramSpec remains the source of truth.
-- DiagramPilot Source Files are currently `*.dp.yaml` and `*.dp.json`.
-- YAML is preferred for human- and agent-authored source.
+- DiagramPilot Source Files are `*.dp.yaml`.
+- `*.dp.json` is not a source format; explicit legacy JSON source inputs
+  produce repairable diagnostics that point to `*.dp.yaml`.
 - Derived Artifact categories include SVG, Mermaid, D2, DOT, and PNG; current
   commands implement SVG, PNG, Mermaid, D2, and DOT.
 - `validate` validates explicit source file paths only.
@@ -171,18 +174,17 @@ repeatable publishing.
   field is required for the scoped release.
 - Keep JSON for structured CLI output, the DiagramSpec JSON Schema helper, SVG
   provenance metadata, package manifests, and other tooling surfaces.
-- In v0.3.0, `*.dp.json` source files should produce repairable diagnostics
-  that explain JSON source files are no longer supported and should be
-  converted to `*.dp.yaml`.
+- `*.dp.json` source files produce repairable diagnostics that explain JSON
+  source files are no longer supported and should be converted to
+  `*.dp.yaml`.
 - Do not add a JSON-to-YAML migration command in v0.3.0; current expected usage
   does not justify a dedicated migration surface.
 - Mention JSON source removal prominently in v0.3.0 release notes and public
   docs, but do not create a large migration guide.
-- In v0.4.0, repo workflow discovery should ignore `*.dp.json` files as
-  non-source files.
-- In v0.4.0, explicit commands such as
-  `diagrampilot validate docs/old.dp.json` should still return a repairable
-  unsupported-source-format diagnostic instead of silently doing nothing.
+- Repo workflow discovery ignores `*.dp.json` files when scanning directories.
+- Explicit commands such as `diagrampilot validate docs/old.dp.json` return a
+  repairable unsupported-source-format diagnostic instead of silently doing
+  nothing.
 
 **Repo Workflow Deepening**
 
@@ -391,9 +393,6 @@ The v0.3.0 PRD should confirm or revise this sequence:
 
 ### v0.4.0 Direction
 
-- Stop repo workflow discovery from treating `*.dp.json` files as source files.
-- Keep explicit unsupported-source diagnostics for direct `*.dp.json` command
-  inputs.
 - Revisit watch mode if it did not ship in v0.3.0.
 
 ### Later Product Backlog

@@ -307,6 +307,40 @@ test("diagrampilot validate reads a YAML source file from an explicit path", asy
   });
 });
 
+test("diagrampilot validate rejects a legacy JSON source with a YAML repair hint", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "architecture.dp.json"),
+      JSON.stringify(
+        {
+          version: 1,
+          title: "Checkout Architecture",
+          nodes: [{ id: "web_app", label: "Web App" }],
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const result = await runBuiltCli(
+      ["validate", "docs/architecture.dp.json"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /Unsupported DiagramPilot source file: docs\/architecture\.dp\.json/,
+    );
+    assert.match(result.stderr, /YAML is the supported source format/);
+    assert.match(result.stderr, /\*\.dp\.yaml/);
+  });
+});
+
 test("diagrampilot export prints Mermaid for a valid DiagramSpec", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });

@@ -45,7 +45,7 @@ test("loadValidatedDiagramSpec returns a valid DiagramSpec with source context f
   });
 });
 
-test("loadValidatedDiagramSpec returns a valid DiagramSpec with source context from JSON", async () => {
+test("loadValidatedDiagramSpec rejects an explicit JSON source path with a YAML repair hint", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });
     const sourcePath = path.join(tempRoot, "docs", "architecture.dp.json");
@@ -64,12 +64,11 @@ test("loadValidatedDiagramSpec returns a valid DiagramSpec with source context f
 
     const result = loadValidatedDiagramSpec(sourcePath);
 
-    assert.equal(result.ok, true);
-    assert.equal(result.source.path, sourcePath);
-    assert.equal(result.source.format, "json");
-    assert.equal(result.source.content, sourceContent);
-    assert.equal(result.spec.title, "Checkout Architecture");
-    assert.deepEqual(result.spec.nodes, [{ id: "web_app", label: "Web App" }]);
+    assert.equal(result.ok, false);
+    assert.equal(result.failure.kind, "unsupported-source-format");
+    assert.equal(result.failure.path, sourcePath);
+    assert.match(result.failure.message, /YAML is the supported source format/);
+    assert.match(result.failure.message, /\*\.dp\.yaml/);
   });
 });
 
@@ -114,7 +113,7 @@ test("loadValidatedDiagramSpec returns a YAML parse failure before semantic vali
   });
 });
 
-test("loadValidatedDiagramSpec returns a JSON parse failure before semantic validation", async () => {
+test("loadValidatedDiagramSpec rejects a JSON source path before parsing JSON syntax", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });
     const sourcePath = path.join(tempRoot, "docs", "broken.dp.json");
@@ -137,11 +136,10 @@ test("loadValidatedDiagramSpec returns a JSON parse failure before semantic vali
     const result = loadValidatedDiagramSpec(sourcePath);
 
     assert.equal(result.ok, false);
-    assert.equal(result.failure.kind, "parse");
-    assert.equal(result.failure.format, "json");
+    assert.equal(result.failure.kind, "unsupported-source-format");
     assert.equal(result.failure.path, sourcePath);
-    assert.equal(typeof result.failure.message, "string");
-    assert.notEqual(result.failure.message.length, 0);
+    assert.match(result.failure.message, /YAML is the supported source format/);
+    assert.match(result.failure.message, /\*\.dp\.yaml/);
   });
 });
 

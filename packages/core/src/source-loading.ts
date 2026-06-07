@@ -40,7 +40,16 @@ export interface SourceReadFailure {
   message: string;
 }
 
-export type SourceLoadFailure = SourceParseFailure | SourceReadFailure;
+export interface SourceUnsupportedFormatFailure {
+  kind: "unsupported-source-format";
+  path: string;
+  message: string;
+}
+
+export type SourceLoadFailure =
+  | SourceParseFailure
+  | SourceReadFailure
+  | SourceUnsupportedFormatFailure;
 
 export type SourceLoadResult =
   | {
@@ -76,6 +85,10 @@ function formatSourceFailure(failure: SourceLoadFailure): string {
     return `Unable to read ${failure.path}: ${failure.message}`;
   }
 
+  if (failure.kind === "unsupported-source-format") {
+    return failure.message;
+  }
+
   const location =
     failure.line === undefined || failure.column === undefined
       ? ""
@@ -94,6 +107,15 @@ function sourceFailureToRepairableDiagnostic(
       message: `Unable to read ${failure.path}: ${failure.message}`,
       expected: "Readable DiagramPilot Source File.",
       suggestion: "Check that the source path exists and is readable.",
+    };
+  }
+
+  if (failure.kind === "unsupported-source-format") {
+    return {
+      path: "$",
+      message: failure.message,
+      expected: "YAML DiagramPilot Source File syntax.",
+      suggestion: "Use a `*.dp.yaml` DiagramPilot Source File.",
     };
   }
 
@@ -266,6 +288,17 @@ export function loadDiagramPilotSourceFile(path: string): SourceLoadResult {
         kind: "read",
         path,
         message: error instanceof Error ? error.message : "Unable to read file.",
+      },
+    };
+  }
+
+  if (path.toLowerCase().endsWith(".dp.json")) {
+    return {
+      ok: false,
+      failure: {
+        kind: "unsupported-source-format",
+        path,
+        message: `Unsupported DiagramPilot source file: ${path}. YAML is the supported source format; use a *.dp.yaml source file.`,
       },
     };
   }
