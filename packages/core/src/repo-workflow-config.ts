@@ -1,8 +1,4 @@
-import {
-  existsSync,
-  readFileSync,
-  statSync,
-} from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
 import { LineCounter, parseDocument } from "yaml";
@@ -12,6 +8,38 @@ import type { RepairableDiagnostic } from "./diagramspec-validation.js";
 
 export const repoWorkflowConfigFileName = "diagrampilot.config.yaml";
 
+export type RepoWorkflowArtifactOutputFormat =
+  | "svg" | "png" | "mermaid" | "d2" | "dot" | "markdown";
+
+export interface RepoWorkflowArtifactOutput {
+  format: RepoWorkflowArtifactOutputFormat;
+  path: string;
+}
+
+export interface RepoWorkflowArtifactMapping {
+  source?: string;
+  sourceGlob?: string;
+  outputs: readonly RepoWorkflowArtifactOutput[];
+}
+
+const artifactOutputFormats = new Set<RepoWorkflowArtifactOutputFormat>([
+  "svg",
+  "png",
+  "mermaid",
+  "d2",
+  "dot",
+  "markdown",
+]);
+
+const artifactOutputFormatList = "svg, png, mermaid, d2, dot, markdown";
+const artifactOutputTemplateVariables = new Set([
+  "stem",
+  "sourceDir",
+  "sourcePath",
+  "format",
+]);
+const artifactOutputTemplateVariableList = "stem, sourceDir, sourcePath, format";
+
 export interface RepoWorkflowConfig {
   path: string;
   directory: string;
@@ -19,6 +47,7 @@ export interface RepoWorkflowConfig {
   sources: {
     ignore: readonly string[];
   };
+  artifacts: readonly RepoWorkflowArtifactMapping[];
 }
 
 export interface RepoWorkflowConfigFailure {
@@ -131,6 +160,133 @@ function validateIgnorePattern(
   return undefined;
 }
 
+function validateArtifactMapping(
+  configPath: string,
+  mapping: unknown,
+  index: number,
+): RepoWorkflowConfigDiscoveryResult | undefined {
+  const diagnosticPath = `artifacts[${index}]`;
+
+  if (!isRecord(mapping)) {
+    return invalidConfig(configPath, {
+      path: diagnosticPath,
+      message: "Artifact mappings must be YAML objects.",
+      expected: "An object with exactly one of `source` or `sourceGlob`.",
+      suggestion: "Use `source: docs/architecture.dp.yaml` or `sourceGlob: docs/**/*.dp.yaml`.",
+      badValue: mapping,
+    });
+  }
+
+  const hasSource = mapping.source !== undefined;
+  const hasSourceGlob = mapping.sourceGlob !== undefined;
+
+  if (hasSource === hasSourceGlob) {
+    return invalidConfig(configPath, {
+      path: diagnosticPath,
+      message: "Artifact mappings must set exactly one of `source` or `sourceGlob`.",
+      expected: "Exactly one source selector.",
+      suggestion: "Keep either `source` for one DiagramPilot Source File or `sourceGlob` for a set of source files.",
+      badValue: mapping,
+    });
+  }
+
+  const selectorName = hasSource ? "source" : "sourceGlob";
+  const selectorValue = mapping[selectorName];
+
+  if (typeof selectorValue !== "string" || selectorValue.trim() === "") {
+    return invalidConfig(configPath, {
+      path: `${diagnosticPath}.${selectorName}`,
+      message: "Artifact mapping source selectors must be non-empty strings.",
+      expected: "A source path or source glob relative to the config directory.",
+      suggestion: "Use a relative path such as `docs/architecture.dp.yaml`.",
+      badValue: selectorValue,
+    });
+  }
+
+  if (isAbsoluteConfigPath(selectorValue) || leavesConfigTree(selectorValue)) {
+    return invalidConfig(configPath, {
+      path: `${diagnosticPath}.${selectorName}`,
+      message: "Artifact mapping source selectors must stay within the config directory tree.",
+      expected: "A relative path that does not include `..` segments.",
+      suggestion: "Use a path rooted inside the configured repository tree.",
+      badValue: selectorValue,
+    });
+  }
+
+  if (!Array.isArray(mapping.outputs) || mapping.outputs.length === 0) {
+    return invalidConfig(configPath, {
+      path: `${diagnosticPath}.outputs`,
+      message: "Artifact mappings must declare at least one output.",
+      expected: "A non-empty `outputs` list.",
+      suggestion: "Add an output such as `outputs:\\n  - format: svg\\n    path: docs/{stem}.svg`.",
+      badValue: mapping.outputs,
+    });
+  }
+
+  for (const [outputIndex, output] of mapping.outputs.entries()) {
+    const outputPath = `${diagnosticPath}.outputs[${outputIndex}]`;
+
+    if (!isRecord(output)) {
+      return invalidConfig(configPath, {
+        path: outputPath,
+        message: "Artifact outputs must be YAML objects.",
+        expected: "An object with `format` and `path`.",
+        suggestion: "Use `format: svg` and `path: docs/{stem}.svg`.",
+        badValue: output,
+      });
+    }
+
+    if (!artifactOutputFormats.has(output.format as RepoWorkflowArtifactOutputFormat)) {
+      return invalidConfig(configPath, {
+        path: `${outputPath}.format`,
+        message: `Unsupported artifact output format: ${String(output.format)}.`,
+        expected: `One of: ${artifactOutputFormatList}.`,
+        suggestion: "Use a supported Derived Artifact format.",
+        badValue: output.format,
+      });
+    }
+
+    if (typeof output.path !== "string" || output.path.trim() === "") {
+      return invalidConfig(configPath, {
+        path: `${outputPath}.path`,
+        message: "Artifact output paths must be non-empty strings.",
+        expected: "A path template relative to the config directory.",
+        suggestion: "Use a template such as `docs/{stem}.{format}`.",
+        badValue: output.path,
+      });
+    }
+
+    if (isAbsoluteConfigPath(output.path) || leavesConfigTree(output.path)) {
+      return invalidConfig(configPath, {
+        path: `${outputPath}.path`,
+        message: "Artifact output paths must stay within the config directory tree.",
+        expected: "A relative path template that does not include `..` segments.",
+        suggestion: "Use a path rooted inside the configured repository tree.",
+        badValue: output.path,
+      });
+    }
+
+    for (const match of output.path.matchAll(/\{(?<variable>[^{}]+)\}/gu)) {
+      const variable = match.groups?.variable;
+
+      if (
+        variable === undefined ||
+        !artifactOutputTemplateVariables.has(variable)
+      ) {
+        return invalidConfig(configPath, {
+          path: `${outputPath}.path`,
+          message: `Unsupported artifact output path template variable: ${String(variable)}.`,
+          expected: `Supported variables: ${artifactOutputTemplateVariableList}.`,
+          suggestion: "Use only fixed variables such as `{sourceDir}/{stem}.{format}`.",
+          badValue: output.path,
+        });
+      }
+    }
+  }
+
+  return undefined;
+}
+
 function parseRepoWorkflowConfig(
   configPath: string,
 ): RepoWorkflowConfigDiscoveryResult {
@@ -195,11 +351,15 @@ function parseRepoWorkflowConfig(
   }
 
   for (const fieldName of Object.keys(value)) {
-    if (fieldName !== "version" && fieldName !== "sources") {
+    if (
+      fieldName !== "version" &&
+      fieldName !== "sources" &&
+      fieldName !== "artifacts"
+    ) {
       return invalidConfig(configPath, {
         path: fieldName,
         message: `Unsupported Repo Workflow Configuration field: ${fieldName}.`,
-        expected: "Supported top-level fields: version, sources.",
+        expected: "Supported top-level fields: version, sources, artifacts.",
         suggestion: "Remove the unsupported field or upgrade DiagramPilot when that config feature ships.",
         badValue: value[fieldName],
       });
@@ -256,6 +416,30 @@ function parseRepoWorkflowConfig(
     }
   }
 
+  let artifactMappings: readonly RepoWorkflowArtifactMapping[] = [];
+
+  if (value.artifacts !== undefined) {
+    if (!Array.isArray(value.artifacts)) {
+      return invalidConfig(configPath, {
+        path: "artifacts",
+        message: "`artifacts` must be a list.",
+        expected: "A list of configured artifact mappings.",
+        suggestion: "Use `artifacts:\\n  - source: docs/architecture.dp.yaml`.",
+        badValue: value.artifacts,
+      });
+    }
+
+    for (const [index, mapping] of value.artifacts.entries()) {
+      const failure = validateArtifactMapping(configPath, mapping, index);
+
+      if (failure !== undefined) {
+        return failure;
+      }
+    }
+
+    artifactMappings = value.artifacts as RepoWorkflowArtifactMapping[];
+  }
+
   return {
     ok: true,
     config: {
@@ -265,6 +449,7 @@ function parseRepoWorkflowConfig(
       sources: {
         ignore: ignoredSourcePatterns,
       },
+      artifacts: artifactMappings,
     },
   };
 }

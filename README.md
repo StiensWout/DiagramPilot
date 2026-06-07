@@ -119,7 +119,11 @@ the config already exists.
 
 `check` discovers DiagramPilot source files in the current directory, one
 explicit directory, or one explicit source file. It validates them and checks
+expected artifacts without writing files. Without config it checks
 next-to-source same-stem expected SVG artifacts through DiagramPilot provenance
-metadata only. Optional `diagrampilot.config.yaml` is discovered upward from
-the command scope, validated before source processing, reported in `--json`
-output, and can use `sources.ignore` for source discovery only.
+metadata. Optional `diagrampilot.config.yaml` is discovered upward from the
+command scope, validated before source processing, reported in `--json` output,
+and can use `sources.ignore` for source discovery plus `artifacts` mappings for
+configured SVG, PNG, Mermaid, D2, DOT, and Markdown expectations. Configured
+Mermaid, D2, and DOT use content freshness; configured PNG is presence-only in
+v0.3.0.

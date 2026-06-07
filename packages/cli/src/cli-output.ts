@@ -61,17 +61,76 @@ function formatSourceCount(count: number): string {
   return `${count} DiagramPilot Source File${count === 1 ? "" : "s"}`;
 }
 
+type CheckArtifact = RepoWorkflowCheckSourceResult["artifact"] | NonNullable<
+  RepoWorkflowCheckSourceResult["artifacts"]
+>[number];
+
+function sourceArtifacts(source: RepoWorkflowCheckSourceResult): CheckArtifact[] {
+  return source.artifacts === undefined ? [source.artifact] : [...source.artifacts];
+}
+
 function isArtifactFailure(source: RepoWorkflowCheckSourceResult): boolean {
-  return source.validation.ok === false || source.artifact.status !== "fresh";
+  return (
+    source.validation.ok === false ||
+    sourceArtifacts(source).some((artifact) => artifact.status !== "fresh")
+  );
 }
 
 function isIssueArtifact(
-  artifact: RepoWorkflowCheckSourceResult["artifact"],
+  artifact: CheckArtifact,
 ): artifact is Exclude<
-  RepoWorkflowCheckSourceResult["artifact"],
-  { status: "fresh" } | { status: "unchecked" }
+  CheckArtifact,
+  { status: "fresh" }
 > {
-  return artifact.status !== "fresh" && artifact.status !== "unchecked";
+  return artifact.status !== "fresh";
+}
+
+function artifactFormat(artifact: CheckArtifact): string {
+  return "format" in artifact ? artifact.format : "svg";
+}
+
+function artifactLabel(artifact: CheckArtifact): string {
+  const format = artifactFormat(artifact);
+
+  if (format === "d2" || format === "dot" || format === "png" || format === "svg") {
+    return format.toUpperCase();
+  }
+
+  return format[0].toUpperCase() + format.slice(1);
+}
+
+function repairCommand(
+  artifact: CheckArtifact,
+  sourcePath: string,
+): string | undefined {
+  if (!("path" in artifact)) {
+    return undefined;
+  }
+
+  const format = artifactFormat(artifact);
+
+  if (format === "svg") {
+    return `diagrampilot render ${sourcePath} --out ${artifact.path}`;
+  }
+
+  if (format === "png") {
+    return `diagrampilot render ${sourcePath} --format png --out ${artifact.path}`;
+  }
+
+  if (format === "mermaid" || format === "d2" || format === "dot") {
+    return `diagrampilot export ${sourcePath} --format ${format} --out ${artifact.path}`;
+  }
+
+  return undefined;
+}
+
+function repairSentence(
+  artifact: CheckArtifact,
+  sourcePath: string,
+): string {
+  const command = repairCommand(artifact, sourcePath);
+
+  return command === undefined ? "" : ` Run \`${command}\`.`;
 }
 
 export function formatCheckTextReport(
@@ -80,7 +139,13 @@ export function formatCheckTextReport(
   const issueSources = sourceResults.filter(isArtifactFailure);
 
   if (issueSources.length === 0) {
-    return `Checked ${formatSourceCount(sourceResults.length)}. All expected SVG artifacts are fresh.`;
+    const artifactDescription = sourceResults.some(
+      (source) => source.artifacts !== undefined,
+    )
+      ? "artifacts"
+      : "SVG artifacts";
+
+    return `Checked ${formatSourceCount(sourceResults.length)}. All expected ${artifactDescription} are fresh.`;
   }
 
   const lines = [
@@ -95,38 +160,53 @@ export function formatCheckTextReport(
       continue;
     }
 
-    if (!isIssueArtifact(source.artifact)) {
-      continue;
-    }
+    for (const artifact of sourceArtifacts(source)) {
+      if (!isIssueArtifact(artifact)) {
+        continue;
+      }
 
-    if (source.artifact.status === "missing-artifact") {
+      if (!("path" in artifact)) {
+        continue;
+      }
+
+      const label = artifactLabel(artifact);
+
+      if (artifact.status === "missing-artifact") {
+        lines.push(
+          `Missing ${label} artifact: ${artifact.path} for ${source.sourcePath}.${repairSentence(artifact, source.sourcePath)}`,
+        );
+        continue;
+      }
+
+      if (artifact.status === "stale") {
+        lines.push(
+          `Stale ${label} artifact: ${artifact.path} for ${source.sourcePath} (${artifact.reasons.join(", ")}).${repairSentence(artifact, source.sourcePath)}`,
+        );
+        continue;
+      }
+
+      if (artifact.status === "missing-provenance") {
+        lines.push(
+          `Missing DiagramPilot provenance: ${artifact.path} for ${source.sourcePath}.${repairSentence(artifact, source.sourcePath)}`,
+        );
+        continue;
+      }
+
+      if (artifact.status === "unchecked") {
+        lines.push(
+          `Unchecked ${label} artifact: ${artifact.path} for ${source.sourcePath}.${repairSentence(artifact, source.sourcePath)}`,
+        );
+        continue;
+      }
+
+      const issueLabel =
+        artifact.status === "unreadable-artifact"
+          ? `Unreadable ${label} artifact`
+          : `Malformed ${label} artifact`;
       lines.push(
-        `Missing SVG artifact: ${source.artifact.path} for ${source.sourcePath}. Run \`diagrampilot render ${source.sourcePath} --out ${source.artifact.path}\`.`,
+        `${issueLabel}: ${artifact.path} for ${source.sourcePath}.${repairSentence(artifact, source.sourcePath)}`,
       );
-      continue;
     }
-
-    if (source.artifact.status === "stale") {
-      lines.push(
-        `Stale SVG artifact: ${source.artifact.path} for ${source.sourcePath} (${source.artifact.reasons.join(", ")}). Run \`diagrampilot render ${source.sourcePath} --out ${source.artifact.path}\`.`,
-      );
-      continue;
-    }
-
-    if (source.artifact.status === "missing-provenance") {
-      lines.push(
-        `Missing DiagramPilot provenance: ${source.artifact.path} for ${source.sourcePath}. Run \`diagrampilot render ${source.sourcePath} --out ${source.artifact.path}\`.`,
-      );
-      continue;
-    }
-
-    const artifactLabel =
-      source.artifact.status === "unreadable-artifact"
-        ? "Unreadable SVG artifact"
-        : "Malformed SVG artifact";
-    lines.push(
-      `${artifactLabel}: ${source.artifact.path} for ${source.sourcePath}. Run \`diagrampilot render ${source.sourcePath} --out ${source.artifact.path}\`.`,
-    );
   }
 
   return lines.join("\n");

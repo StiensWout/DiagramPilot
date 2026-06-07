@@ -35,6 +35,7 @@ export interface CheckExpectedSvgArtifactFreshnessOptions {
 
 export interface CheckExpectedSvgArtifactFreshnessForValidatedSourceOptions {
   source: DiagramPilotSourceFile;
+  artifactPath?: string;
   provenanceSourcePath: string;
   diagramPilotVersion?: string;
   renderer: SvgArtifactRenderer;
@@ -221,7 +222,8 @@ export async function checkExpectedSvgArtifactFreshnessForValidatedSource(
   options: CheckExpectedSvgArtifactFreshnessForValidatedSourceOptions,
 ): Promise<SvgArtifactFreshnessCheckResult> {
   const sourcePath = options.source.path;
-  const artifactPath = deriveExpectedSvgArtifactPath(sourcePath);
+  const artifactPath =
+    options.artifactPath ?? deriveExpectedSvgArtifactPath(sourcePath);
   let artifactContent: string;
 
   try {

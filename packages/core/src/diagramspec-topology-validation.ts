@@ -302,17 +302,13 @@ export function validateGroupContainmentReferences(
   });
 }
 
-interface GroupParent {
-  id: string;
-}
-
 export function validateDuplicateGroupContainmentParentage(
   value: Record<string, unknown>,
   topology: DiagramSpecTopology | undefined,
   errors: DiagramSpecValidationError[],
 ): void {
   if (topology !== undefined) {
-    const parentByContainedId = new Map<string, GroupParent>();
+    const parentByContainedId = new Map<string, { id: string }>();
 
     for (const reference of topology.containmentReferences) {
       if (
@@ -354,7 +350,7 @@ export function validateDuplicateGroupContainmentParentage(
 
   const nodeIds = stableIdsFromCollection(value.nodes);
   const groupIds = stableIdsFromCollection(groups);
-  const parentByContainedId = new Map<string, GroupParent>();
+  const parentByContainedId = new Map<string, { id: string }>();
 
   groups.forEach((group, groupIndex) => {
     if (!isRecord(group) || !Array.isArray(group.contains)) {
@@ -398,11 +394,7 @@ export function validateDuplicateGroupContainmentParentage(
   });
 }
 
-interface GroupContainmentLink {
-  childId: string;
-  childIndex: number;
-  parentIndex: number;
-}
+type GroupContainmentLink = { childId: string; childIndex: number; parentIndex: number };
 
 export function validateGroupContainmentCycles(
   value: Record<string, unknown>,

@@ -290,6 +290,15 @@ async function planCheck(
       name: SVG_RENDERER_NAME,
       version: SVG_RENDERER_VERSION,
     },
+    exportConfiguredTextArtifact: ({ format, spec }) => {
+      const exporters = {
+        d2: dependencies.exportDiagramSpecToD2,
+        dot: dependencies.exportDiagramSpecToDot,
+        mermaid: dependencies.exportDiagramSpecToMermaid,
+      };
+
+      return exporters[format](spec);
+    },
   });
 
   if (!checkResult.ok) {

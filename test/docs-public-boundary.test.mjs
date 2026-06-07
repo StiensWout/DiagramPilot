@@ -1,39 +1,14 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-
-const publicAgentDocs = [
-  "quickstart.md",
-  "installation.md",
-  "spec.md",
-  "error-repair.md",
-  "examples.md",
-  "prompting.md",
-];
-
-const internalDocs = [
-  "docs/agents/issue-tracker.md",
-  "docs/agents/triage-labels.md",
-  "docs/agents/domain.md",
-  "docs/development/roadmap.md",
-  "docs/development/architecture.md",
-  "docs/development/release-version-workflow.md",
-  "docs/development/public-website-deployment.md",
-  "docs/adr/0006-public-docs-live-under-docs-public.md",
-];
-
-async function exists(repoPath) {
-  try {
-    await access(path.join(repoRoot, repoPath));
-    return true;
-  } catch {
-    return false;
-  }
-}
+import {
+  exists,
+  internalDocs,
+  publicAgentDocs,
+  repoRoot,
+} from "./docs-public-boundary-helpers.mjs";
 
 test("public-facing agent usage docs live under the public docs root", async () => {
   for (const fileName of publicAgentDocs) {
@@ -385,16 +360,22 @@ test("public quickstart explains current DiagramPilot artifact and CLI behavior"
   assert.match(quickstart, /review\/CI command/i);
   assert.match(quickstart, /read-only/i);
   assert.match(quickstart, /next-to-source same-stem Expected SVG Artifact/i);
-  assert.match(quickstart, /SVG freshness is provenance-only in v1/i);
+  assert.match(quickstart, /SVG freshness is provenance-based/i);
   assert.match(
     quickstart,
-    /does not check Mermaid, D2, DOT, or PNG artifact freshness/i,
+    /Configured Mermaid, D2, and DOT artifacts use content comparison/i,
+  );
+  assert.match(
+    quickstart,
+    /Configured PNG freshness is presence-only in v0\.3\.0/i,
   );
   assert.match(quickstart, /diagrampilot\.config\.yaml/);
   assert.match(quickstart, /sources\.ignore/);
+  assert.match(quickstart, /artifacts/);
+  assert.match(quickstart, /sourceGlob/);
   assert.match(
     quickstart,
-    /does not support configurable artifact mappings/i,
+    /matched mappings replace the default SVG\s+expectation/i,
   );
   assert.match(quickstart, /Validate before rendering/);
   assert.match(quickstart, /render` requires `--out`/);
@@ -506,75 +487,5 @@ test("public install and removal details stay centralized in the canonical guide
     for (const pattern of longFormInstallPatterns) {
       assert.doesNotMatch(source, pattern, repoPath);
     }
-  }
-});
-
-test("internal closeout docs record completed planning state and maintainer validation", async () => {
-  const roadmap = await readFile(
-    path.join(repoRoot, "docs", "development", "roadmap.md"),
-    "utf8",
-  );
-  const mvpPrd = await readFile(
-    path.join(repoRoot, ".scratch", "diagrampilot-mvp", "PRD.md"),
-    "utf8",
-  );
-  const architectureDeepeningPrd = await readFile(
-    path.join(repoRoot, ".scratch", "architecture-deepening", "PRD.md"),
-    "utf8",
-  );
-  const docsDemoPrd = await readFile(
-    path.join(repoRoot, ".scratch", "docs-demo-project-rework", "PRD.md"),
-    "utf8",
-  );
-
-  assert.match(mvpPrd, /^Status: completed$/m);
-  assert.match(architectureDeepeningPrd, /^Status: completed$/m);
-  assert.match(docsDemoPrd, /^Status: completed$/m);
-
-  assert.match(roadmap, /Release readiness is complete/);
-  assert.match(roadmap, /node --test test\/docs-public-boundary\.test\.mjs/);
-  assert.match(roadmap, /node --test test\/checkout-demo-project\.test\.mjs/);
-  assert.match(
-    roadmap,
-    /git diff --exit-code demo-projects\/checkout\/docs\/architecture\.svg/,
-  );
-  assert.match(roadmap, /npm test/);
-});
-
-test("completed docs demo rework issues include implementation notes and validation plans", async () => {
-  const issuePaths = [
-    path.join(
-      ".scratch",
-      "docs-demo-project-rework",
-      "issues",
-      "28-split-public-and-internal-documentation-roots.md",
-    ),
-    path.join(
-      ".scratch",
-      "docs-demo-project-rework",
-      "issues",
-      "29-add-the-checkout-demo-project-fixture.md",
-    ),
-    path.join(
-      ".scratch",
-      "docs-demo-project-rework",
-      "issues",
-      "30-rework-public-docs-around-the-demo-workflow.md",
-    ),
-    path.join(
-      ".scratch",
-      "docs-demo-project-rework",
-      "issues",
-      "31-clean-up-internal-docs-and-closeout-planning-state.md",
-    ),
-  ];
-
-  for (const issuePath of issuePaths) {
-    const issueText = await readFile(path.join(repoRoot, issuePath), "utf8");
-
-    assert.match(issueText, /^Status: completed$/m, issuePath);
-    assert.doesNotMatch(issueText, /- \[ \]/, issuePath);
-    assert.match(issueText, /^## Implementation notes$/m, issuePath);
-    assert.match(issueText, /^## Validation plan$/m, issuePath);
   }
 });

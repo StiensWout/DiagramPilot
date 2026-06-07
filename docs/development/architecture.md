@@ -123,13 +123,16 @@ exists. Init does not scan the codebase or generate diagrams.
 `diagrampilot check [path] [--json]`
 : Runs the read-only repo review/CI workflow. It discovers DiagramPilot Source
 Files in the current directory, one explicit directory, or one explicit source
-file; validates each discovered source; and checks the next-to-source same-stem
-expected SVG artifact through DiagramPilot provenance metadata only. Optional
+file; validates each discovered source; and checks expected artifacts without
+writing files. Without config it checks the next-to-source same-stem expected
+SVG artifact through DiagramPilot provenance metadata. Optional
 `diagrampilot.config.yaml` is discovered upward from the command scope to the
 Git root or filesystem root, validated before source processing, and may apply
-`sources.ignore` patterns to source discovery only. The JSON form emits
-aggregate structured repo workflow results to stdout and includes the config
-path when config is used.
+`sources.ignore` patterns to source discovery only. Configured artifact
+mappings replace the default SVG expectation for matched sources. Configured
+SVG freshness uses provenance, Mermaid/D2/DOT use content comparison, and PNG is
+presence-only in v0.3.0. The JSON form emits aggregate structured repo workflow
+results to stdout and includes the config path when config is used.
 
 `diagrampilot validate <path>`
 : Validates one explicit DiagramPilot Source File path. It collects all safely
