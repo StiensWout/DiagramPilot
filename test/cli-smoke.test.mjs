@@ -202,6 +202,46 @@ test("diagrampilot init --docs creates adoption support files without generating
   });
 });
 
+test("diagrampilot init --config creates a minimal Repo Workflow Configuration", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const result = await runBuiltCli(["init", "--config"], tempRoot);
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    assert.match(result.stdout, /Created diagrampilot\.config\.yaml/);
+
+    const configText = await readFile(
+      path.join(tempRoot, "diagrampilot.config.yaml"),
+      "utf8",
+    );
+
+    assert.equal(configText, "version: 1\n");
+    assert.deepEqual(await readdir(tempRoot), ["diagrampilot.config.yaml"]);
+  });
+});
+
+test("diagrampilot init --config fails repairably when config already exists", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const configPath = path.join(tempRoot, "diagrampilot.config.yaml");
+
+    await writeFile(configPath, "version: 1\nsources:\n  ignore: []\n", "utf8");
+
+    const result = await runBuiltCli(["init", "--config"], tempRoot);
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(result.stderr, /Repo Workflow Configuration already exists/);
+    assert.match(result.stderr, /diagrampilot\.config\.yaml/);
+    assert.match(result.stderr, /Suggestion:/);
+    assert.equal(
+      await readFile(configPath, "utf8"),
+      "version: 1\nsources:\n  ignore: []\n",
+    );
+  });
+});
+
 test("diagrampilot init --docs preserves existing support-file content and is idempotent", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });
@@ -580,6 +620,31 @@ test("diagrampilot check supports an explicit directory scope with aggregate jso
     assert.equal(payload.sources[0].sourcePath, "docs/architecture.dp.yaml");
     assert.equal(payload.sources[0].artifact.status, "fresh");
     assert.equal(payload.sources[0].artifact.path, "docs/architecture.svg");
+  });
+});
+
+test("diagrampilot check --json includes the config path when config is used", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await writeFreshDiagramArtifact(tempRoot);
+    await writeFile(
+      path.join(tempRoot, "diagrampilot.config.yaml"),
+      "version: 1\n",
+      "utf8",
+    );
+
+    const result = await runBuiltCli(["check", "--json"], tempRoot);
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.stderr, "");
+
+    const payload = JSON.parse(result.stdout);
+
+    assert.equal(payload.ok, true);
+    assert.deepEqual(payload.config, {
+      path: "diagrampilot.config.yaml",
+    });
+    assert.equal(payload.sources[0].sourcePath, "docs/architecture.dp.yaml");
   });
 });
 

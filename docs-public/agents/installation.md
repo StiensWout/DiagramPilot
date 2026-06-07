@@ -3,17 +3,22 @@
 Use the package install path for repositories that consume DiagramPilot. Source
 checkout setup is contributor workflow, not the public installation path.
 
-Package installation does not create `llms.txt` or `docs/diagrampilot.md`.
-Those files are not required to use DiagramPilot. Agents can read
-`https://diagrampilot.com/llms.txt`, the public docs, repository instructions,
-or other configured context providers instead.
+Package installation does not create `llms.txt`, `docs/diagrampilot.md`, or
+`diagrampilot.config.yaml`. Those files are not required to use DiagramPilot.
+Agents can read `https://diagrampilot.com/llms.txt`, the public docs,
+repository instructions, or other configured context providers instead.
 
-Normal `diagrampilot init` does not create or update local agent docs.
+Normal `diagrampilot init` does not create or update local agent docs or Repo
+Workflow Configuration.
 `diagrampilot init --docs` creates or updates the managed local agent docs in
 `llms.txt` and `docs/diagrampilot.md`.
+`diagrampilot init --config` creates a minimal `diagrampilot.config.yaml` and
+fails with repair guidance when the config already exists.
 
 Use `diagrampilot init --docs` only when the repository intentionally wants
 managed local agent docs checked into the project.
+Use `diagrampilot init --config` only when the repository intentionally wants
+Repo Workflow Configuration checked into the project.
 
 Do not copy DiagramPilot public docs into a consuming repository as part of
 installation. Keep repository docs for project-owned guidance.

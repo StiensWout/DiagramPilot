@@ -23,7 +23,7 @@ export function helpText(version: string): string {
     "  diagrampilot --help",
     "",
     "MVP commands:",
-    "  init [--docs]",
+    "  init [--docs] [--config]",
     "  validate <path> [--json]",
     "  check [path] [--json]",
     "  render <path> --out <path>",

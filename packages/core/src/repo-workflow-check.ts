@@ -1,7 +1,12 @@
 import path from "node:path";
 
 import type {
+  RepoWorkflowConfigDiscoveryResult,
+  RepoWorkflowConfigFailure,
+} from "./repo-workflow-config.js";
+import type {
   DiagramPilotSourceDiscoveryFailure,
+  DiagramPilotSourceDiscoveryOptions,
   DiagramPilotSourceDiscoveryResult,
   DiagramPilotSourceDiscoveryScope,
 } from "./source-discovery.js";
@@ -25,8 +30,12 @@ export interface RepoWorkflowCheckOptions {
 }
 
 export interface RepoWorkflowCheckDependencies {
+  discoverRepoWorkflowConfig?(
+    scopePath?: string,
+  ): Promise<RepoWorkflowConfigDiscoveryResult>;
   discoverDiagramPilotSourceFiles(
     scopePath?: string,
+    options?: DiagramPilotSourceDiscoveryOptions,
   ): Promise<DiagramPilotSourceDiscoveryResult>;
   loadValidatedDiagramSpec(path: string): ValidatedDiagramSpecLoadResult;
   checkExpectedSvgArtifactFreshnessForValidatedSource(options: {
@@ -88,13 +97,16 @@ export interface RepoWorkflowCheckSourceResult {
 export type RepoWorkflowCheckResult =
   | {
       ok: true;
+      config?: {
+        path: string;
+      };
       scope: DiagramPilotSourceDiscoveryScope;
       summary: RepoWorkflowCheckSummary;
       sources: RepoWorkflowCheckSourceResult[];
     }
   | {
       ok: false;
-      failure: DiagramPilotSourceDiscoveryFailure;
+      failure: DiagramPilotSourceDiscoveryFailure | RepoWorkflowConfigFailure;
     };
 
 function normalizePathForDisplay(filePath: string): string {
@@ -130,6 +142,23 @@ function deriveArtifactDisplayPath(
   }
 
   return sourcePath.replace(/\.dp\.(yaml|json)$/iu, ".svg");
+}
+
+function deriveConfigDisplayPath(
+  configPath: string,
+  currentWorkingDirectory: string,
+): string {
+  const relativeConfigPath = path.relative(currentWorkingDirectory, configPath);
+
+  if (
+    relativeConfigPath !== "" &&
+    !relativeConfigPath.startsWith("..") &&
+    !path.isAbsolute(relativeConfigPath)
+  ) {
+    return normalizePathForDisplay(relativeConfigPath);
+  }
+
+  return normalizePathForDisplay(configPath);
 }
 
 function isWorkflowIssue(source: RepoWorkflowCheckSourceResult): boolean {
@@ -204,8 +233,26 @@ export async function checkDiagramPilotRepoWorkflowWithDependencies(
   options: RepoWorkflowCheckOptions,
   dependencies: RepoWorkflowCheckDependencies,
 ): Promise<RepoWorkflowCheckResult> {
+  const configResult =
+    dependencies.discoverRepoWorkflowConfig === undefined
+      ? { ok: true as const }
+      : await dependencies.discoverRepoWorkflowConfig(options.scopePath);
+
+  if (!configResult.ok) {
+    return {
+      ok: false,
+      failure: configResult.failure,
+    };
+  }
+
   const discoveryResult = await dependencies.discoverDiagramPilotSourceFiles(
     options.scopePath,
+    configResult.config === undefined
+      ? undefined
+      : {
+          ignorePatterns: configResult.config.sources.ignore,
+          ignorePatternsRoot: configResult.config.directory,
+        },
   );
 
   if (!discoveryResult.ok) {
@@ -271,6 +318,16 @@ export async function checkDiagramPilotRepoWorkflowWithDependencies(
 
   return {
     ok: true,
+    ...(configResult.config === undefined
+      ? {}
+      : {
+          config: {
+            path: deriveConfigDisplayPath(
+              configResult.config.path,
+              currentWorkingDirectory,
+            ),
+          },
+        }),
     scope: discoveryResult.scope,
     summary: summarizeSources(sources),
     sources,

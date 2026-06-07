@@ -90,6 +90,8 @@ test("llms.txt reflects current public docs and the published schema helper", as
   assert.match(llmsText, /does not replace core validation/);
   assert.match(llmsText, /normal `diagrampilot init` does not create local agent docs/i);
   assert.match(llmsText, /`diagrampilot init --docs` is opt-in/i);
+  assert.match(llmsText, /normal `diagrampilot init` does not create Repo Workflow Configuration/i);
+  assert.match(llmsText, /`diagrampilot init --config` is opt-in/i);
   assert.doesNotMatch(llmsText, /MCP|Model Context Protocol/);
   assert.doesNotMatch(llmsText, /planned|deferred|future|not implemented|source mutation/i);
   assert.doesNotMatch(
@@ -388,9 +390,11 @@ test("public quickstart explains current DiagramPilot artifact and CLI behavior"
     quickstart,
     /does not check Mermaid, D2, DOT, or PNG artifact freshness/i,
   );
+  assert.match(quickstart, /diagrampilot\.config\.yaml/);
+  assert.match(quickstart, /sources\.ignore/);
   assert.match(
     quickstart,
-    /does not support configurable artifact mappings or ignore patterns/i,
+    /does not support configurable artifact mappings/i,
   );
   assert.match(quickstart, /Validate before rendering/);
   assert.match(quickstart, /render` requires `--out`/);
@@ -408,6 +412,10 @@ test("public quickstart explains current DiagramPilot artifact and CLI behavior"
   assert.match(
     quickstart,
     /Use `diagrampilot init --docs` only when the repository intentionally wants managed local agent docs/,
+  );
+  assert.match(
+    quickstart,
+    /Use `diagrampilot init --config`\s+only when the repository intentionally wants\s+`diagrampilot\.config\.yaml`/i,
   );
 });
 

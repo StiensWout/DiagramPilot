@@ -118,6 +118,214 @@ test("checkDiagramPilotRepoWorkflow returns a successful no-op for directory sco
   });
 });
 
+test("checkDiagramPilotRepoWorkflow discovers config upward and applies source ignores relative to the config directory", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const configPath = path.join(tempRoot, "diagrampilot.config.yaml");
+    const serviceRoot = path.join(tempRoot, "packages", "checkout-service");
+    const sourcePath = path.join(serviceRoot, "docs", "architecture.dp.yaml");
+    const artifactPath = path.join(serviceRoot, "docs", "architecture.svg");
+    const ignoredSourcePath = path.join(
+      serviceRoot,
+      "generated",
+      "ignored.dp.yaml",
+    );
+
+    await writeFile(
+      configPath,
+      [
+        "version: 1",
+        "sources:",
+        "  ignore:",
+        "    - packages/checkout-service/generated/**",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+    await writeValidDiagramSource(sourcePath);
+    await writeFreshSvgArtifact(artifactPath, "docs/architecture.dp.yaml");
+    await mkdir(path.dirname(ignoredSourcePath), { recursive: true });
+    await writeFile(
+      ignoredSourcePath,
+      "version: 1\nnodes:\n  - id: ignored\n    label: Ignored\n",
+      "utf8",
+    );
+
+    const result = await checkDiagramPilotRepoWorkflow(
+      repoWorkflowCheckOptions(serviceRoot),
+    );
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(result.config, { path: configPath });
+    assert.deepEqual(result.summary, {
+      checkedSourceCount: 1,
+      freshSourceCount: 1,
+      issueCount: 0,
+    });
+    assert.deepEqual(
+      result.sources.map((source) => source.sourcePath),
+      ["docs/architecture.dp.yaml"],
+    );
+  });
+});
+
+test("checkDiagramPilotRepoWorkflow validates config before source processing", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const configPath = path.join(tempRoot, "diagrampilot.config.yaml");
+    const sourcePath = path.join(tempRoot, "docs", "invalid.dp.yaml");
+
+    await writeFile(configPath, "version: 2\n", "utf8");
+    await mkdir(path.dirname(sourcePath), { recursive: true });
+    await writeFile(
+      sourcePath,
+      "version: 1\nnodes:\n  - id: missing_title\n    label: Missing Title\n",
+      "utf8",
+    );
+
+    const result = await checkDiagramPilotRepoWorkflow(
+      repoWorkflowCheckOptions(tempRoot),
+    );
+
+    assert.equal(result.ok, false);
+    assert.equal(result.failure.kind, "invalid-config");
+    assert.equal(result.failure.path, configPath);
+    assert.equal(result.failure.errors[0].path, "version");
+    assert.match(result.failure.message, /Repo Workflow Configuration error/);
+    assert.match(result.failure.message, /version: 1/);
+    assert.doesNotMatch(result.failure.message, /Missing required top-level field: title/);
+  });
+});
+
+test("checkDiagramPilotRepoWorkflow rejects unsafe source ignore patterns", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const cases = [
+      {
+        pattern: "/generated/**",
+        expectedPath: "sources.ignore[0]",
+        expectedMessage: /relative paths/,
+      },
+      {
+        pattern: "../outside/**",
+        expectedPath: "sources.ignore[0]",
+        expectedMessage: /config directory tree/,
+      },
+    ];
+
+    for (const testCase of cases) {
+      const configPath = path.join(tempRoot, "diagrampilot.config.yaml");
+
+      await writeFile(
+        configPath,
+        [
+          "version: 1",
+          "sources:",
+          "  ignore:",
+          `    - ${testCase.pattern}`,
+          "",
+        ].join("\n"),
+        "utf8",
+      );
+
+      const result = await checkDiagramPilotRepoWorkflow(
+        repoWorkflowCheckOptions(tempRoot),
+      );
+
+      assert.equal(result.ok, false);
+      assert.equal(result.failure.kind, "invalid-config");
+      assert.equal(result.failure.errors[0].path, testCase.expectedPath);
+      assert.match(result.failure.message, testCase.expectedMessage);
+    }
+  });
+});
+
+test("checkDiagramPilotRepoWorkflow rejects unsupported config fields", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const configPath = path.join(tempRoot, "diagrampilot.config.yaml");
+
+    await writeFile(
+      configPath,
+      "version: 1\nartifacts:\n  - source: docs/architecture.dp.yaml\n",
+      "utf8",
+    );
+
+    const result = await checkDiagramPilotRepoWorkflow(
+      repoWorkflowCheckOptions(tempRoot),
+    );
+
+    assert.equal(result.ok, false);
+    assert.equal(result.failure.kind, "invalid-config");
+    assert.equal(result.failure.path, configPath);
+    assert.equal(result.failure.errors[0].path, "artifacts");
+    assert.match(result.failure.message, /Unsupported Repo Workflow Configuration field/);
+  });
+});
+
+test("checkDiagramPilotRepoWorkflow uses the nearest config and stops at the Git root", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const nearestConfigRoot = path.join(tempRoot, "packages", "service");
+    const nearestSourcePath = path.join(
+      nearestConfigRoot,
+      "docs",
+      "architecture.dp.yaml",
+    );
+    const nearestArtifactPath = path.join(
+      nearestConfigRoot,
+      "docs",
+      "architecture.svg",
+    );
+
+    await writeFile(
+      path.join(tempRoot, "diagrampilot.config.yaml"),
+      "version: 1\nsources:\n  ignore:\n    - packages/**\n",
+      "utf8",
+    );
+    await mkdir(nearestConfigRoot, { recursive: true });
+    await writeFile(
+      path.join(nearestConfigRoot, "diagrampilot.config.yaml"),
+      "version: 1\n",
+      "utf8",
+    );
+    await writeValidDiagramSource(nearestSourcePath);
+    await writeFreshSvgArtifact(
+      nearestArtifactPath,
+      "docs/architecture.dp.yaml",
+    );
+
+    const nearestResult = await checkDiagramPilotRepoWorkflow(
+      repoWorkflowCheckOptions(nearestConfigRoot),
+    );
+
+    assert.equal(nearestResult.ok, true);
+    assert.deepEqual(nearestResult.config, {
+      path: path.join(nearestConfigRoot, "diagrampilot.config.yaml"),
+    });
+    assert.deepEqual(nearestResult.summary, {
+      checkedSourceCount: 1,
+      freshSourceCount: 1,
+      issueCount: 0,
+    });
+
+    const repoRoot = path.join(tempRoot, "repo");
+    const repoSourcePath = path.join(repoRoot, "docs", "architecture.dp.yaml");
+    const repoArtifactPath = path.join(repoRoot, "docs", "architecture.svg");
+
+    await mkdir(path.join(repoRoot, ".git"), { recursive: true });
+    await writeValidDiagramSource(repoSourcePath);
+    await writeFreshSvgArtifact(repoArtifactPath, "docs/architecture.dp.yaml");
+
+    const gitBoundaryResult = await checkDiagramPilotRepoWorkflow(
+      repoWorkflowCheckOptions(repoRoot),
+    );
+
+    assert.equal(gitBoundaryResult.ok, true);
+    assert.equal(gitBoundaryResult.config, undefined);
+    assert.deepEqual(gitBoundaryResult.summary, {
+      checkedSourceCount: 1,
+      freshSourceCount: 1,
+      issueCount: 0,
+    });
+  });
+});
+
 test("checkDiagramPilotRepoWorkflowWithDependencies passes validated source context into artifact freshness once", async () => {
   const source = validSourceContext();
   let loadCount = 0;

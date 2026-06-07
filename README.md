@@ -99,6 +99,7 @@ dark surfaces.
 ```bash
 diagrampilot init
 diagrampilot init --docs
+diagrampilot init --config
 diagrampilot check
 diagrampilot check docs --json
 diagrampilot validate docs/architecture.dp.yaml
@@ -110,11 +111,15 @@ diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architectur
 diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot
 ```
 
-`init` does not create local agent docs by default. Use `init --docs` only
-when the repository intentionally wants managed `llms.txt` and
-`docs/diagrampilot.md` guidance.
+`init` does not create local agent docs or Repo Workflow Configuration by
+default. Use `init --docs` only when the repository intentionally wants managed
+`llms.txt` and `docs/diagrampilot.md` guidance. Use `init --config` to create a
+minimal `diagrampilot.config.yaml`; rerunning it fails with repair guidance if
+the config already exists.
 
 `check` discovers DiagramPilot source files in the current directory, one
 explicit directory, or one explicit source file. It validates them and checks
 next-to-source same-stem expected SVG artifacts through DiagramPilot provenance
-metadata only.
+metadata only. Optional `diagrampilot.config.yaml` is discovered upward from
+the command scope, validated before source processing, reported in `--json`
+output, and can use `sources.ignore` for source discovery only.

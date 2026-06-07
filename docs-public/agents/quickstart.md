@@ -91,7 +91,31 @@ SVG freshness is provenance-only in v1. `check` reads DiagramPilot provenance
 metadata from the expected SVG artifact; it does not render to compare output.
 
 `check` does not check Mermaid, D2, DOT, or PNG artifact freshness. v1 also
-does not support configurable artifact mappings or ignore patterns.
+does not support configurable artifact mappings.
+
+Repo Workflow Configuration is optional. `check` discovers the nearest
+`diagrampilot.config.yaml` from the command scope upward to the Git root or
+filesystem root, validates it before source processing, and includes the config
+path in `--json` output when one is used. Start a minimal config explicitly:
+
+```bash
+diagrampilot init --config
+```
+
+The first config schema requires top-level `version: 1`. Source ignore
+patterns live under `sources.ignore`, use gitignore-style paths relative to the
+config directory, and apply only to source discovery:
+
+```yaml
+version: 1
+sources:
+  ignore:
+    - generated/**
+    - vendor/diagrams/**
+```
+
+Absolute ignore patterns and patterns that leave the config directory tree are
+invalid config.
 
 When `check` reports a source problem, use `validate` on the explicit source
 file to get the detailed repair loop:
@@ -199,6 +223,7 @@ Agent rules:
 ```bash
 diagrampilot init
 diagrampilot init --docs
+diagrampilot init --config
 diagrampilot check
 diagrampilot check demo-projects/checkout --json
 diagrampilot validate docs/architecture.dp.yaml
@@ -211,18 +236,27 @@ diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architectu
 ```
 
 `diagrampilot init` does not create or update `llms.txt` or `docs/diagrampilot.md` by default.
-It does not scan the codebase or generate a diagram.
+It does not create Repo Workflow Configuration by default, scan the codebase,
+or generate a diagram.
 
 `diagrampilot init --docs`
 : Creates or updates the managed local agent docs. Use `diagrampilot init --docs` only when the repository intentionally wants managed local agent docs.
 
+`diagrampilot init --config`
+: Creates a minimal `diagrampilot.config.yaml`. Use `diagrampilot init --config`
+only when the repository intentionally wants `diagrampilot.config.yaml`. It
+fails with repair guidance when the config already exists.
+
 `diagrampilot check [path]`
 : Read-only repo review/CI command. Discovers DiagramPilot source files in the
 given scope, validates them, and checks next-to-source same-stem expected SVG
-artifacts through provenance metadata only.
+artifacts through provenance metadata only. When `diagrampilot.config.yaml` is
+found, `check` validates config first and applies `sources.ignore` only to
+source discovery.
 
 `diagrampilot check [path] --json`
-: Emits structured repo check results to stdout for agents and CI scripts.
+: Emits structured repo check results to stdout for agents and CI scripts,
+including the config path when config is used.
 
 `diagrampilot validate <path>`
 : Validates one explicit DiagramPilot source file path.
