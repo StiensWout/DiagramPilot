@@ -1,6 +1,6 @@
 {
   "name": "@diagrampilot/workspace",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "private": true,
   "description": "Repo-native diagram compiler for AI coding agents.",
   "type": "module",
@@ -38,6 +38,8 @@
     "audit:fallow:health": "fallow health --format compact --quiet --complexity --baseline fallow-baselines/health.json --min-severity moderate",
     "audit:fallow:changed": "fallow audit --format compact --quiet --fail-on-issues --dead-code-baseline fallow-baselines/dead-code.json --health-baseline fallow-baselines/health.json --dupes-baseline fallow-baselines/dupes.json",
     "check:release-version": "node scripts/check-release-version.mjs",
+    "check:issue-release-version": "node scripts/check-issue-release-version.mjs",
+    "sync:issue-release-version": "node scripts/sync-issue-release-version.mjs",
     "clean": "tsc -b --clean",
     "generate:schema": "npm run build && node scripts/generate-diagramspec-v1-schema.mjs",
     "check:package-readiness": "node scripts/check-package-readiness.mjs",

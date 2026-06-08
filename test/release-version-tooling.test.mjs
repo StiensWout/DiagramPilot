@@ -43,6 +43,26 @@ async function writeFixtureJson(fixtureRoot, repoPath, data) {
   );
 }
 
+async function writeFixtureIssue(fixtureRoot, repoPath, { status, version }) {
+  const issuePath = path.join(fixtureRoot, repoPath);
+  await mkdir(path.dirname(issuePath), { recursive: true });
+  await writeFile(
+    issuePath,
+    [
+      `Status: ${status}`,
+      `Issue Version: ${version}`,
+      "",
+      "# Fixture issue",
+      "",
+      "## What to build",
+      "",
+      "Fixture release issue.",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+}
+
 async function updateFixtureJson(fixtureRoot, repoPath, update) {
   const data = await readFixtureJson(fixtureRoot, repoPath);
   update(data);
@@ -80,35 +100,59 @@ function runReleaseScript(scriptName, args = [], options = {}) {
       },
     );
 
-    let stdout = "";
-    let stderr = "";
+    const output = { stdout: "", stderr: "" };
 
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
+    captureTextOutput(child.stdout, (chunk) => {
+      output.stdout += chunk;
     });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk;
+    captureTextOutput(child.stderr, (chunk) => {
+      output.stderr += chunk;
     });
     child.on("error", reject);
     child.on("close", (code, signal) => {
-      resolve({ code, signal, stdout, stderr });
+      resolve({ code, signal, ...output });
     });
   });
+}
+
+function captureTextOutput(stream, onData) {
+  stream.setEncoding("utf8");
+  stream.on("data", onData);
+}
+
+function assertScriptSuccess(result) {
+  assert.equal(result.signal, null);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stderr, "");
+}
+
+function assertScriptFailure(result) {
+  assert.equal(result.signal, null);
+  assert.equal(result.code, 1);
+  assert.equal(result.stdout, "");
+}
+
+function assertBumpOutput(result, version) {
+  assertScriptSuccess(result);
+  assert.equal(
+    result.stdout,
+    `Updated DiagramPilot release version metadata to ${version}.\n`,
+  );
+}
+
+function assertCheckOutput(result, version) {
+  assertScriptSuccess(result);
+  assert.equal(
+    result.stdout,
+    `DiagramPilot release version metadata is consistent at ${version}.\n`,
+  );
 }
 
 test("release version check passes when DiagramPilot version metadata is aligned", async () => {
   const rootPackage = await readJson("package.json");
   const result = await runReleaseScript("check-release-version.mjs");
 
-  assert.equal(result.signal, null);
-  assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stderr, "");
-  assert.equal(
-    result.stdout,
-    `DiagramPilot release version metadata is consistent at ${rootPackage.version}.\n`,
-  );
+  assertCheckOutput(result, rootPackage.version);
 });
 
 test("release version check fails when DiagramPilot version metadata drifts", async () => {
@@ -139,9 +183,7 @@ test("release version check fails when DiagramPilot version metadata drifts", as
       cwd: fixtureRoot,
     });
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 1);
-    assert.equal(result.stdout, "");
+    assertScriptFailure(result);
     assert.match(
       result.stderr,
       new RegExp(
@@ -176,13 +218,7 @@ test("release version bump updates DiagramPilot metadata consistently", async ()
       { cwd: fixtureRoot },
     );
 
-    assert.equal(bumpResult.signal, null);
-    assert.equal(bumpResult.code, 0, bumpResult.stderr);
-    assert.equal(bumpResult.stderr, "");
-    assert.equal(
-      bumpResult.stdout,
-      `Updated DiagramPilot release version metadata to ${bumpedVersion}.\n`,
-    );
+    assertBumpOutput(bumpResult, bumpedVersion);
 
     const checkResult = await runReleaseScript(
       "check-release-version.mjs",
@@ -195,18 +231,25 @@ test("release version bump updates DiagramPilot metadata consistently", async ()
       "utf8",
     );
 
-    assert.equal(checkResult.signal, null);
-    assert.equal(checkResult.code, 0, checkResult.stderr);
-    assert.equal(checkResult.stderr, "");
-    assert.equal(
-      checkResult.stdout,
-      `DiagramPilot release version metadata is consistent at ${bumpedVersion}.\n`,
-    );
+    assertCheckOutput(checkResult, bumpedVersion);
     assert.equal(rootPackage.version, bumpedVersion);
     assert.match(
       versionSource,
       new RegExp(`DIAGRAMPILOT_VERSION = "${bumpedVersion}"`, "u"),
     );
+  });
+});
+
+test("release version bump is idempotent for an already-applied version", async () => {
+  await withReleaseMetadataFixture(async (fixtureRoot) => {
+    const rootPackage = await readFixtureJson(fixtureRoot, "package.json");
+    const bumpResult = await runReleaseScript(
+      "bump-release-version.mjs",
+      [rootPackage.version],
+      { cwd: fixtureRoot },
+    );
+
+    assertBumpOutput(bumpResult, rootPackage.version);
   });
 });
 
@@ -219,13 +262,7 @@ test("release version bump supports nightly prerelease publish metadata", async 
       { cwd: fixtureRoot },
     );
 
-    assert.equal(bumpResult.signal, null);
-    assert.equal(bumpResult.code, 0, bumpResult.stderr);
-    assert.equal(bumpResult.stderr, "");
-    assert.equal(
-      bumpResult.stdout,
-      `Updated DiagramPilot release version metadata to ${bumpedVersion}.\n`,
-    );
+    assertBumpOutput(bumpResult, bumpedVersion);
 
     const checkResult = await runReleaseScript(
       "check-release-version.mjs",
@@ -238,13 +275,7 @@ test("release version bump supports nightly prerelease publish metadata", async 
     );
     const lockfile = await readFixtureJson(fixtureRoot, "package-lock.json");
 
-    assert.equal(checkResult.signal, null);
-    assert.equal(checkResult.code, 0, checkResult.stderr);
-    assert.equal(checkResult.stderr, "");
-    assert.equal(
-      checkResult.stdout,
-      `DiagramPilot release version metadata is consistent at ${bumpedVersion}.\n`,
-    );
+    assertCheckOutput(checkResult, bumpedVersion);
     assert.equal(cliManifest.version, bumpedVersion);
     assert.equal(cliManifest.dependencies["@diagrampilot/core"], bumpedVersion);
     assert.equal(lockfile.version, bumpedVersion);
@@ -252,6 +283,99 @@ test("release version bump supports nightly prerelease publish metadata", async 
       lockfile.packages["packages/cli"].dependencies["@diagrampilot/core"],
       bumpedVersion,
     );
+  });
+});
+
+test("issue release version check matches the latest completed issue", async () => {
+  await withReleaseMetadataFixture(async (fixtureRoot) => {
+    const issuePath =
+      ".scratch/release-fixture/issues/100-current-completed.md";
+    const currentVersion = "1.2.3";
+
+    await writeFixtureIssue(
+      fixtureRoot,
+      ".scratch/release-fixture/issues/99-previous-completed.md",
+      { status: "completed", version: "1.2.2" },
+    );
+    await writeFixtureIssue(fixtureRoot, issuePath, {
+      status: "completed",
+      version: currentVersion,
+    });
+    await writeFixtureIssue(
+      fixtureRoot,
+      ".scratch/release-fixture/issues/101-future-pending.md",
+      { status: "pending", version: "9.9.9" },
+    );
+
+    await runReleaseScript("bump-release-version.mjs", [currentVersion], {
+      cwd: fixtureRoot,
+    });
+
+    const result = await runReleaseScript("check-issue-release-version.mjs", [], {
+      cwd: fixtureRoot,
+    });
+
+    assertScriptSuccess(result);
+    assert.equal(
+      result.stdout,
+      `DiagramPilot issue release version matches ${issuePath} at ${currentVersion}.\n`,
+    );
+  });
+});
+
+test("issue release version check fails when metadata trails the issue", async () => {
+  await withReleaseMetadataFixture(async (fixtureRoot) => {
+    const issuePath =
+      ".scratch/release-fixture/issues/100-current-completed.md";
+
+    await writeFixtureIssue(fixtureRoot, issuePath, {
+      status: "completed",
+      version: "1.2.3",
+    });
+
+    const result = await runReleaseScript("check-issue-release-version.mjs", [], {
+      cwd: fixtureRoot,
+    });
+
+    assertScriptFailure(result);
+    assert.match(result.stderr, /Shared release version metadata is/u);
+    assert.match(result.stderr, /expected 1\.2\.3 from/u);
+    assert.match(result.stderr, /npm run sync:issue-release-version/u);
+  });
+});
+
+test("issue release version sync reads an issue and updates metadata", async () => {
+  await withReleaseMetadataFixture(async (fixtureRoot) => {
+    const issuePath =
+      ".scratch/release-fixture/issues/100-current-completed.md";
+    const bumpedVersion = "2.3.4";
+
+    await writeFixtureIssue(fixtureRoot, issuePath, {
+      status: "completed",
+      version: bumpedVersion,
+    });
+
+    const result = await runReleaseScript(
+      "sync-issue-release-version.mjs",
+      ["--issue", issuePath, "--skip-build", "--skip-artifact-refresh"],
+      { cwd: fixtureRoot },
+    );
+    const rootPackage = await readFixtureJson(fixtureRoot, "package.json");
+
+    assertScriptSuccess(result);
+    assert.match(
+      result.stdout,
+      new RegExp(`Updated DiagramPilot release version metadata to ${bumpedVersion}`, "u"),
+    );
+    assert.match(
+      result.stdout,
+      new RegExp(`DiagramPilot release version metadata is consistent at ${bumpedVersion}`, "u"),
+    );
+    assert.match(
+      result.stdout,
+      new RegExp(`Synced DiagramPilot release metadata to Issue Version ${bumpedVersion}`, "u"),
+    );
+    assert.equal(rootPackage.version, bumpedVersion);
   });
 });
 
@@ -268,8 +392,13 @@ test("release version workflow documents issue versions and closeout requirement
     workflow,
     /Issue 62 is `0\.2\.0`, the first Public Alpha Release/u,
   );
+  assert.match(
+    workflow,
+    /npm run sync:issue-release-version -- --issue <issue-file>/u,
+  );
   assert.match(workflow, /node scripts\/bump-release-version\.mjs <issue-version>/u);
   assert.match(workflow, /node scripts\/check-release-version\.mjs/u);
+  assert.match(workflow, /npm run check:issue-release-version/u);
   assert.match(workflow, /npm run check:package-publish-state -- --expect prealpha/u);
   assert.match(workflow, /render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/u);
   assert.match(workflow, /validation results/u);

@@ -102,6 +102,7 @@ test("GitHub Actions release workflow validates releases before guarded publishi
   assert.match(workflow, /npm install --global npm@11\.16\.0/u);
   assert.match(workflow, /npm ci/u);
   assert.match(workflow, /npm run check:release-version/u);
+  assert.match(workflow, /npm run check:issue-release-version/u);
   assert.match(workflow, /npm run build/u);
   assert.match(workflow, /npm test/u);
   assert.match(workflow, /npm run generate:schema/u);
