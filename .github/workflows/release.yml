@@ -95,6 +95,11 @@ jobs:
 
       - name: Verify package publish dry-run
         run: |
+          if [ "$RELEASE_DIST_TAG" = "latest" ] && npm run check:package-publish-state -- --expect latest; then
+            echo "Public Package Set already publishes $RELEASE_PUBLISH_VERSION under latest; skipping npm publish dry-run."
+            exit 0
+          fi
+
           packages=(
             "diagrampilot"
             "@diagrampilot/core"
@@ -159,6 +164,11 @@ jobs:
 
       - name: Publish public packages
         run: |
+          if [ "$RELEASE_DIST_TAG" = "latest" ] && npm run check:package-publish-state -- --expect latest; then
+            echo "Public Package Set already publishes $RELEASE_PUBLISH_VERSION under latest; skipping npm publish."
+            exit 0
+          fi
+
           packages=(
             "diagrampilot"
             "@diagrampilot/core"

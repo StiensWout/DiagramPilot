@@ -185,6 +185,10 @@ verifies the intended Issue Version with
 `npm run check:release-version -- "$RELEASE_PUBLISH_VERSION"`, rebuilds package
 artifacts, reruns package readiness, and then publishes the Public Package Set.
 For trusted `main` pushes, GitHub Release publication only starts after npm `latest` publish succeeds for that same Issue Version.
+If the complete Public Package Set already publishes that Issue Version under
+`latest`, the workflow treats package publishing as idempotently complete and
+continues to GitHub Release draft preparation instead of retrying immutable npm
+versions.
 
 The `prepare-github-release-draft` job runs only for `latest` releases after
 package publish succeeds. It checks out the same release commit, verifies the
