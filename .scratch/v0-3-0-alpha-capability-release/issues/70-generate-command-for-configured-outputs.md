@@ -87,6 +87,9 @@ git diff --check
   and made Fallow a blocking local and CI quality gate.
 - CI follow-up made Fallow build-aware so clean checkouts have the package
   `dist/` imports available before dead-code and changed-code audits run.
+- Release repair bumped the shared DiagramPilot version metadata and checkout
+  demo SVG provenance to the issue's assigned `0.2.7` version so merged `main`
+  publishes a new immutable Issue Release instead of retrying `0.2.6`.
 
 ## Validation results
 
@@ -100,3 +103,10 @@ git diff --check
 - `node packages/cli/dist/index.js generate demo-projects/checkout --json`
   passed with 1 checked source and 1 written SVG artifact.
 - `git diff --check` passed.
+- `npm run check:release-version -- 0.2.7` passed.
+- `node scripts/generate-release-notes.mjs --version 0.2.7 --tag v0.2.7`
+  passed.
+- `npm view diagrampilot@0.2.7 version` returned npm `E404`, confirming the
+  release version is not already published.
+- The release workflow package dry-run publish command passed for all 7 public
+  packages at `0.2.7`.
