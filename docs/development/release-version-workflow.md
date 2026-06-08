@@ -33,8 +33,20 @@ Issue 64 is `0.2.1`, the Release Operations foundation Issue Release.
 
 ## Version Tooling
 
-Run the bump command from the repository root with the issue's assigned Issue
-Version:
+Run the sync command from the repository root with the issue file. This is the
+normal release-version closeout path:
+
+```bash
+npm run sync:issue-release-version -- --issue <issue-file>
+```
+
+The sync command reads the issue's assigned Issue Version, updates shared
+release metadata, builds the workspace, refreshes version-sensitive generated
+artifacts, and verifies both package metadata consistency and issue-version
+alignment.
+
+The lower-level bump command is still available when a script needs only the
+metadata update:
 
 ```bash
 node scripts/bump-release-version.mjs <issue-version>
@@ -51,6 +63,7 @@ Run the consistency check before closeout:
 
 ```bash
 node scripts/check-release-version.mjs
+npm run check:issue-release-version
 ```
 
 The check uses the root `package.json` version as the expected version by
@@ -64,6 +77,17 @@ node scripts/check-release-version.mjs <expected-version>
 The check fails if a public package version, private workspace version, exact
 internal package dependency, lockfile package version, lockfile internal
 dependency, or runtime DiagramPilot version drifts.
+
+`check:issue-release-version` verifies that shared release metadata matches the
+latest completed local issue's Issue Version, or a specific issue when passed
+explicitly:
+
+```bash
+npm run check:issue-release-version -- --issue <issue-file>
+```
+
+This catches the common closeout mistake where an issue is completed with a new
+Issue Version but the package metadata still points at the previous release.
 
 Run the package readiness check whenever release licensing or package publish
 metadata changes:
@@ -247,12 +271,11 @@ website output before package publish.
 Issue closeout includes:
 
 1. Confirm the local issue file has the assigned `Issue Version`.
-2. Run `node scripts/bump-release-version.mjs <issue-version>`.
-3. Run `npm run build` so CLI and package dist files carry the bumped runtime
-   version.
-4. Refresh version-sensitive artifacts. The checkout demo SVG must be rendered
-   whenever DiagramPilot version metadata changes because SVG provenance
-   includes `diagramPilotVersion`:
+2. Run `npm run sync:issue-release-version -- --issue <issue-file>`.
+3. The sync command builds the workspace and refreshes version-sensitive
+   artifacts. The checkout demo SVG must be rendered whenever DiagramPilot
+   version metadata changes because SVG provenance includes
+   `diagramPilotVersion`:
 
    ```bash
    cd demo-projects/checkout
@@ -260,15 +283,15 @@ Issue closeout includes:
    node ../../packages/cli/dist/index.js check
    ```
 
-5. Run and record validation results for the issue's validation plan.
-6. Run `npm run check:package-readiness` when package publish metadata,
+4. Run and record validation results for the issue's validation plan.
+5. Run `npm run check:package-readiness` when package publish metadata,
    licensing, or tarball boundaries are in scope.
-7. Preview release notes with `scripts/generate-release-notes.mjs` into a
+6. Preview release notes with `scripts/generate-release-notes.mjs` into a
    temporary file if desired. Do not commit generated release-note files and do
    not write them under `.scratch/`. The workflow creates or updates the GitHub
    Release draft after npm `latest` and tag creation; review the draft body in
    GitHub before approving the `github-release-publication` environment.
-8. Update the local issue file with completed acceptance criteria,
+7. Update the local issue file with completed acceptance criteria,
    implementation notes, validation results, and `Status: completed`.
 
 If a version metadata change does not alter a version-sensitive artifact, record

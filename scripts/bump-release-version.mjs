@@ -127,14 +127,16 @@ function updateLockfile(rootPath, records, publicPackageNames, version) {
 function updateRuntimeVersion(rootPath, version) {
   const sourcePath = path.join(rootPath, VERSION_SOURCE_PATH);
   const source = readFileSync(sourcePath, "utf8");
-  const updatedSource = source.replace(
-    /\bDIAGRAMPILOT_VERSION\s*=\s*"[^"]+"/u,
-    `DIAGRAMPILOT_VERSION = "${version}"`,
-  );
+  const versionPattern = /\bDIAGRAMPILOT_VERSION\s*=\s*"[^"]+"/u;
 
-  if (updatedSource === source) {
+  if (versionPattern.exec(source) === null) {
     throw new Error(`${VERSION_SOURCE_PATH} does not export DIAGRAMPILOT_VERSION.`);
   }
+
+  const updatedSource = source.replace(
+    versionPattern,
+    `DIAGRAMPILOT_VERSION = "${version}"`,
+  );
 
   writeFileSync(sourcePath, updatedSource, "utf8");
 }

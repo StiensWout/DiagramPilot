@@ -47,6 +47,7 @@ test("GitHub Actions CI validates branch and pull request release-readiness gate
     "npm ci",
     "npm run audit:fallow",
     "npm run check:release-version",
+    "npm run check:issue-release-version",
     "npm run build",
     "npm test",
     "npm run generate:schema",

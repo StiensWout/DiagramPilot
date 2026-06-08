@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import path from "node:path";
+import {
+  findIssuePathByVersion,
+  readIssueMetadata,
+  readIssueText,
+  readIssueTitle,
+} from "./release-issue-utils.mjs";
 
 const SECTION_LABELS = new Map([
   ["What to build", "Summary"],
@@ -13,6 +17,11 @@ const SECTION_LABELS = new Map([
 ]);
 const USAGE =
   "Usage: node scripts/generate-release-notes.mjs [--issue <path>] --version <version> [--tag <tag>]";
+const OPTION_FIELDS = new Map([
+  ["--issue", "issuePath"],
+  ["--version", "version"],
+  ["--tag", "tag"],
+]);
 
 function parseArgs(args) {
   const parsed = {
@@ -22,30 +31,14 @@ function parseArgs(args) {
   };
 
   for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-    const value = args[index + 1] ?? "";
+    const fieldName = OPTION_FIELDS.get(args[index]);
 
-    if (arg === "--issue") {
-      parsed.issuePath = value;
-      index += 1;
-      continue;
+    if (fieldName === undefined) {
+      throw new Error(USAGE);
     }
 
-    if (arg === "--version") {
-      parsed.version = value;
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--tag") {
-      parsed.tag = value;
-      index += 1;
-      continue;
-    }
-
-    throw new Error(
-      USAGE,
-    );
+    parsed[fieldName] = args[index + 1] ?? "";
+    index += 1;
   }
 
   if (parsed.version === "") {
@@ -57,84 +50,6 @@ function parseArgs(args) {
   }
 
   return parsed;
-}
-
-function readIssue(pathValue) {
-  const resolvedPath = path.resolve(pathValue);
-  return readFileSync(resolvedPath, "utf8");
-}
-
-function findIssueFiles(root) {
-  const scratchRoot = path.join(root, ".scratch");
-  const issueFiles = [];
-
-  if (!existsSync(scratchRoot)) {
-    return issueFiles;
-  }
-
-  function visit(dir) {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const entryPath = path.join(dir, entry.name);
-
-      if (entry.isDirectory()) {
-        visit(entryPath);
-        continue;
-      }
-
-      if (
-        entry.isFile() &&
-        entry.name.match(/^\d+-.+\.md$/u) !== null &&
-        path.basename(path.dirname(entryPath)) === "issues"
-      ) {
-        issueFiles.push(entryPath);
-      }
-    }
-  }
-
-  if (statSync(scratchRoot).isDirectory()) {
-    visit(scratchRoot);
-  }
-
-  return issueFiles;
-}
-
-function findIssuePathByVersion(version) {
-  const matches = [];
-
-  for (const issuePath of findIssueFiles(process.cwd())) {
-    const issueText = readIssue(issuePath);
-    if (readMetadata(issueText, "Issue Version") === version) {
-      matches.push(issuePath);
-    }
-  }
-
-  if (matches.length === 0) {
-    throw new Error(`No local issue file has Issue Version ${version}.`);
-  }
-
-  if (matches.length > 1) {
-    throw new Error(
-      `Multiple local issue files have Issue Version ${version}: ${matches.join(", ")}`,
-    );
-  }
-
-  return matches[0];
-}
-
-function readMetadata(issueText, name) {
-  const match = issueText.match(new RegExp(`^${name}:\\s*(.+)$`, "mu"));
-
-  return match?.[1]?.trim() ?? "";
-}
-
-function readIssueTitle(issueText) {
-  const match = issueText.match(/^#\s+(.+)$/mu);
-
-  if (match === null) {
-    throw new Error("Issue file is missing an H1 title.");
-  }
-
-  return match[1].trim();
 }
 
 function readSections(issueText) {
@@ -157,8 +72,8 @@ function readSections(issueText) {
 }
 
 function formatReleaseNotes({ issueText, version, tag }) {
-  const status = readMetadata(issueText, "Status");
-  const issueVersion = readMetadata(issueText, "Issue Version");
+  const status = readIssueMetadata(issueText, "Status");
+  const issueVersion = readIssueMetadata(issueText, "Issue Version");
   const title = readIssueTitle(issueText);
   const sections = readSections(issueText);
 
@@ -204,8 +119,8 @@ function formatReleaseNotes({ issueText, version, tag }) {
 function main() {
   const { issuePath, version, tag } = parseArgs(process.argv.slice(2));
   const selectedIssuePath =
-    issuePath === "" ? findIssuePathByVersion(version) : issuePath;
-  const issueText = readIssue(selectedIssuePath);
+    issuePath === "" ? findIssuePathByVersion(process.cwd(), version) : issuePath;
+  const issueText = readIssueText(selectedIssuePath);
   const releaseNotes = formatReleaseNotes({ issueText, version, tag });
 
   process.stdout.write(releaseNotes);
