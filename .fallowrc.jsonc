@@ -1,0 +1,33 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  // Demo fixtures, generated public CSS, and test-helper fixture exports are
+  // intentionally consumed outside Fallow's static entry graph.
+  "entry": [
+    "demo-projects/checkout/src/**/*.ts",
+    "demo-projects/checkout/src/**/*.tsx",
+    "website/src/styles/docs.css"
+  ],
+  "ignoreDependencies": [
+    "dejavu-fonts-ttf"
+  ],
+  "ignoreExports": [
+    {
+      "file": "test/cli-command-planning-helpers.mjs",
+      "exports": [
+        "validLoadResult"
+      ]
+    },
+    {
+      "file": "test/repo-workflow-configured-artifacts-helpers.mjs",
+      "exports": [
+        "validSourceContent"
+      ]
+    },
+    {
+      "file": "test/svg-artifact-freshness-helpers.mjs",
+      "exports": [
+        "validSourceContent"
+      ]
+    }
+  ]
+}

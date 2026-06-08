@@ -1,0 +1,267 @@
+{
+  "finding_counts": {
+    "packages/cli/src/argument-parsing.ts": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "packages/cli/src/cli-output.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/cli/src/command-planning.ts": {
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "packages/cli/src/execution.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/cli/src/generate-command-planning.ts": {
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "packages/cli/src/init-command.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "packages/core/src/diagramspec-metadata-validation.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "packages/core/src/diagramspec-topology-validation.ts": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 5
+      }
+    },
+    "packages/core/src/diagramspec-topology.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "packages/core/src/diagramspec-validation.ts": {
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/core/src/maintainability-file-size-gate.ts": {
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "packages/core/src/repo-workflow-check.ts": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/core/src/repo-workflow-config.ts": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "packages/core/src/repo-workflow-configured-artifacts.ts": {
+      "crap_moderate": {
+        "count": 5
+      }
+    },
+    "packages/core/src/repo-workflow-generate.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/core/src/source-discovery.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/core/src/source-loading.ts": {
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "packages/core/src/svg-artifact-freshness.ts": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/export-d2/src/index.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "packages/export-dot/src/index.ts": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "packages/export-mermaid/src/index.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/bump-release-version.mjs": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "scripts/check-package-publish-state.mjs": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "scripts/check-package-readiness.mjs": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    },
+    "scripts/check-release-version.mjs": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "scripts/generate-release-notes.mjs": {
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "scripts/plan-release-publish.mjs": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/validate-github-release-draft.mjs": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "test/checkout-demo-project.test.mjs": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "test/diagramspec-json-schema.test.mjs": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "website/scripts/check-visual-quality.mjs": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "website/scripts/sync-public-docs.mjs": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "website/scripts/visual-quality-static-review.mjs": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "website/src/pages/docs/[...slug].md.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    }
+  },
+  "runtime_coverage_findings": [],
+  "target_keys": [
+    "packages/core/src/repo-workflow-generate.ts:complexity",
+    "packages/core/src/repo-workflow-config.ts:complexity",
+    "scripts/check-package-readiness.mjs:complexity"
+  ]
+}

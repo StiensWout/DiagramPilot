@@ -6,7 +6,7 @@ import type { YAMLError } from "yaml";
 
 import type { RepairableDiagnostic } from "./diagramspec-validation.js";
 
-export const repoWorkflowConfigFileName = "diagrampilot.config.yaml";
+const repoWorkflowConfigFileName = "diagrampilot.config.yaml";
 
 export type RepoWorkflowArtifactOutputFormat =
   | "svg" | "png" | "mermaid" | "d2" | "dot" | "markdown";

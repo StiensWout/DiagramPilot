@@ -51,6 +51,8 @@ structured results through `--json`.
 
 ```bash
 npm test
+npm run audit:fallow
+npm run audit:fallow:changed
 node packages/cli/dist/index.js generate demo-projects/checkout --json
 git diff --check
 ```
@@ -79,10 +81,17 @@ git diff --check
   zero-config SVG, configured outputs, parent directory creation, path safety,
   JSON output, invalid sources, invalid config, skipped outputs, and existing
   read-only `check` behavior.
+- Follow-up quality workflow hardening fixed current Fallow dead-code findings,
+  added narrow Fallow configuration for intentional static-analysis blind
+  spots, committed Fallow baselines for existing duplication and health debt,
+  and made Fallow a blocking local and CI quality gate.
 
 ## Validation results
 
 - `npm test` passed: 211 tests.
+- `npm run audit:fallow` passed.
+- `npm run audit:fallow:changed` passed with only inherited duplication context
+  reported from the committed baseline.
 - `npm run build` passed after the final cleanup.
 - `node packages/cli/dist/index.js generate demo-projects/checkout --json`
   passed with 1 checked source and 1 written SVG artifact.

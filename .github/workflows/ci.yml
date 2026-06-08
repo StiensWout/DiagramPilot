@@ -35,7 +35,10 @@ jobs:
         with:
           command: audit
           version: 2.89.0
-          fail-on-issues: false
+          fail-on-issues: true
+          dead-code-baseline: fallow-baselines/dead-code.json
+          health-baseline: fallow-baselines/health.json
+          dupes-baseline: fallow-baselines/dupes.json
           annotations: true
           artifacts-dir: .fallow-action
 
@@ -63,6 +66,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Run Fallow quality gate
+        run: npm run audit:fallow
 
       - name: Verify release version metadata
         run: npm run check:release-version

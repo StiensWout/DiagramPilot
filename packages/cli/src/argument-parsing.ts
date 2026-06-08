@@ -1,26 +1,26 @@
-export interface ValidateOptions {
+interface ValidateOptions {
   json: boolean;
   sourcePath: string;
 }
 
-export interface ExportOptions {
+interface ExportOptions {
   format: "d2" | "dot" | "mermaid";
   outPath?: string;
   sourcePath: string;
 }
 
-export interface RenderCommandOptions {
+interface RenderCommandOptions {
   format: "svg" | "png";
   outPath: string;
   sourcePath: string;
 }
 
-export interface CheckCommandOptions {
+interface CheckCommandOptions {
   json: boolean;
   scopePath?: string;
 }
 
-export interface GenerateCommandOptions {
+interface GenerateCommandOptions {
   json: boolean;
   scopePath?: string;
 }
