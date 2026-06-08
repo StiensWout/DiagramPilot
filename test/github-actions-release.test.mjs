@@ -116,6 +116,8 @@ test("GitHub Actions release workflow validates releases before guarded publishi
   assert.match(workflow, /needs\.validate-release\.outputs\.should_publish == 'true'/u);
   assert.match(workflow, /RELEASE_DIST_TAG == 'nightly'/u);
   assert.match(workflow, /node scripts\/bump-release-version\.mjs "\$RELEASE_PUBLISH_VERSION"/u);
+  assert.match(workflow, /npm run check:package-publish-state -- --expect latest/u);
+  assert.match(workflow, /already publishes \$RELEASE_PUBLISH_VERSION under latest/u);
   assert.match(workflow, /npm publish --workspace "\$workspace" --tag "\$RELEASE_DIST_TAG" --access public/u);
   assert.match(workflow, /npm publish --dry-run --workspace "\$workspace" --tag "\$RELEASE_DIST_TAG" --access public/u);
   assert.doesNotMatch(workflow, /NPM_TOKEN|NODE_AUTH_TOKEN|VERCEL|--provenance/u);
@@ -163,6 +165,7 @@ test("release workflow gates CD side effects behind CI and validates reviewed Gi
   assert.match(workflow, /gh release edit "\$RELEASE_TAG" --draft=false --verify-tag --latest/u);
 
   assert.match(publishPackagesJob, /needs: validate-release/u);
+  assert.match(publishPackagesJob, /npm run check:package-publish-state -- --expect latest/u);
   assert.match(publishPackagesJob, /npm publish --workspace/u);
 
   const tagCreation = prepareGithubReleaseJob.indexOf('git tag "$RELEASE_TAG" "$GITHUB_SHA"');
