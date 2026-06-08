@@ -85,6 +85,8 @@ git diff --check
   added narrow Fallow configuration for intentional static-analysis blind
   spots, committed Fallow baselines for existing duplication and health debt,
   and made Fallow a blocking local and CI quality gate.
+- CI follow-up made Fallow build-aware so clean checkouts have the package
+  `dist/` imports available before dead-code and changed-code audits run.
 
 ## Validation results
 
@@ -92,6 +94,8 @@ git diff --check
 - `npm run audit:fallow` passed.
 - `npm run audit:fallow:changed` passed with only inherited duplication context
   reported from the committed baseline.
+- Clean-state `npm run audit:fallow` passed after `npm run clean`, confirming
+  the gate builds before analyzing generated package outputs.
 - `npm run build` passed after the final cleanup.
 - `node packages/cli/dist/index.js generate demo-projects/checkout --json`
   passed with 1 checked source and 1 written SVG artifact.
