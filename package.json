@@ -32,6 +32,8 @@
     "build": "tsc -b && node packages/cli/scripts/make-bin-executable.mjs",
     "build:website": "npm --workspace website run build",
     "audit:maintainability": "npm run build && node scripts/audit-maintainability-file-sizes.mjs",
+    "audit:fallow": "fallow --format compact --quiet",
+    "audit:fallow:changed": "fallow audit --format compact --quiet",
     "check:release-version": "node scripts/check-release-version.mjs",
     "clean": "tsc -b --clean",
     "generate:schema": "npm run build && node scripts/generate-diagramspec-v1-schema.mjs",
@@ -42,6 +44,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.9.1",
+    "fallow": "^2.89.0",
     "typescript": "^6.0.3"
   }
 }

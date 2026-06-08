@@ -13,6 +13,32 @@ permissions:
   contents: read
 
 jobs:
+  fallow:
+    name: Fallow changed-code audit
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CI: "true"
+      FORCE_COLOR: "0"
+      NO_COLOR: "1"
+      FALLOW_UPDATE_CHECK: "off"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Fallow changed-code audit
+        uses: fallow-rs/fallow@v2.89.0
+        with:
+          command: audit
+          version: 2.89.0
+          fail-on-issues: false
+          annotations: true
+          artifacts-dir: .fallow-action
+
   validate:
     name: Release readiness
     runs-on: ubuntu-latest
