@@ -25,55 +25,363 @@ interface GenerateCommandOptions {
   scopePath?: string;
 }
 
-type ValidateArgsResult =
+type ArgsResult<TOptions> =
   | {
       ok: true;
-      options: ValidateOptions;
+      options: TOptions;
     }
   | {
       ok: false;
       message: string;
     };
 
-type ExportArgsResult =
-  | {
-      ok: true;
-      options: ExportOptions;
-    }
-  | {
-      ok: false;
-      message: string;
-    };
+type ValidateArgsResult = ArgsResult<ValidateOptions>;
+type ExportArgsResult = ArgsResult<ExportOptions>;
+type RenderArgsResult = ArgsResult<RenderCommandOptions>;
+type CheckArgsResult = ArgsResult<CheckCommandOptions>;
+type GenerateArgsResult = ArgsResult<GenerateCommandOptions>;
 
-type RenderArgsResult =
-  | {
-      ok: true;
-      options: RenderCommandOptions;
-    }
-  | {
-      ok: false;
-      message: string;
-    };
+const exportFormats = ["mermaid", "d2", "dot"] as const;
+const renderFormats = ["svg", "png"] as const;
 
-type CheckArgsResult =
-  | {
-      ok: true;
-      options: CheckCommandOptions;
-    }
-  | {
-      ok: false;
-      message: string;
-    };
+interface OutputCommandArgsConfig<TFormat extends string> {
+  commandName: "export" | "render";
+  defaultFormat?: TFormat;
+  formats: readonly TFormat[];
+  missingFormatMessage: string;
+  missingOutPathMessage: string;
+  requireOutPath: boolean;
+}
 
-type GenerateArgsResult =
-  | {
-      ok: true;
-      options: GenerateCommandOptions;
-    }
-  | {
-      ok: false;
-      message: string;
+interface OutputCommandArgs<TFormat extends string> {
+  format: TFormat;
+  outPath?: string;
+  sourcePath: string;
+}
+
+interface ScopedJsonParseState {
+  json: boolean;
+  scopePath?: string;
+}
+
+interface OutputCommandParseState {
+  format?: string;
+  outPath?: string;
+  sourcePath?: string;
+}
+
+interface OutputCommandParseProgress {
+  nextIndex: number;
+  state: OutputCommandParseState;
+}
+
+interface RequiredOutputCommandValues {
+  format: string;
+  outPath?: string;
+  sourcePath: string;
+}
+
+function isSupportedFormat<TFormat extends string>(
+  format: string,
+  formats: readonly TFormat[],
+): format is TFormat {
+  return (formats as readonly string[]).includes(format);
+}
+
+function parseScopedJsonPositionalArg(
+  arg: string,
+  commandName: "check" | "generate",
+  state: ScopedJsonParseState,
+): ArgsResult<ScopedJsonParseState> {
+  if (arg.startsWith("-")) {
+    return {
+      ok: false,
+      message: `Unknown ${commandName} option: ${arg}`,
     };
+  }
+
+  if (state.scopePath !== undefined) {
+    return {
+      ok: false,
+      message: `Unexpected ${commandName} argument: ${arg}`,
+    };
+  }
+
+  return {
+    ok: true,
+    options: {
+      json: state.json,
+      scopePath: arg,
+    },
+  };
+}
+
+function parseScopedJsonArg(
+  arg: string,
+  commandName: "check" | "generate",
+  state: ScopedJsonParseState,
+): ArgsResult<ScopedJsonParseState> {
+  if (arg === "--json") {
+    return {
+      ok: true,
+      options: {
+        ...state,
+        json: true,
+      },
+    };
+  }
+
+  return parseScopedJsonPositionalArg(arg, commandName, state);
+}
+
+function parseScopedJsonArgs(
+  args: readonly string[],
+  commandName: "check" | "generate",
+): ArgsResult<CheckCommandOptions> {
+  let state: ScopedJsonParseState = {
+    json: false,
+  };
+
+  for (const arg of args) {
+    const result = parseScopedJsonArg(arg, commandName, state);
+
+    if (!result.ok) {
+      return result;
+    }
+
+    state = result.options;
+  }
+
+  return {
+    ok: true,
+    options: state,
+  };
+}
+
+function parseOutputValueArg(
+  args: readonly string[],
+  index: number,
+  state: OutputCommandParseState,
+  property: "format" | "outPath",
+  missingMessage: string,
+): ArgsResult<OutputCommandParseProgress> {
+  const nextArg = args[index + 1];
+
+  if (nextArg === undefined) {
+    return {
+      ok: false,
+      message: missingMessage,
+    };
+  }
+
+  return {
+    ok: true,
+    options: {
+      nextIndex: index + 1,
+      state: {
+        ...state,
+        [property]: nextArg,
+      },
+    },
+  };
+}
+
+function parseOutputPositionalArg(
+  arg: string,
+  index: number,
+  state: OutputCommandParseState,
+  commandName: "export" | "render",
+): ArgsResult<OutputCommandParseProgress> {
+  if (arg.startsWith("-")) {
+    return {
+      ok: false,
+      message: `Unknown ${commandName} option: ${arg}`,
+    };
+  }
+
+  if (state.sourcePath !== undefined) {
+    return {
+      ok: false,
+      message: `Unexpected ${commandName} argument: ${arg}`,
+    };
+  }
+
+  return {
+    ok: true,
+    options: {
+      nextIndex: index,
+      state: {
+        ...state,
+        sourcePath: arg,
+      },
+    },
+  };
+}
+
+function parseOutputCommandArg<TFormat extends string>(
+  args: readonly string[],
+  index: number,
+  state: OutputCommandParseState,
+  config: OutputCommandArgsConfig<TFormat>,
+): ArgsResult<OutputCommandParseProgress> {
+  const arg = args[index];
+
+  if (arg === "--format") {
+    return parseOutputValueArg(
+      args,
+      index,
+      state,
+      "format",
+      config.missingFormatMessage,
+    );
+  }
+
+  if (arg === "--out") {
+    return parseOutputValueArg(
+      args,
+      index,
+      state,
+      "outPath",
+      config.missingOutPathMessage,
+    );
+  }
+
+  return parseOutputPositionalArg(arg, index, state, config.commandName);
+}
+
+function requireOutputCommandValue(
+  value: string | undefined,
+  message: string,
+): ArgsResult<{ value: string }> {
+  if (value === undefined) {
+    return {
+      ok: false,
+      message,
+    };
+  }
+
+  return {
+    ok: true,
+    options: { value },
+  };
+}
+
+function requireOutputPathForCommand<TFormat extends string>(
+  state: OutputCommandParseState,
+  config: OutputCommandArgsConfig<TFormat>,
+): ArgsResult<{ outPath?: string }> {
+  if (!config.requireOutPath) {
+    return {
+      ok: true,
+      options: {
+        outPath: state.outPath,
+      },
+    };
+  }
+
+  const outPath = requireOutputCommandValue(
+    state.outPath,
+    config.missingOutPathMessage,
+  );
+
+  if (!outPath.ok) {
+    return outPath;
+  }
+
+  return {
+    ok: true,
+    options: {
+      outPath: outPath.options.value,
+    },
+  };
+}
+
+function collectRequiredOutputCommandValues<TFormat extends string>(
+  state: OutputCommandParseState,
+  config: OutputCommandArgsConfig<TFormat>,
+): ArgsResult<RequiredOutputCommandValues> {
+  const sourcePath = requireOutputCommandValue(
+    state.sourcePath,
+    "Missing source path.",
+  );
+
+  if (!sourcePath.ok) {
+    return sourcePath;
+  }
+
+  const format = requireOutputCommandValue(
+    state.format,
+    config.missingFormatMessage,
+  );
+
+  if (!format.ok) {
+    return format;
+  }
+
+  const outPath = requireOutputPathForCommand(state, config);
+
+  if (!outPath.ok) {
+    return outPath;
+  }
+
+  return {
+    ok: true,
+    options: {
+      format: format.options.value,
+      outPath: outPath.options.outPath,
+      sourcePath: sourcePath.options.value,
+    },
+  };
+}
+
+function outputCommandArgsFromValues<TFormat extends string>(
+  values: RequiredOutputCommandValues,
+  config: OutputCommandArgsConfig<TFormat>,
+): ArgsResult<OutputCommandArgs<TFormat>> {
+  if (!isSupportedFormat(values.format, config.formats)) {
+    return {
+      ok: false,
+      message: `Unsupported ${config.commandName} format: ${values.format}`,
+    };
+  }
+
+  return {
+    ok: true,
+    options: {
+      format: values.format,
+      outPath: values.outPath,
+      sourcePath: values.sourcePath,
+    },
+  };
+}
+
+function parseOutputCommandArgs<TFormat extends string>(
+  args: readonly string[],
+  config: OutputCommandArgsConfig<TFormat>,
+): ArgsResult<OutputCommandArgs<TFormat>> {
+  let state: OutputCommandParseState = {
+    format: config.defaultFormat,
+  };
+
+  for (let index = 0; index < args.length; index += 1) {
+    const result = parseOutputCommandArg(args, index, state, config);
+
+    if (!result.ok) {
+      return result;
+    }
+
+    index = result.options.nextIndex;
+    state = result.options.state;
+  }
+
+  const values = collectRequiredOutputCommandValues(state, config);
+
+  if (!values.ok) {
+    return values;
+  }
+
+  return outputCommandArgsFromValues(values.options, config);
+}
 
 export function parseValidateArgs(
   args: readonly string[],
@@ -121,247 +429,52 @@ export function parseValidateArgs(
 }
 
 export function parseExportArgs(args: readonly string[]): ExportArgsResult {
-  let format: string | undefined;
-  let outPath: string | undefined;
-  let sourcePath: string | undefined;
-
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-
-    if (arg === "--format") {
-      const nextArg = args[index + 1];
-
-      if (nextArg === undefined) {
-        return {
-          ok: false,
-          message: "Missing export format.",
-        };
-      }
-
-      format = nextArg;
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--out") {
-      const nextArg = args[index + 1];
-
-      if (nextArg === undefined) {
-        return {
-          ok: false,
-          message: "Missing export output path.",
-        };
-      }
-
-      outPath = nextArg;
-      index += 1;
-      continue;
-    }
-
-    if (arg.startsWith("-")) {
-      return {
-        ok: false,
-        message: `Unknown export option: ${arg}`,
-      };
-    }
-
-    if (sourcePath !== undefined) {
-      return {
-        ok: false,
-        message: `Unexpected export argument: ${arg}`,
-      };
-    }
-
-    sourcePath = arg;
-  }
-
-  if (sourcePath === undefined) {
-    return {
-      ok: false,
-      message: "Missing source path.",
-    };
-  }
-
-  if (format === undefined) {
-    return {
-      ok: false,
-      message: "Missing export format.",
-    };
-  }
-
-  if (format !== "mermaid" && format !== "d2" && format !== "dot") {
-    return {
-      ok: false,
-      message: `Unsupported export format: ${format}`,
-    };
-  }
-
-  return {
-    ok: true,
-    options: {
-      format,
-      outPath,
-      sourcePath,
-    },
-  };
+  return parseOutputCommandArgs(args, {
+    commandName: "export",
+    formats: exportFormats,
+    missingFormatMessage: "Missing export format.",
+    missingOutPathMessage: "Missing export output path.",
+    requireOutPath: false,
+  });
 }
 
 export function parseRenderArgs(args: readonly string[]): RenderArgsResult {
-  let format = "svg";
-  let outPath: string | undefined;
-  let sourcePath: string | undefined;
+  const result = parseOutputCommandArgs(args, {
+    commandName: "render",
+    defaultFormat: "svg",
+    formats: renderFormats,
+    missingFormatMessage: "Missing render format.",
+    missingOutPathMessage: "Missing render output path.",
+    requireOutPath: true,
+  });
 
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-
-    if (arg === "--format") {
-      const nextArg = args[index + 1];
-
-      if (nextArg === undefined) {
-        return {
-          ok: false,
-          message: "Missing render format.",
-        };
-      }
-
-      format = nextArg;
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--out") {
-      const nextArg = args[index + 1];
-
-      if (nextArg === undefined) {
-        return {
-          ok: false,
-          message: "Missing render output path.",
-        };
-      }
-
-      outPath = nextArg;
-      index += 1;
-      continue;
-    }
-
-    if (arg.startsWith("-")) {
-      return {
-        ok: false,
-        message: `Unknown render option: ${arg}`,
-      };
-    }
-
-    if (sourcePath !== undefined) {
-      return {
-        ok: false,
-        message: `Unexpected render argument: ${arg}`,
-      };
-    }
-
-    sourcePath = arg;
+  if (!result.ok) {
+    return result;
   }
 
-  if (sourcePath === undefined) {
-    return {
-      ok: false,
-      message: "Missing source path.",
-    };
-  }
-
-  if (outPath === undefined) {
+  if (result.options.outPath === undefined) {
     return {
       ok: false,
       message: "Missing render output path.",
     };
   }
 
-  if (format !== "svg" && format !== "png") {
-    return {
-      ok: false,
-      message: `Unsupported render format: ${format}`,
-    };
-  }
-
   return {
     ok: true,
     options: {
-      format,
-      outPath,
-      sourcePath,
+      format: result.options.format,
+      outPath: result.options.outPath,
+      sourcePath: result.options.sourcePath,
     },
   };
 }
 
 export function parseCheckArgs(args: readonly string[]): CheckArgsResult {
-  let json = false;
-  let scopePath: string | undefined;
-
-  for (const arg of args) {
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-
-    if (arg.startsWith("-")) {
-      return {
-        ok: false,
-        message: `Unknown check option: ${arg}`,
-      };
-    }
-
-    if (scopePath !== undefined) {
-      return {
-        ok: false,
-        message: `Unexpected check argument: ${arg}`,
-      };
-    }
-
-    scopePath = arg;
-  }
-
-  return {
-    ok: true,
-    options: {
-      json,
-      scopePath,
-    },
-  };
+  return parseScopedJsonArgs(args, "check");
 }
 
 export function parseGenerateArgs(
   args: readonly string[],
 ): GenerateArgsResult {
-  let json = false;
-  let scopePath: string | undefined;
-
-  for (const arg of args) {
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-
-    if (arg.startsWith("-")) {
-      return {
-        ok: false,
-        message: `Unknown generate option: ${arg}`,
-      };
-    }
-
-    if (scopePath !== undefined) {
-      return {
-        ok: false,
-        message: `Unexpected generate argument: ${arg}`,
-      };
-    }
-
-    scopePath = arg;
-  }
-
-  return {
-    ok: true,
-    options: {
-      json,
-      scopePath,
-    },
-  };
+  return parseScopedJsonArgs(args, "generate");
 }

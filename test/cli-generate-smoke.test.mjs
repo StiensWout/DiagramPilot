@@ -4,6 +4,7 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  parseSuccessfulJsonCliPayload,
   runBuiltCli,
   withTempRepo,
   writeFreshDiagramArtifact,
@@ -15,14 +16,7 @@ test("diagrampilot generate refreshes the zero-config SVG from the current worki
     await rm(path.join(tempRoot, "docs", "architecture.svg"));
 
     const result = await runBuiltCli(["generate", "--json"], tempRoot);
-
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
-
-    const payload = JSON.parse(result.stdout);
-
-    assert.equal(payload.ok, true);
+    const payload = parseSuccessfulJsonCliPayload(result);
     assert.deepEqual(payload.summary, {
       checkedSourceCount: 1,
       writtenArtifactCount: 1,
@@ -61,20 +55,24 @@ test("diagrampilot generate creates parent directories for configured directory 
         "        path: generated/text/{stem}.mmd",
         "      - format: dot",
         "        path: generated/graph/{stem}.dot",
+        "      - format: markdown",
+        "        path: generated/embeds/{stem}.md",
         "",
       ].join("\n"),
       "utf8",
     );
+    const guidePath = path.join(tempRoot, "docs", "guide.md");
+    const guideContent = [
+      "# Architecture Notes",
+      "",
+      "This prose document is project-owned and should not be edited by generate.",
+      "",
+    ].join("\n");
+
+    await writeFile(guidePath, guideContent, "utf8");
 
     const result = await runBuiltCli(["generate", ".", "--json"], tempRoot);
-
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
-
-    const payload = JSON.parse(result.stdout);
-
-    assert.equal(payload.ok, true);
+    const payload = parseSuccessfulJsonCliPayload(result);
     assert.deepEqual(
       payload.written.map(({ format, path: outputPath }) => ({
         format,
@@ -83,6 +81,7 @@ test("diagrampilot generate creates parent directories for configured directory 
       [
         { format: "mermaid", path: "generated/text/architecture.mmd" },
         { format: "dot", path: "generated/graph/architecture.dot" },
+        { format: "markdown", path: "generated/embeds/architecture.md" },
       ],
     );
 
@@ -94,8 +93,17 @@ test("diagrampilot generate creates parent directories for configured directory 
       path.join(tempRoot, "generated", "graph", "architecture.dot"),
       "utf8",
     );
+    const embed = await readFile(
+      path.join(tempRoot, "generated", "embeds", "architecture.md"),
+      "utf8",
+    );
+    const guide = await readFile(guidePath, "utf8");
 
     assert.match(mermaid, /^flowchart LR/m);
     assert.match(dot, /^digraph /m);
+    assert.match(embed, /# Checkout Architecture/);
+    assert.match(embed, /\[Mermaid artifact\]\(\.\.\/text\/architecture\.mmd\)/);
+    assert.match(embed, /\[DOT artifact\]\(\.\.\/graph\/architecture\.dot\)/);
+    assert.equal(guide, guideContent);
   });
 });

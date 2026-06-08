@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -87,6 +88,18 @@ export async function withTempRepo(run) {
 
 export function occurrenceCount(text, pattern) {
   return text.match(pattern)?.length ?? 0;
+}
+
+export function parseSuccessfulJsonCliPayload(result) {
+  assert.equal(result.signal, null);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stderr, "");
+
+  const payload = JSON.parse(result.stdout);
+
+  assert.equal(payload.ok, true);
+
+  return payload;
 }
 
 export function sha256Hex(text) {

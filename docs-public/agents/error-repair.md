@@ -6,7 +6,8 @@ without guessing.
 ## Validation Behavior
 
 `diagrampilot validate` validates DiagramPilot source files only. It does not
-check whether generated SVG, Mermaid, D2, DOT, or PNG artifacts are fresh.
+check whether generated SVG, Mermaid, D2, DOT, PNG, or Markdown embed artifacts
+are fresh.
 
 Validation should collect all errors that can be safely found in one pass. A
 parse error may stop validation early because there may be no usable spec tree.

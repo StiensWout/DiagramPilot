@@ -134,6 +134,8 @@ artifacts:
         path: docs/architecture.mmd
       - format: png
         path: docs/architecture.png
+      - format: markdown
+        path: docs/architecture.embed.md
   - sourceGlob: docs/diagrams/*.dp.yaml
     outputs:
       - format: d2
@@ -142,7 +144,11 @@ artifacts:
 
 Configured output formats are limited to `svg`, `png`, `mermaid`, `d2`, `dot`,
 and `markdown`. Output path templates support only `{stem}`, `{sourceDir}`,
-`{sourcePath}`, and `{format}`.
+`{sourcePath}`, and `{format}`. Markdown outputs are standalone generated
+embed files. They reference the other configured artifacts in the same mapping
+with paths relative to the embed file. `check` marks a Markdown embed stale
+when its generated content differs or when a referenced artifact is missing or
+stale.
 
 When `check` reports a source problem, use `validate` on the explicit source
 file to get the detailed repair loop:
@@ -242,8 +248,8 @@ Agent rules:
 - Validate before rendering.
 - Fix validation errors directly in the source spec.
 - Render only after validation succeeds.
-- Do not hand-edit generated SVG, Mermaid, D2, DOT, or PNG unless explicitly
-  requested.
+- Do not hand-edit generated SVG, Mermaid, D2, DOT, PNG, or Markdown embeds
+  unless explicitly requested.
 
 ## CLI Contract
 

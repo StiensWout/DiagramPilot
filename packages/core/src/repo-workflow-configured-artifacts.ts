@@ -1,10 +1,8 @@
 import { createHash } from "node:crypto";
 import { readFileSync, statSync } from "node:fs";
-import path from "node:path";
 
 import type { DiagramSpec } from "./diagramspec-topology.js";
 import type {
-  RepoWorkflowArtifactMapping,
   RepoWorkflowArtifactOutput,
   RepoWorkflowArtifactOutputFormat,
   RepoWorkflowConfig,
@@ -13,15 +11,33 @@ import type {
   ConfiguredTextArtifactFormat,
   RepoWorkflowCheckConfiguredArtifactResult,
 } from "./repo-workflow-configured-artifact-result.js";
-import type {
-  DiagramPilotSourceDiscoveryScope,
-  DiscoveredDiagramPilotSourceFile,
-} from "./source-discovery.js";
+import {
+  createMarkdownEmbedContent,
+  createMarkdownEmbedReferences,
+} from "./repo-workflow-markdown-embed.js";
+import {
+  markdownResultWithReferencedArtifactIssues,
+  referencedArtifactIssue,
+} from "./repo-workflow-markdown-embed-freshness.js";
+import {
+  deriveConfiguredArtifactDisplayPath,
+  resolveConfiguredOutputPath,
+} from "./repo-workflow-configured-artifact-paths.js";
+import { normalizePathForDisplay } from "./repo-workflow-paths.js";
 import type { DiagramPilotSourceFile } from "./source-loading.js";
 import type {
   SvgArtifactFreshnessCheckResult,
   SvgArtifactRenderer,
 } from "./svg-artifact-freshness.js";
+
+export {
+  configuredExplicitSourcesForScope,
+  configuredOutputsForSource,
+  configuredSourceDiscoveryOptions,
+  deriveConfiguredArtifactDisplayPath,
+  mergeDiscoveredAndConfiguredSources,
+  resolveConfiguredOutputPath,
+} from "./repo-workflow-configured-artifact-paths.js";
 
 export interface CheckConfiguredArtifactsForValidatedSourceOptions {
   config: RepoWorkflowConfig;
@@ -46,195 +62,6 @@ export interface CheckConfiguredArtifactsForValidatedSourceOptions {
   }): string;
 }
 
-function normalizePathForDisplay(filePath: string): string {
-  return filePath.split(path.sep).join("/");
-}
-
-export function deriveConfiguredArtifactDisplayPath(
-  configDirectory: string,
-  artifactPath: string,
-  currentWorkingDirectory: string,
-): string {
-  const relativeArtifactPath = normalizePathForDisplay(
-    path.relative(currentWorkingDirectory, artifactPath),
-  );
-
-  if (!relativeArtifactPath.startsWith("..")) {
-    return relativeArtifactPath;
-  }
-
-  return normalizePathForDisplay(path.relative(configDirectory, artifactPath));
-}
-
-function configRelativePath(configDirectory: string, absolutePath: string): string {
-  return normalizePathForDisplay(path.relative(configDirectory, absolutePath));
-}
-
-function sourceStem(sourcePath: string): string {
-  return path.posix.basename(sourcePath).replace(/\.dp\.yaml$/iu, "");
-}
-
-function sourceDirectory(sourcePath: string): string {
-  const directory = path.posix.dirname(sourcePath);
-
-  return directory === "." ? "" : directory;
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-}
-
-function normalizeGlobPattern(pattern: string): string {
-  return pattern
-    .replace(/\\/gu, "/")
-    .replace(/^\.\//u, "")
-    .replace(/\/$/u, "/**");
-}
-
-function globPatternToRegExp(pattern: string): RegExp {
-  const expression = normalizeGlobPattern(pattern)
-    .split("/")
-    .map((segment) => {
-      if (segment === "**") {
-        return ".*";
-      }
-
-      return escapeRegExp(segment)
-        .replace(/\\\*/gu, "[^/]*")
-        .replace(/\\\?/gu, "[^/]");
-    })
-    .join("/");
-
-  return new RegExp(`^${expression}$`, "u");
-}
-
-export function resolveConfiguredOutputPath(
-  config: RepoWorkflowConfig,
-  sourceAbsolutePath: string,
-  output: RepoWorkflowArtifactOutput,
-): string {
-  const sourcePath = configRelativePath(config.directory, sourceAbsolutePath);
-  const values = {
-    stem: sourceStem(sourcePath),
-    sourceDir: sourceDirectory(sourcePath),
-    sourcePath,
-    format: output.format,
-  };
-  const resolvedPath = output.path.replace(
-    /\{(?<variable>stem|sourceDir|sourcePath|format)\}/gu,
-    (_match, variable: keyof typeof values) => values[variable],
-  );
-
-  return path.resolve(config.directory, resolvedPath);
-}
-
-function mappingMatchesSource(
-  config: RepoWorkflowConfig,
-  mapping: RepoWorkflowArtifactMapping,
-  sourceAbsolutePath: string,
-): boolean {
-  if (mapping.source !== undefined) {
-    return path.resolve(config.directory, mapping.source) === sourceAbsolutePath;
-  }
-
-  if (mapping.sourceGlob !== undefined) {
-    return globPatternToRegExp(mapping.sourceGlob).test(
-      configRelativePath(config.directory, sourceAbsolutePath),
-    );
-  }
-
-  return false;
-}
-
-export function configuredOutputsForSource(
-  config: RepoWorkflowConfig | undefined,
-  sourceAbsolutePath: string,
-): readonly RepoWorkflowArtifactOutput[] {
-  if (config === undefined) {
-    return [];
-  }
-
-  for (const mapping of config.artifacts) {
-    if (mappingMatchesSource(config, mapping, sourceAbsolutePath)) {
-      return mapping.outputs;
-    }
-  }
-
-  return [];
-}
-
-function isPathInsideDirectory(directory: string, filePath: string): boolean {
-  const relativePath = path.relative(directory, filePath);
-
-  return (
-    relativePath === "" ||
-    (!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
-  );
-}
-
-function isExplicitSourceInScope(
-  sourceAbsolutePath: string,
-  scope: DiagramPilotSourceDiscoveryScope,
-): boolean {
-  const scopePath = path.resolve(scope.path);
-
-  if (scope.kind === "file") {
-    return sourceAbsolutePath === scopePath;
-  }
-
-  return isPathInsideDirectory(scopePath, sourceAbsolutePath);
-}
-
-export function configuredExplicitSourcesForScope(
-  config: RepoWorkflowConfig | undefined,
-  scope: DiagramPilotSourceDiscoveryScope,
-): DiscoveredDiagramPilotSourceFile[] {
-  if (config === undefined) {
-    return [];
-  }
-
-  const sources: DiscoveredDiagramPilotSourceFile[] = [];
-
-  for (const mapping of config.artifacts) {
-    if (mapping.source === undefined) {
-      continue;
-    }
-
-    const absolutePath = path.resolve(config.directory, mapping.source);
-
-    if (!isExplicitSourceInScope(absolutePath, scope)) {
-      continue;
-    }
-
-    const relativePath =
-      scope.kind === "directory"
-        ? normalizePathForDisplay(path.relative(scope.path, absolutePath))
-        : normalizePathForDisplay(path.basename(absolutePath));
-
-    sources.push({
-      absolutePath,
-      relativePath,
-    });
-  }
-
-  return sources;
-}
-
-export function mergeDiscoveredAndConfiguredSources(
-  discoveredSources: readonly DiscoveredDiagramPilotSourceFile[],
-  configuredSources: readonly DiscoveredDiagramPilotSourceFile[],
-): DiscoveredDiagramPilotSourceFile[] {
-  const sourcesByPath = new Map<string, DiscoveredDiagramPilotSourceFile>();
-
-  for (const source of [...discoveredSources, ...configuredSources]) {
-    sourcesByPath.set(path.resolve(source.absolutePath), source);
-  }
-
-  return [...sourcesByPath.values()].sort((left, right) =>
-    left.relativePath.localeCompare(right.relativePath),
-  );
-}
-
 function isConfiguredTextArtifactFormat(
   format: RepoWorkflowArtifactOutputFormat,
 ): format is ConfiguredTextArtifactFormat {
@@ -243,6 +70,53 @@ function isConfiguredTextArtifactFormat(
 
 function sha256(content: string): string {
   return createHash("sha256").update(content).digest("hex");
+}
+
+function unreadableArtifactMessage(
+  artifactPath: string,
+  error: unknown,
+): string {
+  return error instanceof Error
+    ? error.message
+    : `Unable to read ${artifactPath}`;
+}
+
+function missingArtifactResult(options: {
+  format: RepoWorkflowArtifactOutputFormat;
+  displayPath: string;
+}): RepoWorkflowCheckConfiguredArtifactResult {
+  return {
+    format: options.format,
+    status: "missing-artifact",
+    path: options.displayPath,
+  };
+}
+
+function unreadableArtifactResult(options: {
+  format: RepoWorkflowArtifactOutputFormat;
+  artifactPath: string;
+  displayPath: string;
+  error: unknown;
+}): RepoWorkflowCheckConfiguredArtifactResult {
+  return {
+    format: options.format,
+    status: "unreadable-artifact",
+    path: options.displayPath,
+    message: unreadableArtifactMessage(options.artifactPath, options.error),
+  };
+}
+
+function artifactReadFailureResult(options: {
+  format: RepoWorkflowArtifactOutputFormat;
+  artifactPath: string;
+  displayPath: string;
+  error: unknown;
+}): RepoWorkflowCheckConfiguredArtifactResult {
+  if ((options.error as NodeJS.ErrnoException).code === "ENOENT") {
+    return missingArtifactResult(options);
+  }
+
+  return unreadableArtifactResult(options);
 }
 
 function checkConfiguredPresenceOnlyArtifact(options: {
@@ -262,25 +136,7 @@ function checkConfiguredPresenceOnlyArtifact(options: {
       };
     }
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return {
-        format: options.format,
-        status: "missing-artifact",
-        path: options.displayPath,
-      };
-    }
-
-    const message =
-      error instanceof Error
-        ? error.message
-        : `Unable to read ${options.artifactPath}`;
-
-    return {
-      format: options.format,
-      status: "unreadable-artifact",
-      path: options.displayPath,
-      message,
-    };
+    return artifactReadFailureResult({ ...options, error });
   }
 
   return {
@@ -292,7 +148,7 @@ function checkConfiguredPresenceOnlyArtifact(options: {
 }
 
 function checkConfiguredTextArtifact(options: {
-  format: ConfiguredTextArtifactFormat;
+  format: ConfiguredTextArtifactFormat | "markdown";
   artifactPath: string;
   displayPath: string;
   expectedContent: string;
@@ -302,25 +158,7 @@ function checkConfiguredTextArtifact(options: {
   try {
     actualContent = readFileSync(options.artifactPath, "utf8");
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return {
-        format: options.format,
-        status: "missing-artifact",
-        path: options.displayPath,
-      };
-    }
-
-    const message =
-      error instanceof Error
-        ? error.message
-        : `Unable to read ${options.artifactPath}`;
-
-    return {
-      format: options.format,
-      status: "unreadable-artifact",
-      path: options.displayPath,
-      message,
-    };
+    return artifactReadFailureResult({ ...options, error });
   }
 
   if (actualContent !== options.expectedContent) {
@@ -342,19 +180,31 @@ function checkConfiguredTextArtifact(options: {
   };
 }
 
-function mapConfiguredSvgArtifactResult(
-  artifact: SvgArtifactFreshnessCheckResult,
+function outputsInCheckOrder(
+  outputs: readonly RepoWorkflowArtifactOutput[],
+): RepoWorkflowArtifactOutput[] {
+  return [
+    ...outputs.filter((output) => output.format !== "markdown"),
+    ...outputs.filter((output) => output.format === "markdown"),
+  ];
+}
+
+function mapFreshConfiguredSvgArtifactResult(
+  artifact: Extract<SvgArtifactFreshnessCheckResult, { status: "fresh" }>,
   displayPath: string,
 ): RepoWorkflowCheckConfiguredArtifactResult {
-  if (artifact.status === "fresh") {
-    return {
-      format: "svg",
-      status: "fresh",
-      path: displayPath,
-      provenance: artifact.provenance,
-    };
-  }
+  return {
+    format: "svg",
+    status: "fresh",
+    path: displayPath,
+    provenance: artifact.provenance,
+  };
+}
 
+function mapNonFreshConfiguredSvgArtifactResult(
+  artifact: Exclude<SvgArtifactFreshnessCheckResult, { status: "fresh" }>,
+  displayPath: string,
+): RepoWorkflowCheckConfiguredArtifactResult {
   if (artifact.status === "stale") {
     return {
       format: "svg",
@@ -394,69 +244,171 @@ function mapConfiguredSvgArtifactResult(
   };
 }
 
+function mapConfiguredSvgArtifactResult(
+  artifact: SvgArtifactFreshnessCheckResult,
+  displayPath: string,
+): RepoWorkflowCheckConfiguredArtifactResult {
+  if (artifact.status === "fresh") {
+    return mapFreshConfiguredSvgArtifactResult(artifact, displayPath);
+  }
+
+  return mapNonFreshConfiguredSvgArtifactResult(artifact, displayPath);
+}
+
+function configuredOutputPaths(
+  options: CheckConfiguredArtifactsForValidatedSourceOptions,
+  output: RepoWorkflowArtifactOutput,
+): { artifactPath: string; displayPath: string } {
+  const artifactPath = resolveConfiguredOutputPath(
+    options.config,
+    options.sourceAbsolutePath,
+    output,
+  );
+  const displayPath = normalizePathForDisplay(
+    deriveConfiguredArtifactDisplayPath(
+      options.config.directory,
+      artifactPath,
+      options.currentWorkingDirectory,
+    ),
+  );
+
+  return {
+    artifactPath,
+    displayPath,
+  };
+}
+
+async function checkConfiguredSvgOutput(options: {
+  workflow: CheckConfiguredArtifactsForValidatedSourceOptions;
+  artifactPath: string;
+  displayPath: string;
+}): Promise<RepoWorkflowCheckConfiguredArtifactResult> {
+  const artifact =
+    await options.workflow.checkExpectedSvgArtifactFreshnessForValidatedSource({
+      source: options.workflow.source,
+      artifactPath: options.artifactPath,
+      provenanceSourcePath: options.workflow.provenanceSourcePath,
+      diagramPilotVersion: options.workflow.diagramPilotVersion,
+      renderer: options.workflow.renderer,
+    });
+
+  return mapConfiguredSvgArtifactResult(artifact, options.displayPath);
+}
+
+function checkConfiguredTextOutput(options: {
+  workflow: CheckConfiguredArtifactsForValidatedSourceOptions;
+  format: ConfiguredTextArtifactFormat;
+  artifactPath: string;
+  displayPath: string;
+}): RepoWorkflowCheckConfiguredArtifactResult {
+  if (options.workflow.exportConfiguredTextArtifact === undefined) {
+    return {
+      format: options.format,
+      status: "unchecked",
+      path: options.displayPath,
+      message: "Configured text artifact freshness requires an exporter.",
+    };
+  }
+
+  return checkConfiguredTextArtifact({
+    format: options.format,
+    artifactPath: options.artifactPath,
+    displayPath: options.displayPath,
+    expectedContent: options.workflow.exportConfiguredTextArtifact({
+      format: options.format,
+      spec: options.workflow.spec,
+    }),
+  });
+}
+
+function checkConfiguredMarkdownOutput(options: {
+  workflow: CheckConfiguredArtifactsForValidatedSourceOptions;
+  artifactPath: string;
+  displayPath: string;
+  previousResults: readonly RepoWorkflowCheckConfiguredArtifactResult[];
+}): RepoWorkflowCheckConfiguredArtifactResult {
+  const contentResult = checkConfiguredTextArtifact({
+    format: "markdown",
+    artifactPath: options.artifactPath,
+    displayPath: options.displayPath,
+    expectedContent: createMarkdownEmbedContent({
+      spec: options.workflow.spec,
+      embedPath: options.artifactPath,
+      references: createMarkdownEmbedReferences({
+        outputs: options.workflow.outputs,
+        resolvePath: (referencedOutput) =>
+          resolveConfiguredOutputPath(
+            options.workflow.config,
+            options.workflow.sourceAbsolutePath,
+            referencedOutput,
+          ),
+      }),
+    }),
+  });
+  const referenceIssues = options.previousResults
+    .map(referencedArtifactIssue)
+    .filter((issue) => issue !== undefined);
+
+  return markdownResultWithReferencedArtifactIssues(
+    contentResult,
+    referenceIssues,
+  );
+}
+
+async function checkConfiguredOutput(options: {
+  workflow: CheckConfiguredArtifactsForValidatedSourceOptions;
+  output: RepoWorkflowArtifactOutput;
+  previousResults: readonly RepoWorkflowCheckConfiguredArtifactResult[];
+}): Promise<RepoWorkflowCheckConfiguredArtifactResult> {
+  const { artifactPath, displayPath } = configuredOutputPaths(
+    options.workflow,
+    options.output,
+  );
+
+  if (options.output.format === "svg") {
+    return await checkConfiguredSvgOutput({
+      workflow: options.workflow,
+      artifactPath,
+      displayPath,
+    });
+  }
+
+  if (isConfiguredTextArtifactFormat(options.output.format)) {
+    return checkConfiguredTextOutput({
+      workflow: options.workflow,
+      format: options.output.format,
+      artifactPath,
+      displayPath,
+    });
+  }
+
+  if (options.output.format === "markdown") {
+    return checkConfiguredMarkdownOutput({
+      workflow: options.workflow,
+      artifactPath,
+      displayPath,
+      previousResults: options.previousResults,
+    });
+  }
+
+  return checkConfiguredPresenceOnlyArtifact({
+    format: options.output.format,
+    artifactPath,
+    displayPath,
+  });
+}
+
 export async function checkConfiguredArtifactsForValidatedSource(
   options: CheckConfiguredArtifactsForValidatedSourceOptions,
 ): Promise<RepoWorkflowCheckConfiguredArtifactResult[]> {
   const results: RepoWorkflowCheckConfiguredArtifactResult[] = [];
 
-  for (const output of options.outputs) {
-    const artifactPath = resolveConfiguredOutputPath(
-      options.config,
-      options.sourceAbsolutePath,
-      output,
-    );
-    const displayPath = normalizePathForDisplay(
-      deriveConfiguredArtifactDisplayPath(
-        options.config.directory,
-        artifactPath,
-        options.currentWorkingDirectory,
-      ),
-    );
-
-    if (output.format === "svg") {
-      const artifact =
-        await options.checkExpectedSvgArtifactFreshnessForValidatedSource({
-          source: options.source,
-          artifactPath,
-          provenanceSourcePath: options.provenanceSourcePath,
-          diagramPilotVersion: options.diagramPilotVersion,
-          renderer: options.renderer,
-        });
-
-      results.push(mapConfiguredSvgArtifactResult(artifact, displayPath));
-      continue;
-    }
-
-    if (isConfiguredTextArtifactFormat(output.format)) {
-      if (options.exportConfiguredTextArtifact === undefined) {
-        results.push({
-          format: output.format,
-          status: "unchecked",
-          path: displayPath,
-          message: "Configured text artifact freshness requires an exporter.",
-        });
-        continue;
-      }
-
-      results.push(
-        checkConfiguredTextArtifact({
-          format: output.format,
-          artifactPath,
-          displayPath,
-          expectedContent: options.exportConfiguredTextArtifact({
-            format: output.format,
-            spec: options.spec,
-          }),
-        }),
-      );
-      continue;
-    }
-
+  for (const output of outputsInCheckOrder(options.outputs)) {
     results.push(
-      checkConfiguredPresenceOnlyArtifact({
-        format: output.format,
-        artifactPath,
-        displayPath,
+      await checkConfiguredOutput({
+        workflow: options,
+        output,
+        previousResults: results,
       }),
     );
   }

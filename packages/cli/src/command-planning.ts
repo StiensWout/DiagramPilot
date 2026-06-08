@@ -83,6 +83,126 @@ const defaultCommandPlanningDependencies: CommandPlanningDependencies = {
   getDiagramPilotVersion,
 };
 
+type SuccessfulValidatedDiagramSpecLoadResult = Extract<
+  ValidatedDiagramSpecLoadResult,
+  { ok: true }
+>;
+type FailedValidatedDiagramSpecLoadResult = Extract<
+  ValidatedDiagramSpecLoadResult,
+  { ok: false }
+>;
+type SuccessfulRepoWorkflowCheckResult = Extract<
+  RepoWorkflowCheckResult,
+  { ok: true }
+>;
+type CommandHandler = (
+  args: readonly string[],
+  dependencies: CommandPlanningDependencies,
+) => CommandPlan | Promise<CommandPlan>;
+type TextExportFormat = "d2" | "dot" | "mermaid";
+
+function usageFailurePlan(message: string, usageText: string): CommandPlan {
+  return {
+    exitCode: 1,
+    stdout: "",
+    stderr: [message, usageText, ""].join("\n"),
+    writes: [],
+  };
+}
+
+function repairableDiagnosticFailurePlan(
+  failure: FailedValidatedDiagramSpecLoadResult["failure"],
+): CommandPlan {
+  const report = createRepairableDiagnosticReport(failure);
+
+  return {
+    exitCode: 1,
+    stdout: "",
+    stderr: textLine(report.text),
+    writes: [],
+  };
+}
+
+function loadValidatedDiagramSpecOrPlanFailure(
+  dependencies: CommandPlanningDependencies,
+  sourcePath: string,
+):
+  | {
+      ok: true;
+      result: SuccessfulValidatedDiagramSpecLoadResult;
+    }
+  | {
+      ok: false;
+      plan: CommandPlan;
+    } {
+  const result = dependencies.loadValidatedDiagramSpec(sourcePath);
+
+  if (!result.ok) {
+    return {
+      ok: false,
+      plan: repairableDiagnosticFailurePlan(result.failure),
+    };
+  }
+
+  return {
+    ok: true,
+    result,
+  };
+}
+
+function exportDiagramSpecTextArtifact(
+  dependencies: CommandPlanningDependencies,
+  format: TextExportFormat,
+  spec: DiagramSpec,
+): string {
+  const exporters = {
+    d2: dependencies.exportDiagramSpecToD2,
+    dot: dependencies.exportDiagramSpecToDot,
+    mermaid: dependencies.exportDiagramSpecToMermaid,
+  };
+
+  return exporters[format](spec);
+}
+
+function checkResultPlan(
+  checkResult: SuccessfulRepoWorkflowCheckResult,
+  json: boolean,
+): CommandPlan {
+  const issueCount = checkResult.summary.issueCount;
+
+  if (json) {
+    return {
+      exitCode: issueCount === 0 ? 0 : 1,
+      stdout: jsonTextLine({
+        ...checkResult,
+        ok: issueCount === 0,
+      }),
+      stderr: "",
+      writes: [],
+    };
+  }
+
+  if (checkResult.sources.length === 0) {
+    return {
+      exitCode: 0,
+      stdout: textLine(
+        `No DiagramPilot Source Files found in ${checkResult.scope.path}.`,
+      ),
+      stderr: "",
+      writes: [],
+    };
+  }
+
+  const checkTextReport = textLine(formatCheckTextReport(checkResult.sources));
+
+  return {
+    exitCode: issueCount === 0 ? 0 : 1,
+    stdout: issueCount === 0 ? checkTextReport : "",
+    stderr: issueCount === 0 ? "" : checkTextReport,
+    writes: [],
+  };
+}
+
 function planValidate(
   args: readonly string[],
   dependencies: CommandPlanningDependencies,
@@ -90,16 +210,10 @@ function planValidate(
   const argsResult = parseValidateArgs(args);
 
   if (!argsResult.ok) {
-    return {
-      exitCode: 1,
-      stdout: "",
-      stderr: [
-        argsResult.message,
-        "Usage: diagrampilot validate <path> [--json]",
-        "",
-      ].join("\n"),
-      writes: [],
-    };
+    return usageFailurePlan(
+      argsResult.message,
+      "Usage: diagrampilot validate <path> [--json]",
+    );
   }
 
   const { json, sourcePath } = argsResult.options;
@@ -157,35 +271,23 @@ function planExport(
   const argsResult = parseExportArgs(args);
 
   if (!argsResult.ok) {
-    return {
-      exitCode: 1,
-      stdout: "",
-      stderr: [argsResult.message, exportUsageText(), ""].join("\n"),
-      writes: [],
-    };
+    return usageFailurePlan(argsResult.message, exportUsageText());
   }
 
-  const result = dependencies.loadValidatedDiagramSpec(
+  const loaded = loadValidatedDiagramSpecOrPlanFailure(
+    dependencies,
     argsResult.options.sourcePath,
   );
 
-  if (!result.ok) {
-    const report = createRepairableDiagnosticReport(result.failure);
-
-    return {
-      exitCode: 1,
-      stdout: "",
-      stderr: textLine(report.text),
-      writes: [],
-    };
+  if (!loaded.ok) {
+    return loaded.plan;
   }
 
-  const exporters = {
-    d2: dependencies.exportDiagramSpecToD2,
-    dot: dependencies.exportDiagramSpecToDot,
-    mermaid: dependencies.exportDiagramSpecToMermaid,
-  };
-  const exportedText = exporters[argsResult.options.format](result.spec);
+  const exportedText = exportDiagramSpecTextArtifact(
+    dependencies,
+    argsResult.options.format,
+    loaded.result.spec,
+  );
 
   if (argsResult.options.outPath !== undefined) {
     return {
@@ -216,36 +318,30 @@ async function planRender(
   const argsResult = parseRenderArgs(args);
 
   if (!argsResult.ok) {
-    return {
-      exitCode: 1,
-      stdout: "",
-      stderr: [argsResult.message, renderUsageText(), ""].join("\n"),
-      writes: [],
-    };
+    return usageFailurePlan(argsResult.message, renderUsageText());
   }
 
-  const result = dependencies.loadValidatedDiagramSpec(
+  const loaded = loadValidatedDiagramSpecOrPlanFailure(
+    dependencies,
     argsResult.options.sourcePath,
   );
 
-  if (!result.ok) {
-    const report = createRepairableDiagnosticReport(result.failure);
-
-    return {
-      exitCode: 1,
-      stdout: "",
-      stderr: textLine(report.text),
-      writes: [],
-    };
+  if (!loaded.ok) {
+    return loaded.plan;
   }
 
   try {
-    const renderedSvg = await dependencies.renderDiagramSpecToSvg(result.spec, {
-      provenance: dependencies.createSvgRendererProvenance({
-        sourcePath: result.source.path,
-        sourceContent: dependencies.readSourceContent(result.source.path),
-      }),
-    });
+    const renderedSvg = await dependencies.renderDiagramSpecToSvg(
+      loaded.result.spec,
+      {
+        provenance: dependencies.createSvgRendererProvenance({
+          sourcePath: loaded.result.source.path,
+          sourceContent: dependencies.readSourceContent(
+            loaded.result.source.path,
+          ),
+        }),
+      },
+    );
 
     const renderedContent =
       argsResult.options.format === "png"
@@ -270,7 +366,9 @@ async function planRender(
     return {
       exitCode: 1,
       stdout: "",
-      stderr: textLine(`Unable to render ${result.source.path}: ${message}`),
+      stderr: textLine(
+        `Unable to render ${loaded.result.source.path}: ${message}`,
+      ),
       writes: [],
     };
   }
@@ -283,12 +381,7 @@ async function planCheck(
   const argsResult = parseCheckArgs(args);
 
   if (!argsResult.ok) {
-    return {
-      exitCode: 1,
-      stdout: "",
-      stderr: [argsResult.message, checkUsageText(), ""].join("\n"),
-      writes: [],
-    };
+    return usageFailurePlan(argsResult.message, checkUsageText());
   }
 
   const checkResult = await dependencies.checkDiagramPilotRepoWorkflow({
@@ -299,13 +392,7 @@ async function planCheck(
       version: SVG_RENDERER_VERSION,
     },
     exportConfiguredTextArtifact: ({ format, spec }) => {
-      const exporters = {
-        d2: dependencies.exportDiagramSpecToD2,
-        dot: dependencies.exportDiagramSpecToDot,
-        mermaid: dependencies.exportDiagramSpecToMermaid,
-      };
-
-      return exporters[format](spec);
+      return exportDiagramSpecTextArtifact(dependencies, format, spec);
     },
   });
 
@@ -318,50 +405,16 @@ async function planCheck(
     };
   }
 
-  if (checkResult.sources.length === 0) {
-    if (argsResult.options.json) {
-      return {
-        exitCode: 0,
-        stdout: jsonTextLine(checkResult),
-        stderr: "",
-        writes: [],
-      };
-    }
-
-    return {
-      exitCode: 0,
-      stdout: textLine(
-        `No DiagramPilot Source Files found in ${checkResult.scope.path}.`,
-      ),
-      stderr: "",
-      writes: [],
-    };
-  }
-
-  const sourceResults = checkResult.sources;
-  const issueCount = checkResult.summary.issueCount;
-
-  if (argsResult.options.json) {
-    return {
-      exitCode: issueCount === 0 ? 0 : 1,
-      stdout: jsonTextLine({
-        ...checkResult,
-        ok: issueCount === 0,
-      }),
-      stderr: "",
-      writes: [],
-    };
-  }
-
-  const checkTextReport = textLine(formatCheckTextReport(sourceResults));
-
-  return {
-    exitCode: issueCount === 0 ? 0 : 1,
-    stdout: issueCount === 0 ? checkTextReport : "",
-    stderr: issueCount === 0 ? "" : checkTextReport,
-    writes: [],
-  };
+  return checkResultPlan(checkResult, argsResult.options.json);
 }
+
+const commandHandlers: Readonly<Record<string, CommandHandler>> = {
+  check: planCheck,
+  export: planExport,
+  generate: planGenerate,
+  render: planRender,
+  validate: planValidate,
+};
 
 export async function planCommand(
   args: readonly string[],
@@ -387,24 +440,10 @@ export async function planCommand(
     };
   }
 
-  if (firstArg === "validate") {
-    return planValidate(args.slice(1), dependencies);
-  }
+  const handler = commandHandlers[firstArg];
 
-  if (firstArg === "export") {
-    return planExport(args.slice(1), dependencies);
-  }
-
-  if (firstArg === "render") {
-    return await planRender(args.slice(1), dependencies);
-  }
-
-  if (firstArg === "check") {
-    return await planCheck(args.slice(1), dependencies);
-  }
-
-  if (firstArg === "generate") {
-    return await planGenerate(args.slice(1), dependencies);
+  if (handler !== undefined) {
+    return await handler(args.slice(1), dependencies);
   }
 
   return {

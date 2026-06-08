@@ -1,5 +1,3 @@
-import path from "node:path";
-
 import type {
   RepoWorkflowConfigDiscoveryResult,
   RepoWorkflowConfigFailure,
@@ -8,12 +6,18 @@ import {
   checkConfiguredArtifactsForValidatedSource,
   configuredExplicitSourcesForScope,
   configuredOutputsForSource,
+  configuredSourceDiscoveryOptions,
   mergeDiscoveredAndConfiguredSources,
 } from "./repo-workflow-configured-artifacts.js";
 import type {
   ConfiguredTextArtifactFormat,
   RepoWorkflowCheckConfiguredArtifactResult,
 } from "./repo-workflow-configured-artifact-result.js";
+import { loadRepoWorkflowSource } from "./repo-workflow-loaded-source.js";
+import {
+  deriveDefaultArtifactDisplayPath,
+  deriveRepoWorkflowConfigDisplayPath,
+} from "./repo-workflow-paths.js";
 import type {
   DiagramPilotSourceDiscoveryFailure,
   DiagramPilotSourceDiscoveryOptions,
@@ -131,58 +135,6 @@ export type RepoWorkflowCheckResult =
       failure: DiagramPilotSourceDiscoveryFailure | RepoWorkflowConfigFailure;
     };
 
-function normalizePathForDisplay(filePath: string): string {
-  return filePath.split(path.sep).join("/");
-}
-
-function deriveCheckSourcePath(
-  scope: DiagramPilotSourceDiscoveryScope,
-  absolutePath: string,
-  relativePath: string,
-  currentWorkingDirectory: string,
-): string {
-  if (scope.kind === "directory") {
-    return relativePath;
-  }
-
-  return normalizePathForDisplay(
-    path.relative(currentWorkingDirectory, absolutePath),
-  );
-}
-
-function deriveArtifactDisplayPath(
-  sourcePath: string,
-  artifactPath: string,
-  currentWorkingDirectory: string,
-): string {
-  const relativeArtifactPath = normalizePathForDisplay(
-    path.relative(currentWorkingDirectory, artifactPath),
-  );
-
-  if (!relativeArtifactPath.startsWith("..")) {
-    return relativeArtifactPath;
-  }
-
-  return sourcePath.replace(/\.dp\.(yaml|json)$/iu, ".svg");
-}
-
-function deriveConfigDisplayPath(
-  configPath: string,
-  currentWorkingDirectory: string,
-): string {
-  const relativeConfigPath = path.relative(currentWorkingDirectory, configPath);
-
-  if (
-    relativeConfigPath !== "" &&
-    !relativeConfigPath.startsWith("..") &&
-    !path.isAbsolute(relativeConfigPath)
-  ) {
-    return normalizePathForDisplay(relativeConfigPath);
-  }
-
-  return normalizePathForDisplay(configPath);
-}
-
 function isWorkflowIssue(source: RepoWorkflowCheckSourceResult): boolean {
   if (source.artifacts !== undefined) {
     return (
@@ -227,7 +179,7 @@ function mapArtifactResult(
     };
   }
 
-  const artifactPath = deriveArtifactDisplayPath(
+  const artifactPath = deriveDefaultArtifactDisplayPath(
     sourcePath,
     artifact.artifactPath,
     currentWorkingDirectory,
@@ -286,12 +238,7 @@ export async function checkDiagramPilotRepoWorkflowWithDependencies(
 
   const discoveryResult = await dependencies.discoverDiagramPilotSourceFiles(
     options.scopePath,
-    configResult.config === undefined
-      ? undefined
-      : {
-          ignorePatterns: configResult.config.sources.ignore,
-          ignorePatternsRoot: configResult.config.directory,
-        },
+    configuredSourceDiscoveryOptions(configResult.config),
   );
 
   if (!discoveryResult.ok) {
@@ -309,26 +256,19 @@ export async function checkDiagramPilotRepoWorkflowWithDependencies(
   );
 
   for (const source of discoveredSources) {
-    const sourcePath = deriveCheckSourcePath(
-      discoveryResult.scope,
-      source.absolutePath,
-      source.relativePath,
+    const loadedSource = loadRepoWorkflowSource({
+      source,
+      scope: discoveryResult.scope,
       currentWorkingDirectory,
-    );
-    const loadResult = dependencies.loadValidatedDiagramSpec(
-      source.absolutePath,
-    );
+      dependencies,
+    });
 
-    if (!loadResult.ok) {
-      const report = dependencies.createRepairableDiagnosticReport(
-        loadResult.failure,
-      );
-
+    if (!loadedSource.ok) {
       sources.push({
-        sourcePath,
+        sourcePath: loadedSource.sourcePath,
         validation: {
           ok: false,
-          errors: report.errors,
+          errors: loadedSource.errors,
         },
         artifact: {
           status: "unchecked",
@@ -339,16 +279,16 @@ export async function checkDiagramPilotRepoWorkflowWithDependencies(
 
     const configuredOutputs = configuredOutputsForSource(
       configResult.config,
-      source.absolutePath,
+      loadedSource.sourceAbsolutePath,
     );
 
     if (configuredOutputs.length > 0 && configResult.config !== undefined) {
       const artifacts = await checkConfiguredArtifactsForValidatedSource({
         config: configResult.config,
-        source: loadResult.source,
-        sourceAbsolutePath: source.absolutePath,
-        provenanceSourcePath: sourcePath,
-        spec: loadResult.spec,
+        source: loadedSource.source,
+        sourceAbsolutePath: loadedSource.sourceAbsolutePath,
+        provenanceSourcePath: loadedSource.sourcePath,
+        spec: loadedSource.spec,
         outputs: configuredOutputs,
         currentWorkingDirectory,
         diagramPilotVersion: options.diagramPilotVersion,
@@ -361,7 +301,7 @@ export async function checkDiagramPilotRepoWorkflowWithDependencies(
       const [artifact] = artifacts;
 
       sources.push({
-        sourcePath,
+        sourcePath: loadedSource.sourcePath,
         validation: {
           ok: true,
           errors: [],
@@ -376,20 +316,20 @@ export async function checkDiagramPilotRepoWorkflowWithDependencies(
 
     const artifact =
       await dependencies.checkExpectedSvgArtifactFreshnessForValidatedSource({
-        source: loadResult.source,
-        provenanceSourcePath: sourcePath,
+        source: loadedSource.source,
+        provenanceSourcePath: loadedSource.sourcePath,
         diagramPilotVersion: options.diagramPilotVersion,
         renderer: options.renderer,
       });
 
     sources.push({
-      sourcePath,
+      sourcePath: loadedSource.sourcePath,
       validation: {
         ok: true,
         errors: [],
       },
       artifact: mapArtifactResult(
-        sourcePath,
+        loadedSource.sourcePath,
         artifact,
         currentWorkingDirectory,
       ),
@@ -402,7 +342,7 @@ export async function checkDiagramPilotRepoWorkflowWithDependencies(
       ? {}
       : {
           config: {
-            path: deriveConfigDisplayPath(
+            path: deriveRepoWorkflowConfigDisplayPath(
               configResult.config.path,
               currentWorkingDirectory,
             ),
