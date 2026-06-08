@@ -44,7 +44,7 @@ export function expectedSvgFreshnessOptions(sourcePath) {
   };
 }
 
-export async function writeValidDiagramSource(sourcePath) {
+async function writeValidDiagramSource(sourcePath) {
   await mkdir(path.dirname(sourcePath), { recursive: true });
   await writeFile(sourcePath, validSourceContent, "utf8");
 }

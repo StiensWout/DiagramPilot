@@ -59,3 +59,36 @@ Hard enforcement is blocked until the core split removes
 `packages/core/src/index.ts` from the violation list. Issue 50,
 `Split core under file-size gate and enforce it`, is the enforcement point that
 should turn the advisory audit into a failing repository validation step.
+
+## Fallow Codebase Intelligence
+
+DiagramPilot also uses Fallow as a deterministic JS/TS codebase quality signal
+for unused code, dependency hygiene, duplication, complexity hotspots, and PR
+risk.
+
+Run the required full local gate:
+
+```bash
+npm run audit:fallow
+```
+
+Run the required changed-code audit before PR review:
+
+```bash
+npm run audit:fallow:changed
+```
+
+CI runs the full Fallow gate in release readiness and the Fallow changed-code
+audit on pull requests. Both are blocking.
+
+Committed baselines live under `fallow-baselines/`:
+
+- `dead-code.json` should stay empty unless an intentional static-analysis
+  limitation cannot be represented in `.fallowrc.jsonc`.
+- `dupes.json` captures existing duplication debt.
+- `health.json` captures existing complexity debt.
+
+New Fallow findings must be fixed. If a finding is intentional, prefer a
+narrow `.fallowrc.jsonc` exception with a comment. Only update a baseline when
+the existing debt is intentionally recharacterized or after reducing debt and
+refreshing the baseline downward.

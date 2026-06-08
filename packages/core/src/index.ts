@@ -1,5 +1,9 @@
-export { checkDiagramPilotRepoWorkflow } from "./repo-workflow.js";
+export {
+  checkDiagramPilotRepoWorkflow,
+  generateDiagramPilotRepoWorkflow,
+} from "./repo-workflow.js";
 export { checkDiagramPilotRepoWorkflowWithDependencies } from "./repo-workflow-check.js";
+export { generateDiagramPilotRepoWorkflowWithDependencies } from "./repo-workflow-generate.js";
 export { createDiagramSpecV1JsonSchema } from "./diagramspec-schema.js";
 export { createDiagramSpecTopology } from "./diagramspec-topology.js";
 export {
@@ -28,6 +32,16 @@ export type {
   RepoWorkflowCheckSourceResult,
   RepoWorkflowCheckSummary,
 } from "./repo-workflow-check.js";
+export type {
+  RepoWorkflowGenerateDependencies,
+  RepoWorkflowGenerateFailure,
+  RepoWorkflowGenerateOptions,
+  RepoWorkflowGenerateResult,
+  RepoWorkflowGenerateSkippedArtifact,
+  RepoWorkflowGenerateSourceFailure,
+  RepoWorkflowGenerateSummary,
+  RepoWorkflowGenerateWrittenArtifact,
+} from "./repo-workflow-generate.js";
 export type {
   ConfiguredTextArtifactFormat,
   RepoWorkflowCheckConfiguredArtifactResult,

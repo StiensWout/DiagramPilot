@@ -26,6 +26,7 @@ export function helpText(version: string): string {
     "  init [--docs] [--config]",
     "  validate <path> [--json]",
     "  check [path] [--json]",
+    "  generate [path] [--json]",
     "  render <path> --out <path>",
     "  render <path> --format svg --out <path>",
     "  render <path> --format png --out <path>",
@@ -37,6 +38,10 @@ export function helpText(version: string): string {
 
 export function checkUsageText(): string {
   return "Usage: diagrampilot check [path] [--json]";
+}
+
+export function generateUsageText(): string {
+  return "Usage: diagrampilot generate [path] [--json]";
 }
 
 export function exportUsageText(): string {

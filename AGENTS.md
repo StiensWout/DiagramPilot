@@ -16,6 +16,10 @@ local files, review-stable rendering, readable specs, and repairable errors.
 - Prefer small edits. Public docs and URLs use `https://diagrampilot.com`. Do
   not add a hosted-workspace dependency for core workflows.
 - Do not hand-edit generated artifacts unless explicitly asked.
+- Fallow is a required quality gate. Before closeout, run
+  `npm run audit:fallow`; for PR-specific review also run
+  `npm run audit:fallow:changed`. Fix new findings or add only narrow,
+  documented config/baseline entries when a finding is intentional.
 - Finish implementation by adding a validation plan and updating the local
   issue status, acceptance criteria, implementation notes, and validation plan.
 

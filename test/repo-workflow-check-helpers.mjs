@@ -47,7 +47,7 @@ export function validSourceContext(sourcePath = "/repo/docs/architecture.dp.yaml
   };
 }
 
-export const validSourceContent = [
+const validSourceContent = [
   "version: 1",
   "title: Architecture",
   "nodes:",
