@@ -82,6 +82,41 @@ export function createPlanningDependencies(overrides = {}) {
       },
       sources: [],
     }),
+    generateDiagramPilotRepoWorkflow: async (options) => {
+      const loadResult = validLoadResult();
+      const content = await options.renderSvgArtifact({
+        source: loadResult.source,
+        provenanceSourcePath: loadResult.source.path,
+        spec: loadResult.spec,
+        diagramPilotVersion: "0.1.0",
+        renderer: { name: "@terrastruct/d2", version: "0.1.33" },
+      });
+
+      return {
+        ok: true,
+        scope: {
+          kind: "file",
+          path: loadResult.source.path,
+        },
+        summary: {
+          checkedSourceCount: 1,
+          writtenArtifactCount: 1,
+          skippedArtifactCount: 0,
+          failureCount: 0,
+        },
+        written: [
+          {
+            sourcePath: loadResult.source.path,
+            format: "svg",
+            path: "docs/architecture.svg",
+            absolutePath: "docs/architecture.svg",
+            content,
+          },
+        ],
+        skipped: [],
+        failures: [],
+      };
+    },
     exportDiagramSpecToMermaid: () => "flowchart LR\n",
     exportDiagramSpecToD2: () => "direction: right\n",
     exportDiagramSpecToDot: () => "digraph checkout_architecture {\n}\n",

@@ -20,6 +20,11 @@ export interface CheckCommandOptions {
   scopePath?: string;
 }
 
+export interface GenerateCommandOptions {
+  json: boolean;
+  scopePath?: string;
+}
+
 type ValidateArgsResult =
   | {
       ok: true;
@@ -54,6 +59,16 @@ type CheckArgsResult =
   | {
       ok: true;
       options: CheckCommandOptions;
+    }
+  | {
+      ok: false;
+      message: string;
+    };
+
+type GenerateArgsResult =
+  | {
+      ok: true;
+      options: GenerateCommandOptions;
     }
   | {
       ok: false;
@@ -298,6 +313,44 @@ export function parseCheckArgs(args: readonly string[]): CheckArgsResult {
       return {
         ok: false,
         message: `Unexpected check argument: ${arg}`,
+      };
+    }
+
+    scopePath = arg;
+  }
+
+  return {
+    ok: true,
+    options: {
+      json,
+      scopePath,
+    },
+  };
+}
+
+export function parseGenerateArgs(
+  args: readonly string[],
+): GenerateArgsResult {
+  let json = false;
+  let scopePath: string | undefined;
+
+  for (const arg of args) {
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+
+    if (arg.startsWith("-")) {
+      return {
+        ok: false,
+        message: `Unknown generate option: ${arg}`,
+      };
+    }
+
+    if (scopePath !== undefined) {
+      return {
+        ok: false,
+        message: `Unexpected generate argument: ${arg}`,
       };
     }
 

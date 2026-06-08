@@ -50,7 +50,7 @@ function normalizePathForDisplay(filePath: string): string {
   return filePath.split(path.sep).join("/");
 }
 
-function deriveConfiguredArtifactDisplayPath(
+export function deriveConfiguredArtifactDisplayPath(
   configDirectory: string,
   artifactPath: string,
   currentWorkingDirectory: string,
@@ -108,7 +108,7 @@ function globPatternToRegExp(pattern: string): RegExp {
   return new RegExp(`^${expression}$`, "u");
 }
 
-function resolveOutputTemplate(
+export function resolveConfiguredOutputPath(
   config: RepoWorkflowConfig,
   sourceAbsolutePath: string,
   output: RepoWorkflowArtifactOutput,
@@ -400,7 +400,7 @@ export async function checkConfiguredArtifactsForValidatedSource(
   const results: RepoWorkflowCheckConfiguredArtifactResult[] = [];
 
   for (const output of options.outputs) {
-    const artifactPath = resolveOutputTemplate(
+    const artifactPath = resolveConfiguredOutputPath(
       options.config,
       options.sourceAbsolutePath,
       output,

@@ -3,11 +3,14 @@ import { readFileSync } from "node:fs";
 import {
   checkDiagramPilotRepoWorkflow,
   createRepairableDiagnosticReport,
+  generateDiagramPilotRepoWorkflow,
   getDiagramPilotVersion,
   loadValidatedDiagramSpec,
   type DiagramSpec,
   type RepoWorkflowCheckOptions,
   type RepoWorkflowCheckResult,
+  type RepoWorkflowGenerateOptions,
+  type RepoWorkflowGenerateResult,
   type ValidatedDiagramSpecLoadResult,
 } from "@diagrampilot/core";
 import { exportDiagramSpecToD2 } from "@diagrampilot/export-d2";
@@ -38,6 +41,7 @@ import {
   renderUsageText,
   textLine,
 } from "./cli-output.js";
+import { planGenerate } from "./generate-command-planning.js";
 import type { CommandPlan } from "./types.js";
 
 export type { CommandPlan, CommandWriteIntent } from "./types.js";
@@ -46,6 +50,9 @@ export interface CommandPlanningDependencies {
   checkDiagramPilotRepoWorkflow(
     options: RepoWorkflowCheckOptions,
   ): Promise<RepoWorkflowCheckResult>;
+  generateDiagramPilotRepoWorkflow(
+    options: RepoWorkflowGenerateOptions,
+  ): Promise<RepoWorkflowGenerateResult>;
   loadValidatedDiagramSpec(path: string): ValidatedDiagramSpecLoadResult;
   exportDiagramSpecToMermaid(spec: DiagramSpec): string;
   exportDiagramSpecToD2(spec: DiagramSpec): string;
@@ -64,6 +71,7 @@ export interface CommandPlanningDependencies {
 
 const defaultCommandPlanningDependencies: CommandPlanningDependencies = {
   checkDiagramPilotRepoWorkflow,
+  generateDiagramPilotRepoWorkflow,
   loadValidatedDiagramSpec,
   exportDiagramSpecToMermaid,
   exportDiagramSpecToD2,
@@ -393,6 +401,10 @@ export async function planCommand(
 
   if (firstArg === "check") {
     return await planCheck(args.slice(1), dependencies);
+  }
+
+  if (firstArg === "generate") {
+    return await planGenerate(args.slice(1), dependencies);
   }
 
   return {
