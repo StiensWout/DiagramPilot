@@ -141,8 +141,9 @@ managed section between these markers from `llms.txt` and
 Delete `llms.txt` or `docs/diagrampilot.md` only if DiagramPilot created the
 file and it contains no other project content.
 
-Do not delete adopted `*.dp.yaml`, SVG, Mermaid, D2, DOT, or PNG artifacts by
-default. Once a repository uses those files for its architecture docs, they are
-project-owned source and derived artifacts. Legacy `*.dp.json` source files are
-not supported by current DiagramPilot commands; convert them to `*.dp.yaml`
-instead of deleting project-owned content during package cleanup.
+Do not delete adopted `*.dp.yaml`, SVG, Mermaid, D2, DOT, PNG, or Markdown
+embed artifacts by default. Once a repository uses those files for its
+architecture docs, they are project-owned source and derived artifacts. Legacy
+`*.dp.json` source files are not supported by current DiagramPilot commands;
+convert them to `*.dp.yaml` instead of deleting project-owned content during
+package cleanup.

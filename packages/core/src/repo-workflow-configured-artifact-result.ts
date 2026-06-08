@@ -6,6 +6,27 @@ import type {
 
 export type ConfiguredTextArtifactFormat = "mermaid" | "d2" | "dot";
 
+export type MarkdownEmbedReferenceIssueStatus =
+  | "stale"
+  | "missing-artifact"
+  | "unreadable-artifact"
+  | "malformed-artifact"
+  | "missing-provenance"
+  | "unchecked";
+
+export type MarkdownEmbedStaleReason =
+  | "content-mismatch"
+  | "referenced-artifact-missing"
+  | "referenced-artifact-stale"
+  | "referenced-artifact-unreadable"
+  | "referenced-artifact-unchecked";
+
+export interface MarkdownEmbedReferencedArtifactIssue {
+  format: RepoWorkflowArtifactOutputFormat;
+  path: string;
+  status: MarkdownEmbedReferenceIssueStatus;
+}
+
 export type RepoWorkflowCheckConfiguredArtifactResult =
   | {
       format: RepoWorkflowArtifactOutputFormat;
@@ -26,6 +47,15 @@ export type RepoWorkflowCheckConfiguredArtifactResult =
       reasons: readonly ["content-mismatch"];
       expectedSha256: string;
       actualSha256: string;
+    }
+  | {
+      format: "markdown";
+      status: "stale";
+      path: string;
+      reasons: readonly MarkdownEmbedStaleReason[];
+      expectedSha256?: string;
+      actualSha256?: string;
+      references: readonly MarkdownEmbedReferencedArtifactIssue[];
     }
   | {
       format: RepoWorkflowArtifactOutputFormat;

@@ -126,6 +126,10 @@ function repairCommand(
     return `diagrampilot export ${sourcePath} --format ${format} --out ${artifact.path}`;
   }
 
+  if (format === "markdown") {
+    return `diagrampilot generate ${sourcePath}`;
+  }
+
   return undefined;
 }
 

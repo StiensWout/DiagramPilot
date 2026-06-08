@@ -1,5 +1,3 @@
-import path from "node:path";
-
 import type {
   RepoWorkflowConfigDiscoveryResult,
   RepoWorkflowConfigFailure,
@@ -9,11 +7,23 @@ import type {
 import {
   configuredExplicitSourcesForScope,
   configuredOutputsForSource,
+  configuredSourceDiscoveryOptions,
   deriveConfiguredArtifactDisplayPath,
   mergeDiscoveredAndConfiguredSources,
   resolveConfiguredOutputPath,
 } from "./repo-workflow-configured-artifacts.js";
 import type { ConfiguredTextArtifactFormat } from "./repo-workflow-configured-artifact-result.js";
+import {
+  createMarkdownEmbedContent,
+  createMarkdownEmbedReferences,
+  type MarkdownEmbedReferencedArtifact,
+} from "./repo-workflow-markdown-embed.js";
+import { loadRepoWorkflowSource } from "./repo-workflow-loaded-source.js";
+import {
+  deriveDefaultArtifactDisplayPath,
+  deriveRepoWorkflowConfigDisplayPath,
+  normalizePathForDisplay,
+} from "./repo-workflow-paths.js";
 import type { DiagramSpec } from "./diagramspec-topology.js";
 import type {
   DiagramPilotSourceDiscoveryFailure,
@@ -137,10 +147,6 @@ interface ValidGenerateSource {
   outputs: readonly RepoWorkflowArtifactOutput[];
 }
 
-function normalizePathForDisplay(filePath: string): string {
-  return filePath.split(path.sep).join("/");
-}
-
 function emptySummary(): RepoWorkflowGenerateSummary {
   return {
     checkedSourceCount: 0,
@@ -164,54 +170,6 @@ function summarize(options: {
   };
 }
 
-function deriveSourcePath(
-  scope: DiagramPilotSourceDiscoveryScope,
-  absolutePath: string,
-  relativePath: string,
-  currentWorkingDirectory: string,
-): string {
-  if (scope.kind === "directory") {
-    return relativePath;
-  }
-
-  return normalizePathForDisplay(
-    path.relative(currentWorkingDirectory, absolutePath),
-  );
-}
-
-function deriveArtifactDisplayPath(
-  sourcePath: string,
-  artifactPath: string,
-  currentWorkingDirectory: string,
-): string {
-  const relativeArtifactPath = normalizePathForDisplay(
-    path.relative(currentWorkingDirectory, artifactPath),
-  );
-
-  if (!relativeArtifactPath.startsWith("..")) {
-    return relativeArtifactPath;
-  }
-
-  return sourcePath.replace(/\.dp\.(yaml|json)$/iu, ".svg");
-}
-
-function deriveConfigDisplayPath(
-  configPath: string,
-  currentWorkingDirectory: string,
-): string {
-  const relativeConfigPath = path.relative(currentWorkingDirectory, configPath);
-
-  if (
-    relativeConfigPath !== "" &&
-    !relativeConfigPath.startsWith("..") &&
-    !path.isAbsolute(relativeConfigPath)
-  ) {
-    return normalizePathForDisplay(relativeConfigPath);
-  }
-
-  return normalizePathForDisplay(configPath);
-}
-
 function isConfiguredTextArtifactFormat(
   format: RepoWorkflowArtifactOutputFormat,
 ): format is ConfiguredTextArtifactFormat {
@@ -221,13 +179,19 @@ function isConfiguredTextArtifactFormat(
 async function generateOutputContent(
   options: RepoWorkflowGenerateOptions,
   source: ValidGenerateSource,
-  format: RepoWorkflowArtifactOutputFormat,
-): Promise<string | Uint8Array | undefined> {
-  if (format === "markdown") {
-    return undefined;
+  output: RepoWorkflowArtifactOutput,
+  absolutePath: string,
+  references: readonly MarkdownEmbedReferencedArtifact[],
+): Promise<string | Uint8Array> {
+  if (output.format === "markdown") {
+    return createMarkdownEmbedContent({
+      spec: source.spec,
+      embedPath: absolutePath,
+      references,
+    });
   }
 
-  if (format === "svg" || format === "png") {
+  if (output.format === "svg" || output.format === "png") {
     const svg = await options.renderSvgArtifact({
       source: source.source,
       provenanceSourcePath: source.sourcePath,
@@ -236,17 +200,17 @@ async function generateOutputContent(
       renderer: options.renderer,
     });
 
-    return format === "png" ? options.rasterizeSvgArtifact(svg) : svg;
+    return output.format === "png" ? options.rasterizeSvgArtifact(svg) : svg;
   }
 
-  if (isConfiguredTextArtifactFormat(format)) {
+  if (isConfiguredTextArtifactFormat(output.format)) {
     return options.exportTextArtifact({
-      format,
+      format: output.format,
       spec: source.spec,
     });
   }
 
-  return undefined;
+  throw new Error(`Unsupported configured output format: ${output.format}`);
 }
 
 function defaultSvgOutput(source: ValidGenerateSource): RepoWorkflowArtifactOutput {
@@ -254,6 +218,15 @@ function defaultSvgOutput(source: ValidGenerateSource): RepoWorkflowArtifactOutp
     format: "svg",
     path: deriveExpectedSvgArtifactPath(source.sourceAbsolutePath),
   };
+}
+
+function outputsInWriteOrder(
+  outputs: readonly RepoWorkflowArtifactOutput[],
+): RepoWorkflowArtifactOutput[] {
+  return [
+    ...outputs.filter((output) => output.format !== "markdown"),
+    ...outputs.filter((output) => output.format === "markdown"),
+  ];
 }
 
 export async function generateDiagramPilotRepoWorkflowWithDependencies(
@@ -278,12 +251,7 @@ export async function generateDiagramPilotRepoWorkflowWithDependencies(
 
   const discoveryResult = await dependencies.discoverDiagramPilotSourceFiles(
     options.scopePath,
-    configResult.config === undefined
-      ? undefined
-      : {
-          ignorePatterns: configResult.config.sources.ignore,
-          ignorePatternsRoot: configResult.config.directory,
-        },
+    configuredSourceDiscoveryOptions(configResult.config),
   );
 
   if (!discoveryResult.ok) {
@@ -293,7 +261,7 @@ export async function generateDiagramPilotRepoWorkflowWithDependencies(
         ? {}
         : {
             config: {
-              path: deriveConfigDisplayPath(
+              path: deriveRepoWorkflowConfigDisplayPath(
                 configResult.config.path,
                 dependencies.getCurrentWorkingDirectory(),
               ),
@@ -320,34 +288,29 @@ export async function generateDiagramPilotRepoWorkflowWithDependencies(
   const failures: RepoWorkflowGenerateSourceFailure[] = [];
 
   for (const source of discoveredSources) {
-    const sourcePath = deriveSourcePath(
-      discoveryResult.scope,
-      source.absolutePath,
-      source.relativePath,
+    const loadedSource = loadRepoWorkflowSource({
+      source,
+      scope: discoveryResult.scope,
       currentWorkingDirectory,
-    );
-    const loadResult = dependencies.loadValidatedDiagramSpec(source.absolutePath);
+      dependencies,
+    });
 
-    if (!loadResult.ok) {
-      const report = dependencies.createRepairableDiagnosticReport(
-        loadResult.failure,
-      );
-
+    if (!loadedSource.ok) {
       failures.push({
-        sourcePath,
-        errors: report.errors,
+        sourcePath: loadedSource.sourcePath,
+        errors: loadedSource.errors,
       });
       continue;
     }
 
     validSources.push({
-      sourcePath,
-      sourceAbsolutePath: source.absolutePath,
-      source: loadResult.source,
-      spec: loadResult.spec,
+      sourcePath: loadedSource.sourcePath,
+      sourceAbsolutePath: loadedSource.sourceAbsolutePath,
+      source: loadedSource.source,
+      spec: loadedSource.spec,
       outputs: configuredOutputsForSource(
         configResult.config,
-        source.absolutePath,
+        loadedSource.sourceAbsolutePath,
       ),
     });
   }
@@ -356,7 +319,7 @@ export async function generateDiagramPilotRepoWorkflowWithDependencies(
     configResult.config === undefined
       ? undefined
       : {
-          path: deriveConfigDisplayPath(
+          path: deriveRepoWorkflowConfigDisplayPath(
             configResult.config.path,
             currentWorkingDirectory,
           ),
@@ -383,10 +346,24 @@ export async function generateDiagramPilotRepoWorkflowWithDependencies(
   const skipped: RepoWorkflowGenerateSkippedArtifact[] = [];
 
   for (const source of validSources) {
+    const sourceConfig = configResult.config;
     const outputs =
       source.outputs.length > 0 ? source.outputs : [defaultSvgOutput(source)];
+    const orderedOutputs = outputsInWriteOrder(outputs);
+    const references =
+      source.outputs.length > 0 && sourceConfig !== undefined
+        ? createMarkdownEmbedReferences({
+            outputs,
+            resolvePath: (output) =>
+              resolveConfiguredOutputPath(
+                sourceConfig,
+                source.sourceAbsolutePath,
+                output,
+              ),
+          })
+        : [];
 
-    for (const output of outputs) {
+    for (const output of orderedOutputs) {
       const absolutePath =
         source.outputs.length > 0 && configResult.config !== undefined
           ? resolveConfiguredOutputPath(
@@ -404,26 +381,20 @@ export async function generateDiagramPilotRepoWorkflowWithDependencies(
                 currentWorkingDirectory,
               ),
             )
-          : deriveArtifactDisplayPath(
+          : deriveDefaultArtifactDisplayPath(
               source.sourcePath,
               absolutePath,
               currentWorkingDirectory,
             );
 
       try {
-        const content = await generateOutputContent(options, source, output.format);
-
-        if (content === undefined) {
-          skipped.push({
-            sourcePath: source.sourcePath,
-            format: output.format,
-            path: displayPath,
-            reason: "unsupported-markdown-output",
-            message:
-              "Configured Markdown embed generation is handled by a later repo workflow capability.",
-          });
-          continue;
-        }
+        const content = await generateOutputContent(
+          options,
+          source,
+          output,
+          absolutePath,
+          references,
+        );
 
         written.push({
           sourcePath: source.sourcePath,

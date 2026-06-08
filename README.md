@@ -126,4 +126,7 @@ command scope, validated before source processing, reported in `--json` output,
 and can use `sources.ignore` for source discovery plus `artifacts` mappings for
 configured SVG, PNG, Mermaid, D2, DOT, and Markdown expectations. Configured
 Mermaid, D2, and DOT use content freshness; configured PNG is presence-only in
-v0.3.0.
+v0.3.0. Configured Markdown outputs are standalone generated embed files. They
+link to the other configured artifacts in the same mapping with paths relative
+to the embed file, and `check` marks an embed stale when its content or a
+referenced artifact is not fresh.

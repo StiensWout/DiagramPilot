@@ -4,6 +4,7 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  parseSuccessfulJsonCliPayload,
   runBuiltCli,
   withTempRepo,
   writeFreshDiagramArtifact,
@@ -30,14 +31,7 @@ test("diagrampilot check supports an explicit directory scope with aggregate jso
     await writeFreshDiagramArtifact(tempRoot);
 
     const result = await runBuiltCli(["check", ".", "--json"], tempRoot);
-
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
-
-    const payload = JSON.parse(result.stdout);
-
-    assert.equal(payload.ok, true);
+    const payload = parseSuccessfulJsonCliPayload(result);
     assert.deepEqual(payload.scope, {
       kind: "directory",
       path: ".",
@@ -64,14 +58,7 @@ test("diagrampilot check --json includes the config path when config is used", a
     );
 
     const result = await runBuiltCli(["check", "--json"], tempRoot);
-
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
-
-    const payload = JSON.parse(result.stdout);
-
-    assert.equal(payload.ok, true);
+    const payload = parseSuccessfulJsonCliPayload(result);
     assert.deepEqual(payload.config, {
       path: "diagrampilot.config.yaml",
     });
@@ -109,14 +96,7 @@ test("diagrampilot check --json reports configured artifact results", async () =
     );
 
     const result = await runBuiltCli(["check", "--json"], tempRoot);
-
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
-
-    const payload = JSON.parse(result.stdout);
-
-    assert.equal(payload.ok, true);
+    const payload = parseSuccessfulJsonCliPayload(result);
     assert.deepEqual(payload.summary, {
       checkedSourceCount: 1,
       freshSourceCount: 1,

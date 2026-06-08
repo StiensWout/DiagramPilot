@@ -39,8 +39,8 @@ test("plans generate by delegating repo workflow generation to the command adapt
           scope: { kind: "directory", path: "." },
           summary: {
             checkedSourceCount: 1,
-            writtenArtifactCount: 1,
-            skippedArtifactCount: 1,
+            writtenArtifactCount: 2,
+            skippedArtifactCount: 0,
             failureCount: 0,
           },
           written: [
@@ -51,16 +51,15 @@ test("plans generate by delegating repo workflow generation to the command adapt
               absolutePath: "/repo/docs/architecture.mmd",
               content: "flowchart LR\n",
             },
-          ],
-          skipped: [
             {
               sourcePath: "docs/architecture.dp.yaml",
               format: "markdown",
               path: "docs/architecture.md",
-              reason: "unsupported-markdown-output",
-              message: "Markdown generation is deferred.",
+              absolutePath: "/repo/docs/architecture.md",
+              content: "![Architecture](architecture.svg)\n",
             },
           ],
+          skipped: [],
           failures: [],
         };
       },
@@ -88,6 +87,10 @@ test("plans generate by delegating repo workflow generation to the command adapt
       path: "/repo/docs/architecture.mmd",
       content: "flowchart LR\n",
     },
+    {
+      path: "/repo/docs/architecture.md",
+      content: "![Architecture](architecture.svg)\n",
+    },
   ]);
 
   const payload = JSON.parse(plan.stdout);
@@ -99,16 +102,13 @@ test("plans generate by delegating repo workflow generation to the command adapt
       format: "mermaid",
       path: "docs/architecture.mmd",
     },
-  ]);
-  assert.deepEqual(payload.skipped, [
     {
       sourcePath: "docs/architecture.dp.yaml",
       format: "markdown",
       path: "docs/architecture.md",
-      reason: "unsupported-markdown-output",
-      message: "Markdown generation is deferred.",
     },
   ]);
+  assert.deepEqual(payload.skipped, []);
 });
 
 test("plans generate json failures without file writes", async () => {

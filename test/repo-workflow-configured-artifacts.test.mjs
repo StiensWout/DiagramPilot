@@ -10,13 +10,20 @@ import {
 import {
   SVG_RENDERER_NAME,
   SVG_RENDERER_VERSION,
+  assertSingleFreshSource,
+  assertSingleIssueSource,
+  generatedArchitectureEmbed,
   repoWorkflowCheckOptions,
   requiredSource,
   sha256,
+  staleArchitectureEmbed,
   validSourceContent,
   validSourceContext,
   withTempRepo,
+  writeMarkdownEmbedArtifact,
+  writeMarkdownEmbedConfig,
   writeFreshSvgArtifact,
+  writeSvgAndMarkdownEmbed,
   writeValidDiagramSource,
 } from "./repo-workflow-configured-artifacts-helpers.mjs";
 
@@ -47,12 +54,7 @@ test("checkDiagramPilotRepoWorkflow replaces the default SVG expectation with ma
       repoWorkflowCheckOptions(tempRoot),
     );
 
-    assert.equal(result.ok, true);
-    assert.deepEqual(result.summary, {
-      checkedSourceCount: 1,
-      freshSourceCount: 1,
-      issueCount: 0,
-    });
+    assertSingleFreshSource(result);
     assert.deepEqual(result.sources[0].artifacts, [
       {
         format: "png",
@@ -352,12 +354,7 @@ test("checkDiagramPilotRepoWorkflow uses provenance freshness for configured SVG
       repoWorkflowCheckOptions(tempRoot),
     );
 
-    assert.equal(result.ok, true);
-    assert.deepEqual(result.summary, {
-      checkedSourceCount: 1,
-      freshSourceCount: 1,
-      issueCount: 0,
-    });
+    assertSingleFreshSource(result);
     assert.equal(result.sources[0].artifacts[0].format, "svg");
     assert.equal(result.sources[0].artifacts[0].status, "fresh");
     assert.equal(result.sources[0].artifacts[0].path, "artifacts/architecture.svg");
@@ -366,5 +363,101 @@ test("checkDiagramPilotRepoWorkflow uses provenance freshness for configured SVG
       "docs/architecture.dp.yaml",
     );
     assert.equal(result.sources[0].artifacts[0].freshness, undefined);
+  });
+});
+
+test("checkDiagramPilotRepoWorkflow reports stale Markdown embeds by content", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const { embedPath, svgPath } = await writeMarkdownEmbedConfig(tempRoot);
+
+    await writeSvgAndMarkdownEmbed({
+      svgPath,
+      embedPath,
+      provenanceSourcePath: "docs/architecture.dp.yaml",
+      embedContent: staleArchitectureEmbed,
+    });
+
+    const result = await checkDiagramPilotRepoWorkflow(
+      repoWorkflowCheckOptions(tempRoot),
+    );
+
+    assertSingleIssueSource(result);
+    assert.equal(result.sources[0].artifacts[0].status, "fresh");
+    assert.deepEqual(result.sources[0].artifacts[1], {
+      format: "markdown",
+      status: "stale",
+      path: "generated/embeds/architecture.md",
+      reasons: ["content-mismatch"],
+      expectedSha256: sha256(generatedArchitectureEmbed),
+      actualSha256: sha256(staleArchitectureEmbed),
+    });
+  });
+});
+
+test("checkDiagramPilotRepoWorkflow reports Markdown embeds stale when referenced artifacts are missing", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const { embedPath } = await writeMarkdownEmbedConfig(tempRoot);
+
+    await writeMarkdownEmbedArtifact(embedPath, generatedArchitectureEmbed);
+
+    const result = await checkDiagramPilotRepoWorkflow(
+      repoWorkflowCheckOptions(tempRoot),
+    );
+
+    assertSingleIssueSource(result);
+    assert.deepEqual(result.sources[0].artifacts, [
+      {
+        format: "svg",
+        status: "missing-artifact",
+        path: "generated/svg/architecture.svg",
+      },
+      {
+        format: "markdown",
+        status: "stale",
+        path: "generated/embeds/architecture.md",
+        reasons: ["referenced-artifact-missing"],
+        references: [
+          {
+            format: "svg",
+            path: "generated/svg/architecture.svg",
+            status: "missing-artifact",
+          },
+        ],
+      },
+    ]);
+  });
+});
+
+test("checkDiagramPilotRepoWorkflow reports Markdown embeds stale when referenced artifacts are stale", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const { embedPath, svgPath } = await writeMarkdownEmbedConfig(tempRoot);
+
+    await writeSvgAndMarkdownEmbed({
+      svgPath,
+      embedPath,
+      provenanceSourcePath: "docs/old-architecture.dp.yaml",
+      embedContent: generatedArchitectureEmbed,
+    });
+
+    const result = await checkDiagramPilotRepoWorkflow(
+      repoWorkflowCheckOptions(tempRoot),
+    );
+
+    assertSingleIssueSource(result);
+    assert.equal(result.sources[0].artifacts[0].format, "svg");
+    assert.equal(result.sources[0].artifacts[0].status, "stale");
+    assert.deepEqual(result.sources[0].artifacts[1], {
+      format: "markdown",
+      status: "stale",
+      path: "generated/embeds/architecture.md",
+      reasons: ["referenced-artifact-stale"],
+      references: [
+        {
+          format: "svg",
+          path: "generated/svg/architecture.svg",
+          status: "stale",
+        },
+      ],
+    });
   });
 });
