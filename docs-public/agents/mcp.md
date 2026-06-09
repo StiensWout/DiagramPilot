@@ -1,7 +1,7 @@
 # DiagramPilot MCP
 
-MCP support is alpha. The DiagramPilot MCP server exposes read-only
-DiagramPilot context and operations to local Model Context Protocol clients.
+MCP support is alpha. The DiagramPilot MCP server exposes DiagramPilot context
+and explicit local operations to Model Context Protocol clients.
 
 Launch it through the main CLI:
 
@@ -17,10 +17,14 @@ diagrampilot-mcp
 
 The server provides resources for the DiagramSpec schema, public docs,
 examples, discovered DiagramPilot Source Files, and Repo Workflow Check
-results. It provides read tools for validating sources, checking repo workflow
-health, exporting Derived Artifact text, and rendering SVG text. These tools do
-not write files.
+results. It also provides read tools for Stable ID suggestions, source
+validation, repo workflow checks, Derived Artifact text export, and SVG
+rendering.
+
+The write tools are explicit: `diagrampilot_create_source` writes one
+`*.dp.yaml` DiagramPilot Source File from structured DiagramSpec input, and
+`diagrampilot_generate_repo_outputs` refreshes configured Derived Artifacts for
+explicit source paths or directory scopes.
 
 The public prompt set covers creating or updating DiagramPilot Source Files,
-repairing validation errors, and refreshing Derived Artifacts from repo
-context.
+repairing validation errors, and refreshing Derived Artifacts from repo context.

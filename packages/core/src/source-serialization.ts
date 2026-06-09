@@ -1,0 +1,61 @@
+import { stringify } from "yaml";
+
+import type {
+  DiagramSpec,
+  DiagramSpecEdge,
+  DiagramSpecGroup,
+  DiagramSpecNode,
+} from "./diagramspec-topology.js";
+
+function setIfDefined(
+  target: Record<string, unknown>,
+  key: string,
+  value: unknown,
+): void {
+  if (value !== undefined) target[key] = value;
+}
+
+function orderedNode(node: DiagramSpecNode): Record<string, unknown> {
+  const ordered: Record<string, unknown> = {
+    id: node.id,
+    label: node.label,
+  };
+  setIfDefined(ordered, "icon", node.icon);
+  setIfDefined(ordered, "metadata", node.metadata);
+  return ordered;
+}
+
+function orderedGroup(group: DiagramSpecGroup): Record<string, unknown> {
+  const ordered: Record<string, unknown> = {
+    id: group.id,
+    label: group.label,
+  };
+  setIfDefined(ordered, "contains", group.contains);
+  setIfDefined(ordered, "metadata", group.metadata);
+  return ordered;
+}
+
+function orderedEdge(edge: DiagramSpecEdge): Record<string, unknown> {
+  const ordered: Record<string, unknown> = {
+    id: edge.id,
+    from: edge.from,
+    to: edge.to,
+  };
+  setIfDefined(ordered, "label", edge.label);
+  setIfDefined(ordered, "metadata", edge.metadata);
+  return ordered;
+}
+
+export function serializeDiagramPilotSourceFile(spec: DiagramSpec): string {
+  const ordered: Record<string, unknown> = {
+    version: spec.version,
+    title: spec.title,
+  };
+  setIfDefined(ordered, "direction", spec.direction);
+  ordered.nodes = spec.nodes.map(orderedNode);
+  setIfDefined(ordered, "groups", spec.groups?.map(orderedGroup));
+  setIfDefined(ordered, "edges", spec.edges?.map(orderedEdge));
+  setIfDefined(ordered, "metadata", spec.metadata);
+
+  return stringify(ordered, { lineWidth: 0 });
+}

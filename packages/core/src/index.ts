@@ -20,6 +20,7 @@ export {
   deriveExpectedSvgArtifactPath,
 } from "./svg-artifact-freshness.js";
 export { validateDiagramSpec } from "./diagramspec-validation.js";
+export { serializeDiagramPilotSourceFile } from "./source-serialization.js";
 export { DIAGRAMPILOT_VERSION, getDiagramPilotVersion } from "./version.js";
 export {
   MAINTAINABILITY_FILE_SIZE_GATE,

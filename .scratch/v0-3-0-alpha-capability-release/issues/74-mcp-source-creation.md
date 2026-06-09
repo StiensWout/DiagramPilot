@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: completed
 Issue Version: 0.2.11
 
 # MCP Source Creation
@@ -51,4 +51,39 @@ tool reports success.
 npm test
 node packages/cli/dist/index.js mcp --help
 git diff --check
+npm run audit:fallow
+npm run audit:fallow:changed
 ```
+
+## Implementation notes
+
+- Added `diagrampilot_create_source` for structured DiagramSpec input.
+- Added `diagrampilot_suggest_stable_ids` as a read-only Stable ID suggestion
+  helper.
+- Created sources are written only to `*.dp.yaml`, use canonical YAML key
+  order, validate before success, and return structured before/after summaries
+  with written paths instead of full source text.
+- Missing, invalid, and duplicate caller-provided Stable IDs fail before write.
+- Updated MCP registry, stdio schemas, launch snapshots, and public MCP docs.
+
+## Acceptance criteria status
+
+- MCP Source Creation accepts structured diagram input: done.
+- YAML-only DiagramPilot Source File output: done.
+- Caller-provided Stable IDs required and validated for missing, invalid, and
+  duplicate IDs: done.
+- Read-only Stable ID suggestions: done.
+- Canonical YAML key order and validation-before-success behavior: done.
+- Structured responses include summaries and paths without full diffs: done.
+
+## Validation results
+
+```bash
+npm test
+node packages/cli/dist/index.js mcp --help
+git diff --check
+npm run audit:fallow
+npm run audit:fallow:changed
+```
+
+All commands passed.
