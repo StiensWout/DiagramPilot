@@ -126,6 +126,18 @@ export function createSvgArtifactProvenance(
 function extractSvgArtifactProvenance(
   svg: string,
 ): SvgArtifactProvenance | undefined {
+  const provenance = parseSvgArtifactProvenancePayload(svg);
+
+  if (provenance === undefined) return undefined;
+
+  assertSvgArtifactProvenanceShape(provenance);
+
+  return provenance as SvgArtifactProvenance;
+}
+
+function parseSvgArtifactProvenancePayload(
+  svg: string,
+): Partial<SvgArtifactProvenance> | undefined {
   if (!/<svg\b/i.test(svg)) {
     throw new Error("Expected an SVG document.");
   }
@@ -139,32 +151,43 @@ function extractSvgArtifactProvenance(
     return undefined;
   }
 
-  const provenance = JSON.parse(
+  return JSON.parse(
     match.groups.json,
   ) as Partial<SvgArtifactProvenance>;
+}
 
+function assertSvgArtifactProvenanceShape(
+  provenance: Partial<SvgArtifactProvenance>,
+): void {
   if (
     provenance === null ||
-    typeof provenance !== "object" ||
-    typeof provenance.sourcePath !== "string"
+    typeof provenance !== "object"
   ) {
     throw new Error(
       "Malformed DiagramPilot provenance: expected string sourcePath.",
     );
   }
 
-  if (typeof provenance.sourceSha256 !== "string") {
-    throw new Error(
-      "Malformed DiagramPilot provenance: expected string sourceSha256.",
-    );
-  }
+  assertStringProvenanceField(provenance, "sourcePath");
+  assertStringProvenanceField(provenance, "sourceSha256");
+  assertStringProvenanceField(provenance, "diagramPilotVersion");
+  assertRendererProvenance(provenance);
+}
 
-  if (typeof provenance.diagramPilotVersion !== "string") {
-    throw new Error(
-      "Malformed DiagramPilot provenance: expected string diagramPilotVersion.",
-    );
-  }
+function assertStringProvenanceField(
+  provenance: Partial<SvgArtifactProvenance>,
+  fieldName: "sourcePath" | "sourceSha256" | "diagramPilotVersion",
+): void {
+  if (typeof provenance[fieldName] === "string") return;
 
+  throw new Error(
+    `Malformed DiagramPilot provenance: expected string ${fieldName}.`,
+  );
+}
+
+function assertRendererProvenance(
+  provenance: Partial<SvgArtifactProvenance>,
+): void {
   if (
     provenance.renderer === null ||
     typeof provenance.renderer !== "object"
@@ -185,8 +208,6 @@ function extractSvgArtifactProvenance(
       "Malformed DiagramPilot provenance: expected string renderer.version.",
     );
   }
-
-  return provenance as SvgArtifactProvenance;
 }
 
 function compareSvgArtifactProvenance(
@@ -224,29 +245,9 @@ export async function checkExpectedSvgArtifactFreshnessForValidatedSource(
   const sourcePath = options.source.path;
   const artifactPath =
     options.artifactPath ?? deriveExpectedSvgArtifactPath(sourcePath);
-  let artifactContent: string;
+  const artifactContentResult = readSvgArtifactContent(sourcePath, artifactPath);
 
-  try {
-    artifactContent = readFileSync(artifactPath, "utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return {
-        sourcePath,
-        artifactPath,
-        status: "missing-artifact",
-      };
-    }
-
-    const message =
-      error instanceof Error ? error.message : `Unable to read ${artifactPath}`;
-
-    return {
-      sourcePath,
-      artifactPath,
-      status: "unreadable-artifact",
-      message,
-    };
-  }
+  if (!artifactContentResult.ok) return artifactContentResult.result;
 
   const expectedProvenance = createSvgArtifactProvenance({
     sourcePath: options.provenanceSourcePath,
@@ -254,10 +255,119 @@ export async function checkExpectedSvgArtifactFreshnessForValidatedSource(
     diagramPilotVersion: options.diagramPilotVersion,
     renderer: options.renderer,
   });
-  let actualProvenance: SvgArtifactProvenance | undefined;
+  const actualProvenanceResult = extractSvgArtifactProvenanceResult(
+    sourcePath,
+    artifactPath,
+    artifactContentResult.content,
+  );
 
+  if (!actualProvenanceResult.ok) return actualProvenanceResult.result;
+
+  return compareSvgArtifactFreshness({
+    sourcePath,
+    artifactPath,
+    expectedProvenance,
+    actualProvenance: actualProvenanceResult.provenance,
+  });
+}
+
+function compareSvgArtifactFreshness(options: {
+  sourcePath: string;
+  artifactPath: string;
+  expectedProvenance: SvgArtifactProvenance;
+  actualProvenance: SvgArtifactProvenance | undefined;
+}): FreshSvgArtifactResult | MissingSvgArtifactProvenanceResult | StaleSvgArtifactResult {
+  if (options.actualProvenance === undefined) {
+    return {
+      sourcePath: options.sourcePath,
+      artifactPath: options.artifactPath,
+      status: "missing-provenance",
+    };
+  }
+
+  const staleReasons = compareSvgArtifactProvenance(
+    options.expectedProvenance,
+    options.actualProvenance,
+  );
+
+  if (staleReasons.length > 0) {
+    return {
+      sourcePath: options.sourcePath,
+      artifactPath: options.artifactPath,
+      status: "stale",
+      reasons: staleReasons,
+      expected: options.expectedProvenance,
+      actual: options.actualProvenance,
+    };
+  }
+
+  return {
+    sourcePath: options.sourcePath,
+    artifactPath: options.artifactPath,
+    status: "fresh",
+    provenance: options.actualProvenance,
+  };
+}
+
+function readSvgArtifactContent(sourcePath: string, artifactPath: string):
+  | {
+      ok: true;
+      content: string;
+    }
+  | {
+      ok: false;
+      result: MissingSvgArtifactResult | UnreadableSvgArtifactResult;
+    } {
   try {
-    actualProvenance = extractSvgArtifactProvenance(artifactContent);
+    return {
+      ok: true,
+      content: readFileSync(artifactPath, "utf8"),
+    };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return {
+        ok: false,
+        result: {
+          sourcePath,
+          artifactPath,
+          status: "missing-artifact",
+        },
+      };
+    }
+
+    const message =
+      error instanceof Error ? error.message : `Unable to read ${artifactPath}`;
+
+    return {
+      ok: false,
+      result: {
+        sourcePath,
+        artifactPath,
+        status: "unreadable-artifact",
+        message,
+      },
+    };
+  }
+}
+
+function extractSvgArtifactProvenanceResult(
+  sourcePath: string,
+  artifactPath: string,
+  artifactContent: string,
+):
+  | {
+      ok: true;
+      provenance: SvgArtifactProvenance | undefined;
+    }
+  | {
+      ok: false;
+      result: MalformedSvgArtifactResult;
+    } {
+  try {
+    return {
+      ok: true,
+      provenance: extractSvgArtifactProvenance(artifactContent),
+    };
   } catch (error) {
     const message =
       error instanceof Error
@@ -265,43 +375,15 @@ export async function checkExpectedSvgArtifactFreshnessForValidatedSource(
         : `Malformed DiagramPilot provenance in ${artifactPath}`;
 
     return {
-      sourcePath,
-      artifactPath,
-      status: "malformed-artifact",
-      message,
+      ok: false,
+      result: {
+        sourcePath,
+        artifactPath,
+        status: "malformed-artifact",
+        message,
+      },
     };
   }
-
-  if (actualProvenance === undefined) {
-    return {
-      sourcePath,
-      artifactPath,
-      status: "missing-provenance",
-    };
-  }
-
-  const staleReasons = compareSvgArtifactProvenance(
-    expectedProvenance,
-    actualProvenance,
-  );
-
-  if (staleReasons.length > 0) {
-    return {
-      sourcePath,
-      artifactPath,
-      status: "stale",
-      reasons: staleReasons,
-      expected: expectedProvenance,
-      actual: actualProvenance,
-    };
-  }
-
-  return {
-    sourcePath,
-    artifactPath,
-    status: "fresh",
-    provenance: actualProvenance,
-  };
 }
 
 export async function checkExpectedSvgArtifactFreshness(

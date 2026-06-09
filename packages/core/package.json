@@ -1,6 +1,6 @@
 {
   "name": "@diagrampilot/core",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "description": "DiagramSpec types and core behavior for DiagramPilot.",
   "type": "module",
   "license": "MIT",
@@ -43,7 +43,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@diagrampilot/icons": "0.2.9",
+    "@diagrampilot/icons": "0.2.10",
     "yaml": "^2.9.0"
   }
 }

@@ -42,84 +42,125 @@ function schemaError(path, keyword) {
   return { path, keyword };
 }
 
+function validateSchemaReference(rootSchema, schema, candidate, candidatePath, validate) {
+  if (schema.$ref === undefined) return false;
+
+  validate(resolveReference(rootSchema, schema.$ref), candidate, candidatePath);
+  return true;
+}
+
+function validateSchemaType(schema, candidate, candidatePath, errors) {
+  if (
+    schema.type === undefined ||
+    matchesJsonSchemaType(candidate, schema.type)
+  ) {
+    return true;
+  }
+
+  errors.push(schemaError(candidatePath, "type"));
+  return false;
+}
+
+function validateScalarKeywords(schema, candidate, candidatePath, errors) {
+  validateConstKeyword(schema, candidate, candidatePath, errors);
+  validateEnumKeyword(schema, candidate, candidatePath, errors);
+  validatePatternKeyword(schema, candidate, candidatePath, errors);
+}
+
+function validateConstKeyword(schema, candidate, candidatePath, errors) {
+  if (!("const" in schema) || candidate === schema.const) return;
+
+    errors.push(schemaError(candidatePath, "const"));
+}
+
+function validateEnumKeyword(schema, candidate, candidatePath, errors) {
+  if (schema.enum === undefined || schema.enum.includes(candidate)) return;
+
+  errors.push(schemaError(candidatePath, "enum"));
+}
+
+function validatePatternKeyword(schema, candidate, candidatePath, errors) {
+  if (schema.pattern === undefined || typeof candidate !== "string") return;
+  if (new RegExp(schema.pattern, "u").test(candidate)) return;
+
+  errors.push(schemaError(candidatePath, "pattern"));
+}
+
+function validateArrayKeywords(schema, candidate, candidatePath, errors, validate) {
+  if (!Array.isArray(candidate)) return;
+
+  if (schema.minItems !== undefined && candidate.length < schema.minItems) {
+    errors.push(schemaError(candidatePath, "minItems"));
+  }
+
+  if (schema.items === undefined) return;
+
+  candidate.forEach((item, index) => {
+    validate(schema.items, item, `${candidatePath}[${index}]`);
+  });
+}
+
+function validateRequiredProperties(schema, candidate, candidatePath, errors) {
+  for (const requiredProperty of schema.required ?? []) {
+    if (!Object.hasOwn(candidate, requiredProperty)) {
+      errors.push(schemaError(`${candidatePath}.${requiredProperty}`, "required"));
+    }
+  }
+}
+
+function validateDeclaredProperties(schema, candidate, candidatePath, validate) {
+  const properties = schema.properties ?? {};
+
+  for (const [propertyName, propertySchema] of Object.entries(properties)) {
+    if (Object.hasOwn(candidate, propertyName)) {
+      validate(propertySchema, candidate[propertyName], `${candidatePath}.${propertyName}`);
+    }
+  }
+
+  return properties;
+}
+
+function validateAdditionalProperties(
+  schema,
+  candidate,
+  candidatePath,
+  properties,
+  errors,
+) {
+  if (schema.additionalProperties !== false) return;
+
+  for (const propertyName of Object.keys(candidate)) {
+    if (!Object.hasOwn(properties, propertyName)) {
+      errors.push(
+        schemaError(`${candidatePath}.${propertyName}`, "additionalProperties"),
+      );
+    }
+  }
+}
+
+function isSchemaObjectCandidate(candidate) {
+  return (
+    typeof candidate === "object" &&
+    candidate !== null &&
+    !Array.isArray(candidate)
+  );
+}
+
 function validateWithSchema(rootSchema, value) {
   const errors = [];
 
   function validate(schema, candidate, candidatePath) {
-    if (schema.$ref !== undefined) {
-      validate(resolveReference(rootSchema, schema.$ref), candidate, candidatePath);
-      return;
-    }
+    if (validateSchemaReference(rootSchema, schema, candidate, candidatePath, validate)) return;
+    if (!validateSchemaType(schema, candidate, candidatePath, errors)) return;
 
-    if (
-      schema.type !== undefined &&
-      !matchesJsonSchemaType(candidate, schema.type)
-    ) {
-      errors.push(schemaError(candidatePath, "type"));
-      return;
-    }
+    validateScalarKeywords(schema, candidate, candidatePath, errors);
+    validateArrayKeywords(schema, candidate, candidatePath, errors, validate);
 
-    if ("const" in schema && candidate !== schema.const) {
-      errors.push(schemaError(candidatePath, "const"));
-    }
+    if (!isSchemaObjectCandidate(candidate)) return;
 
-    if (schema.enum !== undefined && !schema.enum.includes(candidate)) {
-      errors.push(schemaError(candidatePath, "enum"));
-    }
-
-    if (
-      schema.pattern !== undefined &&
-      typeof candidate === "string" &&
-      !new RegExp(schema.pattern, "u").test(candidate)
-    ) {
-      errors.push(schemaError(candidatePath, "pattern"));
-    }
-
-    if (
-      schema.minItems !== undefined &&
-      Array.isArray(candidate) &&
-      candidate.length < schema.minItems
-    ) {
-      errors.push(schemaError(candidatePath, "minItems"));
-    }
-
-    if (Array.isArray(candidate) && schema.items !== undefined) {
-      candidate.forEach((item, index) => {
-        validate(schema.items, item, `${candidatePath}[${index}]`);
-      });
-    }
-
-    if (
-      typeof candidate !== "object" ||
-      candidate === null ||
-      Array.isArray(candidate)
-    ) {
-      return;
-    }
-
-    for (const requiredProperty of schema.required ?? []) {
-      if (!Object.hasOwn(candidate, requiredProperty)) {
-        errors.push(schemaError(`${candidatePath}.${requiredProperty}`, "required"));
-      }
-    }
-
-    const properties = schema.properties ?? {};
-
-    for (const [propertyName, propertySchema] of Object.entries(properties)) {
-      if (Object.hasOwn(candidate, propertyName)) {
-        validate(propertySchema, candidate[propertyName], `${candidatePath}.${propertyName}`);
-      }
-    }
-
-    if (schema.additionalProperties === false) {
-      for (const propertyName of Object.keys(candidate)) {
-        if (!Object.hasOwn(properties, propertyName)) {
-          errors.push(
-            schemaError(`${candidatePath}.${propertyName}`, "additionalProperties"),
-          );
-        }
-      }
-    }
+    validateRequiredProperties(schema, candidate, candidatePath, errors);
+    const properties = validateDeclaredProperties(schema, candidate, candidatePath, validate);
+    validateAdditionalProperties(schema, candidate, candidatePath, properties, errors);
   }
 
   validate(rootSchema, value, "$");

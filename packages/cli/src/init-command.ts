@@ -138,39 +138,48 @@ function writeSupportFiles(streams: CliStreams): void {
   }
 }
 
-export function runInit(args: readonly string[], streams: CliStreams): number {
-  if (args.length === 0) {
-    writeLine(streams.stdout, "Local agent docs were not installed.");
-    writeLine(streams.stdout, "Run `diagrampilot init --docs` to add them.");
-    writeLine(
-      streams.stdout,
-      "Run `diagrampilot init --config` to add Repo Workflow Configuration.",
-    );
-    return 0;
-  }
+interface InitOptions {
+  shouldWriteDocs: boolean;
+  shouldWriteConfig: boolean;
+}
 
-  let shouldWriteDocs = false;
-  let shouldWriteConfig = false;
+function parseInitOptions(args: readonly string[]): InitOptions | string {
+  const options: InitOptions = {
+    shouldWriteDocs: false,
+    shouldWriteConfig: false,
+  };
 
   for (const arg of args) {
     if (arg === "--docs") {
-      shouldWriteDocs = true;
+      options.shouldWriteDocs = true;
       continue;
     }
 
     if (arg === "--config") {
-      shouldWriteConfig = true;
+      options.shouldWriteConfig = true;
       continue;
     }
 
-    writeLine(streams.stderr, `Unknown init option: ${arg}`);
-    writeLine(streams.stderr, initUsageText());
-    return 1;
+    return arg;
   }
 
+  return options;
+}
+
+function writeNoInitActionMessage(streams: CliStreams): number {
+  writeLine(streams.stdout, "Local agent docs were not installed.");
+  writeLine(streams.stdout, "Run `diagrampilot init --docs` to add them.");
+  writeLine(
+    streams.stdout,
+    "Run `diagrampilot init --config` to add Repo Workflow Configuration.",
+  );
+  return 0;
+}
+
+function writeInitConfig(streams: CliStreams): number {
   const configPath = path.resolve(process.cwd(), repoWorkflowConfigPath);
 
-  if (shouldWriteConfig && existsSync(configPath)) {
+  if (existsSync(configPath)) {
     writeLine(
       streams.stderr,
       `Repo Workflow Configuration already exists: ${repoWorkflowConfigPath}`,
@@ -182,14 +191,41 @@ export function runInit(args: readonly string[], streams: CliStreams): number {
     return 1;
   }
 
-  if (shouldWriteConfig) {
-    writeFileSync(configPath, repoWorkflowConfigContent, "utf8");
-    writeLine(streams.stdout, `Created ${repoWorkflowConfigPath}`);
+  writeFileSync(configPath, repoWorkflowConfigContent, "utf8");
+  writeLine(streams.stdout, `Created ${repoWorkflowConfigPath}`);
+  return 0;
+}
+
+function reportUnknownInitOption(arg: string, streams: CliStreams): number {
+  writeLine(streams.stderr, `Unknown init option: ${arg}`);
+  writeLine(streams.stderr, initUsageText());
+  return 1;
+}
+
+function executeInitOptions(options: InitOptions, streams: CliStreams): number {
+  if (options.shouldWriteConfig) {
+    const configExitCode = writeInitConfig(streams);
+
+    if (configExitCode !== 0) return configExitCode;
   }
 
-  if (shouldWriteDocs) {
+  if (options.shouldWriteDocs) {
     writeSupportFiles(streams);
   }
 
   return 0;
+}
+
+export function runInit(args: readonly string[], streams: CliStreams): number {
+  if (args.length === 0) {
+    return writeNoInitActionMessage(streams);
+  }
+
+  const options = parseInitOptions(args);
+
+  if (typeof options === "string") {
+    return reportUnknownInitOption(options, streams);
+  }
+
+  return executeInitOptions(options, streams);
 }

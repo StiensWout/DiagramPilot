@@ -96,29 +96,45 @@ function usage() {
   return "Usage: node scripts/bump-release-version.mjs <version>";
 }
 
-function main() {
-  const args = process.argv.slice(2);
-  const [version] = args;
-
+function parseVersionArg(args) {
   if (
     args.length !== 1 ||
-    version === "--help" ||
-    version === "-h" ||
-    !RELEASE_VERSION_PATTERN.test(version)
+    args[0] === "--help" ||
+    args[0] === "-h" ||
+    !RELEASE_VERSION_PATTERN.test(args[0])
   ) {
+    return {
+      ok: false,
+    };
+  }
+
+  return {
+    ok: true,
+    version: args[0],
+  };
+}
+
+function bumpReleaseVersion(version) {
+  const rootPath = process.cwd();
+  const { records, publicPackageNames } = updateManifests(rootPath, version);
+  updateLockfile(rootPath, records, publicPackageNames, version);
+  updateRuntimeVersion(rootPath, version);
+  process.stdout.write(
+    `Updated DiagramPilot release version metadata to ${version}.\n`,
+  );
+  return 0;
+}
+
+function main() {
+  const parsedArgs = parseVersionArg(process.argv.slice(2));
+
+  if (!parsedArgs.ok) {
     process.stderr.write(`${usage()}\n`);
     return 1;
   }
 
   try {
-    const rootPath = process.cwd();
-    const { records, publicPackageNames } = updateManifests(rootPath, version);
-    updateLockfile(rootPath, records, publicPackageNames, version);
-    updateRuntimeVersion(rootPath, version);
-    process.stdout.write(
-      `Updated DiagramPilot release version metadata to ${version}.\n`,
-    );
-    return 0;
+    return bumpReleaseVersion(parsedArgs.version);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     process.stderr.write(`Unable to bump DiagramPilot release version: ${message}\n`);

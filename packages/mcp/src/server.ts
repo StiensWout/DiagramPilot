@@ -43,28 +43,27 @@ function templateListResource(resource: DiagramPilotMcpResource): {
 }
 
 function toolInputSchema(tool: DiagramPilotMcpTool): Record<string, z.ZodType> {
-  if (tool.name === "diagrampilot_validate_source") {
-    return {
+  const schemas: Record<string, Record<string, z.ZodType>> = {
+    diagrampilot_validate_source: {
       source_path: z.string(),
-    };
-  }
-
-  if (tool.name === "diagrampilot_check_repo") {
-    return {
+    },
+    diagrampilot_check_repo: {
       scope_path: z.string().optional(),
-    };
-  }
-
-  if (tool.name === "diagrampilot_export_source") {
-    return {
+    },
+    diagrampilot_export_source: {
       source_path: z.string(),
       format: z.enum(["mermaid", "d2", "dot"]),
-    };
-  }
-
-  return {
-    source_path: z.string(),
+    },
+    diagrampilot_render_source: {
+      source_path: z.string(),
+    },
+    diagrampilot_generate_repo_outputs: {
+      source_paths: z.array(z.string()).optional(),
+      scope_paths: z.array(z.string()).optional(),
+    },
   };
+
+  return schemas[tool.name] ?? {};
 }
 
 function promptArgsSchema(

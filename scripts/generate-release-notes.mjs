@@ -71,12 +71,7 @@ function readSections(issueText) {
   return sections;
 }
 
-function formatReleaseNotes({ issueText, version, tag }) {
-  const status = readIssueMetadata(issueText, "Status");
-  const issueVersion = readIssueMetadata(issueText, "Issue Version");
-  const title = readIssueTitle(issueText);
-  const sections = readSections(issueText);
-
+function validateReleaseIssueMetadata({ status, issueVersion, version, tag }) {
   if (status !== "completed") {
     throw new Error(
       `Issue status must be completed before generating release notes; found ${status || "missing"}.`,
@@ -92,6 +87,25 @@ function formatReleaseNotes({ issueText, version, tag }) {
   if (tag !== `v${version}`) {
     throw new Error(`Release tag ${tag} does not match Issue Version ${version}.`);
   }
+}
+
+function appendReleaseSections(output, sections) {
+  for (const [sectionName, outputName] of SECTION_LABELS.entries()) {
+    const content = sections.get(sectionName);
+
+    if (content !== undefined && content !== "") {
+      output.push("", `## ${outputName}`, "", content);
+    }
+  }
+}
+
+function formatReleaseNotes({ issueText, version, tag }) {
+  const status = readIssueMetadata(issueText, "Status");
+  const issueVersion = readIssueMetadata(issueText, "Issue Version");
+  const title = readIssueTitle(issueText);
+  const sections = readSections(issueText);
+
+  validateReleaseIssueMetadata({ status, issueVersion, version, tag });
 
   const output = [
     `# DiagramPilot ${tag}`,
@@ -103,14 +117,7 @@ function formatReleaseNotes({ issueText, version, tag }) {
     "Public Website: https://diagrampilot.com",
   ];
 
-  for (const [sectionName, outputName] of SECTION_LABELS.entries()) {
-    const content = sections.get(sectionName);
-
-    if (content !== undefined && content !== "") {
-      output.push("", `## ${outputName}`, "", content);
-    }
-  }
-
+  appendReleaseSections(output, sections);
   output.push("");
 
   return output.join("\n");

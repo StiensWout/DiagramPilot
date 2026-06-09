@@ -50,6 +50,12 @@ const readOnlyToolAnnotations = {
   idempotentHint: true,
 } as const;
 
+const writeToolAnnotations = {
+  readOnlyHint: false,
+  destructiveHint: true,
+  idempotentHint: true,
+} as const;
+
 export const DIAGRAMPILOT_MCP_TOOLS: readonly DiagramPilotMcpTool[] = [
   {
     name: "diagrampilot_validate_source",
@@ -107,6 +113,27 @@ export const DIAGRAMPILOT_MCP_TOOLS: readonly DiagramPilotMcpTool[] = [
       },
     ],
     annotations: readOnlyToolAnnotations,
+  },
+  {
+    name: "diagrampilot_generate_repo_outputs",
+    title: "Generate DiagramPilot Repo Outputs",
+    description:
+      "Refresh configured DiagramPilot repo outputs for explicit source paths or directory scopes.",
+    arguments: [
+      {
+        name: "source_paths",
+        description:
+          "Explicit DiagramPilot Source File paths to generate. At least one source_paths or scope_paths entry is required.",
+        required: false,
+      },
+      {
+        name: "scope_paths",
+        description:
+          "Explicit local directory scopes to generate. At least one source_paths or scope_paths entry is required.",
+        required: false,
+      },
+    ],
+    annotations: writeToolAnnotations,
   },
 ];
 

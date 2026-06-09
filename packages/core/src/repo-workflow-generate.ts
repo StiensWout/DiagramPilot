@@ -1,31 +1,27 @@
 import type {
+  RepoWorkflowConfig,
   RepoWorkflowConfigDiscoveryResult,
   RepoWorkflowConfigFailure,
-  RepoWorkflowArtifactOutput,
   RepoWorkflowArtifactOutputFormat,
 } from "./repo-workflow-config.js";
 import {
   configuredExplicitSourcesForScope,
   configuredOutputsForSource,
   configuredSourceDiscoveryOptions,
-  deriveConfiguredArtifactDisplayPath,
   mergeDiscoveredAndConfiguredSources,
-  resolveConfiguredOutputPath,
 } from "./repo-workflow-configured-artifacts.js";
 import type { ConfiguredTextArtifactFormat } from "./repo-workflow-configured-artifact-result.js";
 import {
-  createMarkdownEmbedContent,
-  createMarkdownEmbedReferences,
-  type MarkdownEmbedReferencedArtifact,
-} from "./repo-workflow-markdown-embed.js";
+  generateWrittenArtifactsForSource,
+  type ValidGenerateSource,
+} from "./repo-workflow-generate-output.js";
 import { loadRepoWorkflowSource } from "./repo-workflow-loaded-source.js";
 import {
-  deriveDefaultArtifactDisplayPath,
   deriveRepoWorkflowConfigDisplayPath,
-  normalizePathForDisplay,
 } from "./repo-workflow-paths.js";
 import type { DiagramSpec } from "./diagramspec-topology.js";
 import type {
+  DiscoveredDiagramPilotSourceFile,
   DiagramPilotSourceDiscoveryFailure,
   DiagramPilotSourceDiscoveryOptions,
   DiagramPilotSourceDiscoveryResult,
@@ -37,10 +33,7 @@ import type {
   ValidatedDiagramSpecLoadFailure,
   ValidatedDiagramSpecLoadResult,
 } from "./source-loading.js";
-import {
-  deriveExpectedSvgArtifactPath,
-  type SvgArtifactRenderer,
-} from "./svg-artifact-freshness.js";
+import type { SvgArtifactRenderer } from "./svg-artifact-freshness.js";
 
 export interface RepoWorkflowGenerateOptions {
   scopePath?: string;
@@ -139,12 +132,21 @@ export type RepoWorkflowGenerateResult =
       failure?: RepoWorkflowGenerateFailure;
     };
 
-interface ValidGenerateSource {
-  sourcePath: string;
-  sourceAbsolutePath: string;
-  source: DiagramPilotSourceFile;
-  spec: DiagramSpec;
-  outputs: readonly RepoWorkflowArtifactOutput[];
+interface RepoWorkflowResultConfig {
+  path: string;
+}
+
+interface GenerateSourceCollection {
+  validSources: ValidGenerateSource[];
+  failures: RepoWorkflowGenerateSourceFailure[];
+}
+
+interface GenerateWorkflowContext {
+  config?: RepoWorkflowConfig;
+  displayConfig?: RepoWorkflowResultConfig;
+  currentWorkingDirectory: string;
+  scope: DiagramPilotSourceDiscoveryScope;
+  discoveredSources: readonly DiscoveredDiagramPilotSourceFile[];
 }
 
 function emptySummary(): RepoWorkflowGenerateSummary {
@@ -170,129 +172,42 @@ function summarize(options: {
   };
 }
 
-function isConfiguredTextArtifactFormat(
-  format: RepoWorkflowArtifactOutputFormat,
-): format is ConfiguredTextArtifactFormat {
-  return format === "mermaid" || format === "d2" || format === "dot";
+function configResultForDisplay(
+  configPath: string | undefined,
+  currentWorkingDirectory: string,
+): RepoWorkflowResultConfig | undefined {
+  return configPath === undefined
+    ? undefined
+    : {
+        path: deriveRepoWorkflowConfigDisplayPath(
+          configPath,
+          currentWorkingDirectory,
+        ),
+      };
 }
 
-async function generateOutputContent(
-  options: RepoWorkflowGenerateOptions,
-  source: ValidGenerateSource,
-  output: RepoWorkflowArtifactOutput,
-  absolutePath: string,
-  references: readonly MarkdownEmbedReferencedArtifact[],
-): Promise<string | Uint8Array> {
-  if (output.format === "markdown") {
-    return createMarkdownEmbedContent({
-      spec: source.spec,
-      embedPath: absolutePath,
-      references,
-    });
-  }
-
-  if (output.format === "svg" || output.format === "png") {
-    const svg = await options.renderSvgArtifact({
-      source: source.source,
-      provenanceSourcePath: source.sourcePath,
-      spec: source.spec,
-      diagramPilotVersion: options.diagramPilotVersion,
-      renderer: options.renderer,
-    });
-
-    return output.format === "png" ? options.rasterizeSvgArtifact(svg) : svg;
-  }
-
-  if (isConfiguredTextArtifactFormat(output.format)) {
-    return options.exportTextArtifact({
-      format: output.format,
-      spec: source.spec,
-    });
-  }
-
-  throw new Error(`Unsupported configured output format: ${output.format}`);
+function resultConfigFields(config?: RepoWorkflowResultConfig): {
+  config?: RepoWorkflowResultConfig;
+} {
+  return config === undefined ? {} : { config };
 }
 
-function defaultSvgOutput(source: ValidGenerateSource): RepoWorkflowArtifactOutput {
-  return {
-    format: "svg",
-    path: deriveExpectedSvgArtifactPath(source.sourceAbsolutePath),
-  };
-}
-
-function outputsInWriteOrder(
-  outputs: readonly RepoWorkflowArtifactOutput[],
-): RepoWorkflowArtifactOutput[] {
-  return [
-    ...outputs.filter((output) => output.format !== "markdown"),
-    ...outputs.filter((output) => output.format === "markdown"),
-  ];
-}
-
-export async function generateDiagramPilotRepoWorkflowWithDependencies(
-  options: RepoWorkflowGenerateOptions,
-  dependencies: RepoWorkflowGenerateDependencies,
-): Promise<RepoWorkflowGenerateResult> {
-  const configResult =
-    dependencies.discoverRepoWorkflowConfig === undefined
-      ? { ok: true as const }
-      : await dependencies.discoverRepoWorkflowConfig(options.scopePath);
-
-  if (!configResult.ok) {
-    return {
-      ok: false,
-      summary: emptySummary(),
-      written: [],
-      skipped: [],
-      failures: [],
-      failure: configResult.failure,
-    };
-  }
-
-  const discoveryResult = await dependencies.discoverDiagramPilotSourceFiles(
-    options.scopePath,
-    configuredSourceDiscoveryOptions(configResult.config),
-  );
-
-  if (!discoveryResult.ok) {
-    return {
-      ok: false,
-      ...(configResult.config === undefined
-        ? {}
-        : {
-            config: {
-              path: deriveRepoWorkflowConfigDisplayPath(
-                configResult.config.path,
-                dependencies.getCurrentWorkingDirectory(),
-              ),
-            },
-          }),
-      summary: emptySummary(),
-      written: [],
-      skipped: [],
-      failures: [],
-      failure: discoveryResult.failure,
-    };
-  }
-
-  const currentWorkingDirectory = dependencies.getCurrentWorkingDirectory();
-  const configuredSources = configuredExplicitSourcesForScope(
-    configResult.config,
-    discoveryResult.scope,
-  );
-  const discoveredSources = mergeDiscoveredAndConfiguredSources(
-    discoveryResult.sources,
-    configuredSources,
-  );
+function collectValidGenerateSources(options: {
+  sources: readonly DiscoveredDiagramPilotSourceFile[];
+  scope: DiagramPilotSourceDiscoveryScope;
+  config?: RepoWorkflowConfig;
+  currentWorkingDirectory: string;
+  dependencies: RepoWorkflowGenerateDependencies;
+}): GenerateSourceCollection {
   const validSources: ValidGenerateSource[] = [];
   const failures: RepoWorkflowGenerateSourceFailure[] = [];
 
-  for (const source of discoveredSources) {
+  for (const source of options.sources) {
     const loadedSource = loadRepoWorkflowSource({
       source,
-      scope: discoveryResult.scope,
-      currentWorkingDirectory,
-      dependencies,
+      scope: options.scope,
+      currentWorkingDirectory: options.currentWorkingDirectory,
+      dependencies: options.dependencies,
     });
 
     if (!loadedSource.ok) {
@@ -309,29 +224,150 @@ export async function generateDiagramPilotRepoWorkflowWithDependencies(
       source: loadedSource.source,
       spec: loadedSource.spec,
       outputs: configuredOutputsForSource(
-        configResult.config,
+        options.config,
         loadedSource.sourceAbsolutePath,
       ),
     });
   }
 
-  const config =
-    configResult.config === undefined
-      ? undefined
-      : {
-          path: deriveRepoWorkflowConfigDisplayPath(
-            configResult.config.path,
-            currentWorkingDirectory,
-          ),
-        };
+  return {
+    validSources,
+    failures,
+  };
+}
+
+function generationFailureResult(options: {
+  config?: RepoWorkflowResultConfig;
+  scope: DiagramPilotSourceDiscoveryScope;
+  checkedSourceCount: number;
+  displayPath: string;
+  error: unknown;
+}): RepoWorkflowGenerateResult {
+  const message =
+    options.error instanceof Error
+      ? options.error.message
+      : `Unable to generate ${options.displayPath}.`;
+
+  return {
+    ok: false,
+    ...resultConfigFields(options.config),
+    scope: options.scope,
+    summary: summarize({
+      checkedSourceCount: options.checkedSourceCount,
+      writtenCount: 0,
+      skippedCount: 0,
+      failureCount: 1,
+    }),
+    written: [],
+    skipped: [],
+    failures: [],
+    failure: {
+      kind: "generation-failed",
+      path: options.displayPath,
+      message: `Unable to generate ${options.displayPath}: ${message}`,
+    },
+  };
+}
+
+async function discoverGenerateWorkflowContext(
+  options: RepoWorkflowGenerateOptions,
+  dependencies: RepoWorkflowGenerateDependencies,
+): Promise<
+  | {
+      ok: true;
+      context: GenerateWorkflowContext;
+    }
+  | {
+      ok: false;
+      result: RepoWorkflowGenerateResult;
+    }
+> {
+  const configResult =
+    dependencies.discoverRepoWorkflowConfig === undefined
+      ? { ok: true as const }
+      : await dependencies.discoverRepoWorkflowConfig(options.scopePath);
+
+  if (!configResult.ok) {
+    return {
+      ok: false,
+      result: {
+        ok: false,
+        summary: emptySummary(),
+        written: [],
+        skipped: [],
+        failures: [],
+        failure: configResult.failure,
+      },
+    };
+  }
+
+  const currentWorkingDirectory = dependencies.getCurrentWorkingDirectory();
+  const displayConfig = configResultForDisplay(
+    configResult.config?.path,
+    currentWorkingDirectory,
+  );
+  const discoveryResult = await dependencies.discoverDiagramPilotSourceFiles(
+    options.scopePath,
+    configuredSourceDiscoveryOptions(configResult.config),
+  );
+
+  if (!discoveryResult.ok) {
+    return {
+      ok: false,
+      result: {
+        ok: false,
+        ...resultConfigFields(displayConfig),
+        summary: emptySummary(),
+        written: [],
+        skipped: [],
+        failures: [],
+        failure: discoveryResult.failure,
+      },
+    };
+  }
+
+  const configuredSources = configuredExplicitSourcesForScope(
+    configResult.config,
+    discoveryResult.scope,
+  );
+  const discoveredSources = mergeDiscoveredAndConfiguredSources(
+    discoveryResult.sources,
+    configuredSources,
+  );
+
+  return {
+    ok: true,
+    context: {
+      config: configResult.config,
+      displayConfig,
+      currentWorkingDirectory,
+      scope: discoveryResult.scope,
+      discoveredSources,
+    },
+  };
+}
+
+async function generateWorkflowArtifacts(options: {
+  generateOptions: RepoWorkflowGenerateOptions;
+  dependencies: RepoWorkflowGenerateDependencies;
+  context: GenerateWorkflowContext;
+}): Promise<RepoWorkflowGenerateResult> {
+  const context = options.context;
+  const { validSources, failures } = collectValidGenerateSources({
+    sources: context.discoveredSources,
+    scope: context.scope,
+    config: context.config,
+    currentWorkingDirectory: context.currentWorkingDirectory,
+    dependencies: options.dependencies,
+  });
 
   if (failures.length > 0) {
     return {
       ok: false,
-      ...(config === undefined ? {} : { config }),
-      scope: discoveryResult.scope,
+      ...resultConfigFields(context.displayConfig),
+      scope: context.scope,
       summary: summarize({
-        checkedSourceCount: discoveredSources.length,
+        checkedSourceCount: context.discoveredSources.length,
         writtenCount: 0,
         skippedCount: 0,
         failureCount: failures.length,
@@ -346,98 +382,32 @@ export async function generateDiagramPilotRepoWorkflowWithDependencies(
   const skipped: RepoWorkflowGenerateSkippedArtifact[] = [];
 
   for (const source of validSources) {
-    const sourceConfig = configResult.config;
-    const outputs =
-      source.outputs.length > 0 ? source.outputs : [defaultSvgOutput(source)];
-    const orderedOutputs = outputsInWriteOrder(outputs);
-    const references =
-      source.outputs.length > 0 && sourceConfig !== undefined
-        ? createMarkdownEmbedReferences({
-            outputs,
-            resolvePath: (output) =>
-              resolveConfiguredOutputPath(
-                sourceConfig,
-                source.sourceAbsolutePath,
-                output,
-              ),
-          })
-        : [];
+    const sourceResult = await generateWrittenArtifactsForSource({
+      generateOptions: options.generateOptions,
+      config: context.config,
+      source,
+      currentWorkingDirectory: context.currentWorkingDirectory,
+    });
 
-    for (const output of orderedOutputs) {
-      const absolutePath =
-        source.outputs.length > 0 && configResult.config !== undefined
-          ? resolveConfiguredOutputPath(
-              configResult.config,
-              source.sourceAbsolutePath,
-              output,
-            )
-          : output.path;
-      const displayPath =
-        source.outputs.length > 0 && configResult.config !== undefined
-          ? normalizePathForDisplay(
-              deriveConfiguredArtifactDisplayPath(
-                configResult.config.directory,
-                absolutePath,
-                currentWorkingDirectory,
-              ),
-            )
-          : deriveDefaultArtifactDisplayPath(
-              source.sourcePath,
-              absolutePath,
-              currentWorkingDirectory,
-            );
-
-      try {
-        const content = await generateOutputContent(
-          options,
-          source,
-          output,
-          absolutePath,
-          references,
-        );
-
-        written.push({
-          sourcePath: source.sourcePath,
-          format: output.format,
-          path: displayPath,
-          absolutePath,
-          content,
-        });
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : `Unable to generate ${displayPath}.`;
-
-        return {
-          ok: false,
-          ...(config === undefined ? {} : { config }),
-          scope: discoveryResult.scope,
-          summary: summarize({
-            checkedSourceCount: discoveredSources.length,
-            writtenCount: 0,
-            skippedCount: 0,
-            failureCount: 1,
-          }),
-          written: [],
-          skipped: [],
-          failures: [],
-          failure: {
-            kind: "generation-failed",
-            path: displayPath,
-            message: `Unable to generate ${displayPath}: ${message}`,
-          },
-        };
-      }
+    if (!sourceResult.ok) {
+      return generationFailureResult({
+        config: context.displayConfig,
+        scope: context.scope,
+        checkedSourceCount: context.discoveredSources.length,
+        displayPath: sourceResult.displayPath,
+        error: sourceResult.error,
+      });
     }
+
+    written.push(...sourceResult.written);
   }
 
   return {
     ok: true,
-    ...(config === undefined ? {} : { config }),
-    scope: discoveryResult.scope,
+    ...resultConfigFields(context.displayConfig),
+    scope: context.scope,
     summary: summarize({
-      checkedSourceCount: discoveredSources.length,
+      checkedSourceCount: context.discoveredSources.length,
       writtenCount: written.length,
       skippedCount: skipped.length,
       failureCount: 0,
@@ -446,4 +416,22 @@ export async function generateDiagramPilotRepoWorkflowWithDependencies(
     skipped,
     failures: [],
   };
+}
+
+export async function generateDiagramPilotRepoWorkflowWithDependencies(
+  options: RepoWorkflowGenerateOptions,
+  dependencies: RepoWorkflowGenerateDependencies,
+): Promise<RepoWorkflowGenerateResult> {
+  const contextResult = await discoverGenerateWorkflowContext(
+    options,
+    dependencies,
+  );
+
+  return contextResult.ok
+    ? generateWorkflowArtifacts({
+        generateOptions: options,
+        dependencies,
+        context: contextResult.context,
+      })
+    : contextResult.result;
 }

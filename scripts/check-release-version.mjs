@@ -28,6 +28,28 @@ function collectManifestVersionIssues(records, expectedVersion) {
   return issues;
 }
 
+function collectDependencyVersionIssues(
+  location,
+  dependencies,
+  publicPackageNames,
+  expectedVersion,
+) {
+  const issues = [];
+
+  for (const [dependencyName, dependencyVersion] of Object.entries(dependencies)) {
+    if (
+      publicPackageNames.has(dependencyName) &&
+      dependencyVersion !== expectedVersion
+    ) {
+      issues.push(
+        `${location}.${dependencyName} is ${dependencyVersion}; expected exact ${expectedVersion}.`,
+      );
+    }
+  }
+
+  return issues;
+}
+
 function collectInternalDependencyIssues(records, publicPackageNames, expectedVersion) {
   const issues = [];
 
@@ -39,32 +61,21 @@ function collectInternalDependencyIssues(records, publicPackageNames, expectedVe
         continue;
       }
 
-      for (const [dependencyName, dependencyVersion] of Object.entries(
-        dependencies,
-      )) {
-        if (
-          publicPackageNames.has(dependencyName) &&
-          dependencyVersion !== expectedVersion
-        ) {
-          issues.push(
-            `${record.repoPath} ${field}.${dependencyName} is ${dependencyVersion}; expected exact ${expectedVersion}.`,
-          );
-        }
-      }
+      issues.push(
+        ...collectDependencyVersionIssues(
+          `${record.repoPath} ${field}`,
+          dependencies,
+          publicPackageNames,
+          expectedVersion,
+        ),
+      );
     }
   }
 
   return issues;
 }
 
-function collectLockfileIssues(
-  rootPath,
-  records,
-  publicPackageNames,
-  expectedVersion,
-) {
-  const lockfilePath = path.join(rootPath, "package-lock.json");
-  const lockfile = readJson(lockfilePath);
+function collectLockfileRootIssues(lockfile, expectedVersion) {
   const issues = [];
 
   if (lockfile.version !== expectedVersion) {
@@ -75,11 +86,16 @@ function collectLockfileIssues(
 
   if (lockfile.packages === undefined || typeof lockfile.packages !== "object") {
     issues.push("package-lock.json packages metadata is missing.");
-    return issues;
   }
 
+  return issues;
+}
+
+function collectLockfilePackageRecordIssues(lockfilePackages, records, expectedVersion) {
+  const issues = [];
+
   for (const record of records) {
-    const lockPackage = lockfile.packages[record.lockKey];
+    const lockPackage = lockfilePackages[record.lockKey];
 
     if (lockPackage === undefined) {
       issues.push(
@@ -95,7 +111,17 @@ function collectLockfileIssues(
     }
   }
 
-  for (const [lockKey, lockPackage] of Object.entries(lockfile.packages)) {
+  return issues;
+}
+
+function collectLockfileDependencyIssues(
+  lockfilePackages,
+  publicPackageNames,
+  expectedVersion,
+) {
+  const issues = [];
+
+  for (const [lockKey, lockPackage] of Object.entries(lockfilePackages)) {
     for (const field of DEPENDENCY_FIELDS) {
       const dependencies = lockPackage[field];
 
@@ -103,22 +129,47 @@ function collectLockfileIssues(
         continue;
       }
 
-      for (const [dependencyName, dependencyVersion] of Object.entries(
-        dependencies,
-      )) {
-        if (
-          publicPackageNames.has(dependencyName) &&
-          dependencyVersion !== expectedVersion
-        ) {
-          issues.push(
-            `package-lock.json packages.${lockKey || "<root>"}.${field}.${dependencyName} is ${dependencyVersion}; expected exact ${expectedVersion}.`,
-          );
-        }
-      }
+      issues.push(
+        ...collectDependencyVersionIssues(
+          `package-lock.json packages.${lockKey || "<root>"}.${field}`,
+          dependencies,
+          publicPackageNames,
+          expectedVersion,
+        ),
+      );
     }
   }
 
   return issues;
+}
+
+function collectLockfileIssues(
+  rootPath,
+  records,
+  publicPackageNames,
+  expectedVersion,
+) {
+  const lockfilePath = path.join(rootPath, "package-lock.json");
+  const lockfile = readJson(lockfilePath);
+  const rootIssues = collectLockfileRootIssues(lockfile, expectedVersion);
+
+  if (lockfile.packages === undefined || typeof lockfile.packages !== "object") {
+    return rootIssues;
+  }
+
+  return [
+    ...rootIssues,
+    ...collectLockfilePackageRecordIssues(
+      lockfile.packages,
+      records,
+      expectedVersion,
+    ),
+    ...collectLockfileDependencyIssues(
+      lockfile.packages,
+      publicPackageNames,
+      expectedVersion,
+    ),
+  ];
 }
 
 function collectRuntimeVersionIssues(rootPath, expectedVersion) {
@@ -195,35 +246,57 @@ function usage() {
   return "Usage: node scripts/check-release-version.mjs [expected-version]";
 }
 
+function parseArgs(args) {
+  if (args.length > 1 || args[0] === "--help" || args[0] === "-h") {
+    return {
+      ok: false,
+    };
+  }
+
+  return {
+    ok: true,
+    expectedVersion: args[0],
+  };
+}
+
+function reportReleaseVersionIssues(expectedVersion, issues) {
+  process.stderr.write(
+    [
+      `DiagramPilot release version metadata is inconsistent for ${expectedVersion}:`,
+      ...issues.map((issue) => `- ${issue}`),
+      "",
+    ].join("\n"),
+  );
+}
+
+function runReleaseVersionCheck(explicitExpectedVersion) {
+  const { expectedVersion, issues } = checkReleaseVersion(
+    process.cwd(),
+    explicitExpectedVersion,
+  );
+
+  if (issues.length > 0) {
+    reportReleaseVersionIssues(expectedVersion, issues);
+    return 1;
+  }
+
+  process.stdout.write(
+    `DiagramPilot release version metadata is consistent at ${expectedVersion}.\n`,
+  );
+  return 0;
+}
+
 function main() {
   const args = process.argv.slice(2);
+  const parsedArgs = parseArgs(args);
 
-  if (args.length > 1 || args[0] === "--help" || args[0] === "-h") {
+  if (!parsedArgs.ok) {
     process.stderr.write(`${usage()}\n`);
     return 1;
   }
 
   try {
-    const { expectedVersion, issues } = checkReleaseVersion(
-      process.cwd(),
-      args[0],
-    );
-
-    if (issues.length > 0) {
-      process.stderr.write(
-        [
-          `DiagramPilot release version metadata is inconsistent for ${expectedVersion}:`,
-          ...issues.map((issue) => `- ${issue}`),
-          "",
-        ].join("\n"),
-      );
-      return 1;
-    }
-
-    process.stdout.write(
-      `DiagramPilot release version metadata is consistent at ${expectedVersion}.\n`,
-    );
-    return 0;
+    return runReleaseVersionCheck(parsedArgs.expectedVersion);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     process.stderr.write(`Unable to check DiagramPilot release version: ${message}\n`);

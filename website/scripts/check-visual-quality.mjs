@@ -154,28 +154,36 @@ async function startStaticServer() {
   return server;
 }
 
+function staticPathCandidates(pathname) {
+  return pathname.endsWith("/")
+    ? [path.join(distRoot, pathname, "index.html")]
+    : [
+        path.join(distRoot, pathname),
+        path.join(distRoot, pathname, "index.html"),
+      ];
+}
+
+async function readableStaticFilePath(candidate) {
+  const resolved = path.resolve(candidate);
+
+  if (!resolved.startsWith(distRoot + path.sep)) return undefined;
+
+  try {
+    const candidateStat = await stat(resolved);
+    return candidateStat.isFile() ? resolved : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function resolveStaticPath(requestUrl) {
   const url = new URL(requestUrl, "http://127.0.0.1");
   const pathname = decodeURIComponent(url.pathname);
-  const candidates = [];
 
-  if (pathname.endsWith("/")) {
-    candidates.push(path.join(distRoot, pathname, "index.html"));
-  } else {
-    candidates.push(path.join(distRoot, pathname));
-    candidates.push(path.join(distRoot, pathname, "index.html"));
-  }
+  for (const candidate of staticPathCandidates(pathname)) {
+    const readablePath = await readableStaticFilePath(candidate);
 
-  for (const candidate of candidates) {
-    const resolved = path.resolve(candidate);
-    if (!resolved.startsWith(distRoot + path.sep)) continue;
-
-    try {
-      const candidateStat = await stat(resolved);
-      if (candidateStat.isFile()) return resolved;
-    } catch {
-      // Try the next candidate.
-    }
+    if (readablePath !== undefined) return readablePath;
   }
 
   throw new Error(`No static file for ${pathname}`);
@@ -258,15 +266,7 @@ async function checkReducedMotion(browser, baseUrl) {
   try {
     await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
     await recordDomCheck("landing:mobile:prefers-reduced-motion", async () => {
-      const result = await page.evaluate(() => {
-        const element = document.querySelector(".motion-rise");
-        const style = element ? getComputedStyle(element) : null;
-        return {
-          matches: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-          animationDuration: style?.animationDuration ?? "",
-          transitionDuration: style?.transitionDuration ?? "",
-        };
-      });
+      const result = await page.evaluate(reducedMotionDomResult);
 
       assert.equal(result.matches, true);
       assert.match(result.animationDuration, /0\.01ms|0s/);
@@ -274,6 +274,17 @@ async function checkReducedMotion(browser, baseUrl) {
   } finally {
     await context.close();
   }
+}
+
+function reducedMotionDomResult() {
+  const element = document.querySelector(".motion-rise");
+  const style = element ? getComputedStyle(element) : null;
+
+  return {
+    matches: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    animationDuration: style?.animationDuration ?? "",
+    transitionDuration: style?.transitionDuration ?? "",
+  };
 }
 
 async function recordDomCheck(name, check) {
@@ -316,6 +327,100 @@ async function assertVisibleFocus(page, selector) {
   );
 }
 
+function emptyHeroLayoutFailure(selector, rect) {
+  if (rect.width <= 0 || rect.height <= 0) {
+    return { ok: false, message: `${selector} has empty layout bounds` };
+  }
+
+  return undefined;
+}
+
+function horizontalHeroTextFailure(selector, textRect) {
+  if (textRect.left < -1 || textRect.right > window.innerWidth + 1) {
+    return {
+      ok: false,
+      message: `${selector} text is clipped horizontally: ${JSON.stringify(toRect(textRect))}`,
+    };
+  }
+
+  return undefined;
+}
+
+function verticalHeroTextFailure(selector, textRect) {
+  if (textRect.top < -1 || textRect.bottom > document.documentElement.scrollHeight + 1) {
+    return {
+      ok: false,
+      message: `${selector} text is clipped vertically: ${JSON.stringify(toRect(textRect))}`,
+    };
+  }
+
+  return undefined;
+}
+
+function heroTextBoundsFailure(selector, rect, textRect) {
+  return (
+    emptyHeroLayoutFailure(selector, rect) ??
+    horizontalHeroTextFailure(selector, textRect) ??
+    verticalHeroTextFailure(selector, textRect)
+  );
+}
+
+function heroItemTextFailure(selector, pattern, element) {
+  const text = element.textContent?.replace(/\s+/g, " ").trim() ?? "";
+
+  return pattern.test(text)
+    ? undefined
+    : { ok: false, message: `${selector} text was ${text}` };
+}
+
+function checkedHeroItem(selector, pattern) {
+  const element = document.querySelector(selector);
+  if (!element) return { ok: false, message: `missing ${selector}` };
+
+  const textFailure = heroItemTextFailure(selector, pattern, element);
+
+  if (textFailure !== undefined) return textFailure;
+
+  const rect = element.getBoundingClientRect();
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  const textRect = range.getBoundingClientRect();
+  const boundsFailure = heroTextBoundsFailure(selector, rect, textRect);
+
+  return boundsFailure ?? { ok: true, item: { selector, rect: toRect(rect) } };
+}
+
+function heroOrderPair(items, selectors, index) {
+  return {
+    previous: items.find((item) => item.selector === selectors[index - 1]),
+    current: items.find((item) => item.selector === selectors[index]),
+  };
+}
+
+function heroOrderPairFailure(previous, current) {
+  if (!previous || !current) return undefined;
+
+  return previous.rect.bottom > current.rect.top + 1
+    ? {
+        ok: false,
+        message: `${previous.selector} overlaps ${current.selector}`,
+      }
+    : undefined;
+}
+
+function heroOrderFailure(items) {
+  const orderedSelectors = [".eyebrow", "#landing-title", ".promise", ".action-primary"];
+
+  for (let index = 1; index < orderedSelectors.length; index += 1) {
+    const { previous, current } = heroOrderPair(items, orderedSelectors, index);
+    const failure = heroOrderPairFailure(previous, current);
+
+    if (failure !== undefined) return failure;
+  }
+
+  return undefined;
+}
+
 function checkLandingHeroLayout() {
   const selectors = [
     [".eyebrow", /repo-native diagram compiler/i],
@@ -327,49 +432,16 @@ function checkLandingHeroLayout() {
   const items = [];
 
   for (const [selector, pattern] of selectors) {
-    const element = document.querySelector(selector);
-    if (!element) return { ok: false, message: `missing ${selector}` };
+    const checkedItem = checkedHeroItem(selector, pattern);
 
-    const text = element.textContent?.replace(/\s+/g, " ").trim() ?? "";
-    if (!pattern.test(text)) return { ok: false, message: `${selector} text was ${text}` };
+    if (!checkedItem.ok) return checkedItem;
 
-    const rect = element.getBoundingClientRect();
-    const range = document.createRange();
-    range.selectNodeContents(element);
-    const textRect = range.getBoundingClientRect();
-
-    if (rect.width <= 0 || rect.height <= 0) {
-      return { ok: false, message: `${selector} has empty layout bounds` };
-    }
-    if (textRect.left < -1 || textRect.right > window.innerWidth + 1) {
-      return {
-        ok: false,
-        message: `${selector} text is clipped horizontally: ${JSON.stringify(toRect(textRect))}`,
-      };
-    }
-    if (textRect.top < -1 || textRect.bottom > document.documentElement.scrollHeight + 1) {
-      return {
-        ok: false,
-        message: `${selector} text is clipped vertically: ${JSON.stringify(toRect(textRect))}`,
-      };
-    }
-
-    items.push({ selector, rect: toRect(rect) });
+    items.push(checkedItem.item);
   }
 
-  const orderedSelectors = [".eyebrow", "#landing-title", ".promise", ".action-primary"];
-  for (let index = 1; index < orderedSelectors.length; index += 1) {
-    const previous = items.find((item) => item.selector === orderedSelectors[index - 1]);
-    const current = items.find((item) => item.selector === orderedSelectors[index]);
-    if (!previous || !current) continue;
+  const orderFailure = heroOrderFailure(items);
 
-    if (previous.rect.bottom > current.rect.top + 1) {
-      return {
-        ok: false,
-        message: `${previous.selector} overlaps ${current.selector}`,
-      };
-    }
-  }
+  if (orderFailure !== undefined) return orderFailure;
 
   return { ok: true };
 }

@@ -63,91 +63,61 @@ function guardPublish(plan, env) {
   };
 }
 
-function createPlan(env, event) {
-  const baseVersion = readJson("package.json").version;
+function createTagPlan(baseVersion, refName) {
+  const tagVersion = refName.replace(/^v/u, "");
 
-  if (!PLAIN_RELEASE_VERSION_PATTERN.test(baseVersion)) {
+  if (tagVersion !== baseVersion) {
     throw new Error(
-      `Shared version ${baseVersion} is not a plain release version like 0.1.8.`,
+      `Tag ${refName} does not match shared version ${baseVersion}.`,
     );
   }
 
-  const eventName = env.GITHUB_EVENT_NAME ?? "";
-  const ref = env.GITHUB_REF ?? event.ref ?? "";
-  const refName = env.GITHUB_REF_NAME ?? ref.replace(/^refs\/(?:heads|tags)\//u, "");
-  const nightlyVersion = createNightlyVersion(baseVersion, env);
+  return {
+    baseVersion,
+    distTag: "latest",
+    publishVersion: baseVersion,
+    shouldPublish: false,
+    reason:
+      "tag validation dry-run; latest publishing runs from merged main only",
+  };
+}
 
-  if (ref.startsWith("refs/tags/")) {
-    const tagVersion = refName.replace(/^v/u, "");
-
-    if (tagVersion !== baseVersion) {
-      throw new Error(
-        `Tag ${refName} does not match shared version ${baseVersion}.`,
-      );
-    }
-
-    return {
-      baseVersion,
-      distTag: "latest",
-      publishVersion: baseVersion,
-      shouldPublish: false,
-      reason:
-        "tag validation dry-run; latest publishing runs from merged main only",
-    };
+function createPushPlan(baseVersion, nightlyVersion, ref, env) {
+  if (!isOfficialRepository(env)) {
+    return undefined;
   }
 
-  if (eventName === "push" && isOfficialRepository(env) && ref === "refs/heads/main") {
-    return guardPublish({
+  if (ref === "refs/heads/main") {
+    return {
       baseVersion,
       distTag: "latest",
       publishVersion: baseVersion,
       shouldPublish: true,
       reason: "trusted main push publishes the clean shared version",
-    }, env);
+    };
   }
 
-  if (
-    eventName === "push" &&
-    isOfficialRepository(env) &&
-    ref.startsWith("refs/heads/issue-")
-  ) {
-    return guardPublish({
+  if (ref.startsWith("refs/heads/issue-")) {
+    return {
       baseVersion,
       distTag: "nightly",
       publishVersion: nightlyVersion,
       shouldPublish: true,
       reason: "trusted issue branch push publishes a unique nightly version",
-    }, env);
-  }
-
-  if (eventName === "pull_request") {
-    if (isForkPullRequest(event)) {
-      return {
-        baseVersion,
-        distTag: "nightly",
-        publishVersion: nightlyVersion,
-        shouldPublish: false,
-        reason: "fork pull request uses dry-run validation only",
-      };
-    }
-
-    return {
-      baseVersion,
-      distTag: "nightly",
-      publishVersion: nightlyVersion,
-      shouldPublish: false,
-      reason:
-        "pull request validation uses dry-run only; issue branch pushes publish nightly",
     };
   }
 
-  if (eventName === "workflow_dispatch") {
+  return undefined;
+}
+
+function createPullRequestPlan(baseVersion, nightlyVersion, event) {
+  if (isForkPullRequest(event)) {
     return {
       baseVersion,
       distTag: "nightly",
       publishVersion: nightlyVersion,
       shouldPublish: false,
-      reason: "manual dry-run validation only",
+      reason: "fork pull request uses dry-run validation only",
     };
   }
 
@@ -156,8 +126,108 @@ function createPlan(env, event) {
     distTag: "nightly",
     publishVersion: nightlyVersion,
     shouldPublish: false,
-    reason: "untrusted or unsupported release event uses dry-run validation only",
+    reason:
+      "pull request validation uses dry-run only; issue branch pushes publish nightly",
   };
+}
+
+function dryRunPlan(baseVersion, nightlyVersion, reason) {
+  return {
+    baseVersion,
+    distTag: "nightly",
+    publishVersion: nightlyVersion,
+    shouldPublish: false,
+    reason,
+  };
+}
+
+function requirePlainBaseVersion() {
+  const baseVersion = readJson("package.json").version;
+
+  if (!PLAIN_RELEASE_VERSION_PATTERN.test(baseVersion)) {
+    throw new Error(
+      `Shared version ${baseVersion} is not a plain release version like 0.1.8.`,
+    );
+  }
+
+  return baseVersion;
+}
+
+function createPlanContext(env, event) {
+  const baseVersion = requirePlainBaseVersion();
+  const ref = env.GITHUB_REF ?? event.ref ?? "";
+
+  return {
+    baseVersion,
+    env,
+    event,
+    eventName: env.GITHUB_EVENT_NAME ?? "",
+    ref,
+    refName: env.GITHUB_REF_NAME ?? ref.replace(/^refs\/(?:heads|tags)\//u, ""),
+    nightlyVersion: createNightlyVersion(baseVersion, env),
+  };
+}
+
+function createPushEventPlan(context) {
+  const pushPlan = createPushPlan(
+    context.baseVersion,
+    context.nightlyVersion,
+    context.ref,
+    context.env,
+  );
+  const plan = pushPlan ?? dryRunPlan(
+    context.baseVersion,
+    context.nightlyVersion,
+    "untrusted or unsupported release event uses dry-run validation only",
+  );
+
+  return guardPublish(plan, context.env);
+}
+
+const planFactories = [
+  {
+    matches: (context) => context.ref.startsWith("refs/tags/"),
+    create: (context) => createTagPlan(context.baseVersion, context.refName),
+  },
+  {
+    matches: (context) => context.eventName === "push",
+    create: createPushEventPlan,
+  },
+  {
+    matches: (context) => context.eventName === "pull_request",
+    create: (context) =>
+      createPullRequestPlan(
+        context.baseVersion,
+        context.nightlyVersion,
+        context.event,
+      ),
+  },
+  {
+    matches: (context) => context.eventName === "workflow_dispatch",
+    create: (context) =>
+      dryRunPlan(
+        context.baseVersion,
+        context.nightlyVersion,
+        "manual dry-run validation only",
+      ),
+  },
+];
+
+function defaultPlan(context) {
+  return dryRunPlan(
+    context.baseVersion,
+    context.nightlyVersion,
+    "untrusted or unsupported release event uses dry-run validation only",
+  );
+}
+
+function createPlan(env, event) {
+  const context = createPlanContext(env, event);
+  const factory = planFactories.find((candidate) => candidate.matches(context));
+
+  return factory === undefined
+    ? defaultPlan(context)
+    : factory.create(context);
 }
 
 function appendOutputs(plan, outputPath) {

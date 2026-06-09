@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, mkdir, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 
@@ -44,6 +44,51 @@ async function writeSource(tempRoot) {
   return sourcePath;
 }
 
+async function withTempRepoCwd(run) {
+  await withTempRepo(async (tempRoot) => {
+    const previousCwd = process.cwd();
+    process.chdir(tempRoot);
+
+    try {
+      await run(tempRoot);
+    } finally {
+      process.chdir(previousCwd);
+    }
+  });
+}
+
+async function writeArtifactConfig(tempRoot, outputPath) {
+  await writeFile(
+    path.join(tempRoot, "diagrampilot.config.yaml"),
+    [
+      "version: 1",
+      "artifacts:",
+      "  - source: docs/architecture.dp.yaml",
+      "    outputs:",
+      "      - format: svg",
+      `        path: ${outputPath}`,
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+}
+
+async function writeInvalidSource(tempRoot) {
+  await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+  await writeFile(
+    path.join(tempRoot, "docs", "invalid.dp.yaml"),
+    ["version: 1", "nodes:", "  - id: web_app", "    label: Web App", ""].join(
+      "\n",
+    ),
+    "utf8",
+  );
+}
+
+function assertToolAnnotations(tool, expected) {
+  assert.equal(tool.annotations?.readOnlyHint, expected.readOnly);
+  assert.equal(tool.annotations?.destructiveHint, expected.destructive);
+}
+
 test("MCP registry exposes the public resource tool and prompt names", async () => {
   const {
     DIAGRAMPILOT_MCP_PROMPTS,
@@ -68,6 +113,7 @@ test("MCP registry exposes the public resource tool and prompt names", async () 
       "diagrampilot_check_repo",
       "diagrampilot_export_source",
       "diagrampilot_render_source",
+      "diagrampilot_generate_repo_outputs",
     ],
   );
   assert.deepEqual(
@@ -78,14 +124,26 @@ test("MCP registry exposes the public resource tool and prompt names", async () 
       "refresh_diagrampilot_artifacts",
     ],
   );
-  assert.equal(
-    DIAGRAMPILOT_MCP_TOOLS.every(
-      (tool) =>
-        tool.annotations?.readOnlyHint === true &&
-        tool.annotations?.destructiveHint === false,
-    ),
-    true,
+  const toolsByName = Object.fromEntries(
+    DIAGRAMPILOT_MCP_TOOLS.map((tool) => [tool.name, tool]),
   );
+
+  for (const name of [
+    "diagrampilot_validate_source",
+    "diagrampilot_check_repo",
+    "diagrampilot_export_source",
+    "diagrampilot_render_source",
+  ]) {
+    assertToolAnnotations(toolsByName[name], {
+      readOnly: true,
+      destructive: false,
+    });
+  }
+
+  assertToolAnnotations(toolsByName.diagrampilot_generate_repo_outputs, {
+    readOnly: false,
+    destructive: true,
+  });
 });
 
 test("MCP prompt names and arguments are stable public behavior", async () => {
@@ -194,5 +252,174 @@ test("MCP read tools validate check export and render without writing files", as
     assert.match(exported.content[0].text, /^flowchart LR/m);
     assert.match(rendered.content[0].text, /^<svg>/);
     assert.equal(await exists(artifactPath), false);
+  });
+});
+
+test("MCP generate tool writes explicit source scopes and returns structured summaries", async () => {
+  const { callDiagramPilotMcpTool } = await importMcpPackage();
+
+  await withTempRepoCwd(async (tempRoot) => {
+    await writeSource(tempRoot);
+    const artifactPath = path.join(tempRoot, "docs", "architecture.svg");
+
+    const generated = await callDiagramPilotMcpTool(
+      "diagrampilot_generate_repo_outputs",
+      { source_paths: ["docs/architecture.dp.yaml"] },
+      {
+        renderDiagramSpecToSvg: async () =>
+          "<svg><title>Checkout Architecture</title></svg>",
+      },
+    );
+
+    assert.equal(generated.isError, undefined);
+    assert.deepEqual(generated.structuredContent.summary, {
+      checkedSourceCount: 1,
+      writtenArtifactCount: 1,
+      skippedArtifactCount: 0,
+      failureCount: 0,
+    });
+    assert.deepEqual(generated.structuredContent.written, [
+      {
+        sourcePath: "docs/architecture.dp.yaml",
+        format: "svg",
+        path: "docs/architecture.svg",
+      },
+    ]);
+    assert.deepEqual(generated.structuredContent.skipped, []);
+    assert.deepEqual(generated.structuredContent.failures, []);
+    assert.equal(
+      await readFile(artifactPath, "utf8"),
+      "<svg><title>Checkout Architecture</title></svg>",
+    );
+    assert.doesNotMatch(generated.content[0].text, /<svg>/);
+  });
+});
+
+test("MCP generate tool rejects calls without explicit source paths or scopes", async () => {
+  const { callDiagramPilotMcpTool } = await importMcpPackage();
+
+  const generated = await callDiagramPilotMcpTool(
+    "diagrampilot_generate_repo_outputs",
+    {},
+  );
+
+  assert.equal(generated.isError, true);
+  assert.equal(generated.structuredContent.ok, false);
+  assert.match(generated.content[0].text, /no whole-repo default/i);
+  assert.deepEqual(generated.structuredContent.errors[0], {
+    path: "source_paths",
+    message: "Provide at least one explicit source_paths or scope_paths entry.",
+    expected:
+      "A non-empty array of DiagramPilot Source File paths or directory scopes.",
+    suggestion:
+      "Call diagrampilot_generate_repo_outputs with source_paths or scope_paths.",
+  });
+});
+
+test("MCP generate tool writes configured outputs for explicit directory scopes", async () => {
+  const { callDiagramPilotMcpTool } = await importMcpPackage();
+
+  await withTempRepoCwd(async (tempRoot) => {
+    await writeSource(tempRoot);
+    await writeFile(
+      path.join(tempRoot, "diagrampilot.config.yaml"),
+      [
+        "version: 1",
+        "artifacts:",
+        "  - source: docs/architecture.dp.yaml",
+        "    outputs:",
+        "      - format: svg",
+        "        path: generated/{stem}.svg",
+        "      - format: mermaid",
+        "        path: generated/{stem}.mmd",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const generated = await callDiagramPilotMcpTool(
+      "diagrampilot_generate_repo_outputs",
+      { scope_paths: ["docs"] },
+      {
+        renderDiagramSpecToSvg: async () =>
+          "<svg><title>Checkout Architecture</title></svg>",
+      },
+    );
+
+    assert.equal(generated.isError, undefined);
+    assert.deepEqual(
+      generated.structuredContent.written.map(
+        ({ sourcePath, format, path: outputPath }) => ({
+          sourcePath,
+          format,
+          path: outputPath,
+        }),
+      ),
+      [
+        {
+          sourcePath: "architecture.dp.yaml",
+          format: "svg",
+          path: "generated/architecture.svg",
+        },
+        {
+          sourcePath: "architecture.dp.yaml",
+          format: "mermaid",
+          path: "generated/architecture.mmd",
+        },
+      ],
+    );
+    assert.deepEqual(generated.structuredContent.skipped, []);
+    assert.equal(
+      await readFile(path.join(tempRoot, "generated", "architecture.mmd"), "utf8"),
+      "flowchart LR\n  web_app[\"Web App\"]\n  api[\"API\"]\n  web_app -->|calls| api\n",
+    );
+    assert.doesNotMatch(generated.content[0].text, /flowchart LR/);
+  });
+});
+
+test("MCP generate tool returns repairable failures without writes", async () => {
+  const { callDiagramPilotMcpTool } = await importMcpPackage();
+
+  await withTempRepoCwd(async (tempRoot) => {
+    await writeInvalidSource(tempRoot);
+
+    const generated = await callDiagramPilotMcpTool(
+      "diagrampilot_generate_repo_outputs",
+      { source_paths: ["docs/invalid.dp.yaml"] },
+    );
+
+    assert.equal(generated.isError, true);
+    assert.equal(generated.structuredContent.ok, false);
+    assert.deepEqual(generated.structuredContent.written, []);
+    assert.equal(
+      generated.structuredContent.failures[0].sourcePath,
+      "docs/invalid.dp.yaml",
+    );
+    assert.equal(generated.structuredContent.failures[0].errors[0].path, "title");
+    assert.equal(await exists(path.join(tempRoot, "docs", "invalid.svg")), false);
+  });
+});
+
+test("MCP generate tool returns unsafe output path diagnostics without writes", async () => {
+  const { callDiagramPilotMcpTool } = await importMcpPackage();
+
+  await withTempRepoCwd(async (tempRoot) => {
+    await writeSource(tempRoot);
+    await writeArtifactConfig(tempRoot, "../outside.svg");
+
+    const generated = await callDiagramPilotMcpTool(
+      "diagrampilot_generate_repo_outputs",
+      { scope_paths: ["docs"] },
+    );
+
+    assert.equal(generated.isError, true);
+    assert.equal(generated.structuredContent.ok, false);
+    assert.deepEqual(generated.structuredContent.written, []);
+    assert.equal(generated.structuredContent.failure.kind, "invalid-config");
+    assert.match(
+      generated.structuredContent.failure.message,
+      /Artifact output paths must stay within the config directory tree/,
+    );
+    assert.equal(await exists(path.join(tempRoot, "..", "outside.svg")), false);
   });
 });

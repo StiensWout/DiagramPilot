@@ -117,6 +117,67 @@ function createSourceIgnoreMatcher(
   };
 }
 
+function shouldVisitDirectory(entryName: string): boolean {
+  return !ignoredDiagramPilotDiscoveryDirectories.has(entryName);
+}
+
+function sourceFileForEntry(options: {
+  scopePath: string;
+  absolutePath: string;
+  entryName: string;
+  isFile: boolean;
+  isIgnoredSourcePath(
+    absolutePath: string,
+    fallbackRelativePath: string,
+  ): boolean;
+}): DiscoveredDiagramPilotSourceFile | undefined {
+  if (!options.isFile || !isDiagramPilotSourcePath(options.entryName)) {
+    return undefined;
+  }
+
+  const relativePath = normalizeRelativePath(
+    path.relative(options.scopePath, options.absolutePath),
+  );
+
+  if (options.isIgnoredSourcePath(options.absolutePath, relativePath)) {
+    return undefined;
+  }
+
+  return {
+    absolutePath: options.absolutePath,
+    relativePath,
+  };
+}
+
+function collectSourceDiscoveryEntry(options: {
+  entryName: string;
+  isDirectory: boolean;
+  isFile: boolean;
+  absolutePath: string;
+  scopePath: string;
+  isIgnoredSourcePath(
+    absolutePath: string,
+    fallbackRelativePath: string,
+  ): boolean;
+  visitDirectory(directoryPath: string): void;
+}): DiscoveredDiagramPilotSourceFile | undefined {
+  if (options.isDirectory) {
+    if (shouldVisitDirectory(options.entryName)) {
+      options.visitDirectory(options.absolutePath);
+    }
+
+    return undefined;
+  }
+
+  return sourceFileForEntry({
+    scopePath: options.scopePath,
+    absolutePath: options.absolutePath,
+    entryName: options.entryName,
+    isFile: options.isFile,
+    isIgnoredSourcePath: options.isIgnoredSourcePath,
+  });
+}
+
 export async function discoverDiagramPilotSourceFiles(
   scopePath = process.cwd(),
   options: DiagramPilotSourceDiscoveryOptions = {},
@@ -180,32 +241,17 @@ export async function discoverDiagramPilotSourceFiles(
   function visitDirectory(directoryPath: string): void {
     for (const entry of readdirSync(directoryPath, { withFileTypes: true })) {
       const absolutePath = path.join(directoryPath, entry.name);
-
-      if (entry.isDirectory()) {
-        if (ignoredDiagramPilotDiscoveryDirectories.has(entry.name)) {
-          continue;
-        }
-
-        visitDirectory(absolutePath);
-        continue;
-      }
-
-      if (!entry.isFile() || !isDiagramPilotSourcePath(entry.name)) {
-        continue;
-      }
-
-      const relativePath = normalizeRelativePath(
-        path.relative(scopePath, absolutePath),
-      );
-
-      if (isIgnoredSourcePath(absolutePath, relativePath)) {
-        continue;
-      }
-
-      sources.push({
+      const source = collectSourceDiscoveryEntry({
+        entryName: entry.name,
+        isDirectory: entry.isDirectory(),
+        isFile: entry.isFile(),
         absolutePath,
-        relativePath,
+        scopePath,
+        isIgnoredSourcePath,
+        visitDirectory,
       });
+
+      if (source !== undefined) sources.push(source);
     }
   }
 

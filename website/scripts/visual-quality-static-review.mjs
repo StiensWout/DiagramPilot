@@ -132,20 +132,17 @@ async function writeStaticDocsReport({ outputRoot, viewport }) {
     .toFile(path.join(outputRoot, `docs-quickstart-${viewport.name}.png`));
 }
 
-function staticLandingOverlay(viewport, padding) {
-  const isMobile = viewport.width < 500;
-  const titleSize = isMobile ? 44 : 88;
-  const promiseSize = isMobile ? 20 : 34;
-  const buttonTop = isMobile ? 322 : 282;
-  const primaryWidth = isMobile ? 252 : 210;
-  const secondaryWidth = isMobile ? 184 : 148;
-  const eyebrow = isMobile
+function staticLandingEyebrow(padding, isMobile) {
+  return isMobile
     ? `<text x="${padding}" y="${padding + 16}" fill="#34d399" font-family="DejaVu Sans" font-size="12" font-weight="700">
         <tspan x="${padding}">REPO-NATIVE DIAGRAM COMPILER</tspan>
         <tspan x="${padding}" dy="17">FOR AI CODING AGENTS</tspan>
       </text>`
     : `<text x="${padding}" y="${padding + 18}" fill="#34d399" font-family="DejaVu Sans" font-size="13" font-weight="700">REPO-NATIVE DIAGRAM COMPILER FOR AI CODING AGENTS</text>`;
-  const promise = isMobile
+}
+
+function staticLandingPromise(padding, promiseSize, isMobile) {
+  return isMobile
     ? `<text x="${padding}" y="${padding + 142}" fill="#f8fafc" font-family="DejaVu Sans" font-size="${promiseSize}" font-weight="700">
         <tspan x="${padding}">Diagrams are repository</tspan>
         <tspan x="${padding}" dy="${promiseSize + 8}">files an AI coding agent</tspan>
@@ -156,17 +153,40 @@ function staticLandingOverlay(viewport, padding) {
         <tspan x="${padding}">Diagrams are repository files an AI coding agent</tspan>
         <tspan x="${padding}" dy="${promiseSize + 8}">can safely change, validate, and commit.</tspan>
       </text>`;
+}
+
+function staticLandingMetrics(isMobile) {
+  return isMobile
+    ? {
+        titleSize: 44,
+        promiseSize: 20,
+        buttonTop: 322,
+        primaryWidth: 252,
+        secondaryWidth: 184,
+      }
+    : {
+        titleSize: 88,
+        promiseSize: 34,
+        buttonTop: 282,
+        primaryWidth: 210,
+        secondaryWidth: 148,
+      };
+}
+
+function staticLandingOverlay(viewport, padding) {
+  const isMobile = viewport.width < 500;
+  const metrics = staticLandingMetrics(isMobile);
 
   return Buffer.from(`
     <svg xmlns="http://www.w3.org/2000/svg" width="${viewport.width}" height="${viewport.height}">
       <rect width="100%" height="100%" fill="#05070a"/>
-      ${eyebrow}
-      <text x="${padding}" y="${padding + 94}" fill="#ffffff" font-family="DejaVu Sans" font-size="${titleSize}" font-weight="700">DiagramPilot</text>
-      ${promise}
-      <rect x="${padding}" y="${buttonTop}" width="${primaryWidth}" height="48" rx="8" fill="#34d399"/>
-      <text x="${padding + 20}" y="${buttonTop + 31}" fill="#03120c" font-family="DejaVu Sans" font-size="16" font-weight="700">Checkout Demo Project</text>
-      <rect x="${padding}" y="${buttonTop + 60}" width="${secondaryWidth}" height="48" rx="8" fill="#0f172a" stroke="#475569"/>
-      <text x="${padding + 20}" y="${buttonTop + 91}" fill="#f8fafc" font-family="DejaVu Sans" font-size="16" font-weight="700">Documentation</text>
+      ${staticLandingEyebrow(padding, isMobile)}
+      <text x="${padding}" y="${padding + 94}" fill="#ffffff" font-family="DejaVu Sans" font-size="${metrics.titleSize}" font-weight="700">DiagramPilot</text>
+      ${staticLandingPromise(padding, metrics.promiseSize, isMobile)}
+      <rect x="${padding}" y="${metrics.buttonTop}" width="${metrics.primaryWidth}" height="48" rx="8" fill="#34d399"/>
+      <text x="${padding + 20}" y="${metrics.buttonTop + 31}" fill="#03120c" font-family="DejaVu Sans" font-size="16" font-weight="700">Checkout Demo Project</text>
+      <rect x="${padding}" y="${metrics.buttonTop + 60}" width="${metrics.secondaryWidth}" height="48" rx="8" fill="#0f172a" stroke="#475569"/>
+      <text x="${padding + 20}" y="${metrics.buttonTop + 91}" fill="#f8fafc" font-family="DejaVu Sans" font-size="16" font-weight="700">Documentation</text>
     </svg>`);
 }
 

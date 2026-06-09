@@ -1,4 +1,5 @@
 import { readdir, readFile } from "node:fs/promises";
+import type { Dirent } from "node:fs";
 import path from "node:path";
 
 export interface MaintainabilityFileSizeGateDefinition {
@@ -105,6 +106,8 @@ const excludedFileExtensions = new Set([
   ".ico",
 ]);
 
+type PathPredicate = (relativePath: string) => boolean;
+
 function normalizePathForGate(filePath: string): string {
   return filePath.split(path.sep).join("/");
 }
@@ -128,42 +131,28 @@ function isIncludedAuthoredPath(relativePath: string): boolean {
   );
 }
 
+function hasIgnoredDirectorySegment(relativePath: string): boolean {
+  return relativePath
+    .split("/")
+    .some((segment) => ignoredDirectoryNames.has(segment));
+}
+
+const excludedAuthoredPathPredicates: readonly PathPredicate[] = [
+  hasIgnoredDirectorySegment,
+  (relativePath) => hasPathPrefix(relativePath, "website/src/content/docs"),
+  (relativePath) => hasPathPrefix(relativePath, "schema"),
+  (relativePath) => relativePath.split("/").includes("schema"),
+  (relativePath) => relativePath.endsWith(".schema.json"),
+  (relativePath) => hasPathPrefix(relativePath, ".scratch"),
+  (relativePath) => relativePath.endsWith(".d.ts"),
+  (relativePath) => /\.(generated|gen)\.[^/]+$/u.test(relativePath),
+  (relativePath) => excludedFileExtensions.has(path.posix.extname(relativePath)),
+];
+
 function isExcludedAuthoredPath(relativePath: string): boolean {
-  const segments = relativePath.split("/");
-
-  if (segments.some((segment) => ignoredDirectoryNames.has(segment))) {
-    return true;
-  }
-
-  if (hasPathPrefix(relativePath, "website/src/content/docs")) {
-    return true;
-  }
-
-  if (hasPathPrefix(relativePath, "schema")) {
-    return true;
-  }
-
-  if (segments.includes("schema")) {
-    return true;
-  }
-
-  if (relativePath.endsWith(".schema.json")) {
-    return true;
-  }
-
-  if (hasPathPrefix(relativePath, ".scratch")) {
-    return true;
-  }
-
-  if (relativePath.endsWith(".d.ts")) {
-    return true;
-  }
-
-  if (/\.(generated|gen)\.[^/]+$/u.test(relativePath)) {
-    return true;
-  }
-
-  return excludedFileExtensions.has(path.posix.extname(relativePath));
+  return excludedAuthoredPathPredicates.some((predicate) =>
+    predicate(relativePath),
+  );
 }
 
 function shouldAuditFile(relativePath: string): boolean {
@@ -184,35 +173,47 @@ async function collectFiles(
   relativeDirectory: string,
   files: string[],
 ): Promise<void> {
-  const absoluteDirectory = path.join(rootPath, relativeDirectory);
-  let entries;
+  const entries = await readDirectoryIfPresent(rootPath, relativeDirectory);
 
+  if (entries === undefined) return;
+
+  for (const entry of entries) {
+    await collectFileEntry(rootPath, relativeDirectory, entry, files);
+  }
+}
+
+async function readDirectoryIfPresent(
+  rootPath: string,
+  relativeDirectory: string,
+) {
   try {
-    entries = await readdir(absoluteDirectory, { withFileTypes: true });
+    return await readdir(path.join(rootPath, relativeDirectory), {
+      withFileTypes: true,
+    });
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
 
     throw error;
   }
+}
 
-  for (const entry of entries) {
-    const relativePath = normalizePathForGate(
-      path.join(relativeDirectory, entry.name),
-    );
+async function collectFileEntry(
+  rootPath: string,
+  relativeDirectory: string,
+  entry: Dirent,
+  files: string[],
+): Promise<void> {
+  const relativePath = normalizePathForGate(
+    path.join(relativeDirectory, entry.name),
+  );
 
-    if (entry.isDirectory()) {
-      if (!ignoredDirectoryNames.has(entry.name)) {
-        await collectFiles(rootPath, relativePath, files);
-      }
+  if (entry.isDirectory() && !ignoredDirectoryNames.has(entry.name)) {
+    await collectFiles(rootPath, relativePath, files);
+    return;
+  }
 
-      continue;
-    }
-
-    if (entry.isFile() && shouldAuditFile(relativePath)) {
-      files.push(relativePath);
-    }
+  if (entry.isFile() && shouldAuditFile(relativePath)) {
+    files.push(relativePath);
   }
 }
 
