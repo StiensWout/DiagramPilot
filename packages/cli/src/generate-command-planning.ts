@@ -34,6 +34,11 @@ export interface GenerateCommandPlanningDependencies {
   getDiagramPilotVersion(): string;
 }
 
+interface GenerateCommandOptions {
+  json: boolean;
+  scopePath?: string;
+}
+
 function formatSourceCount(count: number): string {
   return `${count} DiagramPilot Source File${count === 1 ? "" : "s"}`;
 }
@@ -53,25 +58,21 @@ function publicGenerateResult(result: RepoWorkflowGenerateResult): unknown {
   };
 }
 
-function formatGenerateTextReport(result: RepoWorkflowGenerateResult): string {
-  if (!result.ok && result.failure !== undefined) {
-    return result.failure.message;
-  }
+function formatGenerateFailure(result: RepoWorkflowGenerateResult): string | undefined {
+  if (result.ok) return undefined;
+  if (result.failure !== undefined) return result.failure.message;
+  if (result.failures.length === 0) return undefined;
 
-  if (!result.ok && result.failures.length > 0) {
-    const lines = [
-      `Unable to generate artifacts for ${formatSourceCount(result.summary.checkedSourceCount)}. Found ${result.failures.length} repairable source failures.`,
-    ];
-
-    for (const failure of result.failures) {
-      lines.push(
+  return [
+    `Unable to generate artifacts for ${formatSourceCount(result.summary.checkedSourceCount)}. Found ${result.failures.length} repairable source failures.`,
+    ...result.failures.map(
+      (failure) =>
         `Invalid source: ${failure.sourcePath}. Run \`diagrampilot validate ${failure.sourcePath}\`.`,
-      );
-    }
+    ),
+  ].join("\n");
+}
 
-    return lines.join("\n");
-  }
-
+function formatGenerateSuccess(result: RepoWorkflowGenerateResult): string {
   if (result.summary.checkedSourceCount === 0 && result.scope !== undefined) {
     return `No DiagramPilot Source Files found in ${result.scope.path}.`;
   }
@@ -84,23 +85,25 @@ function formatGenerateTextReport(result: RepoWorkflowGenerateResult): string {
   return `Generated ${formatArtifactCount(result.summary.writtenArtifactCount)} for ${formatSourceCount(result.summary.checkedSourceCount)}.${skipped}`;
 }
 
-export async function planGenerate(
-  args: readonly string[],
+function formatGenerateTextReport(result: RepoWorkflowGenerateResult): string {
+  return formatGenerateFailure(result) ?? formatGenerateSuccess(result);
+}
+
+function generatedWrites(result: RepoWorkflowGenerateResult): CommandPlan["writes"] {
+  return result.ok
+    ? result.written.map(({ absolutePath, content }) => ({
+        path: absolutePath,
+        content,
+      }))
+    : [];
+}
+
+async function runGenerateCommand(
+  options: GenerateCommandOptions,
   dependencies: GenerateCommandPlanningDependencies,
-): Promise<CommandPlan> {
-  const argsResult = parseGenerateArgs(args);
-
-  if (!argsResult.ok) {
-    return {
-      exitCode: 1,
-      stdout: "",
-      stderr: [argsResult.message, generateUsageText(), ""].join("\n"),
-      writes: [],
-    };
-  }
-
-  const generateResult = await dependencies.generateDiagramPilotRepoWorkflow({
-    scopePath: argsResult.options.scopePath,
+): Promise<RepoWorkflowGenerateResult> {
+  return dependencies.generateDiagramPilotRepoWorkflow({
+    scopePath: options.scopePath,
     diagramPilotVersion: dependencies.getDiagramPilotVersion(),
     renderer: {
       name: SVG_RENDERER_NAME,
@@ -124,32 +127,49 @@ export async function planGenerate(
       return exporters[format](spec);
     },
   });
+}
 
-  if (argsResult.options.json) {
-    return {
-      exitCode: generateResult.ok ? 0 : 1,
-      stdout: jsonTextLine(publicGenerateResult(generateResult)),
-      stderr: "",
-      writes: generateResult.ok
-        ? generateResult.written.map(({ absolutePath, content }) => ({
-            path: absolutePath,
-            content,
-          }))
-        : [],
-    };
-  }
+function planGenerateJsonResult(generateResult: RepoWorkflowGenerateResult): CommandPlan {
+  return {
+    exitCode: generateResult.ok ? 0 : 1,
+    stdout: jsonTextLine(publicGenerateResult(generateResult)),
+    stderr: "",
+    writes: generatedWrites(generateResult),
+  };
+}
 
+function planGenerateTextResult(generateResult: RepoWorkflowGenerateResult): CommandPlan {
   const textReport = textLine(formatGenerateTextReport(generateResult));
 
   return {
     exitCode: generateResult.ok ? 0 : 1,
     stdout: generateResult.ok ? textReport : "",
     stderr: generateResult.ok ? "" : textReport,
-    writes: generateResult.ok
-      ? generateResult.written.map(({ absolutePath, content }) => ({
-          path: absolutePath,
-          content,
-        }))
-      : [],
+    writes: generatedWrites(generateResult),
   };
+}
+
+export async function planGenerate(
+  args: readonly string[],
+  dependencies: GenerateCommandPlanningDependencies,
+): Promise<CommandPlan> {
+  const argsResult = parseGenerateArgs(args);
+
+  if (!argsResult.ok) {
+    return {
+      exitCode: 1,
+      stdout: "",
+      stderr: [argsResult.message, generateUsageText(), ""].join("\n"),
+      writes: [],
+    };
+  }
+
+  const generateResult = await runGenerateCommand(
+    argsResult.options,
+    dependencies,
+  );
+
+  return argsResult.options.json
+    ? planGenerateJsonResult(generateResult)
+    : planGenerateTextResult(generateResult);
 }

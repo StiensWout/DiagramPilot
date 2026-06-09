@@ -18,29 +18,34 @@ const websitePublicRoot = path.join(websiteRoot, "public");
 const brandAssetsRoot = path.join(repoRoot, "assets", "brand");
 
 async function listMarkdownFiles(root, current = root) {
-  let entries;
+  const entries = await readDirectoryIfPresent(current);
+  const files = [];
+
+  for (const entry of entries) {
+    files.push(...(await markdownFilesForEntry(root, current, entry)));
+  }
+
+  return files.sort();
+}
+
+async function readDirectoryIfPresent(current) {
   try {
-    entries = await readdir(current, { withFileTypes: true });
+    return await readdir(current, { withFileTypes: true });
   } catch (error) {
     if (error.code === "ENOENT") return [];
     throw error;
   }
+}
 
-  const files = [];
+async function markdownFilesForEntry(root, current, entry) {
+  const absolutePath = path.join(current, entry.name);
 
-  for (const entry of entries) {
-    const absolutePath = path.join(current, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...(await listMarkdownFiles(root, absolutePath)));
-      continue;
-    }
-
-    if (entry.isFile() && entry.name.endsWith(".md")) {
-      files.push(path.relative(root, absolutePath));
-    }
+  if (entry.isDirectory()) return await listMarkdownFiles(root, absolutePath);
+  if (entry.isFile() && entry.name.endsWith(".md")) {
+    return [path.relative(root, absolutePath)];
   }
 
-  return files.sort();
+  return [];
 }
 
 async function removeLegacyPublicDocsDirs() {

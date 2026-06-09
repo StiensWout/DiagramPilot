@@ -1,4 +1,5 @@
 import type {
+  RepoWorkflowConfig,
   RepoWorkflowConfigDiscoveryResult,
   RepoWorkflowConfigFailure,
 } from "./repo-workflow-config.js";
@@ -19,6 +20,7 @@ import {
   deriveRepoWorkflowConfigDisplayPath,
 } from "./repo-workflow-paths.js";
 import type {
+  DiscoveredDiagramPilotSourceFile,
   DiagramPilotSourceDiscoveryFailure,
   DiagramPilotSourceDiscoveryOptions,
   DiagramPilotSourceDiscoveryResult,
@@ -224,6 +226,36 @@ export async function checkDiagramPilotRepoWorkflowWithDependencies(
   options: RepoWorkflowCheckOptions,
   dependencies: RepoWorkflowCheckDependencies,
 ): Promise<RepoWorkflowCheckResult> {
+  const contextResult = await discoverRepoWorkflowCheckContext(
+    options,
+    dependencies,
+  );
+
+  return contextResult.ok
+    ? checkRepoWorkflowSources(options, dependencies, contextResult.context)
+    : contextResult.result;
+}
+
+interface RepoWorkflowCheckContext {
+  config?: RepoWorkflowConfig;
+  currentWorkingDirectory: string;
+  scope: DiagramPilotSourceDiscoveryScope;
+  sources: readonly DiscoveredDiagramPilotSourceFile[];
+}
+
+async function discoverRepoWorkflowCheckContext(
+  options: RepoWorkflowCheckOptions,
+  dependencies: RepoWorkflowCheckDependencies,
+): Promise<
+  | {
+      ok: true;
+      context: RepoWorkflowCheckContext;
+    }
+  | {
+      ok: false;
+      result: RepoWorkflowCheckResult;
+    }
+> {
   const configResult =
     dependencies.discoverRepoWorkflowConfig === undefined
       ? { ok: true as const }
@@ -232,7 +264,10 @@ export async function checkDiagramPilotRepoWorkflowWithDependencies(
   if (!configResult.ok) {
     return {
       ok: false,
-      failure: configResult.failure,
+      result: {
+        ok: false,
+        failure: configResult.failure,
+      },
     };
   }
 
@@ -244,111 +279,145 @@ export async function checkDiagramPilotRepoWorkflowWithDependencies(
   if (!discoveryResult.ok) {
     return {
       ok: false,
-      failure: discoveryResult.failure,
+      result: {
+        ok: false,
+        failure: discoveryResult.failure,
+      },
     };
   }
 
   const currentWorkingDirectory = dependencies.getCurrentWorkingDirectory();
-  const sources: RepoWorkflowCheckSourceResult[] = [];
   const discoveredSources = mergeDiscoveredAndConfiguredSources(
     discoveryResult.sources,
     configuredExplicitSourcesForScope(configResult.config, discoveryResult.scope),
   );
 
-  for (const source of discoveredSources) {
-    const loadedSource = loadRepoWorkflowSource({
-      source,
-      scope: discoveryResult.scope,
+  return {
+    ok: true,
+    context: {
+      config: configResult.config,
       currentWorkingDirectory,
-      dependencies,
+      scope: discoveryResult.scope,
+      sources: discoveredSources,
+    },
+  };
+}
+
+async function checkRepoWorkflowSource(options: {
+  source: RepoWorkflowCheckContext["sources"][number];
+  checkOptions: RepoWorkflowCheckOptions;
+  dependencies: RepoWorkflowCheckDependencies;
+  context: RepoWorkflowCheckContext;
+}): Promise<RepoWorkflowCheckSourceResult> {
+  const loadedSource = loadRepoWorkflowSource({
+    source: options.source,
+    scope: options.context.scope,
+    currentWorkingDirectory: options.context.currentWorkingDirectory,
+    dependencies: options.dependencies,
+  });
+
+  if (!loadedSource.ok) {
+    return {
+      sourcePath: loadedSource.sourcePath,
+      validation: {
+        ok: false,
+        errors: loadedSource.errors,
+      },
+      artifact: {
+        status: "unchecked",
+      },
+    };
+  }
+
+  const configuredOutputs = configuredOutputsForSource(
+    options.context.config,
+    loadedSource.sourceAbsolutePath,
+  );
+
+  if (configuredOutputs.length > 0 && options.context.config !== undefined) {
+    const artifacts = await checkConfiguredArtifactsForValidatedSource({
+      config: options.context.config,
+      source: loadedSource.source,
+      sourceAbsolutePath: loadedSource.sourceAbsolutePath,
+      provenanceSourcePath: loadedSource.sourcePath,
+      spec: loadedSource.spec,
+      outputs: configuredOutputs,
+      currentWorkingDirectory: options.context.currentWorkingDirectory,
+      diagramPilotVersion: options.checkOptions.diagramPilotVersion,
+      renderer: options.checkOptions.renderer,
+      checkExpectedSvgArtifactFreshnessForValidatedSource:
+        options.dependencies.checkExpectedSvgArtifactFreshnessForValidatedSource,
+      exportConfiguredTextArtifact:
+        options.dependencies.exportConfiguredTextArtifact,
     });
+    const [artifact] = artifacts;
 
-    if (!loadedSource.ok) {
-      sources.push({
-        sourcePath: loadedSource.sourcePath,
-        validation: {
-          ok: false,
-          errors: loadedSource.errors,
-        },
-        artifact: {
-          status: "unchecked",
-        },
-      });
-      continue;
-    }
-
-    const configuredOutputs = configuredOutputsForSource(
-      configResult.config,
-      loadedSource.sourceAbsolutePath,
-    );
-
-    if (configuredOutputs.length > 0 && configResult.config !== undefined) {
-      const artifacts = await checkConfiguredArtifactsForValidatedSource({
-        config: configResult.config,
-        source: loadedSource.source,
-        sourceAbsolutePath: loadedSource.sourceAbsolutePath,
-        provenanceSourcePath: loadedSource.sourcePath,
-        spec: loadedSource.spec,
-        outputs: configuredOutputs,
-        currentWorkingDirectory,
-        diagramPilotVersion: options.diagramPilotVersion,
-        renderer: options.renderer,
-        checkExpectedSvgArtifactFreshnessForValidatedSource:
-          dependencies.checkExpectedSvgArtifactFreshnessForValidatedSource,
-        exportConfiguredTextArtifact:
-          dependencies.exportConfiguredTextArtifact,
-      });
-      const [artifact] = artifacts;
-
-      sources.push({
-        sourcePath: loadedSource.sourcePath,
-        validation: {
-          ok: true,
-          errors: [],
-        },
-        artifact: artifact ?? {
-          status: "unchecked",
-        },
-        artifacts,
-      });
-      continue;
-    }
-
-    const artifact =
-      await dependencies.checkExpectedSvgArtifactFreshnessForValidatedSource({
-        source: loadedSource.source,
-        provenanceSourcePath: loadedSource.sourcePath,
-        diagramPilotVersion: options.diagramPilotVersion,
-        renderer: options.renderer,
-      });
-
-    sources.push({
+    return {
       sourcePath: loadedSource.sourcePath,
       validation: {
         ok: true,
         errors: [],
       },
-      artifact: mapArtifactResult(
-        loadedSource.sourcePath,
-        artifact,
-        currentWorkingDirectory,
-      ),
+      artifact: artifact ?? {
+        status: "unchecked",
+      },
+      artifacts,
+    };
+  }
+
+  const artifact =
+    await options.dependencies.checkExpectedSvgArtifactFreshnessForValidatedSource({
+      source: loadedSource.source,
+      provenanceSourcePath: loadedSource.sourcePath,
+      diagramPilotVersion: options.checkOptions.diagramPilotVersion,
+      renderer: options.checkOptions.renderer,
     });
+
+  return {
+    sourcePath: loadedSource.sourcePath,
+    validation: {
+      ok: true,
+      errors: [],
+    },
+    artifact: mapArtifactResult(
+      loadedSource.sourcePath,
+      artifact,
+      options.context.currentWorkingDirectory,
+    ),
+  };
+}
+
+async function checkRepoWorkflowSources(
+  options: RepoWorkflowCheckOptions,
+  dependencies: RepoWorkflowCheckDependencies,
+  context: RepoWorkflowCheckContext,
+): Promise<RepoWorkflowCheckResult> {
+  const sources: RepoWorkflowCheckSourceResult[] = [];
+
+  for (const source of context.sources) {
+    sources.push(
+      await checkRepoWorkflowSource({
+        source,
+        checkOptions: options,
+        dependencies,
+        context,
+      }),
+    );
   }
 
   return {
     ok: true,
-    ...(configResult.config === undefined
+    ...(context.config === undefined
       ? {}
       : {
           config: {
             path: deriveRepoWorkflowConfigDisplayPath(
-              configResult.config.path,
-              currentWorkingDirectory,
+              context.config.path,
+              context.currentWorkingDirectory,
             ),
           },
         }),
-    scope: discoveryResult.scope,
+    scope: context.scope,
     summary: summarizeSources(sources),
     sources,
   };

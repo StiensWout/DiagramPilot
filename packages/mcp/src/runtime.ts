@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -7,8 +7,12 @@ import {
   createDiagramSpecV1JsonSchema,
   createRepairableDiagnosticReport,
   discoverDiagramPilotSourceFiles,
+  generateDiagramPilotRepoWorkflow,
+  getDiagramPilotVersion,
   loadValidatedDiagramSpec,
   type DiagramSpec,
+  type RepoWorkflowCheckResult,
+  type RepoWorkflowGenerateResult,
   type ValidatedDiagramSpecLoadFailure,
 } from "@diagrampilot/core";
 import { exportDiagramSpecToD2 } from "@diagrampilot/export-d2";
@@ -16,14 +20,14 @@ import { exportDiagramSpecToDot } from "@diagrampilot/export-dot";
 import { exportDiagramSpecToMermaid } from "@diagrampilot/export-mermaid";
 import {
   createSvgRendererProvenance,
+  rasterizeSvgToPng,
   renderDiagramSpecToSvg,
   SVG_RENDERER_NAME,
   SVG_RENDERER_VERSION,
 } from "@diagrampilot/render-svg";
 
-import { DIAGRAMPILOT_MCP_PROMPTS } from "./registry.js";
+import { getDiagramPilotMcpPrompt } from "./prompts.js";
 import type {
-  DiagramPilotMcpPromptResult,
   DiagramPilotMcpResourceContent,
   DiagramPilotMcpToolDependencies,
   DiagramPilotMcpToolResult,
@@ -128,6 +132,98 @@ function stringArgument(
   throw new Error(`Missing required MCP tool argument: ${name}`);
 }
 
+function stringArrayArgument(
+  args: Record<string, unknown>,
+  name: string,
+): string[] {
+  const value = args[name];
+
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) {
+    throw new Error(`MCP tool argument must be an array: ${name}`);
+  }
+
+  return value.filter(
+    (entry): entry is string => typeof entry === "string" && entry.length > 0,
+  );
+}
+
+function generatedArtifactSummary(
+  artifact: RepoWorkflowGenerateResult["written"][number],
+): Record<string, string> {
+  return {
+    sourcePath: artifact.sourcePath,
+    format: artifact.format,
+    path: artifact.path,
+  };
+}
+
+function redactedGenerateResult(
+  result: RepoWorkflowGenerateResult,
+): Record<string, unknown> {
+  return Object.assign({}, result, {
+    written: result.written.map((artifact) =>
+      generatedArtifactSummary(artifact),
+    ),
+  });
+}
+
+function writeGeneratedArtifacts(
+  result: RepoWorkflowGenerateResult,
+  dependencies: DiagramPilotMcpToolDependencies,
+): void {
+  if (!result.ok) return;
+
+  const write =
+    dependencies.writeFile ??
+    ((filePath: string, content: string | Uint8Array) => {
+      mkdirSync(path.dirname(filePath), { recursive: true });
+      writeFileSync(
+        filePath,
+        content,
+        typeof content === "string" ? "utf8" : undefined,
+      );
+    });
+
+  for (const artifact of result.written) {
+    write(artifact.absolutePath, artifact.content);
+  }
+}
+
+async function runRepoWorkflowCheck(
+  scopePath: string,
+): Promise<RepoWorkflowCheckResult> {
+  return await checkDiagramPilotRepoWorkflow({
+    scopePath,
+    renderer: {
+      name: SVG_RENDERER_NAME,
+      version: SVG_RENDERER_VERSION,
+    },
+    exportConfiguredTextArtifact: ({ format, spec }) => exportText(format, spec),
+  });
+}
+
+function missingGenerationScopeResult(): DiagramPilotMcpToolResult {
+  const error = {
+    path: "source_paths",
+    message: "Provide at least one explicit source_paths or scope_paths entry.",
+    expected:
+      "A non-empty array of DiagramPilot Source File paths or directory scopes.",
+    suggestion:
+      "Call diagrampilot_generate_repo_outputs with source_paths or scope_paths.",
+  };
+
+  return toolResult(
+    [
+      "Missing required MCP tool argument: provide at least one source_paths or scope_paths entry.",
+      "The MCP generation tool has no whole-repo default.",
+      "",
+    ].join("\n"),
+    { ok: false, errorCount: 1, errors: [error] },
+    { isError: true },
+  );
+}
+
 function validationFailureResult(
   failure: ValidatedDiagramSpecLoadFailure,
 ): DiagramPilotMcpToolResult {
@@ -217,14 +313,7 @@ async function checkResource(
   value: string | undefined,
 ): Promise<DiagramPilotMcpResourceContent> {
   const scopePath = decodePathPart(value, process.cwd());
-  const result = await checkDiagramPilotRepoWorkflow({
-    scopePath,
-    renderer: {
-      name: SVG_RENDERER_NAME,
-      version: SVG_RENDERER_VERSION,
-    },
-    exportConfiguredTextArtifact: ({ format, spec }) => exportText(format, spec),
-  });
+  const result = await runRepoWorkflowCheck(scopePath);
 
   return resourceContent(
     uri,
@@ -287,14 +376,7 @@ async function validateSourceTool(args: Record<string, unknown>) {
 
 async function checkRepoTool(args: Record<string, unknown>) {
   const scopePath = stringArgument(args, "scope_path", process.cwd());
-  const result = await checkDiagramPilotRepoWorkflow({
-    scopePath,
-    renderer: {
-      name: SVG_RENDERER_NAME,
-      version: SVG_RENDERER_VERSION,
-    },
-    exportConfiguredTextArtifact: ({ format, spec }) => exportText(format, spec),
-  });
+  const result = await runRepoWorkflowCheck(scopePath);
 
   return toolResult(`${JSON.stringify(result, null, 2)}\n`, result);
 }
@@ -337,84 +419,82 @@ async function renderSourceTool(
   });
 }
 
+async function generateRepoOutputsForScope(
+  scopePath: string,
+  dependencies: DiagramPilotMcpToolDependencies,
+): Promise<RepoWorkflowGenerateResult> {
+  const render = dependencies.renderDiagramSpecToSvg ?? renderDiagramSpecToSvg;
+
+  return await generateDiagramPilotRepoWorkflow({
+    scopePath,
+    diagramPilotVersion: getDiagramPilotVersion(),
+    renderer: {
+      name: SVG_RENDERER_NAME,
+      version: SVG_RENDERER_VERSION,
+    },
+    renderSvgArtifact: async ({ source, provenanceSourcePath, spec }) =>
+      await render(spec, {
+        provenance: createSvgRendererProvenance({
+          sourcePath: provenanceSourcePath,
+          sourceContent: source.content,
+        }),
+      }),
+    rasterizeSvgArtifact: rasterizeSvgToPng,
+    exportTextArtifact: ({ format, spec }) => exportText(format, spec),
+  });
+}
+
+function generateRepoOutputPayload(
+  before: readonly RepoWorkflowCheckResult[],
+  generated: readonly RepoWorkflowGenerateResult[],
+): Record<string, unknown> {
+  const redacted = generated.map((result) => redactedGenerateResult(result));
+
+  if (redacted.length === 1) {
+    return { ...redacted[0], before, after: redacted };
+  }
+
+  return { ok: generated.every((result) => result.ok), before, after: redacted };
+}
+
+async function generateRepoOutputsTool(
+  args: Record<string, unknown>,
+  dependencies: DiagramPilotMcpToolDependencies,
+) {
+  const sourcePaths = stringArrayArgument(args, "source_paths");
+  const scopePaths = stringArrayArgument(args, "scope_paths");
+  const explicitScopes = [...sourcePaths, ...scopePaths];
+
+  if (explicitScopes.length === 0) {
+    return missingGenerationScopeResult();
+  }
+
+  const before: RepoWorkflowCheckResult[] = [];
+  const generated: RepoWorkflowGenerateResult[] = [];
+
+  for (const scopePath of explicitScopes) {
+    before.push(await runRepoWorkflowCheck(scopePath));
+    const result = await generateRepoOutputsForScope(scopePath, dependencies);
+    writeGeneratedArtifacts(result, dependencies);
+    generated.push(result);
+  }
+
+  const ok = generated.every((result) => result.ok);
+  const structuredContent = generateRepoOutputPayload(before, generated);
+
+  return toolResult(
+    `${JSON.stringify(structuredContent, null, 2)}\n`,
+    structuredContent,
+    { isError: ok ? undefined : true },
+  );
+}
+
 const toolHandlers: Record<string, ToolHandler> = {
   diagrampilot_validate_source: validateSourceTool,
   diagrampilot_check_repo: checkRepoTool,
   diagrampilot_export_source: exportSourceTool,
   diagrampilot_render_source: renderSourceTool,
+  diagrampilot_generate_repo_outputs: generateRepoOutputsTool,
 };
 
-function createOrUpdatePrompt(args: Record<string, string>): string {
-  const scopePath = args.scope_path ?? ".";
-  const sourcePath = args.source_path ?? "docs/architecture.dp.yaml";
-
-  return [
-    `Goal: ${args.goal ?? "Create or update a DiagramPilot Source File."}`,
-    "",
-    `Inspect ${scopePath} for repo context, then create or update ${sourcePath}.`,
-    "Use DiagramSpec stable IDs, preserve YAML as the source of truth, and run:",
-    "",
-    `diagrampilot validate ${sourcePath}`,
-    `diagrampilot check ${scopePath}`,
-    "",
-  ].join("\n");
-}
-
-function repairValidationPrompt(args: Record<string, string>): string {
-  const sourcePath = args.source_path ?? "docs/architecture.dp.yaml";
-
-  return [
-    `Repair DiagramPilot validation errors in ${sourcePath}.`,
-    "",
-    "Use these repairable errors as the source of truth:",
-    "",
-    args.validation_errors ?? "<paste validation errors>",
-    "",
-    `After editing, run diagrampilot validate ${sourcePath}.`,
-    "",
-  ].join("\n");
-}
-
-function refreshArtifactsPrompt(args: Record<string, string>): string {
-  const scopePath = args.scope_path ?? ".";
-
-  return [
-    `Refresh DiagramPilot Derived Artifacts under ${scopePath}.`,
-    "",
-    `First run diagrampilot check ${scopePath}.`,
-    `Then run diagrampilot generate ${scopePath} for stale or missing generated artifacts.`,
-    "Do not hand-edit generated artifacts.",
-    "",
-  ].join("\n");
-}
-
-const promptTextHandlers: Record<string, (args: Record<string, string>) => string> = {
-  create_or_update_diagrampilot_source: createOrUpdatePrompt,
-  repair_diagrampilot_validation_errors: repairValidationPrompt,
-  refresh_diagrampilot_artifacts: refreshArtifactsPrompt,
-};
-
-export function getDiagramPilotMcpPrompt(
-  name: string,
-  args: Record<string, string> = {},
-): DiagramPilotMcpPromptResult {
-  const prompt = DIAGRAMPILOT_MCP_PROMPTS.find((entry) => entry.name === name);
-  const promptText = promptTextHandlers[name];
-
-  if (prompt === undefined || promptText === undefined) {
-    throw new Error(`Unknown DiagramPilot MCP prompt: ${name}`);
-  }
-
-  return {
-    description: prompt.title,
-    messages: [
-      {
-        role: "user",
-        content: {
-          type: "text",
-          text: promptText(args),
-        },
-      },
-    ],
-  };
-}
+export { getDiagramPilotMcpPrompt };

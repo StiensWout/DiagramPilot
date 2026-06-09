@@ -1,54 +1,16 @@
 import type { DiagramSpec, DiagramSpecTopology } from "./diagramspec-topology.js";
 import { createDiagramSpecTopology } from "./diagramspec-topology.js";
 import type { DiagramSpecValidationError } from "./diagramspec-validation.js";
+import {
+  forEachStableGroupWithContains,
+  idsFromTopologyMap,
+  stableIdsFromCollection,
+} from "./diagramspec-topology-validation-helpers.js";
 import { isRecord, isStableId } from "./diagramspec-validation-helpers.js";
 
-function stableIdsFromCollection(collection: unknown): Set<string> {
-  const ids = new Set<string>();
-
-  if (!Array.isArray(collection)) {
-    return ids;
-  }
-
-  for (const item of collection) {
-    if (isRecord(item) && isStableId(item.id)) {
-      ids.add(item.id);
-    }
-  }
-
-  return ids;
-}
-
-function idsFromTopologyMap<T>(objectsById: ReadonlyMap<string, T>): Set<string> {
-  return new Set(objectsById.keys());
-}
-
-function forEachStableGroupWithContains(
-  groups: unknown,
-  visitor: (
-    group: Record<string, unknown> & { contains: unknown[] },
-    groupIndex: number,
-    groupId: string,
-  ) => void,
-): void {
-  if (!Array.isArray(groups)) return;
-
-  groups.forEach((group, groupIndex) => {
-    if (!isRecord(group) || !Array.isArray(group.contains)) {
-      return;
-    }
-
-    const groupId = group.id;
-
-    if (!isStableId(groupId)) return;
-
-    visitor(
-      group as Record<string, unknown> & { contains: unknown[] },
-      groupIndex,
-      groupId,
-    );
-  });
-}
+export {
+  validateGroupContainmentCycles,
+} from "./diagramspec-group-containment-cycle-validation.js";
 
 function isTopologyCompatibleObjectCollection(collection: unknown): boolean {
   return (
@@ -210,6 +172,33 @@ export function validateGroupContainmentReferences(
     return;
   }
 
+  const context = containmentReferenceContext(value, groups, topology);
+
+  if (topology !== undefined) {
+    validateTopologyContainmentReferences(topology, context.expected, errors);
+    return;
+  }
+
+  validateSourceContainmentReferences(
+    groups,
+    context.nodeIds,
+    context.edgeIds,
+    context.groupIds,
+    context.expected,
+    errors,
+  );
+}
+
+function containmentReferenceContext(
+  value: Record<string, unknown>,
+  groups: readonly unknown[],
+  topology: DiagramSpecTopology | undefined,
+): {
+  nodeIds: Set<string>;
+  edgeIds: Set<string>;
+  groupIds: Set<string>;
+  expected: string;
+} {
   const nodeIds =
     topology === undefined
       ? stableIdsFromCollection(value.nodes)
@@ -222,46 +211,48 @@ export function validateGroupContainmentReferences(
     topology === undefined
       ? stableIdsFromCollection(groups)
       : idsFromTopologyMap(topology.groupsById);
-  const expected = nodeOrGroupIdsExpected(nodeIds, groupIds);
 
-  if (topology !== undefined) {
-    for (const reference of topology.containmentReferences) {
-      const containedPath = `groups[${reference.parentGroupIndex}].contains[${reference.containedIndex}]`;
+  return {
+    nodeIds,
+    edgeIds,
+    groupIds,
+    expected: nodeOrGroupIdsExpected(nodeIds, groupIds),
+  };
+}
 
-      if (
-        reference.containedObjectType === "node" ||
-        reference.containedObjectType === "group"
-      ) {
-        continue;
-      }
+function validateTopologyContainmentReferences(
+  topology: DiagramSpecTopology,
+  expected: string,
+  errors: DiagramSpecValidationError[],
+): void {
+  for (const reference of topology.containmentReferences) {
+    const containedPath = `groups[${reference.parentGroupIndex}].contains[${reference.containedIndex}]`;
 
-      if (reference.containedObjectType === "edge") {
-        errors.push({
-          path: containedPath,
-          message: `${containedPath} references edge "${reference.containedId}"; groups can contain nodes and groups only.`,
-          badValue: reference.containedId,
-          expected,
-          suggestion: `Remove ${containedPath} or change it to an existing node or group ID.`,
-        });
-        continue;
-      }
-
-      errors.push({
-        path: containedPath,
-        message: `${containedPath} references unknown node or group "${reference.containedId}".`,
-        badValue: reference.containedId,
-        expected,
-        suggestion: `Add a node or group with id "${reference.containedId}" or change ${containedPath} to an existing node or group ID.`,
-      });
+    if (
+      reference.containedObjectType === "node" ||
+      reference.containedObjectType === "group"
+    ) {
+      continue;
     }
 
-    return;
+    errors.push(
+      reference.containedObjectType === "edge"
+        ? edgeContainmentReferenceError(containedPath, reference.containedId, expected)
+        : unknownContainmentReferenceError(containedPath, reference.containedId, expected),
+    );
   }
+}
 
+function validateSourceContainmentReferences(
+  groups: readonly unknown[],
+  nodeIds: ReadonlySet<string>,
+  edgeIds: ReadonlySet<string>,
+  groupIds: ReadonlySet<string>,
+  expected: string,
+  errors: DiagramSpecValidationError[],
+): void {
   groups.forEach((group, groupIndex) => {
-    if (!isRecord(group)) {
-      return;
-    }
+    if (!isRecord(group)) return;
 
     const containsPath = `groups[${groupIndex}].contains`;
 
@@ -288,43 +279,84 @@ export function validateGroupContainmentReferences(
     }
 
     group.contains.forEach((containedId, containedIndex) => {
-      const containedPath = `${containsPath}[${containedIndex}]`;
-
-      if (typeof containedId !== "string") {
-        errors.push({
-          path: containedPath,
-          message: `${containedPath} must reference a node or group ID.`,
-          badValue: containedId,
-          expected,
-          suggestion: `Change ${containedPath} to an existing node or group ID.`,
-        });
-        return;
-      }
-
-      if (nodeIds.has(containedId) || groupIds.has(containedId)) {
-        return;
-      }
-
-      if (edgeIds.has(containedId)) {
-        errors.push({
-          path: containedPath,
-          message: `${containedPath} references edge "${containedId}"; groups can contain nodes and groups only.`,
-          badValue: containedId,
-          expected,
-          suggestion: `Remove ${containedPath} or change it to an existing node or group ID.`,
-        });
-        return;
-      }
-
-      errors.push({
-        path: containedPath,
-        message: `${containedPath} references unknown node or group "${containedId}".`,
-        badValue: containedId,
+      const error = sourceContainmentReferenceError({
+        containedId,
+        containedPath: `${containsPath}[${containedIndex}]`,
+        nodeIds,
+        edgeIds,
+        groupIds,
         expected,
-        suggestion: `Add a node or group with id "${containedId}" or change ${containedPath} to an existing node or group ID.`,
       });
+
+      if (error !== undefined) errors.push(error);
     });
   });
+}
+
+function sourceContainmentReferenceError(options: {
+  containedId: unknown;
+  containedPath: string;
+  nodeIds: ReadonlySet<string>;
+  edgeIds: ReadonlySet<string>;
+  groupIds: ReadonlySet<string>;
+  expected: string;
+}): DiagramSpecValidationError | undefined {
+  if (typeof options.containedId !== "string") {
+    return {
+      path: options.containedPath,
+      message: `${options.containedPath} must reference a node or group ID.`,
+      badValue: options.containedId,
+      expected: options.expected,
+      suggestion: `Change ${options.containedPath} to an existing node or group ID.`,
+    };
+  }
+
+  if (
+    options.nodeIds.has(options.containedId) ||
+    options.groupIds.has(options.containedId)
+  ) {
+    return undefined;
+  }
+
+  return options.edgeIds.has(options.containedId)
+    ? edgeContainmentReferenceError(
+        options.containedPath,
+        options.containedId,
+        options.expected,
+      )
+    : unknownContainmentReferenceError(
+        options.containedPath,
+        options.containedId,
+        options.expected,
+      );
+}
+
+function edgeContainmentReferenceError(
+  containedPath: string,
+  containedId: string,
+  expected: string,
+): DiagramSpecValidationError {
+  return {
+    path: containedPath,
+    message: `${containedPath} references edge "${containedId}"; groups can contain nodes and groups only.`,
+    badValue: containedId,
+    expected,
+    suggestion: `Remove ${containedPath} or change it to an existing node or group ID.`,
+  };
+}
+
+function unknownContainmentReferenceError(
+  containedPath: string,
+  containedId: string,
+  expected: string,
+): DiagramSpecValidationError {
+  return {
+    path: containedPath,
+    message: `${containedPath} references unknown node or group "${containedId}".`,
+    badValue: containedId,
+    expected,
+    suggestion: `Add a node or group with id "${containedId}" or change ${containedPath} to an existing node or group ID.`,
+  };
 }
 
 export function validateDuplicateGroupContainmentParentage(
@@ -402,98 +434,4 @@ export function validateDuplicateGroupContainmentParentage(
       });
     });
   });
-}
-
-type GroupContainmentLink = { childId: string; childIndex: number; parentIndex: number };
-
-export function validateGroupContainmentCycles(
-  value: Record<string, unknown>,
-  topology: DiagramSpecTopology | undefined,
-  errors: DiagramSpecValidationError[],
-): void {
-  const groups = value.groups;
-
-  if (!Array.isArray(groups)) {
-    return;
-  }
-
-  const groupIds =
-    topology === undefined
-      ? stableIdsFromCollection(groups)
-      : idsFromTopologyMap(topology.groupsById);
-  const linksByParentId = new Map<string, GroupContainmentLink[]>();
-
-  if (topology !== undefined) {
-    for (const reference of topology.containmentReferences) {
-      if (reference.containedObjectType === "group") {
-        const links =
-          linksByParentId.get(reference.parentGroupId) ?? [];
-
-        links.push({
-          childId: reference.containedId,
-          childIndex: reference.containedIndex,
-          parentIndex: reference.parentGroupIndex,
-        });
-
-        linksByParentId.set(reference.parentGroupId, links);
-      }
-    }
-  } else {
-    forEachStableGroupWithContains(groups, (group, groupIndex, groupId) => {
-      const links: GroupContainmentLink[] = [];
-
-      group.contains.forEach((containedId, containedIndex) => {
-        if (typeof containedId === "string" && groupIds.has(containedId)) {
-          links.push({
-            childId: containedId,
-            childIndex: containedIndex,
-            parentIndex: groupIndex,
-          });
-        }
-      });
-
-      linksByParentId.set(groupId, links);
-    });
-  }
-
-  const visited = new Set<string>();
-  const visiting = new Set<string>();
-  const stack: string[] = [];
-
-  function visit(groupId: string): void {
-    if (visited.has(groupId)) {
-      return;
-    }
-
-    visiting.add(groupId);
-    stack.push(groupId);
-
-    for (const link of linksByParentId.get(groupId) ?? []) {
-      const cycleStartIndex = stack.indexOf(link.childId);
-
-      if (cycleStartIndex !== -1 && visiting.has(link.childId)) {
-        const cyclePath = [...stack.slice(cycleStartIndex), link.childId];
-        const path = `groups[${link.parentIndex}].contains[${link.childIndex}]`;
-
-        errors.push({
-          path,
-          message: `${path} creates a group containment cycle: ${cyclePath.join(" -> ")}.`,
-          badValue: link.childId,
-          expected: "Acyclic group containment.",
-          suggestion: "Remove one group containment reference from the cycle.",
-        });
-        continue;
-      }
-
-      visit(link.childId);
-    }
-
-    stack.pop();
-    visiting.delete(groupId);
-    visited.add(groupId);
-  }
-
-  for (const groupId of groupIds) {
-    visit(groupId);
-  }
 }

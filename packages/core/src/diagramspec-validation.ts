@@ -49,33 +49,33 @@ function validateTopLevelCollectionShapes(
   value: Record<string, unknown>,
   errors: DiagramSpecValidationError[],
 ): void {
-  if ("nodes" in value && !Array.isArray(value.nodes)) {
-    errors.push({
-      path: "nodes",
+  const collectionRules = {
+    nodes: {
       message: "nodes must be an array of node objects.",
-      badValue: value.nodes,
       expected: "Array of node objects with at least one node.",
       suggestion: "Change nodes to a list of node objects.",
-    });
-  }
-
-  if ("edges" in value && !Array.isArray(value.edges)) {
-    errors.push({
-      path: "edges",
+    },
+    edges: {
       message: "edges must be an array of edge objects when present.",
-      badValue: value.edges,
       expected: "Array of edge objects.",
       suggestion: "Change edges to a list of edge objects or omit edges.",
-    });
-  }
-
-  if ("groups" in value && !Array.isArray(value.groups)) {
-    errors.push({
-      path: "groups",
+    },
+    groups: {
       message: "groups must be an array of group objects when present.",
-      badValue: value.groups,
       expected: "Array of group objects.",
       suggestion: "Change groups to a list of group objects or omit groups.",
+    },
+  };
+
+  for (const [path, rule] of Object.entries(collectionRules)) {
+    if (!(path in value) || Array.isArray(value[path])) continue;
+
+    errors.push({
+      path,
+      message: rule.message,
+      badValue: value[path],
+      expected: rule.expected,
+      suggestion: rule.suggestion,
     });
   }
 }
@@ -360,35 +360,26 @@ function validateEdgeDirectedValues(
   });
 }
 
-export function validateDiagramSpec(
-  value: unknown,
-): DiagramSpecValidationResult {
-  const errors: DiagramSpecValidationError[] = [];
-
-  if (!isRecord(value)) {
-    errors.push({
-      path: "$",
-      message: "DiagramSpec must be a top-level object.",
-      badValue: value,
-      expected: "Object with required top-level fields: version, title, nodes.",
-      suggestion:
-        "Replace the source contents with a DiagramSpec object containing version, title, and nodes.",
-    });
-
-    return { ok: false, errors };
-  }
-
+function validateRequiredTopLevelFields(
+  value: Record<string, unknown>,
+  errors: DiagramSpecValidationError[],
+): void {
   for (const field of ["version", "title", "nodes"] as const) {
-    if (!(field in value)) {
-      errors.push({
-        path: field,
-        message: `Missing required top-level field: ${field}.`,
-        expected: "Required top-level fields: version, title, nodes.",
-        suggestion: `Add ${field} to the top level of the DiagramSpec.`,
-      });
-    }
-  }
+    if (field in value) continue;
 
+    errors.push({
+      path: field,
+      message: `Missing required top-level field: ${field}.`,
+      expected: "Required top-level fields: version, title, nodes.",
+      suggestion: `Add ${field} to the top level of the DiagramSpec.`,
+    });
+  }
+}
+
+function validateTopLevelScalarValues(
+  value: Record<string, unknown>,
+  errors: DiagramSpecValidationError[],
+): void {
   if (Array.isArray(value.nodes) && value.nodes.length === 0) {
     errors.push({
       path: "nodes",
@@ -408,7 +399,14 @@ export function validateDiagramSpec(
       suggestion: "Change direction to right, left, down, or up.",
     });
   }
+}
 
+function validateDiagramSpecObject(
+  value: Record<string, unknown>,
+  errors: DiagramSpecValidationError[],
+): void {
+  validateRequiredTopLevelFields(value, errors);
+  validateTopLevelScalarValues(value, errors);
   validateTopLevelCollectionShapes(value, errors);
   validateDiagramObjectShapes(value, errors);
   validateDiagramObjectIds(value, errors);
@@ -424,6 +422,27 @@ export function validateDiagramSpec(
   validateGroupContainmentCycles(value, topology, errors);
   validateEdgeEndpoints(value, topology, errors);
   validateEdgeDirectedValues(value, errors);
+}
+
+export function validateDiagramSpec(
+  value: unknown,
+): DiagramSpecValidationResult {
+  const errors: DiagramSpecValidationError[] = [];
+
+  if (!isRecord(value)) {
+    errors.push({
+      path: "$",
+      message: "DiagramSpec must be a top-level object.",
+      badValue: value,
+      expected: "Object with required top-level fields: version, title, nodes.",
+      suggestion:
+        "Replace the source contents with a DiagramSpec object containing version, title, and nodes.",
+    });
+
+    return { ok: false, errors };
+  }
+
+  validateDiagramSpecObject(value, errors);
 
   if (errors.length > 0) {
     return { ok: false, errors };

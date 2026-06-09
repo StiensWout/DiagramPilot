@@ -77,6 +77,7 @@ export interface DiagramPilotMcpToolDependencies {
       provenance: ReturnType<typeof createSvgRendererProvenance>;
     },
   ): Promise<string>;
+  writeFile?(path: string, content: string | Uint8Array): void;
 }
 
 export interface DiagramPilotMcpServerOptions {

@@ -9,25 +9,18 @@ function parseArgs(args) {
     version: "",
     tag: "",
   };
+  const optionTargets = {
+    "--draft-json": "draftJsonPath",
+    "--version": "version",
+    "--tag": "tag",
+  };
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
-    const value = args[index + 1] ?? "";
+    const parsedOption = parseOption(arg, args[index + 1], optionTargets);
 
-    if (arg === "--draft-json") {
-      parsed.draftJsonPath = value;
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--version") {
-      parsed.version = value;
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--tag") {
-      parsed.tag = value;
+    if (parsedOption !== undefined) {
+      parsed[parsedOption.target] = parsedOption.value;
       index += 1;
       continue;
     }
@@ -37,17 +30,26 @@ function parseArgs(args) {
     );
   }
 
+  requireParsedArgs(parsed);
+
+  return {
+    ...parsed,
+    tag: parsed.tag === "" ? `v${parsed.version}` : parsed.tag,
+  };
+}
+
+function parseOption(arg, value, optionTargets) {
+  const target = optionTargets[arg];
+
+  return target === undefined ? undefined : { target, value: value ?? "" };
+}
+
+function requireParsedArgs(parsed) {
   if (parsed.draftJsonPath === "" || parsed.version === "") {
     throw new Error(
       "Usage: node scripts/validate-github-release-draft.mjs --draft-json <path> --version <version> [--tag <tag>]",
     );
   }
-
-  if (parsed.tag === "") {
-    parsed.tag = `v${parsed.version}`;
-  }
-
-  return parsed;
 }
 
 function readDraftJson(pathValue) {

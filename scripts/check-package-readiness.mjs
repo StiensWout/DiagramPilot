@@ -137,81 +137,156 @@ function collectPrivateWorkspaceIssues(rootPath) {
   return issues;
 }
 
-function collectPublicPackageMetadataIssues(rootPath) {
+function collectPublicPackageIdentityIssues(packageRecord, manifest) {
   const issues = [];
 
-  for (const packageRecord of PUBLIC_PACKAGE_SET) {
-    const manifest = readJson(rootPath, packageRecord.repoPath);
+  if (manifest.name !== packageRecord.name) {
+    issues.push(
+      `${packageRecord.repoPath} name is ${manifest.name}; expected ${packageRecord.name}.`,
+    );
+  }
 
-    if (manifest.name !== packageRecord.name) {
+  if (manifest.private === true) {
+    issues.push(`${packageRecord.repoPath} must be publishable.`);
+  }
+
+  if (manifest.license !== "MIT") {
+    issues.push(`${packageRecord.repoPath} license is ${manifest.license}; expected MIT.`);
+  }
+
+  return issues;
+}
+
+function nestedManifestValue(manifest, fieldPath) {
+  let current = manifest;
+
+  for (const fieldName of fieldPath.split(".")) {
+    if (current === undefined || current === null) {
+      return undefined;
+    }
+
+    current = current[fieldName];
+  }
+
+  return current;
+}
+
+function collectExpectedManifestValueIssues(repoPath, expectations) {
+  const issues = [];
+
+  for (const expectation of expectations) {
+    const actual = nestedManifestValue(expectation.manifest, expectation.fieldPath);
+
+    if (actual !== expectation.expected) {
       issues.push(
-        `${packageRecord.repoPath} name is ${manifest.name}; expected ${packageRecord.name}.`,
-      );
-    }
-
-    if (manifest.private === true) {
-      issues.push(`${packageRecord.repoPath} must be publishable.`);
-    }
-
-    if (manifest.license !== "MIT") {
-      issues.push(`${packageRecord.repoPath} license is ${manifest.license}; expected MIT.`);
-    }
-
-    if (manifest.repository?.type !== "git") {
-      issues.push(`${packageRecord.repoPath} repository.type must be git.`);
-    }
-
-    if (manifest.repository?.url !== REPOSITORY_URL) {
-      issues.push(
-        `${packageRecord.repoPath} repository.url is ${manifest.repository?.url}; expected ${REPOSITORY_URL}.`,
-      );
-    }
-
-    if (manifest.repository?.directory !== packageRecord.directory) {
-      issues.push(
-        `${packageRecord.repoPath} repository.directory is ${manifest.repository?.directory}; expected ${packageRecord.directory}.`,
-      );
-    }
-
-    if (manifest.homepage !== HOMEPAGE_URL) {
-      issues.push(
-        `${packageRecord.repoPath} homepage is ${manifest.homepage}; expected ${HOMEPAGE_URL}.`,
-      );
-    }
-
-    if (manifest.bugs?.url !== BUGS_URL) {
-      issues.push(
-        `${packageRecord.repoPath} bugs.url is ${manifest.bugs?.url}; expected ${BUGS_URL}.`,
-      );
-    }
-
-    for (const keyword of REQUIRED_KEYWORDS) {
-      if (!manifest.keywords?.includes(keyword)) {
-        issues.push(`${packageRecord.repoPath} keywords must include ${keyword}.`);
-      }
-    }
-
-    if (manifest.publishConfig?.access !== "public") {
-      issues.push(`${packageRecord.repoPath} publishConfig.access must be public.`);
-    }
-
-    if (sortedJson(manifest.files ?? []) !== sortedJson(REQUIRED_FILES)) {
-      issues.push(
-        `${packageRecord.repoPath} files must publish dist JS/types, maps, LICENSE, and README.md only.`,
-      );
-    }
-
-    if (
-      packageRecord.bin !== undefined &&
-      sortedObjectJson(manifest.bin) !== sortedObjectJson(packageRecord.bin)
-    ) {
-      issues.push(
-        `${packageRecord.repoPath} bin must publish the diagrampilot executable without npm manifest auto-correction.`,
+        `${repoPath} ${expectation.label} is ${actual}; expected ${expectation.expected}.`,
       );
     }
   }
 
   return issues;
+}
+
+function collectPublicPackageRepositoryIssues(packageRecord, manifest) {
+  return collectExpectedManifestValueIssues(packageRecord.repoPath, [
+    {
+      manifest,
+      fieldPath: "repository.type",
+      label: "repository.type",
+      expected: "git",
+    },
+    {
+      manifest,
+      fieldPath: "repository.url",
+      label: "repository.url",
+      expected: REPOSITORY_URL,
+    },
+    {
+      manifest,
+      fieldPath: "repository.directory",
+      label: "repository.directory",
+      expected: packageRecord.directory,
+    },
+  ]);
+}
+
+function collectPublicPackageUrlIssues(packageRecord, manifest) {
+  return collectExpectedManifestValueIssues(packageRecord.repoPath, [
+    {
+      manifest,
+      fieldPath: "homepage",
+      label: "homepage",
+      expected: HOMEPAGE_URL,
+    },
+    {
+      manifest,
+      fieldPath: "bugs.url",
+      label: "bugs.url",
+      expected: BUGS_URL,
+    },
+  ]);
+}
+
+function collectPublicPackageKeywordIssues(packageRecord, manifest) {
+  const issues = [];
+
+  for (const keyword of REQUIRED_KEYWORDS) {
+    if (!manifest.keywords?.includes(keyword)) {
+      issues.push(`${packageRecord.repoPath} keywords must include ${keyword}.`);
+    }
+  }
+
+  return issues;
+}
+
+function collectPublicPackagePublishIssues(packageRecord, manifest) {
+  const issues = [];
+
+  issues.push(
+    ...collectExpectedManifestValueIssues(packageRecord.repoPath, [
+      {
+        manifest,
+        fieldPath: "publishConfig.access",
+        label: "publishConfig.access",
+        expected: "public",
+      },
+    ]),
+  );
+
+  if (sortedJson(manifest.files ?? []) !== sortedJson(REQUIRED_FILES)) {
+    issues.push(
+      `${packageRecord.repoPath} files must publish dist JS/types, maps, LICENSE, and README.md only.`,
+    );
+  }
+
+  if (
+    packageRecord.bin !== undefined &&
+    sortedObjectJson(manifest.bin) !== sortedObjectJson(packageRecord.bin)
+  ) {
+    issues.push(
+      `${packageRecord.repoPath} bin must publish the diagrampilot executable without npm manifest auto-correction.`,
+    );
+  }
+
+  return issues;
+}
+
+function collectPublicPackageManifestIssues(rootPath, packageRecord) {
+  const manifest = readJson(rootPath, packageRecord.repoPath);
+
+  return [
+    ...collectPublicPackageIdentityIssues(packageRecord, manifest),
+    ...collectPublicPackageRepositoryIssues(packageRecord, manifest),
+    ...collectPublicPackageUrlIssues(packageRecord, manifest),
+    ...collectPublicPackageKeywordIssues(packageRecord, manifest),
+    ...collectPublicPackagePublishIssues(packageRecord, manifest),
+  ];
+}
+
+function collectPublicPackageMetadataIssues(rootPath) {
+  return PUBLIC_PACKAGE_SET.flatMap((packageRecord) =>
+    collectPublicPackageManifestIssues(rootPath, packageRecord),
+  );
 }
 
 function runNpmPackDryRun(rootPath, packageName) {

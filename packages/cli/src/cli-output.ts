@@ -114,24 +114,17 @@ function repairCommand(
   }
 
   const format = artifactFormat(artifact);
+  const outputPath = artifact.path;
+  const commands: Record<string, string> = {
+    svg: `diagrampilot render ${sourcePath} --out ${outputPath}`,
+    png: `diagrampilot render ${sourcePath} --format png --out ${outputPath}`,
+    mermaid: `diagrampilot export ${sourcePath} --format mermaid --out ${outputPath}`,
+    d2: `diagrampilot export ${sourcePath} --format d2 --out ${outputPath}`,
+    dot: `diagrampilot export ${sourcePath} --format dot --out ${outputPath}`,
+    markdown: `diagrampilot generate ${sourcePath}`,
+  };
 
-  if (format === "svg") {
-    return `diagrampilot render ${sourcePath} --out ${artifact.path}`;
-  }
-
-  if (format === "png") {
-    return `diagrampilot render ${sourcePath} --format png --out ${artifact.path}`;
-  }
-
-  if (format === "mermaid" || format === "d2" || format === "dot") {
-    return `diagrampilot export ${sourcePath} --format ${format} --out ${artifact.path}`;
-  }
-
-  if (format === "markdown") {
-    return `diagrampilot generate ${sourcePath}`;
-  }
-
-  return undefined;
+  return commands[format];
 }
 
 function repairSentence(
@@ -143,19 +136,62 @@ function repairSentence(
   return command === undefined ? "" : ` Run \`${command}\`.`;
 }
 
+function freshCheckText(sourceResults: readonly RepoWorkflowCheckSourceResult[]): string {
+  const artifactDescription = sourceResults.some(
+    (source) => source.artifacts !== undefined,
+  )
+    ? "artifacts"
+    : "SVG artifacts";
+
+  return `Checked ${formatSourceCount(sourceResults.length)}. All expected ${artifactDescription} are fresh.`;
+}
+
+function invalidSourceLine(source: RepoWorkflowCheckSourceResult): string {
+  return `Invalid source: ${source.sourcePath}. Run \`diagrampilot validate ${source.sourcePath}\`.`;
+}
+
+function artifactIssuePrefix(artifact: Exclude<CheckArtifact, { status: "fresh" }>): string {
+  const label = artifactLabel(artifact);
+  const labels = {
+    "missing-artifact": `Missing ${label} artifact`,
+    stale: `Stale ${label} artifact`,
+    "missing-provenance": "Missing DiagramPilot provenance",
+    unchecked: `Unchecked ${label} artifact`,
+    "unreadable-artifact": `Unreadable ${label} artifact`,
+    "malformed-artifact": `Malformed ${label} artifact`,
+  };
+
+  return labels[artifact.status];
+}
+
+function artifactIssueLine(
+  source: RepoWorkflowCheckSourceResult,
+  artifact: Exclude<CheckArtifact, { status: "fresh" }>,
+): string | undefined {
+  if (!("path" in artifact)) return undefined;
+
+  const reason =
+    artifact.status === "stale" ? ` (${artifact.reasons.join(", ")})` : "";
+
+  return `${artifactIssuePrefix(artifact)}: ${artifact.path} for ${source.sourcePath}${reason}.${repairSentence(artifact, source.sourcePath)}`;
+}
+
+function issueLinesForSource(source: RepoWorkflowCheckSourceResult): string[] {
+  if (source.validation.ok === false) return [invalidSourceLine(source)];
+
+  return sourceArtifacts(source)
+    .filter(isIssueArtifact)
+    .map((artifact) => artifactIssueLine(source, artifact))
+    .filter((line): line is string => line !== undefined);
+}
+
 export function formatCheckTextReport(
   sourceResults: readonly RepoWorkflowCheckSourceResult[],
 ): string {
   const issueSources = sourceResults.filter(isArtifactFailure);
 
   if (issueSources.length === 0) {
-    const artifactDescription = sourceResults.some(
-      (source) => source.artifacts !== undefined,
-    )
-      ? "artifacts"
-      : "SVG artifacts";
-
-    return `Checked ${formatSourceCount(sourceResults.length)}. All expected ${artifactDescription} are fresh.`;
+    return freshCheckText(sourceResults);
   }
 
   const lines = [
@@ -163,60 +199,7 @@ export function formatCheckTextReport(
   ];
 
   for (const source of issueSources) {
-    if (source.validation.ok === false) {
-      lines.push(
-        `Invalid source: ${source.sourcePath}. Run \`diagrampilot validate ${source.sourcePath}\`.`,
-      );
-      continue;
-    }
-
-    for (const artifact of sourceArtifacts(source)) {
-      if (!isIssueArtifact(artifact)) {
-        continue;
-      }
-
-      if (!("path" in artifact)) {
-        continue;
-      }
-
-      const label = artifactLabel(artifact);
-
-      if (artifact.status === "missing-artifact") {
-        lines.push(
-          `Missing ${label} artifact: ${artifact.path} for ${source.sourcePath}.${repairSentence(artifact, source.sourcePath)}`,
-        );
-        continue;
-      }
-
-      if (artifact.status === "stale") {
-        lines.push(
-          `Stale ${label} artifact: ${artifact.path} for ${source.sourcePath} (${artifact.reasons.join(", ")}).${repairSentence(artifact, source.sourcePath)}`,
-        );
-        continue;
-      }
-
-      if (artifact.status === "missing-provenance") {
-        lines.push(
-          `Missing DiagramPilot provenance: ${artifact.path} for ${source.sourcePath}.${repairSentence(artifact, source.sourcePath)}`,
-        );
-        continue;
-      }
-
-      if (artifact.status === "unchecked") {
-        lines.push(
-          `Unchecked ${label} artifact: ${artifact.path} for ${source.sourcePath}.${repairSentence(artifact, source.sourcePath)}`,
-        );
-        continue;
-      }
-
-      const issueLabel =
-        artifact.status === "unreadable-artifact"
-          ? `Unreadable ${label} artifact`
-          : `Malformed ${label} artifact`;
-      lines.push(
-        `${issueLabel}: ${artifact.path} for ${source.sourcePath}.${repairSentence(artifact, source.sourcePath)}`,
-      );
-    }
+    lines.push(...issueLinesForSource(source));
   }
 
   return lines.join("\n");

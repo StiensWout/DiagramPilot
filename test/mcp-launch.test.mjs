@@ -107,6 +107,7 @@ test("diagrampilot mcp starts a stdio MCP server with resources tools and prompt
           "diagrampilot_check_repo",
           "diagrampilot_export_source",
           "diagrampilot_render_source",
+          "diagrampilot_generate_repo_outputs",
         ],
       );
       assert.deepEqual(
