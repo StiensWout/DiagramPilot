@@ -16,6 +16,10 @@ const proofPoints = [
     title: "If it breaks, it says where.",
     text: "Repairable errors name the broken field so an AI coding agent can update the DiagramSpec file, validate again, and commit the repaired source plus rendered output.",
   },
+  {
+    title: "MCP agent integration.",
+    text: "Run `diagrampilot mcp` to expose read-only schema, docs, examples, validation, check, export, render, and prompt helpers to local MCP clients.",
+  },
 ];
 ---
 
@@ -131,7 +135,7 @@ const proofPoints = [
         <h2>Start with the checkout demo.</h2>
         <p>
           Validate the source, render the SVG, export text formats when needed,
-          and keep every diagram change reviewable.
+          connect MCP-aware agents, and keep every diagram change reviewable.
         </p>
         <div class="hero-actions">
           <a class="action action-primary" href="/docs/agents/installation/">
@@ -139,6 +143,9 @@ const proofPoints = [
           </a>
           <a class="action action-secondary" href="/docs/agents/quickstart/">
             Checkout Demo Project
+          </a>
+          <a class="action action-secondary" href="/docs/agents/mcp/">
+            MCP Guide
           </a>
           <a class="action action-secondary" href="/docs/">Documentation</a>
         </div>

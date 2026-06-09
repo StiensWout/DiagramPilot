@@ -59,6 +59,8 @@ The current public website route inventory is:
 | Checkout quickstart Markdown | `https://diagrampilot.com/docs/agents/quickstart.md` |
 | Installation and removal HTML | `https://diagrampilot.com/docs/agents/installation/` |
 | Installation and removal Markdown | `https://diagrampilot.com/docs/agents/installation.md` |
+| MCP guide HTML | `https://diagrampilot.com/docs/agents/mcp/` |
+| MCP guide Markdown | `https://diagrampilot.com/docs/agents/mcp.md` |
 | DiagramSpec HTML | `https://diagrampilot.com/docs/agents/spec/` |
 | DiagramSpec Markdown | `https://diagrampilot.com/docs/agents/spec.md` |
 | Error repair HTML | `https://diagrampilot.com/docs/agents/error-repair/` |
@@ -83,6 +85,7 @@ diagrampilot init
 diagrampilot init --docs
 diagrampilot init --config
 diagrampilot check
+diagrampilot mcp
 diagrampilot check docs --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
@@ -111,6 +114,8 @@ The drift checks should verify these public contract points:
   explicit managed-docs path and `diagrampilot init --config` is the explicit
   config creation path.
 - `diagrampilot check` remains the read-only repo review/CI command.
+- `diagrampilot mcp` launches the alpha MCP stdio server for local MCP
+  clients.
 - `diagrampilot check --json` includes the config path when optional
   `diagrampilot.config.yaml` is discovered.
 - `diagrampilot render <path> --out <artifact.svg>` requires `--out` and

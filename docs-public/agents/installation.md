@@ -99,6 +99,42 @@ diagrampilot check
 
 Prefer a repository dev dependency for CI and other repeatable workflows.
 
+## MCP Client Configuration
+
+MCP support is alpha. DiagramPilot includes a local Model Context Protocol
+server for MCP clients that can launch stdio commands.
+
+Use the main CLI command when the client can run project binaries:
+
+```bash
+diagrampilot mcp
+```
+
+Use the dedicated package executable when an MCP client expects a direct server
+command:
+
+```bash
+diagrampilot-mcp
+```
+
+Example client configuration:
+
+```json
+{
+  "mcpServers": {
+    "diagrampilot": {
+      "command": "diagrampilot",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+The MCP server exposes read-only resources, validation, repo workflow check,
+export, render, and prompt helpers. It does not write files; use normal
+repository edits and `diagrampilot generate` when a workflow intentionally
+refreshes Derived Artifacts.
+
 ## Package Removal
 
 Remove a repository dev dependency with npm:

@@ -18,7 +18,12 @@ import {
   validateGroupContainmentCycles,
   validateGroupContainmentReferences,
 } from "./diagramspec-topology-validation.js";
-import { isRecord } from "./diagramspec-validation-helpers.js";
+import {
+  diagramObjectCollectionNames,
+  forEachCollectionItem,
+  forEachCollectionRecord,
+  isRecord,
+} from "./diagramspec-validation-helpers.js";
 
 export interface RepairableDiagnostic {
   path: string;
@@ -85,14 +90,10 @@ function validateDiagramObjectShapes(
     groups: "group",
   } as const;
 
-  for (const collectionName of ["nodes", "edges", "groups"] as const) {
-    const collection = value[collectionName];
-
-    if (!Array.isArray(collection)) {
-      continue;
-    }
-
-    collection.forEach((item, index) => {
+  forEachCollectionItem(
+    value,
+    diagramObjectCollectionNames,
+    (item, index, collectionName) => {
       if (isRecord(item)) {
         return;
       }
@@ -106,8 +107,8 @@ function validateDiagramObjectShapes(
         expected: `${objectLabel[0].toUpperCase()}${objectLabel.slice(1)} object.`,
         suggestion: `Change ${collectionName}[${index}] to a ${objectLabel} object with a stable id.`,
       });
-    });
-  }
+    },
+  );
 }
 
 function isAllowedDirection(value: unknown): boolean {
@@ -166,51 +167,37 @@ function validateDiagramObjectIds(
 ): void {
   const seenIds = new Map<string, string>();
 
-  for (const collectionName of ["nodes", "edges", "groups"] as const) {
-    const collection = value[collectionName];
-
-    if (!Array.isArray(collection)) {
-      continue;
-    }
-
-    collection.forEach((item, index) => {
-      if (!isRecord(item)) {
-        return;
-      }
-
+  forEachCollectionRecord(
+    value,
+    diagramObjectCollectionNames,
+    (item, index, collectionName) => {
       const idPath = `${collectionName}[${index}].id`;
       const id = item.id;
 
       if (validateStableIdShape(idPath, id, errors)) {
         validateGlobalStableIdUniqueness(idPath, id, seenIds, errors);
       }
-    });
-  }
+    },
+  );
 }
 
 function validateDiagramObjectKinds(
   value: Record<string, unknown>,
   errors: DiagramSpecValidationError[],
 ): void {
-  for (const collectionName of ["nodes", "edges", "groups"] as const) {
-    const collection = value[collectionName];
-
-    if (!Array.isArray(collection)) {
-      continue;
-    }
-
-    collection.forEach((item, index) => {
-      if (!isRecord(item) || !("kind" in item)) {
-        return;
-      }
+  forEachCollectionRecord(
+    value,
+    diagramObjectCollectionNames,
+    (item, index, collectionName) => {
+      if (!("kind" in item)) return;
 
       validateStableIdShape(
         `${collectionName}[${index}].kind`,
         item.kind,
         errors,
       );
-    });
-  }
+    },
+  );
 }
 
 interface IconReference {
@@ -292,43 +279,29 @@ function validateDiagramObjectIcons(
   value: Record<string, unknown>,
   errors: DiagramSpecValidationError[],
 ): void {
-  for (const collectionName of ["nodes", "groups"] as const) {
-    const collection = value[collectionName];
-
-    if (!Array.isArray(collection)) {
-      continue;
-    }
-
-    collection.forEach((item, index) => {
-      if (!isRecord(item) || !("icon" in item)) {
-        return;
-      }
+  forEachCollectionRecord(
+    value,
+    ["nodes", "groups"],
+    (item, index, collectionName) => {
+      if (!("icon" in item)) return;
 
       validateIconReferenceValue(
         `${collectionName}[${index}].icon`,
         item.icon,
         errors,
       );
-    });
-  }
+    },
+  );
 }
 
 function validateRequiredPlainTextLabels(
   value: Record<string, unknown>,
   errors: DiagramSpecValidationError[],
 ): void {
-  for (const collectionName of ["nodes", "groups"] as const) {
-    const collection = value[collectionName];
-
-    if (!Array.isArray(collection)) {
-      continue;
-    }
-
-    collection.forEach((item, index) => {
-      if (!isRecord(item)) {
-        return;
-      }
-
+  forEachCollectionRecord(
+    value,
+    ["nodes", "groups"],
+    (item, index, collectionName) => {
       const labelPath = `${collectionName}[${index}].label`;
 
       if (typeof item.label === "string") {
@@ -342,26 +315,16 @@ function validateRequiredPlainTextLabels(
         expected: "Plain-text label string.",
         suggestion: `Add a plain-text label to ${collectionName}[${index}].`,
       });
-    });
-  }
+    },
+  );
 }
 
 function validateOptionalEdgeLabels(
   value: Record<string, unknown>,
   errors: DiagramSpecValidationError[],
 ): void {
-  const edges = value.edges;
-
-  if (!Array.isArray(edges)) {
-    return;
-  }
-
-  edges.forEach((edge, index) => {
-    if (
-      !isRecord(edge) ||
-      !("label" in edge) ||
-      typeof edge.label === "string"
-    ) {
+  forEachCollectionRecord(value, ["edges"], (edge, index) => {
+    if (!("label" in edge) || typeof edge.label === "string") {
       return;
     }
 
@@ -379,16 +342,8 @@ function validateEdgeDirectedValues(
   value: Record<string, unknown>,
   errors: DiagramSpecValidationError[],
 ): void {
-  const edges = value.edges;
-
-  if (!Array.isArray(edges)) {
-    return;
-  }
-
-  edges.forEach((edge, index) => {
-    if (!isRecord(edge) || !("directed" in edge)) {
-      return;
-    }
+  forEachCollectionRecord(value, ["edges"], (edge, index) => {
+    if (!("directed" in edge)) return;
 
     if (typeof edge.directed === "boolean") {
       return;

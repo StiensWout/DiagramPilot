@@ -67,7 +67,12 @@ test("llms.txt reflects current public docs and the published schema helper", as
   assert.match(llmsText, /`diagrampilot init --docs` is opt-in/i);
   assert.match(llmsText, /normal `diagrampilot init` does not create Repo Workflow Configuration/i);
   assert.match(llmsText, /`diagrampilot init --config` is opt-in/i);
-  assert.doesNotMatch(llmsText, /MCP|Model Context Protocol/);
+  assert.match(
+    llmsText,
+    /https:\/\/diagrampilot\.com\/docs\/agents\/mcp\.md/,
+  );
+  assert.match(llmsText, /Alpha Model Context Protocol server/);
+  assert.match(llmsText, /diagrampilot mcp/);
   assert.doesNotMatch(llmsText, /planned|deferred|future|not implemented|source mutation/i);
   assert.doesNotMatch(
     llmsText,
@@ -180,7 +185,9 @@ test("README describes current behavior and public docs only", async () => {
   assert.doesNotMatch(readme, /docs\/development\//);
   assert.doesNotMatch(readme, /docs\/adr\//);
   assert.doesNotMatch(readme, /\.scratch\//);
-  assert.doesNotMatch(readme, /MCP|Model Context Protocol/);
+  assert.match(readme, /https:\/\/diagrampilot\.com\/docs\/agents\/mcp\.md/);
+  assert.match(readme, /diagrampilot mcp/);
+  assert.match(readme, /alpha Model Context Protocol stdio server/);
   assert.doesNotMatch(readme, /planned|deferred|future|not implemented|source mutation/i);
 });
 
@@ -442,14 +449,13 @@ test("public surface describes shipped DiagramPilot behavior only", async () => 
 
   assert.equal(
     await exists(path.join("docs-public", "agents", "mcp.md")),
-    false,
-    "MCP planning should not be published as a public agent guide",
+    true,
+    "MCP should be published as a public alpha guide",
   );
 
   for (const repoPath of publicSurfaceFiles) {
     const source = await readFile(path.join(repoRoot, repoPath), "utf8");
 
-    assert.doesNotMatch(source, /MCP|Model Context Protocol/, repoPath);
     assert.doesNotMatch(
       source,
       /planned|deferred|future|not implemented|source mutation/i,

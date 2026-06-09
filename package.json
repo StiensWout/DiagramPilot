@@ -1,6 +1,6 @@
 {
   "name": "@diagrampilot/workspace",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "private": true,
   "description": "Repo-native diagram compiler for AI coding agents.",
   "type": "module",
@@ -29,7 +29,7 @@
     "website"
   ],
   "scripts": {
-    "build": "tsc -b && node packages/cli/scripts/make-bin-executable.mjs",
+    "build": "tsc -b && node packages/cli/scripts/make-bin-executable.mjs && node packages/mcp/scripts/make-bin-executable.mjs",
     "build:website": "npm --workspace website run build",
     "audit:maintainability": "npm run build && node scripts/audit-maintainability-file-sizes.mjs",
     "audit:fallow": "npm run build && npm run audit:fallow:dead-code && npm run audit:fallow:dupes && npm run audit:fallow:health",
@@ -48,6 +48,7 @@
     "test": "npm run build && node --test --test-concurrency=1 test/*.test.mjs"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/node": "^25.9.1",
     "fallow": "^2.89.0",
     "typescript": "^6.0.3"

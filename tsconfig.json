@@ -17,6 +17,9 @@
       "path": "./packages/export-dot"
     },
     {
+      "path": "./packages/mcp"
+    },
+    {
       "path": "./packages/render-svg"
     },
     {

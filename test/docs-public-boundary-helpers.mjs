@@ -10,6 +10,7 @@ export const repoRoot = path.resolve(
 export const publicAgentDocs = [
   "quickstart.md",
   "installation.md",
+  "mcp.md",
   "spec.md",
   "error-repair.md",
   "examples.md",

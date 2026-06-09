@@ -1,11 +1,13 @@
-import { createDiagramSpecTopology } from "@diagrampilot/core";
+import {
+  createDiagramSpecTopology,
+  walkDiagramSpecTopology,
+} from "@diagrampilot/core";
 import type {
   DiagramSpec,
   DiagramSpecEdge,
   DiagramSpecGroup,
   DiagramSpecNode,
   DiagramSpecTopology,
-  DiagramSpecTopologyEntry,
 } from "@diagrampilot/core";
 
 export const EXPORT_D2_PACKAGE_NAME = "@diagrampilot/export-d2";
@@ -60,36 +62,20 @@ export function exportDiagramSpecToD2(spec: DiagramSpec): string {
     lines.push(`${indent(depth)}${nodeDefinition(node)}`);
   }
 
-  function emitTopologyEntry(
-    entry: DiagramSpecTopologyEntry,
-    depth: number,
-  ): void {
-    if (entry.objectType === "node") {
-      emitNode(entry.node, depth);
-      return;
-    }
-
-    emitGroup(entry.group, depth);
-  }
-
-  function emitGroup(group: DiagramSpecGroup, depth: number): void {
+  function enterGroup(group: DiagramSpecGroup, depth: number): void {
     lines.push(`${indent(depth)}${group.id}: {`);
     lines.push(`${indent(depth + 1)}label: ${quoted(group.label)}`);
+  }
 
-    for (const entry of topology.containedObjectsByGroupId.get(group.id) ?? []) {
-      emitTopologyEntry(entry, depth + 1);
-    }
-
+  function exitGroup(_group: DiagramSpecGroup, depth: number): void {
     lines.push(`${indent(depth)}}`);
   }
 
-  for (const node of topology.rootNodes) {
-    emitNode(node, 0);
-  }
-
-  for (const group of topology.rootGroups) {
-    emitGroup(group, 0);
-  }
+  walkDiagramSpecTopology(topology, {
+    node: emitNode,
+    enterGroup,
+    exitGroup,
+  });
 
   if ((spec.edges ?? []).length > 0) {
     lines.push("");

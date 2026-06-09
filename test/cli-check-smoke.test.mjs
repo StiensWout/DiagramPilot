@@ -4,6 +4,7 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  assertFreshCheckOutput,
   parseSuccessfulJsonCliPayload,
   runBuiltCli,
   withTempRepo,
@@ -16,13 +17,7 @@ test("diagrampilot check uses the current working directory by default", async (
 
     const result = await runBuiltCli(["check"], tempRoot);
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
-    assert.equal(
-      result.stdout,
-      "Checked 1 DiagramPilot Source File. All expected SVG artifacts are fresh.\n",
-    );
+    assertFreshCheckOutput(result);
   });
 });
 
@@ -128,12 +123,6 @@ test("diagrampilot check supports one explicit source file", async () => {
       tempRoot,
     );
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
-    assert.equal(
-      result.stdout,
-      "Checked 1 DiagramPilot Source File. All expected SVG artifacts are fresh.\n",
-    );
+    assertFreshCheckOutput(result);
   });
 });

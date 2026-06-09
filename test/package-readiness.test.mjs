@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+
+import { runProcess, sanitizedTestEnv } from "./process-helpers.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const publicPackageReadmes = [
@@ -13,36 +14,19 @@ const publicPackageReadmes = [
   ["@diagrampilot/export-mermaid", "packages/export-mermaid/README.md"],
   ["@diagrampilot/export-d2", "packages/export-d2/README.md"],
   ["@diagrampilot/export-dot", "packages/export-dot/README.md"],
+  ["@diagrampilot/mcp", "packages/mcp/README.md"],
   ["@diagrampilot/render-svg", "packages/render-svg/README.md"],
 ];
 
 function runPackageReadinessCheck() {
-  return new Promise((resolve, reject) => {
-    const child = spawn(
-      process.execPath,
-      [path.join(repoRoot, "scripts", "check-package-readiness.mjs")],
-      {
-        cwd: repoRoot,
-        env: { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1" },
-      },
-    );
-
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk;
-    });
-    child.on("error", reject);
-    child.on("close", (code, signal) => {
-      resolve({ code, signal, stdout, stderr });
-    });
-  });
+  return runProcess(
+    process.execPath,
+    [path.join(repoRoot, "scripts", "check-package-readiness.mjs")],
+    {
+      cwd: repoRoot,
+      env: sanitizedTestEnv(),
+    },
+  );
 }
 
 test("package readiness check passes for release-ready public package metadata and tarballs", async () => {
@@ -53,7 +37,7 @@ test("package readiness check passes for release-ready public package metadata a
   assert.equal(result.stderr, "");
   assert.equal(
     result.stdout,
-    "DiagramPilot package readiness checks passed for 7 public packages.\n",
+    "DiagramPilot package readiness checks passed for 8 public packages.\n",
   );
 });
 
@@ -118,6 +102,7 @@ test("public alpha package publishing ADR captures license brand package set and
   assert.match(adr, /`@diagrampilot\/export-mermaid`/);
   assert.match(adr, /`@diagrampilot\/export-d2`/);
   assert.match(adr, /`@diagrampilot\/export-dot`/);
+  assert.match(adr, /`@diagrampilot\/mcp`/);
   assert.match(adr, /`@diagrampilot\/render-svg`/);
   assert.match(adr, /prealpha/);
   assert.match(adr, /v0\.2\.0/);

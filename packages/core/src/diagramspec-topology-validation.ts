@@ -23,6 +23,33 @@ function idsFromTopologyMap<T>(objectsById: ReadonlyMap<string, T>): Set<string>
   return new Set(objectsById.keys());
 }
 
+function forEachStableGroupWithContains(
+  groups: unknown,
+  visitor: (
+    group: Record<string, unknown> & { contains: unknown[] },
+    groupIndex: number,
+    groupId: string,
+  ) => void,
+): void {
+  if (!Array.isArray(groups)) return;
+
+  groups.forEach((group, groupIndex) => {
+    if (!isRecord(group) || !Array.isArray(group.contains)) {
+      return;
+    }
+
+    const groupId = group.id;
+
+    if (!isStableId(groupId)) return;
+
+    visitor(
+      group as Record<string, unknown> & { contains: unknown[] },
+      groupIndex,
+      groupId,
+    );
+  });
+}
+
 function isTopologyCompatibleObjectCollection(collection: unknown): boolean {
   return (
     Array.isArray(collection) &&
@@ -68,9 +95,7 @@ export function createDiagramSpecTopologyForValidation(
 }
 
 function nodeIdsExpected(nodeIds: ReadonlySet<string>): string {
-  if (nodeIds.size === 0) {
-    return "An existing node ID.";
-  }
+  if (nodeIds.size === 0) return "An existing node ID.";
 
   return `One of: ${Array.from(nodeIds).join(", ")}.`;
 }
@@ -343,26 +368,11 @@ export function validateDuplicateGroupContainmentParentage(
   }
 
   const groups = value.groups;
-
-  if (!Array.isArray(groups)) {
-    return;
-  }
-
   const nodeIds = stableIdsFromCollection(value.nodes);
   const groupIds = stableIdsFromCollection(groups);
   const parentByContainedId = new Map<string, { id: string }>();
 
-  groups.forEach((group, groupIndex) => {
-    if (!isRecord(group) || !Array.isArray(group.contains)) {
-      return;
-    }
-
-    const groupId = group.id;
-
-    if (!isStableId(groupId)) {
-      return;
-    }
-
+  forEachStableGroupWithContains(groups, (group, groupIndex, groupId) => {
     group.contains.forEach((containedId, containedIndex) => {
       if (
         typeof containedId !== "string" ||
@@ -429,17 +439,7 @@ export function validateGroupContainmentCycles(
       }
     }
   } else {
-    groups.forEach((group, groupIndex) => {
-      if (!isRecord(group) || !Array.isArray(group.contains)) {
-        return;
-      }
-
-      const groupId = group.id;
-
-      if (!isStableId(groupId)) {
-        return;
-      }
-
+    forEachStableGroupWithContains(groups, (group, groupIndex, groupId) => {
       const links: GroupContainmentLink[] = [];
 
       group.contains.forEach((containedId, containedIndex) => {

@@ -1,10 +1,8 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
-import { LineCounter, parseDocument } from "yaml";
-import type { YAMLError } from "yaml";
-
 import type { RepairableDiagnostic } from "./diagramspec-validation.js";
+import { parseYamlDocument } from "./yaml-parse.js";
 
 const repoWorkflowConfigFileName = "diagrampilot.config.yaml";
 
@@ -69,15 +67,6 @@ export type RepoWorkflowConfigDiscoveryResult =
 
 function normalizePathForConfig(filePath: string): string {
   return filePath.split(path.sep).join("/");
-}
-
-function firstLinePosition(error: YAMLError): { line?: number; column?: number } {
-  const [linePosition] = error.linePos ?? [];
-
-  return {
-    line: linePosition?.line,
-    column: linePosition?.col,
-  };
 }
 
 function diagnosticText(
@@ -306,15 +295,10 @@ function parseRepoWorkflowConfig(
     });
   }
 
-  const lineCounter = new LineCounter();
-  const document = parseDocument(content, {
-    lineCounter,
-    prettyErrors: false,
-  });
-  const [firstError] = document.errors;
+  const { document, firstError, firstErrorPosition } = parseYamlDocument(content);
 
   if (firstError !== undefined) {
-    const { line, column } = firstLinePosition(firstError);
+    const { line, column } = firstErrorPosition;
     const location =
       line === undefined || column === undefined
         ? ""

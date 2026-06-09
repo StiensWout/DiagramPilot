@@ -1,67 +1,18 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
-const DEPENDENCY_FIELDS = [
-  "dependencies",
-  "devDependencies",
-  "peerDependencies",
-  "optionalDependencies",
-];
-const VERSION_SOURCE_PATH = "packages/core/src/version.ts";
-const RELEASE_VERSION_PATTERN =
-  /^\d+\.\d+\.\d+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?$/u;
-
-function readJson(filePath) {
-  return JSON.parse(readFileSync(filePath, "utf8"));
-}
+import {
+  createManifestRecord,
+  DEPENDENCY_FIELDS,
+  discoverWorkspaceManifestPaths,
+  readJson,
+  RELEASE_VERSION_PATTERN,
+  VERSION_SOURCE_PATH,
+} from "./release-version-workspace.mjs";
 
 function writeJson(filePath, data) {
   writeFileSync(filePath, `${JSON.stringify(data, null, 2)}\n`, "utf8");
-}
-
-function toRepoPath(rootPath, filePath) {
-  return path.relative(rootPath, filePath).split(path.sep).join("/");
-}
-
-function lockPackageKeyForManifest(repoPath) {
-  if (repoPath === "package.json") {
-    return "";
-  }
-
-  return path.posix.dirname(repoPath);
-}
-
-function expandWorkspacePattern(rootPath, pattern) {
-  if (!pattern.endsWith("/*")) {
-    const manifestPath = path.join(rootPath, pattern, "package.json");
-    return existsSync(manifestPath) ? [manifestPath] : [];
-  }
-
-  const workspaceRoot = path.join(rootPath, pattern.slice(0, -2));
-
-  return readdirSync(workspaceRoot, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => path.join(workspaceRoot, entry.name, "package.json"))
-    .filter((manifestPath) => existsSync(manifestPath))
-    .sort();
-}
-
-function discoverWorkspaceManifestPaths(rootPath, rootManifest) {
-  return rootManifest.workspaces
-    .flatMap((pattern) => expandWorkspacePattern(rootPath, pattern))
-    .sort();
-}
-
-function createManifestRecord(rootPath, manifestPath) {
-  const repoPath = toRepoPath(rootPath, manifestPath) || "package.json";
-
-  return {
-    manifestPath,
-    repoPath,
-    lockKey: lockPackageKeyForManifest(repoPath),
-    manifest: readJson(manifestPath),
-  };
 }
 
 function updateInternalDependencies(manifest, publicPackageNames, version) {

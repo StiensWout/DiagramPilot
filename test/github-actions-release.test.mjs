@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+
+import { runProcess, sanitizedTestEnv } from "./process-helpers.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const releaseWorkflowPath = path.join(
@@ -51,33 +52,12 @@ async function withGithubEvent(eventPayload, callback) {
 }
 
 function runReleasePlan(env) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [releasePlanScriptPath], {
-      cwd: repoRoot,
-      env: {
-        ...process.env,
-        DIAGRAMPILOT_NPM_PUBLISH_ENABLED: "",
-        FORCE_COLOR: "0",
-        NO_COLOR: "1",
-        ...env,
-      },
-    });
-
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk;
-    });
-    child.on("error", reject);
-    child.on("close", (code, signal) => {
-      resolve({ code, signal, stdout, stderr });
-    });
+  return runProcess(process.execPath, [releasePlanScriptPath], {
+    cwd: repoRoot,
+    env: sanitizedTestEnv({
+      DIAGRAMPILOT_NPM_PUBLISH_ENABLED: "",
+      ...env,
+    }),
   });
 }
 

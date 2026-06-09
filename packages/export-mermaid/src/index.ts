@@ -1,11 +1,13 @@
-import { createDiagramSpecTopology } from "@diagrampilot/core";
+import {
+  createDiagramSpecTopology,
+  walkDiagramSpecTopology,
+} from "@diagrampilot/core";
 import type {
   DiagramSpec,
   DiagramSpecDirection,
   DiagramSpecEdge,
   DiagramSpecGroup,
   DiagramSpecNode,
-  DiagramSpecTopologyEntry,
 } from "@diagrampilot/core";
 
 export const EXPORT_MERMAID_PACKAGE_NAME = "@diagrampilot/export-mermaid";
@@ -62,35 +64,20 @@ export function exportDiagramSpecToMermaid(spec: DiagramSpec): string {
     lines.push(`${indent(depth)}${nodeDefinition(node)}`);
   }
 
-  function emitTopologyEntry(
-    entry: DiagramSpecTopologyEntry,
-    depth: number,
-  ): void {
-    if (entry.objectType === "node") {
-      emitNode(entry.node, depth);
-      return;
-    }
-
-    emitGroup(entry.group, depth);
+  function enterGroup(group: DiagramSpecGroup, depth: number): void {
+    lines.push(`${indent(depth)}${groupDefinition(group)}`);
   }
 
-  function emitGroup(group: DiagramSpecGroup, depth: number): void {
-    lines.push(`${indent(depth)}${groupDefinition(group)}`);
-
-    for (const entry of topology.containedObjectsByGroupId.get(group.id) ?? []) {
-      emitTopologyEntry(entry, depth + 1);
-    }
-
+  function exitGroup(_group: DiagramSpecGroup, depth: number): void {
     lines.push(`${indent(depth)}end`);
   }
 
-  for (const node of topology.rootNodes) {
-    emitNode(node, 1);
-  }
-
-  for (const group of topology.rootGroups) {
-    emitGroup(group, 1);
-  }
+  walkDiagramSpecTopology(topology, {
+    rootDepth: 1,
+    node: emitNode,
+    enterGroup,
+    exitGroup,
+  });
 
   for (const edge of spec.edges ?? []) {
     lines.push(`${indent(1)}${edgeDefinition(edge)}`);

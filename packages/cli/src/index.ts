@@ -3,6 +3,8 @@ import { realpathSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { runMcpCli } from "@diagrampilot/mcp";
+
 import { planCommand } from "./command-planning.js";
 import { executeCommandPlan } from "./execution.js";
 import { runInit } from "./init-command.js";
@@ -24,6 +26,12 @@ export async function run(
 
   if (firstArg === "init") {
     return runInit(args.slice(1), streams);
+  }
+
+  if (firstArg === "mcp") {
+    return runMcpCli(args.slice(1), streams, {
+      commandName: "diagrampilot mcp",
+    });
   }
 
   return executeCommandPlan(await planCommand(args), streams);

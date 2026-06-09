@@ -1,7 +1,5 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
-import { createHash } from "node:crypto";
-import { access, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { access, mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,9 +9,15 @@ import {
   getDiagramPilotVersion,
   loadValidatedDiagramSpec,
 } from "../packages/core/dist/index.js";
+import {
+  assertCliSuccess,
+  assertFreshCheckOutput,
+  findFilesMatching,
+  runBuiltCli,
+  sha256Hex,
+} from "./cli-smoke-helpers.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const cliEntryPoint = path.join(repoRoot, "packages", "cli", "dist", "index.js");
 const checkoutDemoRoot = path.join(repoRoot, "demo-projects", "checkout");
 const checkoutArchitectureSource = path.join("docs", "architecture.dp.yaml");
 const checkoutArchitectureSvg = path.join(
@@ -22,90 +26,12 @@ const checkoutArchitectureSvg = path.join(
   "architecture.svg",
 );
 
-function testEnv() {
-  const env = { ...process.env };
-  delete env.FORCE_COLOR;
-  delete env.NO_COLOR;
-  return env;
-}
-
-function runBuiltCli(args, cwd = repoRoot) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [cliEntryPoint, ...args], {
-      cwd,
-      env: testEnv(),
-    });
-
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk;
-    });
-    child.on("error", reject);
-    child.on("close", (code, signal) => {
-      resolve({ code, signal, stdout, stderr });
-    });
-  });
-}
-
 async function findDiagramPilotSources(rootPath) {
-  const found = [];
-
-  async function visit(directory) {
-    const entries = await readdir(directory, { withFileTypes: true });
-
-    for (const entry of entries) {
-      const absolutePath = path.join(directory, entry.name);
-
-      if (entry.isDirectory()) {
-        await visit(absolutePath);
-        continue;
-      }
-
-      if (/\.dp\.(yaml|json)$/u.test(entry.name)) {
-        found.push(path.relative(rootPath, absolutePath));
-      }
-    }
-  }
-
-  await visit(rootPath);
-
-  return found.sort();
+  return findFilesMatching(rootPath, rootPath, /\.dp\.(yaml|json)$/u);
 }
 
 async function findSourceSnippets(rootPath) {
-  const found = [];
-
-  async function visit(directory) {
-    const entries = await readdir(directory, { withFileTypes: true });
-
-    for (const entry of entries) {
-      const absolutePath = path.join(directory, entry.name);
-
-      if (entry.isDirectory()) {
-        await visit(absolutePath);
-        continue;
-      }
-
-      if (/\.(ts|tsx)$/u.test(entry.name)) {
-        found.push(path.relative(rootPath, absolutePath));
-      }
-    }
-  }
-
-  await visit(path.join(rootPath, "src"));
-
-  return found.sort();
-}
-
-function sha256Hex(text) {
-  return createHash("sha256").update(text).digest("hex");
+  return findFilesMatching(rootPath, path.join(rootPath, "src"), /\.(ts|tsx)$/u);
 }
 
 function metadataSourceOf(value) {
@@ -122,10 +48,7 @@ test("checkout demo project has one canonical DiagramPilot source that validates
     checkoutDemoRoot,
   );
 
-  assert.equal(result.signal, null);
-  assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stderr, "");
-  assert.equal(result.stdout, `Valid ${checkoutArchitectureSource}\n`);
+  assertCliSuccess(result, { stdout: `Valid ${checkoutArchitectureSource}\n` });
 });
 
 test("checkout demo project supports check as a read-only repository review command", async () => {
@@ -133,13 +56,7 @@ test("checkout demo project supports check as a read-only repository review comm
 
   const result = await runBuiltCli(["check"], checkoutDemoRoot);
 
-  assert.equal(result.signal, null);
-  assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stderr, "");
-  assert.equal(
-    result.stdout,
-    "Checked 1 DiagramPilot Source File. All expected SVG artifacts are fresh.\n",
-  );
+  assertFreshCheckOutput(result);
 
   const svgAfter = await readFile(checkoutArchitectureSvg, "utf8");
 
@@ -158,10 +75,7 @@ test("checkout demo project SVG is rendered by the real CLI with deterministic p
       checkoutDemoRoot,
     );
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stdout, "");
-    assert.equal(result.stderr, "");
+    assertCliSuccess(result);
 
     const renderedSvg = await readFile(renderedSvgPath, "utf8");
     const committedSvg = await readFile(checkoutArchitectureSvg, "utf8");

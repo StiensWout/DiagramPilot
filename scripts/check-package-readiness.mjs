@@ -50,6 +50,14 @@ const PUBLIC_PACKAGE_SET = [
     directory: "packages/export-dot",
   },
   {
+    name: "@diagrampilot/mcp",
+    repoPath: "packages/mcp/package.json",
+    directory: "packages/mcp",
+    bin: {
+      "diagrampilot-mcp": "dist/index.js",
+    },
+  },
+  {
     name: "@diagrampilot/render-svg",
     repoPath: "packages/render-svg/package.json",
     directory: "packages/render-svg",

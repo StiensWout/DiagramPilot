@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
 import {
   chmod,
   mkdir,
@@ -12,6 +11,8 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+
+import { runProcess } from "./process-helpers.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const scriptPath = path.join(repoRoot, "scripts", "check-package-publish-state.mjs");
@@ -43,27 +44,9 @@ async function withFakeNpm(scriptSource, callback) {
 }
 
 function runPublishStateCheck(args, env) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [scriptPath, ...args], {
-      cwd: repoRoot,
-      env,
-    });
-
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk;
-    });
-    child.on("error", reject);
-    child.on("close", (code, signal) => {
-      resolve({ code, signal, stdout, stderr });
-    });
+  return runProcess(process.execPath, [scriptPath, ...args], {
+    cwd: repoRoot,
+    env,
   });
 }
 
@@ -81,7 +64,7 @@ process.exit(1);
     assert.equal(result.stderr, "");
     assert.equal(
       result.stdout,
-      "DiagramPilot npm publish-state check passed: 7 package names are available on npm.\n",
+      "DiagramPilot npm publish-state check passed: 8 package names are available on npm.\n",
     );
   });
 });
@@ -102,7 +85,7 @@ process.stdout.write(JSON.stringify({ prealpha: "${workspaceManifest.version}" }
     assert.equal(result.stderr, "");
     assert.equal(
       result.stdout,
-      `DiagramPilot npm publish-state check passed: 7 packages publish ${workspaceManifest.version} under prealpha and latest is not moved.\n`,
+      `DiagramPilot npm publish-state check passed: 8 packages publish ${workspaceManifest.version} under prealpha and latest is not moved.\n`,
     );
   });
 });
@@ -123,7 +106,7 @@ process.stdout.write(JSON.stringify({ latest: "${workspaceManifest.version}" }) 
     assert.equal(result.stderr, "");
     assert.equal(
       result.stdout,
-      `DiagramPilot npm publish-state check passed: 7 packages publish ${workspaceManifest.version} under latest.\n`,
+      `DiagramPilot npm publish-state check passed: 8 packages publish ${workspaceManifest.version} under latest.\n`,
     );
   });
 });

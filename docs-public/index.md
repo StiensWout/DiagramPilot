@@ -15,6 +15,7 @@ Start with the Checkout Demo Project quickstart:
 Core public references:
 
 - [Installation and removal guide](agents/installation.md)
+- [MCP guide](agents/mcp.md)
 - [DiagramSpec guide](agents/spec.md)
 - [Error repair guide](agents/error-repair.md)
 - [Agent examples](agents/examples.md)
@@ -30,6 +31,7 @@ diagrampilot init
 diagrampilot init --docs
 diagrampilot init --config
 diagrampilot check
+diagrampilot mcp
 diagrampilot check docs --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
@@ -45,4 +47,5 @@ agent docs. Use `init --config` only when a repository intentionally wants
 `diagrampilot.config.yaml`. Use `check` as the read-only repo review/CI
 command. `render` requires `--out`, defaults to SVG, and supports `--format
 svg|png`. `export` prints to stdout by default and writes a file only when
-`--out` is provided.
+`--out` is provided. `mcp` launches the alpha MCP stdio server for local MCP
+clients.

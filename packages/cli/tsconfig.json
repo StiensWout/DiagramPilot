@@ -23,6 +23,9 @@
       "path": "../export-mermaid"
     },
     {
+      "path": "../mcp"
+    },
+    {
       "path": "../render-svg"
     }
   ]

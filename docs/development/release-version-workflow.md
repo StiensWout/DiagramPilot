@@ -101,6 +101,30 @@ boundaries, public package repository/homepage/bugs/keywords/publish settings,
 package-local MIT license files, and `npm pack --dry-run` output for the Public
 Package Set.
 
+For the MCP package, readiness also means both launch surfaces are present:
+
+```bash
+diagrampilot mcp --help
+diagrampilot-mcp --help
+```
+
+MCP client configuration should use the main command when possible:
+
+```json
+{
+  "mcpServers": {
+    "diagrampilot": {
+      "command": "diagrampilot",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+MCP smoke validation should prove the server starts over stdio, lists
+resources, read tools, and prompts, reads `diagrampilot://schema/v1`, and calls
+`diagrampilot_validate_source` against a valid `*.dp.yaml` source.
+
 Run the package publish-state check before the first pre-alpha publish to prove
 the package names are still available on the public npm registry:
 
@@ -125,6 +149,7 @@ npm publish --workspace @diagrampilot/icons --tag prealpha --access public
 npm publish --workspace @diagrampilot/export-mermaid --tag prealpha --access public
 npm publish --workspace @diagrampilot/export-d2 --tag prealpha --access public
 npm publish --workspace @diagrampilot/export-dot --tag prealpha --access public
+npm publish --workspace @diagrampilot/mcp --tag prealpha --access public
 npm publish --workspace @diagrampilot/render-svg --tag prealpha --access public
 ```
 
@@ -259,6 +284,7 @@ diagrampilot
 @diagrampilot/export-mermaid
 @diagrampilot/export-d2
 @diagrampilot/export-dot
+@diagrampilot/mcp
 @diagrampilot/render-svg
 ```
 

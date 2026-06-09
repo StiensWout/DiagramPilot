@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+import {
+  exists,
+  repoRoot,
+  websiteBuild,
+} from "./website-test-helpers.mjs";
+
 const deploymentGuidePath = path.join(
   repoRoot,
   "docs",
@@ -13,60 +16,8 @@ const deploymentGuidePath = path.join(
   "public-website-deployment.md",
 );
 
-let websiteBuildPromise;
-
-async function websiteBuild() {
-  websiteBuildPromise ??= new Promise((resolve, reject) => {
-    const child = spawn("npm", ["--workspace", "website", "run", "build"], {
-      cwd: repoRoot,
-      env: { ...process.env, CI: "true" },
-    });
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk;
-    });
-    child.on("error", reject);
-    child.on("close", (code) => {
-      if (code === 0) {
-        resolve();
-        return;
-      }
-
-      reject(
-        new Error(
-          [
-            `Website build failed with exit code ${code}.`,
-            stdout.trim(),
-            stderr.trim(),
-          ]
-            .filter(Boolean)
-            .join("\n\n"),
-        ),
-      );
-    });
-  });
-
-  return websiteBuildPromise;
-}
-
 async function readDeploymentGuide() {
   return readFile(deploymentGuidePath, "utf8");
-}
-
-async function exists(repoPath) {
-  try {
-    await access(path.join(repoRoot, repoPath));
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 test("internal deployment guidance documents the static Vercel Pro path", async () => {
