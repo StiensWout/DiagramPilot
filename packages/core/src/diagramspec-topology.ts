@@ -100,6 +100,47 @@ export interface DiagramSpecTopology {
   nodePathsById: ReadonlyMap<string, readonly string[]>;
 }
 
+export interface DiagramSpecTopologyWalkHandlers {
+  rootDepth?: number;
+  node(node: DiagramSpecNode, depth: number): void;
+  enterGroup(group: DiagramSpecGroup, depth: number): void;
+  exitGroup(group: DiagramSpecGroup, depth: number): void;
+}
+
+export function walkDiagramSpecTopology(
+  topology: DiagramSpecTopology,
+  handlers: DiagramSpecTopologyWalkHandlers,
+): void {
+  const rootDepth = handlers.rootDepth ?? 0;
+
+  function walkEntry(entry: DiagramSpecTopologyEntry, depth: number): void {
+    if (entry.objectType === "node") {
+      handlers.node(entry.node, depth);
+      return;
+    }
+
+    walkGroup(entry.group, depth);
+  }
+
+  function walkGroup(group: DiagramSpecGroup, depth: number): void {
+    handlers.enterGroup(group, depth);
+
+    for (const entry of topology.containedObjectsByGroupId.get(group.id) ?? []) {
+      walkEntry(entry, depth + 1);
+    }
+
+    handlers.exitGroup(group, depth);
+  }
+
+  for (const node of topology.rootNodes) {
+    handlers.node(node, rootDepth);
+  }
+
+  for (const group of topology.rootGroups) {
+    walkGroup(group, rootDepth);
+  }
+}
+
 export function createDiagramSpecTopology(
   spec: DiagramSpec,
 ): DiagramSpecTopology {

@@ -1,130 +1,15 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-
-let websiteBuildPromise;
-
-async function websiteBuild() {
-  websiteBuildPromise ??= new Promise((resolve, reject) => {
-    const child = spawn("npm", ["--workspace", "website", "run", "build"], {
-      cwd: repoRoot,
-      env: { ...process.env, CI: "true" },
-    });
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk;
-    });
-    child.on("error", reject);
-    child.on("close", (code) => {
-      if (code === 0) {
-        resolve();
-        return;
-      }
-
-      reject(
-        new Error(
-          [
-            `Website build failed with exit code ${code}.`,
-            stdout.trim(),
-            stderr.trim(),
-          ]
-            .filter(Boolean)
-            .join("\n\n"),
-        ),
-      );
-    });
-  });
-
-  return websiteBuildPromise;
-}
-
-async function gitLsFiles(paths) {
-  return new Promise((resolve, reject) => {
-    const child = spawn("git", ["ls-files", "--", ...paths], {
-      cwd: repoRoot,
-    });
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk;
-    });
-    child.on("error", reject);
-    child.on("close", (code) => {
-      if (code === 0) {
-        resolve(stdout);
-        return;
-      }
-
-      reject(new Error(stderr.trim() || `git ls-files exited with ${code}`));
-    });
-  });
-}
-
-async function publicDocsSync() {
-  return new Promise((resolve, reject) => {
-    const child = spawn("node", ["scripts/sync-public-docs.mjs"], {
-      cwd: path.join(repoRoot, "website"),
-      env: { ...process.env, CI: "true" },
-    });
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk;
-    });
-    child.on("error", reject);
-    child.on("close", (code) => {
-      if (code === 0) {
-        resolve();
-        return;
-      }
-
-      reject(
-        new Error(
-          [
-            `Public docs sync failed with exit code ${code}.`,
-            stdout.trim(),
-            stderr.trim(),
-          ]
-            .filter(Boolean)
-            .join("\n\n"),
-        ),
-      );
-    });
-  });
-}
-
-async function exists(repoPath) {
-  try {
-    await access(path.join(repoRoot, repoPath));
-    return true;
-  } catch {
-    return false;
-  }
-}
+import {
+  exists,
+  gitLsFiles,
+  publicDocsSync,
+  repoRoot,
+  websiteBuild,
+} from "./website-test-helpers.mjs";
 
 test("public docs sync can run concurrently without deleting current generated docs", async () => {
   await Promise.all(Array.from({ length: 8 }, () => publicDocsSync()));

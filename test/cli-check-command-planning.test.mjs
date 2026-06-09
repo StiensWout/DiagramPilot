@@ -2,7 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { planCommand } from "../packages/cli/dist/index.js";
-import { createPlanningDependencies } from "./cli-command-planning-helpers.mjs";
+import {
+  createPlanningDependencies,
+  freshWorkflowSource,
+  invalidWorkflowSource,
+  missingArtifactWorkflowSource,
+  repoWorkflowCheckResult,
+  staleWorkflowSource,
+  testRenderer,
+} from "./cli-command-planning-helpers.mjs";
 
 test("plans check no-source directory scopes as a successful no-op with no writes", async () => {
   const plan = await planCommand(["check"], createPlanningDependencies());
@@ -23,34 +31,14 @@ test("plans check by delegating Repo Workflow Check to the command adapter", asy
       checkDiagramPilotRepoWorkflow: async (options) => {
         receivedOptions = options;
 
-        return {
-          ok: true,
-          scope: { kind: "directory", path: "/repo" },
+        return repoWorkflowCheckResult({
           summary: {
             checkedSourceCount: 1,
             freshSourceCount: 1,
             issueCount: 0,
           },
-          sources: [
-            {
-              sourcePath: "docs/architecture.dp.yaml",
-              validation: {
-                ok: true,
-                errors: [],
-              },
-              artifact: {
-                status: "fresh",
-                path: "docs/architecture.svg",
-                provenance: {
-                  sourcePath: "docs/architecture.dp.yaml",
-                  sourceSha256: "hash",
-                  diagramPilotVersion: "0.1.0",
-                  renderer: { name: "@terrastruct/d2", version: "0.1.33" },
-                },
-              },
-            },
-          ],
-        };
+          sources: [freshWorkflowSource()],
+        });
       },
       discoverDiagramPilotSourceFiles: async () => {
         throw new Error("check planning should delegate discovery");
@@ -85,7 +73,7 @@ test("plans check by delegating Repo Workflow Check to the command adapter", asy
     {
       scopePath: undefined,
       diagramPilotVersion: "0.1.0",
-      renderer: { name: "@terrastruct/d2", version: "0.1.33" },
+      renderer: testRenderer,
     },
   );
   assert.deepEqual(plan, {
@@ -101,34 +89,15 @@ test("plans check text success as a concise summary without listing every fresh 
   const plan = await planCommand(
     ["check"],
     createPlanningDependencies({
-      checkDiagramPilotRepoWorkflow: async () => ({
-        ok: true,
-        scope: { kind: "directory", path: "/repo" },
-        summary: {
-          checkedSourceCount: 1,
-          freshSourceCount: 1,
-          issueCount: 0,
-        },
-        sources: [
-          {
-            sourcePath: "docs/architecture.dp.yaml",
-            validation: {
-              ok: true,
-              errors: [],
-            },
-            artifact: {
-              status: "fresh",
-              path: "docs/architecture.svg",
-              provenance: {
-                sourcePath: "docs/architecture.dp.yaml",
-                sourceSha256: "hash",
-                diagramPilotVersion: "0.1.0",
-                renderer: { name: "@terrastruct/d2", version: "0.1.33" },
-              },
-            },
+      checkDiagramPilotRepoWorkflow: async () =>
+        repoWorkflowCheckResult({
+          summary: {
+            checkedSourceCount: 1,
+            freshSourceCount: 1,
+            issueCount: 0,
           },
-        ],
-      }),
+          sources: [freshWorkflowSource()],
+        }),
     }),
   );
 
@@ -151,34 +120,15 @@ test("plans check passes one explicit scope path to Repo Workflow Check", async 
       checkDiagramPilotRepoWorkflow: async (options) => {
         receivedOptions = options;
 
-        return {
-          ok: true,
+        return repoWorkflowCheckResult({
           scope: { kind: "file", path: "docs/architecture.dp.yaml" },
           summary: {
             checkedSourceCount: 1,
             freshSourceCount: 1,
             issueCount: 0,
           },
-          sources: [
-            {
-              sourcePath: "docs/architecture.dp.yaml",
-              validation: {
-                ok: true,
-                errors: [],
-              },
-              artifact: {
-                status: "fresh",
-                path: "docs/architecture.svg",
-                provenance: {
-                  sourcePath: "docs/architecture.dp.yaml",
-                  sourceSha256: "hash",
-                  diagramPilotVersion: "0.1.0",
-                  renderer: { name: "@terrastruct/d2", version: "0.1.33" },
-                },
-              },
-            },
-          ],
-        };
+          sources: [freshWorkflowSource()],
+        });
       },
     }),
   );
@@ -192,86 +142,31 @@ test("plans check text failures with concise repair commands for invalid, missin
   const plan = await planCommand(
     ["check"],
     createPlanningDependencies({
-      checkDiagramPilotRepoWorkflow: async () => ({
-        ok: true,
-        scope: { kind: "directory", path: "/repo" },
-        summary: {
-          checkedSourceCount: 4,
-          freshSourceCount: 1,
-          issueCount: 3,
-        },
-        sources: [
-          {
-            sourcePath: "docs/fresh.dp.yaml",
-            validation: {
-              ok: true,
-              errors: [],
-            },
-            artifact: {
-              status: "fresh",
-              path: "docs/fresh.svg",
-              provenance: {
-                sourcePath: "docs/fresh.dp.yaml",
-                sourceSha256: "hash",
-                diagramPilotVersion: "0.1.0",
-                renderer: { name: "@terrastruct/d2", version: "0.1.33" },
-              },
-            },
+      checkDiagramPilotRepoWorkflow: async () =>
+        repoWorkflowCheckResult({
+          summary: {
+            checkedSourceCount: 4,
+            freshSourceCount: 1,
+            issueCount: 3,
           },
-          {
-            sourcePath: "docs/invalid.dp.yaml",
-            validation: {
-              ok: false,
-              errors: [
-                {
-                  path: "title",
-                  message: "Missing required top-level field: title.",
-                  expected: "Required top-level fields: version, title, nodes.",
-                  suggestion: "Add a title field.",
-                },
-              ],
-            },
-            artifact: {
-              status: "unchecked",
-            },
-          },
-          {
-            sourcePath: "docs/missing.dp.yaml",
-            validation: {
-              ok: true,
-              errors: [],
-            },
-            artifact: {
-              status: "missing-artifact",
-              path: "docs/missing.svg",
-            },
-          },
-          {
-            sourcePath: "docs/stale.dp.yaml",
-            validation: {
-              ok: true,
-              errors: [],
-            },
-            artifact: {
-              status: "stale",
-              path: "docs/stale.svg",
+          sources: [
+            freshWorkflowSource({
+              sourcePath: "docs/fresh.dp.yaml",
+              artifactPath: "docs/fresh.svg",
+            }),
+            invalidWorkflowSource(),
+            missingArtifactWorkflowSource(),
+            staleWorkflowSource({
               reasons: ["source-sha256-mismatch", "renderer-version-mismatch"],
-              expected: {
-                sourcePath: "docs/stale.dp.yaml",
-                sourceSha256: "new-hash",
-                diagramPilotVersion: "0.1.0",
-                renderer: { name: "@terrastruct/d2", version: "0.1.33" },
+              expectedSha256: "new-hash",
+              actualSha256: "old-hash",
+              actualRenderer: {
+                name: "@terrastruct/d2",
+                version: "0.1.32",
               },
-              actual: {
-                sourcePath: "docs/stale.dp.yaml",
-                sourceSha256: "old-hash",
-                diagramPilotVersion: "0.1.0",
-                renderer: { name: "@terrastruct/d2", version: "0.1.32" },
-              },
-            },
-          },
-        ],
-      }),
+            }),
+          ],
+        }),
     }),
   );
 
@@ -303,75 +198,23 @@ test("plans check json as an aggregate result including fresh and stale sources"
   const plan = await planCommand(
     ["check", "--json"],
     createPlanningDependencies({
-      checkDiagramPilotRepoWorkflow: async () => ({
-        ok: true,
-        scope: { kind: "directory", path: "/repo" },
-        summary: {
-          checkedSourceCount: 3,
-          freshSourceCount: 1,
-          issueCount: 2,
-        },
-        sources: [
-          {
-            sourcePath: "docs/fresh.dp.yaml",
-            validation: {
-              ok: true,
-              errors: [],
-            },
-            artifact: {
-              status: "fresh",
-              path: "docs/fresh.svg",
-              provenance: {
-                sourcePath: "/repo/docs/fresh.dp.yaml",
-                sourceSha256: "hash",
-                diagramPilotVersion: "0.1.0",
-                renderer: { name: "@terrastruct/d2", version: "0.1.33" },
-              },
-            },
+      checkDiagramPilotRepoWorkflow: async () =>
+        repoWorkflowCheckResult({
+          summary: {
+            checkedSourceCount: 3,
+            freshSourceCount: 1,
+            issueCount: 2,
           },
-          {
-            sourcePath: "docs/invalid.dp.yaml",
-            validation: {
-              ok: false,
-              errors: [
-                {
-                  path: "title",
-                  message: "Missing required top-level field: title.",
-                  expected: "Required top-level fields: version, title, nodes.",
-                  suggestion: "Add a title field.",
-                },
-              ],
-            },
-            artifact: {
-              status: "unchecked",
-            },
-          },
-          {
-            sourcePath: "docs/stale.dp.yaml",
-            validation: {
-              ok: true,
-              errors: [],
-            },
-            artifact: {
-              status: "stale",
-              path: "docs/stale.svg",
-              reasons: ["source-path-mismatch"],
-              expected: {
-                sourcePath: "docs/stale.dp.yaml",
-                sourceSha256: "expected-hash",
-                diagramPilotVersion: "0.1.0",
-                renderer: { name: "@terrastruct/d2", version: "0.1.33" },
-              },
-              actual: {
-                sourcePath: "docs/other.dp.yaml",
-                sourceSha256: "expected-hash",
-                diagramPilotVersion: "0.1.0",
-                renderer: { name: "@terrastruct/d2", version: "0.1.33" },
-              },
-            },
-          },
-        ],
-      }),
+          sources: [
+            freshWorkflowSource({
+              sourcePath: "docs/fresh.dp.yaml",
+              artifactPath: "docs/fresh.svg",
+              provenanceSourcePath: "/repo/docs/fresh.dp.yaml",
+            }),
+            invalidWorkflowSource(),
+            staleWorkflowSource(),
+          ],
+        }),
     }),
   );
 
@@ -402,7 +245,7 @@ test("plans check json as an aggregate result including fresh and stale sources"
         sourcePath: "/repo/docs/fresh.dp.yaml",
         sourceSha256: "hash",
         diagramPilotVersion: "0.1.0",
-        renderer: { name: "@terrastruct/d2", version: "0.1.33" },
+        renderer: testRenderer,
       },
     },
   });

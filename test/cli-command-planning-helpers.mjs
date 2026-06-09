@@ -69,19 +69,143 @@ export function validationFailure(path = "docs/invalid.dp.yaml") {
   };
 }
 
+export const testRenderer = { name: "@terrastruct/d2", version: "0.1.33" };
+
+function validationError(overrides = {}) {
+  return {
+    path: "title",
+    message: "Missing required top-level field: title.",
+    expected: "Required top-level fields: version, title, nodes.",
+    suggestion: "Add a title field.",
+    ...overrides,
+  };
+}
+
+export function freshWorkflowSource(options = {}) {
+  const {
+    sourcePath = "docs/architecture.dp.yaml",
+    artifactPath = "docs/architecture.svg",
+    provenanceSourcePath = sourcePath,
+    sourceSha256 = "hash",
+    diagramPilotVersion = "0.1.0",
+  } = options;
+
+  return {
+    sourcePath,
+    validation: {
+      ok: true,
+      errors: [],
+    },
+    artifact: {
+      status: "fresh",
+      path: artifactPath,
+      provenance: {
+        sourcePath: provenanceSourcePath,
+        sourceSha256,
+        diagramPilotVersion,
+        renderer: testRenderer,
+      },
+    },
+  };
+}
+
+export function invalidWorkflowSource(options = {}) {
+  const { sourcePath = "docs/invalid.dp.yaml", errors = [validationError()] } =
+    options;
+
+  return {
+    sourcePath,
+    validation: {
+      ok: false,
+      errors,
+    },
+    artifact: {
+      status: "unchecked",
+    },
+  };
+}
+
+export function missingArtifactWorkflowSource(options = {}) {
+  const {
+    sourcePath = "docs/missing.dp.yaml",
+    artifactPath = "docs/missing.svg",
+  } = options;
+
+  return {
+    sourcePath,
+    validation: {
+      ok: true,
+      errors: [],
+    },
+    artifact: {
+      status: "missing-artifact",
+      path: artifactPath,
+    },
+  };
+}
+
+export function staleWorkflowSource(options = {}) {
+  const {
+    sourcePath = "docs/stale.dp.yaml",
+    artifactPath = "docs/stale.svg",
+    reasons = ["source-path-mismatch"],
+    expectedSourcePath = sourcePath,
+    actualSourcePath = "docs/other.dp.yaml",
+    expectedSha256 = "expected-hash",
+    actualSha256 = expectedSha256,
+    expectedRenderer = testRenderer,
+    actualRenderer = testRenderer,
+  } = options;
+
+  return {
+    sourcePath,
+    validation: {
+      ok: true,
+      errors: [],
+    },
+    artifact: {
+      status: "stale",
+      path: artifactPath,
+      reasons,
+      expected: {
+        sourcePath: expectedSourcePath,
+        sourceSha256: expectedSha256,
+        diagramPilotVersion: "0.1.0",
+        renderer: expectedRenderer,
+      },
+      actual: {
+        sourcePath: actualSourcePath,
+        sourceSha256: actualSha256,
+        diagramPilotVersion: "0.1.0",
+        renderer: actualRenderer,
+      },
+    },
+  };
+}
+
+export function repoWorkflowCheckResult(options = {}) {
+  const {
+    scope = { kind: "directory", path: "/repo" },
+    summary = {
+      checkedSourceCount: 0,
+      freshSourceCount: 0,
+      issueCount: 0,
+    },
+    sources = [],
+  } = options;
+
+  return {
+    ok: true,
+    scope,
+    summary,
+    sources,
+  };
+}
+
 export function createPlanningDependencies(overrides = {}) {
   return {
     loadValidatedDiagramSpec: () => validLoadResult(),
-    checkDiagramPilotRepoWorkflow: async () => ({
-      ok: true,
-      scope: { kind: "directory", path: "/repo" },
-      summary: {
-        checkedSourceCount: 0,
-        freshSourceCount: 0,
-        issueCount: 0,
-      },
-      sources: [],
-    }),
+    checkDiagramPilotRepoWorkflow: async () => repoWorkflowCheckResult(),
     generateDiagramPilotRepoWorkflow: async (options) => {
       const loadResult = validLoadResult();
       const content = await options.renderSvgArtifact({
@@ -89,7 +213,7 @@ export function createPlanningDependencies(overrides = {}) {
         provenanceSourcePath: loadResult.source.path,
         spec: loadResult.spec,
         diagramPilotVersion: "0.1.0",
-        renderer: { name: "@terrastruct/d2", version: "0.1.33" },
+        renderer: testRenderer,
       });
 
       return {
@@ -127,7 +251,7 @@ export function createPlanningDependencies(overrides = {}) {
       sourcePath: "docs/architecture.dp.yaml",
       sourceSha256: "hash",
       diagramPilotVersion: "0.1.0",
-      renderer: { name: "@terrastruct/d2", version: "0.1.33" },
+      renderer: testRenderer,
     }),
     getDiagramPilotVersion: () => "0.1.0",
     ...overrides,

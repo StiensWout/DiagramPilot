@@ -8,7 +8,10 @@
     "website/src/styles/docs.css"
   ],
   "ignoreDependencies": [
-    "dejavu-fonts-ttf"
+    "dejavu-fonts-ttf",
+    // The published CLI package imports @diagrampilot/mcp for `diagrampilot mcp`.
+    // Fallow does not currently connect this workspace package dependency.
+    "@diagrampilot/mcp"
   ],
   "ignoreExports": [
     {

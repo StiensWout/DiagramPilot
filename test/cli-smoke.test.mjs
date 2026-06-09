@@ -11,6 +11,7 @@ import test from "node:test";
 
 import { getDiagramPilotVersion } from "../packages/core/dist/index.js";
 import {
+  assertCliSuccess,
   occurrenceCount,
   runBuiltCli,
   runDiagramPilot,
@@ -390,10 +391,7 @@ test("diagrampilot render writes SVG with deterministic provenance", async () =>
       renderedSvg,
     );
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stdout, "");
-    assert.equal(result.stderr, "");
+    assertCliSuccess(result);
     assert.match(renderedSvg, /<svg\b/);
     assert.match(renderedSvg, /Web App/);
     assert.match(renderedSvg, /API Gateway/);
@@ -451,10 +449,7 @@ test("diagrampilot render writes a valid non-empty PNG", async () => {
       path.join(tempRoot, "docs", "architecture.png"),
     );
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stdout, "");
-    assert.equal(result.stderr, "");
+    assertCliSuccess(result);
     assert.ok(pngBytes.length > 8);
     assert.deepEqual([...pngBytes.subarray(0, 8)], [
       0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,

@@ -74,6 +74,7 @@ other tooling. Core validation remains authoritative for semantic rules.
 
 - [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md)
 - [Installation and removal guide](https://diagrampilot.com/docs/agents/installation.md)
+- [MCP guide](https://diagrampilot.com/docs/agents/mcp.md)
 - [DiagramSpec guide](https://diagrampilot.com/docs/agents/spec.md)
 - [Error repair guide](https://diagrampilot.com/docs/agents/error-repair.md)
 - [Agent examples](https://diagrampilot.com/docs/agents/examples.md)
@@ -101,6 +102,7 @@ diagrampilot init
 diagrampilot init --docs
 diagrampilot init --config
 diagrampilot check
+diagrampilot mcp
 diagrampilot check docs --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
@@ -130,3 +132,8 @@ v0.3.0. Configured Markdown outputs are standalone generated embed files. They
 link to the other configured artifacts in the same mapping with paths relative
 to the embed file, and `check` marks an embed stale when its content or a
 referenced artifact is not fresh.
+
+`mcp` launches the alpha Model Context Protocol stdio server for local MCP
+clients. It exposes read-only DiagramPilot resources, validation, repo check,
+export, render, and prompt helpers. See the
+[MCP guide](https://diagrampilot.com/docs/agents/mcp.md).

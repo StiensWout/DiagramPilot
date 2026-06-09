@@ -1,14 +1,12 @@
 import { readFileSync } from "node:fs";
 
-import { LineCounter, parseDocument } from "yaml";
-import type { YAMLError } from "yaml";
-
 import type { DiagramSpec } from "./diagramspec-topology.js";
 import {
   validateDiagramSpec,
   type DiagramSpecValidationError,
   type RepairableDiagnostic,
 } from "./diagramspec-validation.js";
+import { parseYamlDocument } from "./yaml-parse.js";
 
 export type DiagramPilotSourceFormat = "yaml" | "json";
 
@@ -189,25 +187,11 @@ export function createRepairableDiagnosticReport(
   };
 }
 
-function firstLinePosition(error: YAMLError): { line?: number; column?: number } {
-  const [linePosition] = error.linePos ?? [];
-
-  return {
-    line: linePosition?.line,
-    column: linePosition?.col,
-  };
-}
-
 function parseYamlSource(path: string, content: string): SourceLoadResult {
-  const lineCounter = new LineCounter();
-  const document = parseDocument(content, {
-    lineCounter,
-    prettyErrors: false,
-  });
-  const [firstError] = document.errors;
+  const { document, firstError, firstErrorPosition } = parseYamlDocument(content);
 
   if (firstError !== undefined) {
-    const { line, column } = firstLinePosition(firstError);
+    const { line, column } = firstErrorPosition;
 
     return {
       ok: false,

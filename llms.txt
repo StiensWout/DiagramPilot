@@ -26,6 +26,7 @@ Normal `diagrampilot init` does not create Repo Workflow Configuration.
 
 - [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md): Canonical beginner workflow for repo checks, source repair, SVG and PNG rendering, exports, and copying the source/render pattern into another repository.
 - [Installation and removal](https://diagrampilot.com/docs/agents/installation.md): Canonical package install paths, uninstall commands, and repository cleanup guidance.
+- [MCP guide](https://diagrampilot.com/docs/agents/mcp.md): Alpha Model Context Protocol server launch and client configuration guidance.
 - [DiagramSpec](https://diagrampilot.com/docs/agents/spec.md): Structured source model for diagrams.
 - [Error repair](https://diagrampilot.com/docs/agents/error-repair.md): How agents should interpret and fix validation errors.
 - [Examples](https://diagrampilot.com/docs/agents/examples.md): Canonical diagram examples.
@@ -40,3 +41,9 @@ Normal `diagrampilot init` does not create Repo Workflow Configuration.
 - [MIT Code License](https://github.com/StiensWout/DiagramPilot/blob/main/LICENSE): License for DiagramPilot code and repository materials.
 - [Brand Use Policy](https://github.com/StiensWout/DiagramPilot/blob/main/BRAND_USE_POLICY.md): Policy for the DiagramPilot name, mark, wordmark, domain, and official release identity.
 - [GitHub repository](https://github.com/StiensWout/DiagramPilot): Source repository.
+
+Current MCP launch path:
+
+```bash
+diagrampilot mcp
+```

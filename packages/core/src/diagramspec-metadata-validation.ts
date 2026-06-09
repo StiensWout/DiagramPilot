@@ -4,7 +4,11 @@ import {
   urlSchemePattern,
 } from "./diagramspec-constants.js";
 import type { DiagramSpecValidationError } from "./diagramspec-validation.js";
-import { isRecord } from "./diagramspec-validation-helpers.js";
+import {
+  diagramObjectCollectionNames,
+  forEachCollectionRecord,
+  isRecord,
+} from "./diagramspec-validation-helpers.js";
 
 function isLocalSourceReference(value: unknown): value is string {
   if (typeof value !== "string") {
@@ -91,17 +95,11 @@ export function validateWellKnownMetadataReferences(
     validateMetadataExternalReference("metadata", value.metadata, errors);
   }
 
-  for (const collectionName of ["nodes", "edges", "groups"] as const) {
-    const collection = value[collectionName];
-
-    if (!Array.isArray(collection)) {
-      continue;
-    }
-
-    collection.forEach((item, index) => {
-      if (!isRecord(item) || !isRecord(item.metadata)) {
-        return;
-      }
+  forEachCollectionRecord(
+    value,
+    diagramObjectCollectionNames,
+    (item, index, collectionName) => {
+      if (!isRecord(item.metadata)) return;
 
       validateMetadataSourceReference(
         `${collectionName}[${index}].metadata`,
@@ -113,6 +111,6 @@ export function validateWellKnownMetadataReferences(
         item.metadata,
         errors,
       );
-    });
-  }
+    },
+  );
 }

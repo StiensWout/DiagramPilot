@@ -27,6 +27,7 @@ export function helpText(version: string): string {
     "  validate <path> [--json]",
     "  check [path] [--json]",
     "  generate [path] [--json]",
+    "  mcp",
     "  render <path> --out <path>",
     "  render <path> --format svg --out <path>",
     "  render <path> --format png --out <path>",

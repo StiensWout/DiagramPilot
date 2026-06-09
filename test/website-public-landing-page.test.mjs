@@ -1,91 +1,14 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-
-let websiteBuildPromise;
-
-async function websiteBuild() {
-  websiteBuildPromise ??= new Promise((resolve, reject) => {
-    const child = spawn("npm", ["--workspace", "website", "run", "build"], {
-      cwd: repoRoot,
-      env: { ...process.env, CI: "true" },
-    });
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk;
-    });
-    child.on("error", reject);
-    child.on("close", (code) => {
-      if (code === 0) {
-        resolve();
-        return;
-      }
-
-      reject(
-        new Error(
-          [
-            `Website build failed with exit code ${code}.`,
-            stdout.trim(),
-            stderr.trim(),
-          ]
-            .filter(Boolean)
-            .join("\n\n"),
-        ),
-      );
-    });
-  });
-
-  return websiteBuildPromise;
-}
-
-async function gitLsFiles(paths) {
-  return new Promise((resolve, reject) => {
-    const child = spawn("git", ["ls-files", "--", ...paths], {
-      cwd: repoRoot,
-    });
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk;
-    });
-    child.on("error", reject);
-    child.on("close", (code) => {
-      if (code === 0) {
-        resolve(stdout.trim().split("\n").filter(Boolean));
-        return;
-      }
-
-      reject(new Error(stderr.trim() || `git ls-files exited with ${code}`));
-    });
-  });
-}
-
-async function exists(repoPath) {
-  try {
-    await access(path.join(repoRoot, repoPath));
-    return true;
-  } catch {
-    return false;
-  }
-}
+import {
+  exists,
+  gitLsFiles,
+  repoRoot,
+  websiteBuild,
+} from "./website-test-helpers.mjs";
 
 test("public landing page presents generated product visuals", async () => {
   await websiteBuild();
@@ -156,7 +79,8 @@ test("public landing page presents generated product visuals", async () => {
   assert.match(html, /diagrampilot check/);
   assert.match(html, /review-stable SVG\s+artifacts/i);
   assert.match(html, /repairable errors/i);
-  assert.doesNotMatch(html, /MCP|Model Context Protocol/i);
+  assert.match(html, /MCP agent integration/i);
+  assert.match(html, /href="\/docs\/agents\/mcp\/"/);
   assert.doesNotMatch(html, /planned|deferred|future|not implemented|source mutation/i);
 
   for (const forbiddenClaim of [
@@ -244,7 +168,7 @@ test("custom website code avoids card-based landing page patterns", async () => 
     "website/astro.config.mjs",
     "website/scripts",
     "website/src",
-  ]);
+  ], { split: true });
 
   assert.ok(customWebsiteFiles.length > 0);
 

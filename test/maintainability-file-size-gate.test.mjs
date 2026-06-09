@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -10,6 +9,7 @@ import {
   MAINTAINABILITY_FILE_SIZE_GATE,
   auditMaintainabilityFileSizes,
 } from "../packages/core/dist/index.js";
+import { runProcess } from "./process-helpers.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const maintainabilityAuditScriptPath = path.join(
@@ -43,28 +43,15 @@ function lines(count) {
 }
 
 async function runMaintainabilityAuditScript(cwd) {
-  const child = spawn(process.execPath, [maintainabilityAuditScriptPath], {
-    cwd,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  let stdout = "";
-  let stderr = "";
+  const { code, stdout, stderr } = await runProcess(
+    process.execPath,
+    [maintainabilityAuditScriptPath],
+    {
+      cwd,
+    },
+  );
 
-  child.stdout.setEncoding("utf8");
-  child.stderr.setEncoding("utf8");
-  child.stdout.on("data", (chunk) => {
-    stdout += chunk;
-  });
-  child.stderr.on("data", (chunk) => {
-    stderr += chunk;
-  });
-
-  return await new Promise((resolve, reject) => {
-    child.on("error", reject);
-    child.on("close", (exitCode) => {
-      resolve({ exitCode, stdout, stderr });
-    });
-  });
+  return { exitCode: code, stdout, stderr };
 }
 
 test("auditMaintainabilityFileSizes reports included authored files over the 500 LOC gate", async () => {

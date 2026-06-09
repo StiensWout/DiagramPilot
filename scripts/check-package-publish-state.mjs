@@ -9,6 +9,7 @@ const PUBLIC_PACKAGE_SET = [
   "@diagrampilot/export-mermaid",
   "@diagrampilot/export-d2",
   "@diagrampilot/export-dot",
+  "@diagrampilot/mcp",
   "@diagrampilot/render-svg",
 ];
 
@@ -92,54 +93,62 @@ function parseDistTags(packageName, result) {
   }
 }
 
-function collectPrealphaStateIssues(expectedVersion) {
-  const issues = [];
+function collectTaggedPackageIssues(packageName, expectedVersion, options) {
+  const { distTags, issues } = parseDistTags(packageName, runNpmView(packageName));
 
-  for (const packageName of PUBLIC_PACKAGE_SET) {
-    const result = runNpmView(packageName);
-    const { distTags, issues: packageIssues } = parseDistTags(packageName, result);
+  if (distTags === undefined) return issues;
 
-    issues.push(...packageIssues);
+  if (distTags[options.expectedTag] !== expectedVersion) {
+    issues.push(
+      `${packageName} ${options.expectedTag} dist-tag is ${distTags[options.expectedTag] ?? "<missing>"}; expected ${expectedVersion}.`,
+    );
+  }
 
-    if (distTags === undefined) {
-      continue;
-    }
-
-    if (distTags.prealpha !== expectedVersion) {
-      issues.push(
-        `${packageName} prealpha dist-tag is ${distTags.prealpha ?? "<missing>"}; expected ${expectedVersion}.`,
-      );
-    }
-
-    if (distTags.latest === expectedVersion) {
-      issues.push(`${packageName} latest dist-tag must not point at ${expectedVersion}.`);
-    }
+  if (options.latestMustNotMove && distTags.latest === expectedVersion) {
+    issues.push(`${packageName} latest dist-tag must not point at ${expectedVersion}.`);
   }
 
   return issues;
 }
 
+function collectTaggedStateIssues(expectedVersion, options) {
+  return PUBLIC_PACKAGE_SET.flatMap((packageName) =>
+    collectTaggedPackageIssues(packageName, expectedVersion, options),
+  );
+}
+
+function collectPrealphaStateIssues(expectedVersion) {
+  return collectTaggedStateIssues(expectedVersion, {
+    expectedTag: "prealpha",
+    latestMustNotMove: true,
+  });
+}
+
 function collectLatestStateIssues(expectedVersion) {
-  const issues = [];
+  return collectTaggedStateIssues(expectedVersion, {
+    expectedTag: "latest",
+    latestMustNotMove: false,
+  });
+}
 
-  for (const packageName of PUBLIC_PACKAGE_SET) {
-    const result = runNpmView(packageName);
-    const { distTags, issues: packageIssues } = parseDistTags(packageName, result);
+function collectExpectedStateIssues(expectedState, expectedVersion) {
+  const collectors = {
+    available: () => collectAvailableStateIssues(),
+    prealpha: () => collectPrealphaStateIssues(expectedVersion),
+    latest: () => collectLatestStateIssues(expectedVersion),
+  };
 
-    issues.push(...packageIssues);
+  return collectors[expectedState]();
+}
 
-    if (distTags === undefined) {
-      continue;
-    }
+function successMessage(expectedState, expectedVersion) {
+  const messages = {
+    available: `DiagramPilot npm publish-state check passed: ${PUBLIC_PACKAGE_SET.length} package names are available on npm.\n`,
+    prealpha: `DiagramPilot npm publish-state check passed: ${PUBLIC_PACKAGE_SET.length} packages publish ${expectedVersion} under prealpha and latest is not moved.\n`,
+    latest: `DiagramPilot npm publish-state check passed: ${PUBLIC_PACKAGE_SET.length} packages publish ${expectedVersion} under latest.\n`,
+  };
 
-    if (distTags.latest !== expectedVersion) {
-      issues.push(
-        `${packageName} latest dist-tag is ${distTags.latest ?? "<missing>"}; expected ${expectedVersion}.`,
-      );
-    }
-  }
-
-  return issues;
+  return messages[expectedState];
 }
 
 function main() {
@@ -151,12 +160,7 @@ function main() {
   }
 
   const expectedVersion = readWorkspaceVersion();
-  const issues =
-    args.expectedState === "prealpha"
-      ? collectPrealphaStateIssues(expectedVersion)
-      : args.expectedState === "latest"
-        ? collectLatestStateIssues(expectedVersion)
-        : collectAvailableStateIssues();
+  const issues = collectExpectedStateIssues(args.expectedState, expectedVersion);
 
   if (issues.length > 0) {
     process.stderr.write(
@@ -168,23 +172,7 @@ function main() {
     return 1;
   }
 
-  if (args.expectedState === "prealpha") {
-    process.stdout.write(
-      `DiagramPilot npm publish-state check passed: ${PUBLIC_PACKAGE_SET.length} packages publish ${expectedVersion} under prealpha and latest is not moved.\n`,
-    );
-    return 0;
-  }
-
-  if (args.expectedState === "latest") {
-    process.stdout.write(
-      `DiagramPilot npm publish-state check passed: ${PUBLIC_PACKAGE_SET.length} packages publish ${expectedVersion} under latest.\n`,
-    );
-    return 0;
-  }
-
-  process.stdout.write(
-    `DiagramPilot npm publish-state check passed: ${PUBLIC_PACKAGE_SET.length} package names are available on npm.\n`,
-  );
+  process.stdout.write(successMessage(args.expectedState, expectedVersion));
   return 0;
 }
 

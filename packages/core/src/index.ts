@@ -6,6 +6,7 @@ export { checkDiagramPilotRepoWorkflowWithDependencies } from "./repo-workflow-c
 export { generateDiagramPilotRepoWorkflowWithDependencies } from "./repo-workflow-generate.js";
 export { createDiagramSpecV1JsonSchema } from "./diagramspec-schema.js";
 export { createDiagramSpecTopology } from "./diagramspec-topology.js";
+export { walkDiagramSpecTopology } from "./diagramspec-topology.js";
 export {
   createRepairableDiagnosticReport,
   loadDiagramPilotSourceFile,
@@ -60,6 +61,7 @@ export type {
   DiagramSpecTopologyGroupEntry,
   DiagramSpecTopologyNodeEntry,
   DiagramSpecTopologyObjectType,
+  DiagramSpecTopologyWalkHandlers,
 } from "./diagramspec-topology.js";
 export type {
   DiagramPilotSourceFile,

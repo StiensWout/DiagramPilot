@@ -17,7 +17,7 @@ test("website is an explicit workspace outside the compiler build", async () => 
   assert.deepEqual(rootPackage.workspaces, ["packages/*", "website"]);
   assert.equal(
     rootPackage.scripts.build,
-    "tsc -b && node packages/cli/scripts/make-bin-executable.mjs",
+    "tsc -b && node packages/cli/scripts/make-bin-executable.mjs && node packages/mcp/scripts/make-bin-executable.mjs",
   );
   assert.equal(
     rootPackage.scripts["build:website"],

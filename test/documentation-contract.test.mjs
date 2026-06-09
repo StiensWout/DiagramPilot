@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+import {
+  exists,
+  gitLsFiles,
+  repoRoot,
+  websiteBuild,
+} from "./website-test-helpers.mjs";
+
 const contractPath = path.join(
   repoRoot,
   "docs",
@@ -16,6 +20,7 @@ const implementedCliCommands = [
   "diagrampilot init",
   "diagrampilot init --docs",
   "diagrampilot check",
+  "diagrampilot mcp",
   "diagrampilot check docs --json",
   "diagrampilot validate docs/architecture.dp.yaml",
   "diagrampilot validate docs/architecture.dp.yaml --json",
@@ -50,6 +55,7 @@ const demoWorkflowCommands = [
 const canonicalPublicLinks = [
   "https://diagrampilot.com/docs/agents/quickstart.md",
   "https://diagrampilot.com/docs/agents/installation.md",
+  "https://diagrampilot.com/docs/agents/mcp.md",
   "https://diagrampilot.com/schema/diagramspec-v1.schema.json",
 ];
 
@@ -59,86 +65,6 @@ async function readContract() {
 
 async function readRepoFile(repoPath) {
   return readFile(path.join(repoRoot, repoPath), "utf8");
-}
-
-let websiteBuildPromise;
-
-async function websiteBuild() {
-  websiteBuildPromise ??= new Promise((resolve, reject) => {
-    const child = spawn("npm", ["--workspace", "website", "run", "build"], {
-      cwd: repoRoot,
-      env: { ...process.env, CI: "true" },
-    });
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk;
-    });
-    child.on("error", reject);
-    child.on("close", (code) => {
-      if (code === 0) {
-        resolve();
-        return;
-      }
-
-      reject(
-        new Error(
-          [
-            `Website build failed with exit code ${code}.`,
-            stdout.trim(),
-            stderr.trim(),
-          ]
-            .filter(Boolean)
-            .join("\n\n"),
-        ),
-      );
-    });
-  });
-
-  return websiteBuildPromise;
-}
-
-async function exists(repoPath) {
-  try {
-    await access(path.join(repoRoot, repoPath));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function gitLsFiles(paths) {
-  return new Promise((resolve, reject) => {
-    const child = spawn("git", ["ls-files", "--", ...paths], {
-      cwd: repoRoot,
-    });
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk;
-    });
-    child.on("error", reject);
-    child.on("close", (code) => {
-      if (code === 0) {
-        resolve(stdout);
-        return;
-      }
-
-      reject(new Error(stderr.trim() || `git ls-files exited with ${code}`));
-    });
-  });
 }
 
 function contractPublicRoutes(contract) {
@@ -195,6 +121,8 @@ test("Documentation Contract public route inventory is served by the website bui
       "https://diagrampilot.com/docs/agents/quickstart.md",
       "https://diagrampilot.com/docs/agents/installation/",
       "https://diagrampilot.com/docs/agents/installation.md",
+      "https://diagrampilot.com/docs/agents/mcp/",
+      "https://diagrampilot.com/docs/agents/mcp.md",
       "https://diagrampilot.com/docs/agents/spec/",
       "https://diagrampilot.com/docs/agents/spec.md",
       "https://diagrampilot.com/docs/agents/error-repair/",
@@ -304,11 +232,13 @@ test("Documentation Contract drift checks align commands and canonical public li
   assertIncludesAll(readme, canonicalPublicLinks, "README.md");
   assertIncludesAll(llmsText, canonicalPublicLinks, "llms.txt");
   assert.match(publicDocsIndex, /\[Checkout demo quickstart]\(agents\/quickstart\.md\)/);
+  assert.match(publicDocsIndex, /\[MCP guide]\(agents\/mcp\.md\)/);
   assert.match(
     publicDocsIndex,
     /https:\/\/diagrampilot\.com\/schema\/diagramspec-v1\.schema\.json/,
   );
   assert.match(contract, /https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md/);
+  assert.match(contract, /https:\/\/diagrampilot\.com\/docs\/agents\/mcp\.md/);
   assert.match(contract, /https:\/\/diagrampilot\.com\/schema\/diagramspec-v1\.schema\.json/);
   assert.match(websiteLanding, /href="\/docs\/agents\/quickstart\/"/);
   assert.match(websiteLanding, /\/landing\/hero-workflow\.png/);
@@ -359,6 +289,11 @@ test("canonical public install and removal guidance is complete and linked", asy
       "diagrampilot:init:end",
       "llms.txt",
       "docs/diagrampilot.md",
+      "MCP support is alpha.",
+      "diagrampilot mcp",
+      "diagrampilot-mcp",
+      "client configuration",
+      "Model Context Protocol",
     ],
     "docs-public/agents/installation.md",
   );
@@ -398,4 +333,24 @@ test("canonical public install and removal guidance is complete and linked", asy
     /\[Installation and removal guide]\(agents\/installation\.md\)/,
   );
   assert.match(websiteLanding, /href="\/docs\/agents\/installation\/"/);
+});
+
+test("maintainer docs cover MCP package readiness and smoke validation", async () => {
+  const releaseWorkflow = await readRepoFile("docs/development/release-version-workflow.md");
+  const contract = await readContract();
+
+  assertIncludesAll(
+    releaseWorkflow,
+    [
+      "npm publish --workspace @diagrampilot/mcp --tag prealpha --access public",
+      "@diagrampilot/mcp",
+      "diagrampilot mcp --help",
+      "diagrampilot-mcp --help",
+      "MCP client configuration",
+      "MCP smoke validation",
+    ],
+    "docs/development/release-version-workflow.md",
+  );
+  assert.match(contract, /diagrampilot mcp/);
+  assert.match(contract, /https:\/\/diagrampilot\.com\/docs\/agents\/mcp\.md/);
 });
