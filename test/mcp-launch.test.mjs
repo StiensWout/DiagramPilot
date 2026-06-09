@@ -103,10 +103,12 @@ test("diagrampilot mcp starts a stdio MCP server with resources tools and prompt
       assert.deepEqual(
         tools.tools.map((tool) => tool.name),
         [
+          "diagrampilot_suggest_stable_ids",
           "diagrampilot_validate_source",
           "diagrampilot_check_repo",
           "diagrampilot_export_source",
           "diagrampilot_render_source",
+          "diagrampilot_create_source",
           "diagrampilot_generate_repo_outputs",
         ],
       );

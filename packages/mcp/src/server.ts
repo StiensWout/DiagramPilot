@@ -44,6 +44,10 @@ function templateListResource(resource: DiagramPilotMcpResource): {
 
 function toolInputSchema(tool: DiagramPilotMcpTool): Record<string, z.ZodType> {
   const schemas: Record<string, Record<string, z.ZodType>> = {
+    diagrampilot_suggest_stable_ids: {
+      labels: z.array(z.string()),
+      existing_ids: z.array(z.string()).optional(),
+    },
     diagrampilot_validate_source: {
       source_path: z.string(),
     },
@@ -56,6 +60,10 @@ function toolInputSchema(tool: DiagramPilotMcpTool): Record<string, z.ZodType> {
     },
     diagrampilot_render_source: {
       source_path: z.string(),
+    },
+    diagrampilot_create_source: {
+      source_path: z.string(),
+      diagram: z.record(z.string(), z.unknown()),
     },
     diagrampilot_generate_repo_outputs: {
       source_paths: z.array(z.string()).optional(),
@@ -99,7 +107,7 @@ export function createDiagramPilotMcpServer(
     },
     {
       instructions:
-        "Use DiagramPilot MCP tools as read-only helpers. Write DiagramPilot Source Files and Derived Artifacts through explicit repo edits and CLI commands, not through MCP read tools.",
+        "Use DiagramPilot MCP read tools for inspection. Use explicit write tools only when creating DiagramPilot Source Files or refreshing Derived Artifacts.",
     },
   );
 

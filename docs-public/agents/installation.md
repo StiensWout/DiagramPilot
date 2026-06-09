@@ -130,10 +130,11 @@ Example client configuration:
 }
 ```
 
-The MCP server exposes read-only resources, validation, repo workflow check,
-export, render, and prompt helpers. It does not write files; use normal
-repository edits and `diagrampilot generate` when a workflow intentionally
-refreshes Derived Artifacts.
+The MCP server exposes read-only resources, Stable ID suggestions, validation,
+repo workflow check, export, render, and prompt helpers. Its write tools are
+explicit: source creation writes one `*.dp.yaml` file from structured input, and
+repo output generation refreshes configured Derived Artifacts for explicit
+scopes.
 
 ## Package Removal
 

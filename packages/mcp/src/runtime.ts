@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url";
 import {
   checkDiagramPilotRepoWorkflow,
   createDiagramSpecV1JsonSchema,
-  createRepairableDiagnosticReport,
   discoverDiagramPilotSourceFiles,
   generateDiagramPilotRepoWorkflow,
   getDiagramPilotVersion,
@@ -13,7 +12,6 @@ import {
   type DiagramSpec,
   type RepoWorkflowCheckResult,
   type RepoWorkflowGenerateResult,
-  type ValidatedDiagramSpecLoadFailure,
 } from "@diagrampilot/core";
 import { exportDiagramSpecToD2 } from "@diagrampilot/export-d2";
 import { exportDiagramSpecToDot } from "@diagrampilot/export-dot";
@@ -27,6 +25,13 @@ import {
 } from "@diagrampilot/render-svg";
 
 import { getDiagramPilotMcpPrompt } from "./prompts.js";
+import { createSourceTool, suggestStableIdsTool } from "./source-tools.js";
+import {
+  stringArgument,
+  stringArrayArgument,
+  toolResult,
+  validationFailureResult,
+} from "./tool-helpers.js";
 import type {
   DiagramPilotMcpResourceContent,
   DiagramPilotMcpToolDependencies,
@@ -106,48 +111,6 @@ function exportText(format: string, spec: DiagramSpec): string {
 
   throw new Error(`Unsupported DiagramPilot export format: ${format}`);
 }
-
-function toolResult(
-  text: string,
-  structuredContent: Record<string, unknown>,
-  options: { isError?: boolean } = {},
-): DiagramPilotMcpToolResult {
-  return {
-    content: [{ type: "text", text }],
-    structuredContent,
-    ...(options.isError === true ? { isError: true } : {}),
-  };
-}
-
-function stringArgument(
-  args: Record<string, unknown>,
-  name: string,
-  fallback?: string,
-): string {
-  const value = args[name];
-
-  if (typeof value === "string" && value.length > 0) return value;
-  if (fallback !== undefined) return fallback;
-
-  throw new Error(`Missing required MCP tool argument: ${name}`);
-}
-
-function stringArrayArgument(
-  args: Record<string, unknown>,
-  name: string,
-): string[] {
-  const value = args[name];
-
-  if (value === undefined) return [];
-  if (!Array.isArray(value)) {
-    throw new Error(`MCP tool argument must be an array: ${name}`);
-  }
-
-  return value.filter(
-    (entry): entry is string => typeof entry === "string" && entry.length > 0,
-  );
-}
-
 function generatedArtifactSummary(
   artifact: RepoWorkflowGenerateResult["written"][number],
 ): Record<string, string> {
@@ -157,7 +120,6 @@ function generatedArtifactSummary(
     path: artifact.path,
   };
 }
-
 function redactedGenerateResult(
   result: RepoWorkflowGenerateResult,
 ): Record<string, unknown> {
@@ -220,22 +182,6 @@ function missingGenerationScopeResult(): DiagramPilotMcpToolResult {
       "",
     ].join("\n"),
     { ok: false, errorCount: 1, errors: [error] },
-    { isError: true },
-  );
-}
-
-function validationFailureResult(
-  failure: ValidatedDiagramSpecLoadFailure,
-): DiagramPilotMcpToolResult {
-  const report = createRepairableDiagnosticReport(failure);
-
-  return toolResult(
-    report.text,
-    {
-      ok: false,
-      errorCount: report.errors.length,
-      errors: report.errors,
-    },
     { isError: true },
   );
 }
@@ -490,10 +436,12 @@ async function generateRepoOutputsTool(
 }
 
 const toolHandlers: Record<string, ToolHandler> = {
+  diagrampilot_suggest_stable_ids: suggestStableIdsTool,
   diagrampilot_validate_source: validateSourceTool,
   diagrampilot_check_repo: checkRepoTool,
   diagrampilot_export_source: exportSourceTool,
   diagrampilot_render_source: renderSourceTool,
+  diagrampilot_create_source: createSourceTool,
   diagrampilot_generate_repo_outputs: generateRepoOutputsTool,
 };
 

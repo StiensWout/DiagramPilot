@@ -58,6 +58,25 @@ const writeToolAnnotations = {
 
 export const DIAGRAMPILOT_MCP_TOOLS: readonly DiagramPilotMcpTool[] = [
   {
+    name: "diagrampilot_suggest_stable_ids",
+    title: "Suggest DiagramPilot Stable IDs",
+    description:
+      "Suggest valid DiagramSpec stable IDs from labels without writing files.",
+    arguments: [
+      {
+        name: "labels",
+        description: "Labels to convert into stable ID suggestions.",
+        required: true,
+      },
+      {
+        name: "existing_ids",
+        description: "Stable IDs that suggestions must avoid.",
+        required: false,
+      },
+    ],
+    annotations: readOnlyToolAnnotations,
+  },
+  {
     name: "diagrampilot_validate_source",
     title: "Validate DiagramPilot Source",
     description: "Validate one DiagramPilot Source File and return repairable errors.",
@@ -113,6 +132,25 @@ export const DIAGRAMPILOT_MCP_TOOLS: readonly DiagramPilotMcpTool[] = [
       },
     ],
     annotations: readOnlyToolAnnotations,
+  },
+  {
+    name: "diagrampilot_create_source",
+    title: "Create DiagramPilot Source",
+    description:
+      "Create one *.dp.yaml DiagramPilot Source File from structured DiagramSpec input.",
+    arguments: [
+      {
+        name: "source_path",
+        description: "Local path to write as a *.dp.yaml DiagramPilot Source File.",
+        required: true,
+      },
+      {
+        name: "diagram",
+        description: "Structured DiagramSpec input with caller-provided stable IDs.",
+        required: true,
+      },
+    ],
+    annotations: writeToolAnnotations,
   },
   {
     name: "diagrampilot_generate_repo_outputs",

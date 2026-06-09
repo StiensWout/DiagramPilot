@@ -109,10 +109,12 @@ test("MCP registry exposes the public resource tool and prompt names", async () 
   assert.deepEqual(
     DIAGRAMPILOT_MCP_TOOLS.map((tool) => tool.name),
     [
+      "diagrampilot_suggest_stable_ids",
       "diagrampilot_validate_source",
       "diagrampilot_check_repo",
       "diagrampilot_export_source",
       "diagrampilot_render_source",
+      "diagrampilot_create_source",
       "diagrampilot_generate_repo_outputs",
     ],
   );
@@ -129,6 +131,7 @@ test("MCP registry exposes the public resource tool and prompt names", async () 
   );
 
   for (const name of [
+    "diagrampilot_suggest_stable_ids",
     "diagrampilot_validate_source",
     "diagrampilot_check_repo",
     "diagrampilot_export_source",
