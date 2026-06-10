@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 
 export const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
@@ -56,4 +57,14 @@ export async function runSuccessfulProcess(command, args, options = {}) {
     ...options,
     rejectOnNonZero: true,
   });
+}
+
+export function assertProcessSuccess(result, { stdout, stderr = "" } = {}) {
+  assert.equal(result.signal, null);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stderr, stderr);
+
+  if (stdout !== undefined) {
+    assert.equal(result.stdout, stdout);
+  }
 }

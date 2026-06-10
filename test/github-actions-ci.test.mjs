@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+import { repoRoot } from "./website-test-helpers.mjs";
+
 const workflowPath = path.join(repoRoot, ".github", "workflows", "ci.yml");
 
 async function readWorkflow() {

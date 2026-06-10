@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 
+import { assertMatchesAll } from "./assertion-helpers.mjs";
 import {
   exists,
   gitLsFiles,
@@ -42,32 +43,38 @@ test("public landing page presents generated product visuals", async () => {
     html,
     /class="eyebrow">\s*Repo-native diagram compiler for AI coding agents\s*<\/p>/,
   );
-  assert.match(html, /GitHub repository/);
-  assert.match(html, /href="https:\/\/github\.com\/StiensWout\/DiagramPilot"/);
-  assert.match(html, /href="\/docs\/agents\/quickstart\/"/);
-  assert.match(html, /href="\/docs\/"/);
-  assert.match(html, /npx diagrampilot check/);
-  assert.match(html, /class="quick-command"/);
-  assert.match(html, /data-copy-command="npx diagrampilot check"/);
+  assertMatchesAll(html, [
+    /GitHub repository/,
+    /href="https:\/\/github\.com\/StiensWout\/DiagramPilot"/,
+    /href="\/docs\/agents\/quickstart\/"/,
+    /href="\/docs\/"/,
+    /npx diagrampilot check/,
+    /class="quick-command"/,
+    /data-copy-command="npx diagrampilot check"/,
+  ]);
   assert.match(
     html,
     /aria-label="DiagramPilot source, validation, and rendered output workflow"/,
   );
-  assert.match(html, /class="hero-copy motion-rise"/);
-  assert.match(html, /class="workflow-shell motion-rise motion-delay-1"/);
-  assert.match(html, /class="proof-item reveal-motion"/);
-  assert.match(html, /class="image-band reveal-motion"/);
-  assert.match(html, /IntersectionObserver/);
-  assert.match(html, /src="\/landing\/hero-workflow\.png"/);
+  assertMatchesAll(html, [
+    /class="hero-copy motion-rise"/,
+    /class="workflow-shell motion-rise motion-delay-1"/,
+    /class="proof-item reveal-motion"/,
+    /class="image-band reveal-motion"/,
+    /IntersectionObserver/,
+    /src="\/landing\/hero-workflow\.png"/,
+  ]);
   assert.match(
     html,
     /Dark developer interface showing repository files, source code, terminal output, and an architecture diagram preview/,
   );
   assert.doesNotMatch(html, /\/landing\/agent-flow(?:-v2)?\.png/);
-  assert.match(html, /Bring your own repository\./);
-  assert.match(html, /One command before review\./);
-  assert.match(html, /If it breaks, it says where\./);
-  assert.match(html, /Source files become reviewable artifacts\./);
+  assertMatchesAll(html, [
+    /Bring your own repository\./,
+    /One command before review\./,
+    /If it breaks, it says where\./,
+    /Source files become reviewable artifacts\./,
+  ]);
   assert.doesNotMatch(html, /starlight-theme-select/);
   assert.doesNotMatch(html, /class="site-title/);
   assert.doesNotMatch(html, /Select theme/);
@@ -76,11 +83,13 @@ test("public landing page presents generated product visuals", async () => {
     /Real rendered output|DiagramSpec stays source of truth|Generated examples|Examples agents can copy|Shipped workflow|The Workflow Agents Can Commit|shortest shipped workflow/i,
   );
 
-  assert.match(html, /diagrampilot check/);
-  assert.match(html, /review-stable SVG\s+artifacts/i);
-  assert.match(html, /repairable errors/i);
-  assert.match(html, /MCP agent integration/i);
-  assert.match(html, /href="\/docs\/agents\/mcp\/"/);
+  assertMatchesAll(html, [
+    /diagrampilot check/,
+    /review-stable SVG\s+artifacts/i,
+    /repairable errors/i,
+    /MCP agent integration/i,
+    /href="\/docs\/agents\/mcp\/"/,
+  ]);
   assert.doesNotMatch(html, /planned|deferred|future|not implemented|source mutation/i);
 
   for (const forbiddenClaim of [

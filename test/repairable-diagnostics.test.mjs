@@ -1,6 +1,4 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
@@ -8,17 +6,15 @@ import {
   createRepairableDiagnosticReport,
   loadValidatedDiagramSpec,
 } from "../packages/core/dist/index.js";
+import {
+  assertFailedLoad,
+  brokenYamlSourceLines,
+  writeDiagramSource,
+} from "./diagramspec-loading-helpers.mjs";
+import { withTempRepoPrefix } from "./temp-repo-helpers.mjs";
 
 async function withTempRepo(run) {
-  const tempRoot = await mkdtemp(
-    path.join(os.tmpdir(), "diagrampilot-repairable-diagnostics-"),
-  );
-
-  try {
-    return await run(tempRoot);
-  } finally {
-    await rm(tempRoot, { recursive: true, force: true });
-  }
+  return withTempRepoPrefix("diagrampilot-repairable-diagnostics-", run);
 }
 
 test("createRepairableDiagnosticReport represents read failures", async () => {
@@ -26,12 +22,12 @@ test("createRepairableDiagnosticReport represents read failures", async () => {
     const sourcePath = path.join(tempRoot, "docs", "missing.dp.yaml");
     const result = loadValidatedDiagramSpec(sourcePath);
 
-    assert.equal(result.ok, false);
+    assertFailedLoad(result, "read");
 
     const report = createRepairableDiagnosticReport(result.failure);
 
     assert.equal(report.file, sourcePath);
-    assert.match(report.text, new RegExp(`^Unable to read ${sourcePath}: `));
+    assert.match(report.text, new RegExp(`^Unable to read ${sourcePath}:`));
     assert.deepEqual(report.errors, [
       {
         path: "$",
@@ -45,19 +41,14 @@ test("createRepairableDiagnosticReport represents read failures", async () => {
 
 test("createRepairableDiagnosticReport represents parse failures", async () => {
   await withTempRepo(async (tempRoot) => {
-    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
-    const sourcePath = path.join(tempRoot, "docs", "broken.dp.yaml");
-
-    await writeFile(
-      sourcePath,
-      ["version: 1", "title: Broken Source", "nodes: [", ""].join("\n"),
-      "utf8",
+    const sourcePath = await writeDiagramSource(
+      tempRoot,
+      "broken.dp.yaml",
+      brokenYamlSourceLines,
     );
-
     const result = loadValidatedDiagramSpec(sourcePath);
 
-    assert.equal(result.ok, false);
-    assert.equal(result.failure.kind, "parse");
+    assertFailedLoad(result, "parse");
 
     const report = createRepairableDiagnosticReport(result.failure);
     const location =
@@ -80,26 +71,17 @@ test("createRepairableDiagnosticReport represents parse failures", async () => {
 
 test("createRepairableDiagnosticReport represents semantic validation failures", async () => {
   await withTempRepo(async (tempRoot) => {
-    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
-    const sourcePath = path.join(tempRoot, "docs", "invalid.dp.yaml");
-
-    await writeFile(
-      sourcePath,
-      [
-        "version: 1",
-        "direction: sideways",
-        "nodes:",
-        "  - id: web_app",
-        "    label: Web App",
-        "",
-      ].join("\n"),
-      "utf8",
-    );
-
+    const sourcePath = await writeDiagramSource(tempRoot, "invalid.dp.yaml", [
+      "version: 1",
+      "direction: sideways",
+      "nodes:",
+      "  - id: web_app",
+      "    label: Web App",
+      "",
+    ]);
     const result = loadValidatedDiagramSpec(sourcePath);
 
-    assert.equal(result.ok, false);
-    assert.equal(result.failure.kind, "validation");
+    assertFailedLoad(result, "validation");
 
     const report = createRepairableDiagnosticReport(result.failure);
 

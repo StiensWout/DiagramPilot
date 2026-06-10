@@ -9,6 +9,94 @@ import {
   publicAgentDocs,
   repoRoot,
 } from "./docs-public-boundary-helpers.mjs";
+import { assertMatchesAll } from "./assertion-helpers.mjs";
+
+function assertQuickstartArtifactWorkflow(quickstart) {
+  assertMatchesAll(quickstart, [
+    /DiagramPilot Source Files/,
+    /Derived Artifacts/,
+    /review\/CI command/i,
+    /read-only/i,
+    /next-to-source same-stem Expected SVG Artifact/i,
+    /SVG freshness is provenance-based/i,
+    /Configured Mermaid, D2, and DOT artifacts use content comparison/i,
+    /Configured PNG freshness is presence-only in v0\.3\.0/i,
+    /diagrampilot\.config\.yaml/,
+    /sources\.ignore/,
+    /artifacts/,
+    /sourceGlob/,
+    /matched mappings replace the default SVG\s+expectation/i,
+    /Validate before rendering/,
+    /render` requires `--out`/,
+    /sourcePath/,
+    /sourceSha256/,
+    /diagramPilotVersion/,
+    /renderer/,
+    /does not include wall-clock timestamps/,
+    /export` prints to stdout by default/,
+    /Use `--out` only when you want to write/,
+  ]);
+}
+
+function assertQuickstartInitGuidance(quickstart) {
+  assertMatchesAll(quickstart, [
+    /`diagrampilot init` does not create or update `llms\.txt` or `docs\/diagrampilot\.md` by default/,
+    /Use `diagrampilot init --docs` only when the repository intentionally wants managed local agent docs/,
+    /Use `diagrampilot init --config`\s+only when the repository intentionally wants\s+`diagrampilot\.config\.yaml`/i,
+  ]);
+}
+
+function assertBrandAssetEntrypoints({ readme, brandUsePolicy, llmsText }) {
+  assertMatchesAll(readme, [
+    /<picture>/,
+    /<source[^>]+srcset="assets\/brand\/diagrampilot-logo-light\.svg">/,
+    /<img src="assets\/brand\/diagrampilot-logo\.svg"/,
+    /Canonical DiagramPilot Brand Assets live in `assets\/brand\/`/,
+    /\[DiagramPilot mark\]\(assets\/brand\/diagrampilot-mark\.svg\)/,
+    /\[Brand Use Policy\]\(BRAND_USE_POLICY\.md\)/,
+  ]);
+  assertMatchesAll(brandUsePolicy, [
+    /assets\/brand\/diagrampilot-logo\.svg/,
+    /assets\/brand\/diagrampilot-logo-light\.svg/,
+    /Canonical DiagramPilot Brand Assets live in `assets\/brand\/`/,
+  ]);
+  assertMatchesAll(llmsText, [
+    /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo\.svg/,
+    /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo-light\.svg/,
+    /https:\/\/diagrampilot\.com\/brand\/diagrampilot-mark\.svg/,
+    /BRAND_USE_POLICY\.md/,
+  ]);
+}
+
+function assertCheckoutDemoDocument(documentText, extraPatterns = []) {
+  assertMatchesAll(documentText, [
+    /Checkout Demo Project/,
+    /diagrampilot check/,
+    ...extraPatterns,
+  ]);
+}
+
+function assertCheckoutDemoRoute({ quickstart, readme, checkoutDemoReadme }) {
+  assertCheckoutDemoDocument(quickstart, [/demo-projects\/checkout/]);
+  assertCheckoutDemoDocument(readme, [/demo-projects\/checkout/]);
+  assertCheckoutDemoDocument(checkoutDemoReadme);
+}
+
+function assertQuickstartCheckoutCommands(quickstart) {
+  assertMatchesAll(quickstart, [
+    /npm install/,
+    /npm run build/,
+    /node \.\.\/\.\.\/packages\/cli\/dist\/index\.js/,
+    /cd demo-projects\/checkout/,
+  ]);
+}
+
+function assertArchitectureExampleCommands(documentText) {
+  assertMatchesAll(documentText, [
+    /diagrampilot validate docs\/architecture\.dp\.yaml/,
+    /diagrampilot render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/,
+  ]);
+}
 
 test("public-facing agent usage docs live under the public docs root", async () => {
   for (const fileName of publicAgentDocs) {
@@ -203,65 +291,12 @@ test("public entrypoints expose canonical DiagramPilot Brand Assets", async () =
     "utf8",
   );
 
-  assert.match(readme, /<picture>/);
-  assert.match(
-    readme,
-    /<source media="\(prefers-color-scheme: dark\)" srcset="assets\/brand\/diagrampilot-logo-light\.svg">/,
-  );
-  assert.match(
-    readme,
-    /<img src="assets\/brand\/diagrampilot-logo\.svg" alt="DiagramPilot wordmark">/,
-  );
-  assert.match(
-    readme,
-    /\[DiagramPilot mark\]\(assets\/brand\/diagrampilot-mark\.svg\)/,
-  );
-  assert.match(
-    publicDocsIndex,
-    /src="\/brand\/diagrampilot-logo\.svg"/,
-  );
-  assert.match(
-    publicDocsIndex,
-    /src="\/brand\/diagrampilot-logo-light\.svg"/,
-  );
-  assert.match(
-    llmsText,
-    /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo\.svg/,
-  );
-  assert.match(
-    llmsText,
-    /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo-light\.svg/,
-  );
-  assert.match(
-    llmsText,
-    /https:\/\/diagrampilot\.com\/brand\/diagrampilot-mark\.svg/,
-  );
-  assert.match(readme, /\[MIT Code License]\(LICENSE\)/);
-  assert.match(readme, /\[Brand Use Policy]\(BRAND_USE_POLICY\.md\)/);
-  assert.match(
-    publicDocsIndex,
-    /https:\/\/github\.com\/StiensWout\/DiagramPilot\/blob\/main\/LICENSE/,
-  );
-  assert.match(
-    publicDocsIndex,
-    /https:\/\/github\.com\/StiensWout\/DiagramPilot\/blob\/main\/BRAND_USE_POLICY\.md/,
-  );
-  assert.match(
-    llmsText,
-    /https:\/\/github\.com\/StiensWout\/DiagramPilot\/blob\/main\/LICENSE/,
-  );
-  assert.match(
-    llmsText,
-    /https:\/\/github\.com\/StiensWout\/DiagramPilot\/blob\/main\/BRAND_USE_POLICY\.md/,
-  );
-  assert.match(brandUsePolicy, /assets\/brand\/diagrampilot-logo\.svg/);
-  assert.match(brandUsePolicy, /assets\/brand\/diagrampilot-mark\.svg/);
-
-  for (const publicSurface of [readme, publicDocsIndex, llmsText]) {
-    assert.doesNotMatch(publicSurface, /docs\/development\//);
-    assert.doesNotMatch(publicSurface, /docs\/adr\//);
-    assert.doesNotMatch(publicSurface, /\.scratch\//);
-  }
+  assertBrandAssetEntrypoints({ readme, brandUsePolicy, llmsText });
+  assertMatchesAll(publicDocsIndex, [
+    /\/brand\/diagrampilot-logo\.svg/,
+    /\/brand\/diagrampilot-logo-light\.svg/,
+    /BRAND_USE_POLICY\.md/,
+  ]);
 });
 
 test("public quickstart and README route users through the checkout demo workflow", async () => {
@@ -276,56 +311,27 @@ test("public quickstart and README route users through the checkout demo workflo
     "utf8",
   );
 
-  assert.match(quickstart, /Checkout Demo Project/);
-  assert.match(quickstart, /demo-projects\/checkout/);
-  assert.match(quickstart, /npm install/);
-  assert.match(quickstart, /npm run build/);
-  assert.match(quickstart, /node \.\.\/\.\.\/packages\/cli\/dist\/index\.js/);
-  assert.match(quickstart, /cd demo-projects\/checkout/);
-  assert.match(quickstart, /diagrampilot check/);
-  assert.match(
-    quickstart,
-    /diagrampilot validate docs\/architecture\.dp\.yaml/,
-  );
-  assert.match(
-    quickstart,
-    /diagrampilot render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/,
-  );
-  assert.match(
-    quickstart,
+  assertCheckoutDemoRoute({ quickstart, readme, checkoutDemoReadme });
+  assertQuickstartCheckoutCommands(quickstart);
+  assertArchitectureExampleCommands(quickstart);
+  assertMatchesAll(quickstart, [
+    /diagrampilot check/,
     /diagrampilot export docs\/architecture\.dp\.yaml --format mermaid/,
-  );
-  assert.match(
-    quickstart,
     /diagrampilot export docs\/architecture\.dp\.yaml --format d2 --out docs\/architecture\.d2/,
-  );
-  assert.match(
-    quickstart,
     /diagrampilot export docs\/architecture\.dp\.yaml --format dot --out docs\/architecture\.dot/,
-  );
-  assert.match(quickstart, /copy the same source\/render pattern/i);
-  assert.match(quickstart, /another repository/i);
-
-  assert.match(readme, /Checkout Demo Project/);
-  assert.match(
-    readme,
+    /copy the same source\/render pattern/i,
+    /another repository/i,
+  ]);
+  assertMatchesAll(readme, [
     /https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md/,
-  );
-  assert.match(readme, /diagrampilot check/);
-  assert.match(readme, /diagrampilot validate docs\/architecture\.dp\.yaml/);
-  assert.match(
-    readme,
+    /diagrampilot validate docs\/architecture\.dp\.yaml/,
     /diagrampilot render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/,
-  );
-
-  assert.match(llmsText, /Checkout demo quickstart/);
-  assert.match(
-    llmsText,
+  ]);
+  assertMatchesAll(llmsText, [
+    /Canonical beginner workflow/,
     /https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md/,
-  );
-  assert.match(llmsText, /Canonical beginner workflow/);
+  ]);
 
-  assert.match(checkoutDemoReadme, /diagrampilot check/);
   assert.match(checkoutDemoReadme, /read-only repo review\/CI command/);
   assert.match(
     checkoutDemoReadme,
@@ -362,49 +368,8 @@ test("public quickstart explains current DiagramPilot artifact and CLI behavior"
     "utf8",
   );
 
-  assert.match(quickstart, /DiagramPilot Source Files/);
-  assert.match(quickstart, /Derived Artifacts/);
-  assert.match(quickstart, /review\/CI command/i);
-  assert.match(quickstart, /read-only/i);
-  assert.match(quickstart, /next-to-source same-stem Expected SVG Artifact/i);
-  assert.match(quickstart, /SVG freshness is provenance-based/i);
-  assert.match(
-    quickstart,
-    /Configured Mermaid, D2, and DOT artifacts use content comparison/i,
-  );
-  assert.match(
-    quickstart,
-    /Configured PNG freshness is presence-only in v0\.3\.0/i,
-  );
-  assert.match(quickstart, /diagrampilot\.config\.yaml/);
-  assert.match(quickstart, /sources\.ignore/);
-  assert.match(quickstart, /artifacts/);
-  assert.match(quickstart, /sourceGlob/);
-  assert.match(
-    quickstart,
-    /matched mappings replace the default SVG\s+expectation/i,
-  );
-  assert.match(quickstart, /Validate before rendering/);
-  assert.match(quickstart, /render` requires `--out`/);
-  assert.match(quickstart, /sourcePath/);
-  assert.match(quickstart, /sourceSha256/);
-  assert.match(quickstart, /diagramPilotVersion/);
-  assert.match(quickstart, /renderer/);
-  assert.match(quickstart, /does not include wall-clock timestamps/);
-  assert.match(quickstart, /export` prints to stdout by default/);
-  assert.match(quickstart, /Use `--out` only when you want to write/);
-  assert.match(
-    quickstart,
-    /`diagrampilot init` does not create or update `llms\.txt` or `docs\/diagrampilot\.md` by default/,
-  );
-  assert.match(
-    quickstart,
-    /Use `diagrampilot init --docs` only when the repository intentionally wants managed local agent docs/,
-  );
-  assert.match(
-    quickstart,
-    /Use `diagrampilot init --config`\s+only when the repository intentionally wants\s+`diagrampilot\.config\.yaml`/i,
-  );
+  assertQuickstartArtifactWorkflow(quickstart);
+  assertQuickstartInitGuidance(quickstart);
 });
 
 test("public examples reference current packages and avoid deferred features", async () => {

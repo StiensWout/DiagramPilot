@@ -1,21 +1,13 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 
 import { withTempRepo } from "./cli-smoke-helpers.mjs";
+import { exists } from "./mcp-source-mutation-helpers.mjs";
 
 async function importMcpPackage() {
   return import("../packages/mcp/dist/index.js");
-}
-
-async function exists(filePath) {
-  try {
-    await access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 async function withTempRepoCwd(run) {

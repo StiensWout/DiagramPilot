@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
+import {
+  mkdir,
+  readFile,
+  readdir,
+  writeFile,
+} from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -9,6 +13,7 @@ import {
   addSvgProvenanceMetadata,
   createSvgRendererProvenance,
 } from "../packages/render-svg/dist/index.js";
+import { withTempRepoPrefix } from "./temp-repo-helpers.mjs";
 import {
   npmCommand,
   runProcess,
@@ -67,13 +72,22 @@ export function assertFreshCheckOutput(result) {
 }
 
 export async function withTempRepo(run) {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "diagrampilot-cli-"));
+  return withTempRepoPrefix("diagrampilot-cli-", run);
+}
 
-  try {
-    return await run(tempRoot);
-  } finally {
-    await rm(tempRoot, { recursive: true, force: true });
-  }
+export async function readAgentSupportFiles(rootPath) {
+  return {
+    llmsText: await readFile(path.join(rootPath, "llms.txt"), "utf8"),
+    guideText: await readFile(
+      path.join(rootPath, "docs", "diagrampilot.md"),
+      "utf8",
+    ),
+  };
+}
+
+export function assertLlmsPublicDocsLinks(llmsText) {
+  assert.match(llmsText, /https:\/\/diagrampilot\.com\/llms\.txt/);
+  assert.match(llmsText, /diagrampilot check/);
 }
 
 export function occurrenceCount(text, pattern) {
@@ -94,6 +108,62 @@ export function parseSuccessfulJsonCliPayload(result) {
 
 export function sha256Hex(text) {
   return createHash("sha256").update(text).digest("hex");
+}
+
+const minimalCheckoutArchitectureSourceText = [
+  "version: 1",
+  "title: Checkout Architecture",
+  "nodes:",
+  "  - id: web_app",
+  "    label: Web App",
+  "",
+].join("\n");
+
+const checkoutArchitectureSourceText = [
+  "version: 1",
+  "title: Checkout Architecture",
+  "nodes:",
+  "  - id: web_app",
+  "    label: Web App",
+  "  - id: api_gateway",
+  "    label: API Gateway",
+  "edges:",
+  "  - id: web_app_to_api_gateway",
+  "    from: web_app",
+  "    to: api_gateway",
+  "    label: HTTPS",
+  "",
+].join("\n");
+
+export const groupedCheckoutArchitectureSourceText = [
+  "version: 1",
+  "title: Checkout Architecture",
+  "nodes:",
+  "  - id: web_app",
+  "    label: Web App",
+  "  - id: api_gateway",
+  "    label: API Gateway",
+  "groups:",
+  "  - id: frontend",
+  "    label: Frontend",
+  "    contains:",
+  "      - web_app",
+  "edges:",
+  "  - id: web_app_to_api_gateway",
+  "    from: web_app",
+  "    to: api_gateway",
+  "    directed: false",
+  "",
+].join("\n");
+
+export async function writeCheckoutArchitectureSource(
+  tempRoot,
+  sourceText = checkoutArchitectureSourceText,
+) {
+  const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
+  await mkdir(path.dirname(sourcePath), { recursive: true });
+  await writeFile(sourcePath, sourceText, "utf8");
+  return { sourcePath, sourceText };
 }
 
 export async function findFilesMatching(rootPath, startPath, pattern) {
@@ -119,18 +189,10 @@ export async function findFilesMatching(rootPath, startPath, pattern) {
 }
 
 export async function writeFreshDiagramArtifact(tempRoot) {
-  await mkdir(path.join(tempRoot, "docs"), { recursive: true });
-  const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
-  const sourceText = [
-    "version: 1",
-    "title: Checkout Architecture",
-    "nodes:",
-    "  - id: web_app",
-    "    label: Web App",
-    "",
-  ].join("\n");
-
-  await writeFile(sourcePath, sourceText, "utf8");
+  const { sourcePath, sourceText } = await writeCheckoutArchitectureSource(
+    tempRoot,
+    minimalCheckoutArchitectureSourceText,
+  );
   await writeFile(
     path.join(tempRoot, "docs", "architecture.svg"),
     addSvgProvenanceMetadata(

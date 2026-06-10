@@ -8,6 +8,9 @@ import {
   checkDiagramPilotRepoWorkflowWithDependencies,
 } from "../packages/core/dist/index.js";
 import {
+  assertInvalidConfigResult as assertInvalidConfigFailure,
+} from "./repo-workflow-configured-artifacts-helpers.mjs";
+import {
   SVG_RENDERER_NAME,
   SVG_RENDERER_VERSION,
   repoWorkflowCheckOptions,
@@ -108,10 +111,7 @@ test("checkDiagramPilotRepoWorkflow validates config before source processing", 
       repoWorkflowCheckOptions(tempRoot),
     );
 
-    assert.equal(result.ok, false);
-    assert.equal(result.failure.kind, "invalid-config");
-    assert.equal(result.failure.path, configPath);
-    assert.equal(result.failure.errors[0].path, "version");
+    assertInvalidConfigFailure(result, { configPath, errorPath: "version" });
     assert.match(result.failure.message, /Repo Workflow Configuration error/);
     assert.match(result.failure.message, /version: 1/);
     assert.doesNotMatch(result.failure.message, /Missing required top-level field: title/);
@@ -152,9 +152,7 @@ test("checkDiagramPilotRepoWorkflow rejects unsafe source ignore patterns", asyn
         repoWorkflowCheckOptions(tempRoot),
       );
 
-      assert.equal(result.ok, false);
-      assert.equal(result.failure.kind, "invalid-config");
-      assert.equal(result.failure.errors[0].path, testCase.expectedPath);
+      assertInvalidConfigFailure(result, { errorPath: testCase.expectedPath });
       assert.match(result.failure.message, testCase.expectedMessage);
     }
   });
@@ -174,10 +172,7 @@ test("checkDiagramPilotRepoWorkflow rejects unsupported config fields", async ()
       repoWorkflowCheckOptions(tempRoot),
     );
 
-    assert.equal(result.ok, false);
-    assert.equal(result.failure.kind, "invalid-config");
-    assert.equal(result.failure.path, configPath);
-    assert.equal(result.failure.errors[0].path, "workflow");
+    assertInvalidConfigFailure(result, { configPath, errorPath: "workflow" });
     assert.match(result.failure.message, /Unsupported Repo Workflow Configuration field/);
   });
 });
