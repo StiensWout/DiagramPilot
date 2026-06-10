@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { planCommand } from "../packages/cli/dist/index.js";
 import {
+  assertJsonFailurePlan,
   createPlanningDependencies,
   validLoadResult,
 } from "./cli-command-planning-helpers.mjs";
@@ -44,11 +45,7 @@ test("validate --json emits structured repair hints for legacy JSON sources", as
     }),
   );
 
-  assert.equal(plan.exitCode, 1);
-  assert.equal(plan.stderr, "");
-  assert.deepEqual(plan.writes, []);
-
-  const result = JSON.parse(plan.stdout);
+  const result = assertJsonFailurePlan(plan);
 
   assert.equal(result.file, "docs/architecture.dp.json");
   assert.equal(result.ok, false);

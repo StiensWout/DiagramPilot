@@ -8,7 +8,7 @@ import type {
 } from "@diagrampilot/core";
 import {
   createDiagramSpecTopology,
-  walkDiagramSpecTopology,
+  formatDiagramSpecTopologyLines,
 } from "@diagrampilot/core";
 
 export const EXPORT_DOT_PACKAGE_NAME = "@diagrampilot/export-dot";
@@ -104,28 +104,20 @@ export function exportDiagramSpecToDot(spec: DiagramSpec): string {
     lines.push(`${indent(1)}${attribute};`);
   }
 
-  function emitNode(node: DiagramSpecNode, depth: number): void {
-    lines.push(`${indent(depth)}${nodeDefinition(node)}`);
-  }
-
-  function enterGroup(group: DiagramSpecGroup, depth: number): void {
-    lines.push(`${indent(depth)}${groupDefinition(group)}`);
-    lines.push(`${indent(depth + 1)}label=${quoted(group.label)};`);
-    for (const attribute of metadataAttributes(group.metadata)) {
-      lines.push(`${indent(depth + 1)}${attribute};`);
-    }
-  }
-
-  function exitGroup(_group: DiagramSpecGroup, depth: number): void {
-    lines.push(`${indent(depth)}}`);
-  }
-
-  walkDiagramSpecTopology(topology, {
-    rootDepth: 1,
-    node: emitNode,
-    enterGroup,
-    exitGroup,
-  });
+  lines.push(
+    ...formatDiagramSpecTopologyLines(topology, {
+      rootDepth: 1,
+      node: (node, depth) => `${indent(depth)}${nodeDefinition(node)}`,
+      enterGroup: (group, depth) => [
+        `${indent(depth)}${groupDefinition(group)}`,
+        `${indent(depth + 1)}label=${quoted(group.label)};`,
+        ...metadataAttributes(group.metadata).map(
+          (attribute) => `${indent(depth + 1)}${attribute};`,
+        ),
+      ],
+      exitGroup: (_group, depth) => `${indent(depth)}}`,
+    }),
+  );
 
   for (const edge of spec.edges ?? []) {
     lines.push(`${indent(1)}${edgeDefinition(edge)}`);

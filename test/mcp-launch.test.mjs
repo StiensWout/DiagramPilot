@@ -1,20 +1,18 @@
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
-import { runBuiltCli, withTempRepo } from "./cli-smoke-helpers.mjs";
+import { repoRoot, runBuiltCli, withTempRepo } from "./cli-smoke-helpers.mjs";
 import {
   npmCommand,
   runProcess,
   sanitizedTestEnv,
 } from "./process-helpers.mjs";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cliEntryPoint = path.join(repoRoot, "packages", "cli", "dist", "index.js");
 
 function runMcpPackageExecutable(args) {
@@ -109,6 +107,7 @@ test("diagrampilot mcp starts a stdio MCP server with resources tools and prompt
           "diagrampilot_export_source",
           "diagrampilot_render_source",
           "diagrampilot_create_source",
+          "diagrampilot_mutate_source",
           "diagrampilot_generate_repo_outputs",
         ],
       );

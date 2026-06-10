@@ -65,6 +65,10 @@ function toolInputSchema(tool: DiagramPilotMcpTool): Record<string, z.ZodType> {
       source_path: z.string(),
       diagram: z.record(z.string(), z.unknown()),
     },
+    diagrampilot_mutate_source: {
+      source_path: z.string(),
+      operation: z.record(z.string(), z.unknown()),
+    },
     diagrampilot_generate_repo_outputs: {
       source_paths: z.array(z.string()).optional(),
       scope_paths: z.array(z.string()).optional(),

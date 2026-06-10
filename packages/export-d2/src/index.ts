@@ -1,6 +1,6 @@
 import {
   createDiagramSpecTopology,
-  walkDiagramSpecTopology,
+  formatDiagramSpecTopologyLines,
 } from "@diagrampilot/core";
 import type {
   DiagramSpec,
@@ -57,25 +57,16 @@ function edgeDefinition(
 export function exportDiagramSpecToD2(spec: DiagramSpec): string {
   const lines = [`direction: ${spec.direction ?? "right"}`, ""];
   const topology = createDiagramSpecTopology(spec);
-
-  function emitNode(node: DiagramSpecNode, depth: number): void {
-    lines.push(`${indent(depth)}${nodeDefinition(node)}`);
-  }
-
-  function enterGroup(group: DiagramSpecGroup, depth: number): void {
-    lines.push(`${indent(depth)}${group.id}: {`);
-    lines.push(`${indent(depth + 1)}label: ${quoted(group.label)}`);
-  }
-
-  function exitGroup(_group: DiagramSpecGroup, depth: number): void {
-    lines.push(`${indent(depth)}}`);
-  }
-
-  walkDiagramSpecTopology(topology, {
-    node: emitNode,
-    enterGroup,
-    exitGroup,
-  });
+  lines.push(
+    ...formatDiagramSpecTopologyLines(topology, {
+      node: (node, depth) => `${indent(depth)}${nodeDefinition(node)}`,
+      enterGroup: (group, depth) => [
+        `${indent(depth)}${group.id}: {`,
+        `${indent(depth + 1)}label: ${quoted(group.label)}`,
+      ],
+      exitGroup: (_group, depth) => `${indent(depth)}}`,
+    }),
+  );
 
   if ((spec.edges ?? []).length > 0) {
     lines.push("");

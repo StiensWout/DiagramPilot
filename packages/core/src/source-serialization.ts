@@ -51,6 +51,7 @@ export function serializeDiagramPilotSourceFile(spec: DiagramSpec): string {
     version: spec.version,
     title: spec.title,
   };
+  setIfDefined(ordered, "description", spec.description);
   setIfDefined(ordered, "direction", spec.direction);
   ordered.nodes = spec.nodes.map(orderedNode);
   setIfDefined(ordered, "groups", spec.groups?.map(orderedGroup));
