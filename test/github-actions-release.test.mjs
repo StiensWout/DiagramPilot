@@ -194,6 +194,7 @@ test("release workflow gates CD side effects behind CI and validates reviewed Gi
     /needs\.validate-release\.outputs\.dist_tag == 'latest'/u,
     /environment: github-release-publication/u,
     /GH_TOKEN: \$\{\{ secrets\.GITHUB_TOKEN \}\}/u,
+    /reusing existing release tag/u,
     /node scripts\/generate-release-notes\.mjs/u,
     /gh release view "\$RELEASE_TAG" --json tagName,name,body,isDraft,isPrerelease/u,
     /node scripts\/validate-github-release-draft\.mjs/u,
@@ -227,6 +228,7 @@ test("release workflow gates CD side effects behind CI and validates reviewed Gi
     draftCreation < generatedDraftValidation,
     "generated draft must be validated before the review gate",
   );
+  assert.doesNotMatch(publishGithubReleaseJob, /--target "\$GITHUB_SHA"/u);
 
   const draftValidation = publishGithubReleaseJob.indexOf(
     "node scripts/validate-github-release-draft.mjs",
