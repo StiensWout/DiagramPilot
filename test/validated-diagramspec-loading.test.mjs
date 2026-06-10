@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 
 import { loadValidatedDiagramSpec } from "../packages/core/dist/index.js";
+import { assertYamlSourceRepairHint } from "./source-format-assertions.mjs";
 
 async function withTempRepo(run) {
   const tempRoot = await mkdtemp(
@@ -67,8 +68,7 @@ test("loadValidatedDiagramSpec rejects an explicit JSON source path with a YAML 
     assert.equal(result.ok, false);
     assert.equal(result.failure.kind, "unsupported-source-format");
     assert.equal(result.failure.path, sourcePath);
-    assert.match(result.failure.message, /YAML is the supported source format/);
-    assert.match(result.failure.message, /\*\.dp\.yaml/);
+    assertYamlSourceRepairHint(result.failure.message);
   });
 });
 
@@ -138,8 +138,7 @@ test("loadValidatedDiagramSpec rejects a JSON source path before parsing JSON sy
     assert.equal(result.ok, false);
     assert.equal(result.failure.kind, "unsupported-source-format");
     assert.equal(result.failure.path, sourcePath);
-    assert.match(result.failure.message, /YAML is the supported source format/);
-    assert.match(result.failure.message, /\*\.dp\.yaml/);
+    assertYamlSourceRepairHint(result.failure.message);
   });
 });
 

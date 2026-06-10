@@ -64,12 +64,17 @@ conflict that cannot be resolved in normal docs.
 - [73 MCP repo output generation tool](./73-mcp-repo-output-generation-tool.md)
 - [74 MCP Source Creation](./74-mcp-source-creation.md)
 - [75 MCP Source Mutation](./75-mcp-source-mutation.md)
+- [76 Fallow duplicate-code cleanup and MCP version sync fix](./76-fallow-duplicate-code-cleanup.md)
+- [77 Fallow health cleanup](./77-fallow-health-cleanup.md)
+- [78 Fallow clean gate and policy](./78-fallow-clean-gate-and-policy.md)
 
 ## Validation plan
 
 ```bash
 npm run build
 npm test
+npm run audit:fallow
+npm run audit:fallow:changed
 npm run check:release-version
 npm run check:package-readiness
 npm --workspace website run build

@@ -514,14 +514,18 @@ Candidate Issue Release sequence for later slicing:
 2. `0.2.2` - DOT export.
 3. `0.2.3` - PNG rendering.
 4. `0.2.4` - YAML-only source support and JSON-source diagnostics.
-5. `0.2.5` - Repo Workflow Configuration with artifact mappings, ignores, and
-   `generate`.
-6. `0.2.6` - DOT/PNG freshness checks.
-7. `0.2.7` - Generated Markdown embeds.
-8. `0.2.8` - MCP package, resources, read tools, prompts, and launch setup.
-9. `0.2.9` - MCP Source Creation.
-10. `0.2.10` - MCP Source Mutation.
-11. `0.3.0` - Release-Aligned Documentation Rework and PRD closeout.
+5. `0.2.5` - Repo Workflow Configuration foundation.
+6. `0.2.6` - Configured artifact mappings and freshness.
+7. `0.2.7` - Generate command for configured outputs.
+8. `0.2.8` - Generated Markdown embeds.
+9. `0.2.9` - MCP package, launch, resources, read tools, and prompts.
+10. `0.2.10` - MCP repo output generation tool.
+11. `0.2.12` - MCP Source Mutation.
+12. `0.2.13` - MCP Source Creation.
+13. `0.2.14` - Fallow duplicate-code cleanup and MCP version sync fix.
+14. `0.2.15` - Fallow health cleanup.
+15. `0.2.16` - Fallow clean gate and policy.
+16. `0.3.0` - Release-Aligned Documentation Rework and PRD closeout.
 
 Validation plan for this PRD:
 

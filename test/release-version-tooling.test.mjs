@@ -23,9 +23,27 @@ const releaseMetadataPaths = [
   "packages/export-dot/package.json",
   "packages/export-mermaid/package.json",
   "packages/icons/package.json",
+  "packages/mcp/package.json",
   "packages/render-svg/package.json",
   "website/package.json",
 ];
+
+test("release version fixture covers every workspace manifest", () => {
+  assert.deepEqual(
+    releaseMetadataPaths.filter((repoPath) => repoPath.endsWith("/package.json")),
+    [
+      "packages/cli/package.json",
+      "packages/core/package.json",
+      "packages/export-d2/package.json",
+      "packages/export-dot/package.json",
+      "packages/export-mermaid/package.json",
+      "packages/icons/package.json",
+      "packages/mcp/package.json",
+      "packages/render-svg/package.json",
+      "website/package.json",
+    ],
+  );
+});
 
 async function readJson(repoPath) {
   return JSON.parse(await readFile(path.join(repoRoot, repoPath), "utf8"));

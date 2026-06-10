@@ -33,6 +33,13 @@ export const validSourceContent = [
 ].join("\n");
 export const emptySvg = '<svg xmlns="http://www.w3.org/2000/svg"><g /></svg>';
 
+function architectureFixturePaths(tempRoot) {
+  return {
+    sourcePath: path.join(tempRoot, "docs", "architecture.dp.yaml"),
+    artifactPath: path.join(tempRoot, "docs", "architecture.svg"),
+  };
+}
+
 export function expectedSvgFreshnessOptions(sourcePath) {
   return {
     sourcePath,
@@ -49,9 +56,14 @@ async function writeValidDiagramSource(sourcePath) {
   await writeFile(sourcePath, validSourceContent, "utf8");
 }
 
+export async function writeValidArchitectureSource(tempRoot) {
+  const paths = architectureFixturePaths(tempRoot);
+  await writeValidDiagramSource(paths.sourcePath);
+  return paths;
+}
+
 export async function writeProvenanceFixture(tempRoot, provenance) {
-  const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
-  const artifactPath = path.join(tempRoot, "docs", "architecture.svg");
+  const { sourcePath, artifactPath } = architectureFixturePaths(tempRoot);
 
   await writeValidDiagramSource(sourcePath);
   await writeFile(

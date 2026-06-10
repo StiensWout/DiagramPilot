@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -33,4 +34,10 @@ export async function callMutateSource(sourcePath, operation) {
     source_path: sourcePath,
     operation,
   });
+}
+
+export function assertMutationFailedWithoutWrites(result) {
+  assert.equal(result.isError, true);
+  assert.equal(result.structuredContent.ok, false);
+  assert.equal(result.structuredContent.writtenPaths.length, 0);
 }

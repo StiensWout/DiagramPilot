@@ -5,6 +5,7 @@ import { test } from "node:test";
 
 import { withTempRepo } from "./cli-smoke-helpers.mjs";
 import {
+  assertMutationFailedWithoutWrites,
   callMutateSource,
   writeSource,
 } from "./mcp-source-mutation-helpers.mjs";
@@ -396,9 +397,7 @@ test("MCP mutate source tool rolls back mutations that fail validation", async (
       },
     });
 
-    assert.equal(mutated.isError, true);
-    assert.equal(mutated.structuredContent.ok, false);
-    assert.equal(mutated.structuredContent.writtenPaths.length, 0);
+    assertMutationFailedWithoutWrites(mutated);
     assert.match(mutated.structuredContent.errors[0].path, /edges/);
     assert.equal(await readFile(sourcePath, "utf8"), before);
   });
@@ -417,9 +416,7 @@ test("MCP mutate source tool returns diagnostics for invalid sources before muta
       title: "Recovered",
     });
 
-    assert.equal(mutated.isError, true);
-    assert.equal(mutated.structuredContent.ok, false);
-    assert.equal(mutated.structuredContent.writtenPaths.length, 0);
+    assertMutationFailedWithoutWrites(mutated);
     assert.match(mutated.structuredContent.errors[0].message, /parse/i);
     assert.equal(await readFile(sourcePath, "utf8"), before);
   });
@@ -477,9 +474,7 @@ test("MCP mutate source tool rejects non-YAML source paths without writing", asy
       title: "Checkout Runtime",
     });
 
-    assert.equal(mutated.isError, true);
-    assert.equal(mutated.structuredContent.ok, false);
-    assert.equal(mutated.structuredContent.writtenPaths.length, 0);
+    assertMutationFailedWithoutWrites(mutated);
     assert.match(mutated.structuredContent.errors[0].message, /\*\.dp\.yaml/);
     assert.equal(await readFile(sourcePath, "utf8"), before);
   });

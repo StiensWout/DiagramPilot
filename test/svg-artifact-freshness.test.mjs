@@ -16,6 +16,7 @@ import {
 import {
   emptySvg,
   expectedSvgFreshnessOptions,
+  writeValidArchitectureSource,
   provenanceSourcePath,
   validSourceContent,
   withTempRepo,
@@ -123,22 +124,7 @@ test("checkExpectedSvgArtifactFreshnessForValidatedSource computes expected prov
 
 test("checkExpectedSvgArtifactFreshness reports a missing expected SVG artifact separately from stale artifacts", async () => {
   await withTempRepo(async (tempRoot) => {
-    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
-    const artifactPath = path.join(tempRoot, "docs", "architecture.svg");
-
-    await mkdir(path.dirname(sourcePath), { recursive: true });
-    await writeFile(
-      sourcePath,
-      [
-        "version: 1",
-        "title: Architecture",
-        "nodes:",
-        "  - id: web_app",
-        "    label: Web App",
-        "",
-      ].join("\n"),
-      "utf8",
-    );
+    const { sourcePath, artifactPath } = await writeValidArchitectureSource(tempRoot);
 
     const result = await checkExpectedSvgArtifactFreshness({
       sourcePath,
@@ -159,22 +145,7 @@ test("checkExpectedSvgArtifactFreshness reports a missing expected SVG artifact 
 
 test("checkExpectedSvgArtifactFreshness reports an unreadable expected SVG artifact separately from missing artifacts", async () => {
   await withTempRepo(async (tempRoot) => {
-    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
-    const artifactPath = path.join(tempRoot, "docs", "architecture.svg");
-
-    await mkdir(path.dirname(sourcePath), { recursive: true });
-    await writeFile(
-      sourcePath,
-      [
-        "version: 1",
-        "title: Architecture",
-        "nodes:",
-        "  - id: web_app",
-        "    label: Web App",
-        "",
-      ].join("\n"),
-      "utf8",
-    );
+    const { sourcePath, artifactPath } = await writeValidArchitectureSource(tempRoot);
     await mkdir(artifactPath, { recursive: true });
 
     const result = await checkExpectedSvgArtifactFreshness({
@@ -195,22 +166,7 @@ test("checkExpectedSvgArtifactFreshness reports an unreadable expected SVG artif
 
 test("checkExpectedSvgArtifactFreshness reports missing DiagramPilot provenance separately from stale artifacts", async () => {
   await withTempRepo(async (tempRoot) => {
-    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
-    const artifactPath = path.join(tempRoot, "docs", "architecture.svg");
-
-    await mkdir(path.dirname(sourcePath), { recursive: true });
-    await writeFile(
-      sourcePath,
-      [
-        "version: 1",
-        "title: Architecture",
-        "nodes:",
-        "  - id: web_app",
-        "    label: Web App",
-        "",
-      ].join("\n"),
-      "utf8",
-    );
+    const { sourcePath, artifactPath } = await writeValidArchitectureSource(tempRoot);
     await writeFile(
       artifactPath,
       '<svg xmlns="http://www.w3.org/2000/svg"><g /></svg>',
@@ -265,22 +221,7 @@ test("checkExpectedSvgArtifactFreshness leaves artifact freshness unchecked for 
 
 test("checkExpectedSvgArtifactFreshness reports malformed DiagramPilot provenance separately from stale artifacts", async () => {
   await withTempRepo(async (tempRoot) => {
-    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
-    const artifactPath = path.join(tempRoot, "docs", "architecture.svg");
-
-    await mkdir(path.dirname(sourcePath), { recursive: true });
-    await writeFile(
-      sourcePath,
-      [
-        "version: 1",
-        "title: Architecture",
-        "nodes:",
-        "  - id: web_app",
-        "    label: Web App",
-        "",
-      ].join("\n"),
-      "utf8",
-    );
+    const { sourcePath, artifactPath } = await writeValidArchitectureSource(tempRoot);
     await writeFile(
       artifactPath,
       '<svg xmlns="http://www.w3.org/2000/svg"><metadata id="diagrampilot-provenance">{not json}</metadata><g /></svg>',
@@ -305,22 +246,7 @@ test("checkExpectedSvgArtifactFreshness reports malformed DiagramPilot provenanc
 
 test("checkExpectedSvgArtifactFreshness reports malformed SVG separately from missing provenance", async () => {
   await withTempRepo(async (tempRoot) => {
-    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
-    const artifactPath = path.join(tempRoot, "docs", "architecture.svg");
-
-    await mkdir(path.dirname(sourcePath), { recursive: true });
-    await writeFile(
-      sourcePath,
-      [
-        "version: 1",
-        "title: Architecture",
-        "nodes:",
-        "  - id: web_app",
-        "    label: Web App",
-        "",
-      ].join("\n"),
-      "utf8",
-    );
+    const { sourcePath, artifactPath } = await writeValidArchitectureSource(tempRoot);
     await writeFile(artifactPath, "not actually svg\n", "utf8");
 
     const result = await checkExpectedSvgArtifactFreshness({
