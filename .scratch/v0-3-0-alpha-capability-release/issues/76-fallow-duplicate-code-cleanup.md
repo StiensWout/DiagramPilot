@@ -34,6 +34,10 @@ release-version sync fix. This is cleanup work, not new product behavior.
   and website guidance assertions.
 - Restored consolidated repo-workflow helper exports used by generated artifact
   and workflow generation tests.
+- Declared the internal workspace packages used by
+  `test/render-svg-provenance.test.mjs` in the root dev dependencies so
+  editor and file-scoped Fallow unlisted dependency diagnostics agree with the
+  repo-level gate.
 - Replaced the duplicate-code baseline with an empty `clone_groups` list after
   the direct no-baseline duplicate scan returned zero groups.
 
@@ -45,6 +49,8 @@ release-version sync fix. This is cleanup work, not new product behavior.
   passed.
 - [x] `node --test --test-concurrency=1 test/repo-workflow-configured-artifacts.test.mjs test/repo-workflow-generate.test.mjs`
   passed.
+- [x] `node --test --test-concurrency=1 test/render-svg-provenance.test.mjs`
+  passed.
 - [x] `npm test` passed: 248 tests, 0 failures.
 - [x] `npm run sync:issue-release-version -- --issue .scratch/v0-3-0-alpha-capability-release/issues/76-fallow-duplicate-code-cleanup.md`
   passed and confirmed release metadata at `0.2.14`.
@@ -55,6 +61,9 @@ release-version sync fix. This is cleanup work, not new product behavior.
 - [x] `npm run audit:fallow:dupes` passed with an empty duplicate baseline.
 - [x] `npm run audit:fallow` passed.
 - [x] `npm run audit:fallow:changed` passed.
+- [x] Root `package.json` and `package-lock.json` now declare
+  `@diagrampilot/core` and `@diagrampilot/render-svg` as dev dependencies for
+  root tests that import those package names.
 - [x] `./node_modules/.bin/fallow dupes --format compact --quiet --fail-on-issues`
   passed with no baseline.
 - [x] `./node_modules/.bin/fallow dead-code --format compact --quiet --fail-on-issues`
