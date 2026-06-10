@@ -1,6 +1,6 @@
 {
   "name": "@diagrampilot/export-mermaid",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "description": "Mermaid export adapter for DiagramPilot.",
   "type": "module",
   "license": "MIT",
@@ -43,6 +43,6 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@diagrampilot/core": "0.2.12"
+    "@diagrampilot/core": "0.2.13"
   }
 }
