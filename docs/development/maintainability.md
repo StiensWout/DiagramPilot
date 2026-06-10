@@ -81,14 +81,10 @@ npm run audit:fallow:changed
 CI runs the full Fallow gate in release readiness and the Fallow changed-code
 audit on pull requests. Both are blocking.
 
-Committed baselines live under `fallow-baselines/`:
+Fallow baselines should stay empty after the v0.3.0 cleanup, and future Fallow
+findings should be fixed instead of parked in `fallow-baselines/`.
 
-- `dead-code.json` should stay empty unless an intentional static-analysis
-  limitation cannot be represented in `.fallowrc.jsonc`.
-- `dupes.json` captures existing duplication debt.
-- `health.json` captures existing complexity debt.
-
-New Fallow findings must be fixed. If a finding is intentional, prefer a
-narrow `.fallowrc.jsonc` exception with a comment. Only update a baseline when
-the existing debt is intentionally recharacterized or after reducing debt and
-refreshing the baseline downward.
+Narrow documented static-analysis limitations belong in `.fallowrc.jsonc`,
+with a comment explaining why the exception is intentional. Only update a
+baseline when Fallow adds a new baseline category that cannot be represented as
+a narrow configuration exception, and keep that entry empty whenever possible.
