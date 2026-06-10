@@ -1,4 +1,4 @@
-Status: ready-for-human
+Status: completed
 Issue Version: 0.2.15
 
 # Fallow health cleanup before v0.3.0

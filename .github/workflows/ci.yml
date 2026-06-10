@@ -52,8 +52,6 @@ jobs:
           version: 2.89.0
           fail-on-issues: true
           dead-code-baseline: fallow-baselines/dead-code.json
-          health-baseline: fallow-baselines/health.json
-          dupes-baseline: fallow-baselines/dupes.json
           annotations: true
           artifacts-dir: .fallow-action
 

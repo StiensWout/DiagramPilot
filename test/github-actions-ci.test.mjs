@@ -17,6 +17,12 @@ function assertIncludesAll(source, snippets) {
   }
 }
 
+function assertExcludesAll(source, snippets) {
+  for (const snippet of snippets) {
+    assert.ok(!source.includes(snippet), `CI workflow should not include: ${snippet}`);
+  }
+}
+
 test("GitHub Actions CI validates branch and pull request release-readiness gates", async () => {
   const workflow = await readWorkflow();
 
@@ -36,8 +42,6 @@ test("GitHub Actions CI validates branch and pull request release-readiness gate
     "version: 2.89.0",
     "fail-on-issues: true",
     "dead-code-baseline: fallow-baselines/dead-code.json",
-    "health-baseline: fallow-baselines/health.json",
-    "dupes-baseline: fallow-baselines/dupes.json",
     "annotations: true",
     "uses: actions/checkout@v4",
     "uses: actions/setup-node@v4",
@@ -58,6 +62,11 @@ test("GitHub Actions CI validates branch and pull request release-readiness gate
     "node ../../packages/cli/dist/index.js check",
     "git diff --exit-code -- demo-projects/checkout/docs/architecture.svg",
     "npm run check:package-readiness",
+  ]);
+
+  assertExcludesAll(workflow, [
+    "health-baseline: fallow-baselines/health.json",
+    "dupes-baseline: fallow-baselines/dupes.json",
   ]);
 
   assert.doesNotMatch(workflow, /NPM_TOKEN|VERCEL|npm publish/u);

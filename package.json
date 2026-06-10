@@ -1,6 +1,6 @@
 {
   "name": "@diagrampilot/workspace",
-  "version": "0.2.14",
+  "version": "0.2.16",
   "private": true,
   "description": "Repo-native diagram compiler for AI coding agents.",
   "type": "module",
@@ -34,9 +34,9 @@
     "audit:maintainability": "npm run build && node scripts/audit-maintainability-file-sizes.mjs",
     "audit:fallow": "npm run build && npm run audit:fallow:dead-code && npm run audit:fallow:dupes && npm run audit:fallow:health",
     "audit:fallow:dead-code": "fallow dead-code --format compact --quiet --baseline fallow-baselines/dead-code.json --fail-on-issues",
-    "audit:fallow:dupes": "fallow dupes --format compact --quiet --baseline fallow-baselines/dupes.json --fail-on-issues",
-    "audit:fallow:health": "fallow health --format compact --quiet --complexity --baseline fallow-baselines/health.json --min-severity moderate",
-    "audit:fallow:changed": "fallow audit --format compact --quiet --fail-on-issues --dead-code-baseline fallow-baselines/dead-code.json --health-baseline fallow-baselines/health.json --dupes-baseline fallow-baselines/dupes.json",
+    "audit:fallow:dupes": "fallow dupes --format compact --quiet --fail-on-issues",
+    "audit:fallow:health": "fallow health --format compact --quiet --complexity --min-severity moderate",
+    "audit:fallow:changed": "fallow audit --format compact --quiet --fail-on-issues --dead-code-baseline fallow-baselines/dead-code.json",
     "check:release-version": "node scripts/check-release-version.mjs",
     "check:issue-release-version": "node scripts/check-issue-release-version.mjs",
     "sync:issue-release-version": "node scripts/sync-issue-release-version.mjs",
@@ -48,8 +48,8 @@
     "test": "npm run build && node --test --test-concurrency=1 test/*.test.mjs"
   },
   "devDependencies": {
-    "@diagrampilot/core": "0.2.14",
-    "@diagrampilot/render-svg": "0.2.14",
+    "@diagrampilot/core": "0.2.16",
+    "@diagrampilot/render-svg": "0.2.16",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/node": "^25.9.1",
     "fallow": "^2.89.0",
