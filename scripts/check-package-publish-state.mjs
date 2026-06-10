@@ -49,26 +49,23 @@ function isPackageNotFound(result) {
 }
 
 function collectAvailableStateIssues() {
-  const issues = [];
+  return [...PUBLIC_PACKAGE_SET].flatMap(collectAvailablePackageIssues);
+}
 
-  for (const packageName of PUBLIC_PACKAGE_SET) {
-    const result = runNpmView(packageName);
+function collectAvailablePackageIssues(packageName) {
+  const result = runNpmView(packageName);
 
-    if (isPackageNotFound(result)) {
-      continue;
-    }
-
-    if (result.status === 0) {
-      issues.push(`${packageName} already exists on npm.`);
-      continue;
-    }
-
-    issues.push(
-      `npm view failed for ${packageName}: ${result.stderr.trim() || result.stdout.trim()}`,
-    );
+  if (isPackageNotFound(result)) {
+    return [];
   }
 
-  return issues;
+  if (result.status === 0) {
+    return [`${packageName} already exists on npm.`];
+  }
+
+  return [
+    `npm view failed for ${packageName}: ${result.stderr.trim() || result.stdout.trim()}`,
+  ];
 }
 
 function readWorkspaceVersion() {
@@ -98,17 +95,29 @@ function collectTaggedPackageIssues(packageName, expectedVersion, options) {
 
   if (distTags === undefined) return issues;
 
-  if (distTags[options.expectedTag] !== expectedVersion) {
-    issues.push(
-      `${packageName} ${options.expectedTag} dist-tag is ${distTags[options.expectedTag] ?? "<missing>"}; expected ${expectedVersion}.`,
-    );
+  return [
+    ...issues,
+    ...collectExpectedDistTagIssue(packageName, expectedVersion, options, distTags),
+    ...collectLatestDistTagIssue(packageName, expectedVersion, options, distTags),
+  ];
+}
+
+function collectExpectedDistTagIssue(packageName, expectedVersion, options, distTags) {
+  if (distTags[options.expectedTag] === expectedVersion) {
+    return [];
   }
 
-  if (options.latestMustNotMove && distTags.latest === expectedVersion) {
-    issues.push(`${packageName} latest dist-tag must not point at ${expectedVersion}.`);
+  return [
+    `${packageName} ${options.expectedTag} dist-tag is ${distTags[options.expectedTag] ?? "<missing>"}; expected ${expectedVersion}.`,
+  ];
+}
+
+function collectLatestDistTagIssue(packageName, expectedVersion, options, distTags) {
+  if (!options.latestMustNotMove || distTags.latest !== expectedVersion) {
+    return [];
   }
 
-  return issues;
+  return [`${packageName} latest dist-tag must not point at ${expectedVersion}.`];
 }
 
 function collectTaggedStateIssues(expectedVersion, options) {

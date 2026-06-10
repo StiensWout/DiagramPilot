@@ -1,4 +1,4 @@
-import { readdirSync, statSync } from "node:fs";
+import { readdirSync, statSync, type Stats } from "node:fs";
 import path from "node:path";
 
 export interface DiscoveredDiagramPilotSourceFile {
@@ -178,63 +178,83 @@ function collectSourceDiscoveryEntry(options: {
   });
 }
 
-export async function discoverDiagramPilotSourceFiles(
-  scopePath = process.cwd(),
-  options: DiagramPilotSourceDiscoveryOptions = {},
-): Promise<DiagramPilotSourceDiscoveryResult> {
+function pathNotFoundDiscoveryResult(
+  scopePath: string,
+): DiagramPilotSourceDiscoveryResult {
+  return {
+    ok: false,
+    failure: {
+      kind: "path-not-found",
+      path: scopePath,
+      message: `Path does not exist: ${scopePath}`,
+    },
+  };
+}
+
+function unsupportedSourcePathDiscoveryResult(
+  scopePath: string,
+  message: string,
+): DiagramPilotSourceDiscoveryResult {
+  return {
+    ok: false,
+    failure: {
+      kind: "unsupported-source-path",
+      path: scopePath,
+      message,
+    },
+  };
+}
+
+function statSourceScope(scopePath: string): Stats | undefined {
   let stat;
 
   try {
     stat = statSync(scopePath);
   } catch {
-    return {
-      ok: false,
-      failure: {
-        kind: "path-not-found",
-        path: scopePath,
-        message: `Path does not exist: ${scopePath}`,
-      },
-    };
+    return undefined;
   }
 
-  if (stat.isFile()) {
-    if (!isDiagramPilotSourcePath(scopePath)) {
-      return {
-        ok: false,
-        failure: {
-          kind: "unsupported-source-path",
-          path: scopePath,
-          message: unsupportedSourceFileMessage(scopePath),
-        },
-      };
-    }
+  return stat;
+}
 
-    return {
-      ok: true,
-      scope: {
-        kind: "file",
-        path: scopePath,
-      },
-      sources: [
-        {
-          absolutePath: scopePath,
-          relativePath: normalizeRelativePath(path.basename(scopePath)),
-        },
-      ],
-    };
+function fileScopeDiscoveryResult(
+  scopePath: string,
+): DiagramPilotSourceDiscoveryResult {
+  if (!isDiagramPilotSourcePath(scopePath)) {
+    return unsupportedSourcePathDiscoveryResult(
+      scopePath,
+      unsupportedSourceFileMessage(scopePath),
+    );
   }
 
-  if (!stat.isDirectory()) {
-    return {
-      ok: false,
-      failure: {
-        kind: "unsupported-source-path",
-        path: scopePath,
-        message: `Unsupported DiagramPilot source path: ${scopePath}`,
+  return {
+    ok: true,
+    scope: {
+      kind: "file",
+      path: scopePath,
+    },
+    sources: [
+      {
+        absolutePath: scopePath,
+        relativePath: normalizeRelativePath(path.basename(scopePath)),
       },
-    };
-  }
+    ],
+  };
+}
 
+function unsupportedNonDirectoryScopeResult(
+  scopePath: string,
+): DiagramPilotSourceDiscoveryResult {
+  return unsupportedSourcePathDiscoveryResult(
+    scopePath,
+    `Unsupported DiagramPilot source path: ${scopePath}`,
+  );
+}
+
+function directoryScopeDiscoveryResult(
+  scopePath: string,
+  options: DiagramPilotSourceDiscoveryOptions,
+): DiagramPilotSourceDiscoveryResult {
   const sources: DiscoveredDiagramPilotSourceFile[] = [];
   const isIgnoredSourcePath = createSourceIgnoreMatcher(options);
 
@@ -269,4 +289,25 @@ export async function discoverDiagramPilotSourceFiles(
     },
     sources,
   };
+}
+
+export async function discoverDiagramPilotSourceFiles(
+  scopePath = process.cwd(),
+  options: DiagramPilotSourceDiscoveryOptions = {},
+): Promise<DiagramPilotSourceDiscoveryResult> {
+  const stat = statSourceScope(scopePath);
+
+  if (stat === undefined) {
+    return pathNotFoundDiscoveryResult(scopePath);
+  }
+
+  if (stat.isFile()) {
+    return fileScopeDiscoveryResult(scopePath);
+  }
+
+  if (!stat.isDirectory()) {
+    return unsupportedNonDirectoryScopeResult(scopePath);
+  }
+
+  return directoryScopeDiscoveryResult(scopePath, options);
 }

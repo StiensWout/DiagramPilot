@@ -55,26 +55,38 @@ function edgeDefinition(
 }
 
 export function exportDiagramSpecToD2(spec: DiagramSpec): string {
-  const lines = [`direction: ${spec.direction ?? "right"}`, ""];
   const topology = createDiagramSpecTopology(spec);
-  lines.push(
-    ...formatDiagramSpecTopologyLines(topology, {
-      node: (node, depth) => `${indent(depth)}${nodeDefinition(node)}`,
-      enterGroup: (group, depth) => [
-        `${indent(depth)}${group.id}: {`,
-        `${indent(depth + 1)}label: ${quoted(group.label)}`,
-      ],
-      exitGroup: (_group, depth) => `${indent(depth)}}`,
-    }),
-  );
-
-  if ((spec.edges ?? []).length > 0) {
-    lines.push("");
-  }
-
-  for (const edge of spec.edges ?? []) {
-    lines.push(edgeDefinition(edge, topology));
-  }
+  const lines = [
+    ...directionLines(spec),
+    ...topologySectionLines(topology),
+    ...edgeSectionLines(spec.edges ?? [], topology),
+  ];
 
   return `${lines.join("\n")}\n`;
+}
+
+function directionLines(spec: DiagramSpec): string[] {
+  return [`direction: ${spec.direction ?? "right"}`, ""];
+}
+
+function topologySectionLines(topology: DiagramSpecTopology): string[] {
+  return formatDiagramSpecTopologyLines(topology, {
+    node: (node, depth) => `${indent(depth)}${nodeDefinition(node)}`,
+    enterGroup: (group, depth) => [
+      `${indent(depth)}${group.id}: {`,
+      `${indent(depth + 1)}label: ${quoted(group.label)}`,
+    ],
+    exitGroup: (_group, depth) => `${indent(depth)}}`,
+  });
+}
+
+function edgeSectionLines(
+  edges: readonly DiagramSpecEdge[],
+  topology: DiagramSpecTopology,
+): string[] {
+  if (edges.length === 0) {
+    return [];
+  }
+
+  return ["", ...edges.map((edge) => edgeDefinition(edge, topology))];
 }

@@ -31,25 +31,40 @@ function parseArgs(args) {
   };
 
   for (let index = 0; index < args.length; index += 1) {
-    const fieldName = OPTION_FIELDS.get(args[index]);
-
-    if (fieldName === undefined) {
-      throw new Error(USAGE);
-    }
-
-    parsed[fieldName] = args[index + 1] ?? "";
+    const option = parseOptionArg(args, index);
+    parsed[option.fieldName] = option.value;
     index += 1;
   }
 
+  return withDefaultReleaseTag(requireParsedVersion(parsed));
+}
+
+function parseOptionArg(args, index) {
+  const fieldName = OPTION_FIELDS.get(args[index]);
+
+  if (fieldName === undefined) {
+    throw new Error(USAGE);
+  }
+
+  return {
+    fieldName,
+    value: args[index + 1] ?? "",
+  };
+}
+
+function requireParsedVersion(parsed) {
   if (parsed.version === "") {
     throw new Error(USAGE);
   }
 
-  if (parsed.tag === "") {
-    parsed.tag = `v${parsed.version}`;
-  }
-
   return parsed;
+}
+
+function withDefaultReleaseTag(parsed) {
+  return {
+    ...parsed,
+    tag: parsed.tag === "" ? `v${parsed.version}` : parsed.tag,
+  };
 }
 
 function readSections(issueText) {
@@ -72,21 +87,31 @@ function readSections(issueText) {
 }
 
 function validateReleaseIssueMetadata({ status, issueVersion, version, tag }) {
-  if (status !== "completed") {
-    throw new Error(
-      `Issue status must be completed before generating release notes; found ${status || "missing"}.`,
-    );
-  }
+  const error = [
+    validateCompletedIssueStatus(status),
+    validateIssueVersion(issueVersion, version),
+    validateReleaseTag(tag, version),
+  ].find((message) => message !== undefined);
 
-  if (issueVersion !== version) {
-    throw new Error(
-      `Issue Version ${issueVersion || "missing"} does not match requested release version ${version}.`,
-    );
-  }
+  if (error !== undefined) throw new Error(error);
+}
 
-  if (tag !== `v${version}`) {
-    throw new Error(`Release tag ${tag} does not match Issue Version ${version}.`);
-  }
+function validateCompletedIssueStatus(status) {
+  return status === "completed"
+    ? undefined
+    : `Issue status must be completed before generating release notes; found ${status || "missing"}.`;
+}
+
+function validateIssueVersion(issueVersion, version) {
+  return issueVersion === version
+    ? undefined
+    : `Issue Version ${issueVersion || "missing"} does not match requested release version ${version}.`;
+}
+
+function validateReleaseTag(tag, version) {
+  return tag === `v${version}`
+    ? undefined
+    : `Release tag ${tag} does not match Issue Version ${version}.`;
 }
 
 function appendReleaseSections(output, sections) {

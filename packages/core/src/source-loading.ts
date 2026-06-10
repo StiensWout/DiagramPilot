@@ -59,6 +59,16 @@ export type SourceLoadResult =
       failure: SourceLoadFailure;
     };
 
+type SourceContentReadResult =
+  | {
+      ok: true;
+      content: string;
+    }
+  | {
+      ok: false;
+      failure: SourceReadFailure;
+    };
+
 export type ValidatedDiagramSpecLoadFailure =
   | SourceLoadFailure
   | {
@@ -78,6 +88,35 @@ export type ValidatedDiagramSpecLoadResult =
       failure: ValidatedDiagramSpecLoadFailure;
     };
 
+function parseFailureLocation(
+  failure: Extract<SourceLoadFailure, { kind: "parse" }>,
+): string {
+  if (failure.line === undefined) {
+    return "";
+  }
+
+  if (failure.column === undefined) {
+    return "";
+  }
+
+  return ` at line ${failure.line}, column ${failure.column}`;
+}
+
+function parseFailureFormatLabel(
+  failure: Extract<SourceLoadFailure, { kind: "parse" }>,
+): string {
+  return failure.format.toUpperCase();
+}
+
+function formatParseSourceFailure(
+  failure: Extract<SourceLoadFailure, { kind: "parse" }>,
+): string {
+  const formatLabel = parseFailureFormatLabel(failure);
+  return `${formatLabel} parse error in ${failure.path}${parseFailureLocation(
+    failure,
+  )}: ${failure.message}`;
+}
+
 function formatSourceFailure(failure: SourceLoadFailure): string {
   if (failure.kind === "read") {
     return `Unable to read ${failure.path}: ${failure.message}`;
@@ -87,48 +126,57 @@ function formatSourceFailure(failure: SourceLoadFailure): string {
     return failure.message;
   }
 
-  const location =
-    failure.line === undefined || failure.column === undefined
-      ? ""
-      : ` at line ${failure.line}, column ${failure.column}`;
-  const formatLabel = failure.format.toUpperCase();
+  return formatParseSourceFailure(failure);
+}
 
-  return `${formatLabel} parse error in ${failure.path}${location}: ${failure.message}`;
+function readFailureDiagnostic(
+  failure: Extract<SourceLoadFailure, { kind: "read" }>,
+): RepairableDiagnostic {
+  return {
+    path: "$",
+    message: `Unable to read ${failure.path}: ${failure.message}`,
+    expected: "Readable DiagramPilot Source File.",
+    suggestion: "Check that the source path exists and is readable.",
+  };
+}
+
+function unsupportedSourceFormatDiagnostic(
+  failure: Extract<SourceLoadFailure, { kind: "unsupported-source-format" }>,
+): RepairableDiagnostic {
+  return {
+    path: "$",
+    message: failure.message,
+    expected: "YAML DiagramPilot Source File syntax.",
+    suggestion: "Use a `*.dp.yaml` DiagramPilot Source File.",
+  };
+}
+
+function parseFailureDiagnostic(
+  failure: Extract<SourceLoadFailure, { kind: "parse" }>,
+): RepairableDiagnostic {
+  const formatLabel = parseFailureFormatLabel(failure);
+  return {
+    path: "$",
+    message: `${formatLabel} parse error${parseFailureLocation(failure)}: ${
+      failure.message
+    }`,
+    expected: `Valid ${formatLabel} DiagramPilot Source File syntax.`,
+    suggestion: `Fix the ${formatLabel} syntax before semantic validation.`,
+  };
 }
 
 function sourceFailureToRepairableDiagnostic(
   failure: SourceLoadFailure,
 ): RepairableDiagnostic {
   if (failure.kind === "read") {
-    return {
-      path: "$",
-      message: `Unable to read ${failure.path}: ${failure.message}`,
-      expected: "Readable DiagramPilot Source File.",
-      suggestion: "Check that the source path exists and is readable.",
-    };
+    return readFailureDiagnostic(failure);
   }
 
   if (failure.kind === "unsupported-source-format") {
-    return {
-      path: "$",
-      message: failure.message,
-      expected: "YAML DiagramPilot Source File syntax.",
-      suggestion: "Use a `*.dp.yaml` DiagramPilot Source File.",
-    };
+    return unsupportedSourceFormatDiagnostic(failure);
   }
 
-  const location =
-    failure.line === undefined || failure.column === undefined
-      ? ""
-      : ` at line ${failure.line}, column ${failure.column}`;
-  const formatLabel = failure.format.toUpperCase();
-
-  return {
-    path: "$",
-    message: `${formatLabel} parse error${location}: ${failure.message}`,
-    expected: `Valid ${formatLabel} DiagramPilot Source File syntax.`,
-    suggestion: `Fix the ${failure.format.toUpperCase()} syntax before semantic validation.`,
-  };
+  return parseFailureDiagnostic(failure);
 }
 
 function hasBadValue(
@@ -260,11 +308,14 @@ function parseJsonSource(path: string, content: string): SourceLoadResult {
   }
 }
 
-export function loadDiagramPilotSourceFile(path: string): SourceLoadResult {
-  let content: string;
-
+function readDiagramPilotSourceContent(
+  path: string,
+): SourceContentReadResult {
   try {
-    content = readFileSync(path, "utf8");
+    return {
+      ok: true,
+      content: readFileSync(path, "utf8"),
+    };
   } catch (error) {
     return {
       ok: false,
@@ -275,23 +326,37 @@ export function loadDiagramPilotSourceFile(path: string): SourceLoadResult {
       },
     };
   }
+}
+
+function unsupportedJsonSourceResult(path: string): SourceLoadResult {
+  return {
+    ok: false,
+    failure: {
+      kind: "unsupported-source-format",
+      path,
+      message: `Unsupported DiagramPilot source file: ${path}. YAML is the supported source format; use a *.dp.yaml source file.`,
+    },
+  };
+}
+
+function parseSourceContent(path: string, content: string): SourceLoadResult {
+  return path.toLowerCase().endsWith(".json")
+    ? parseJsonSource(path, content)
+    : parseYamlSource(path, content);
+}
+
+export function loadDiagramPilotSourceFile(path: string): SourceLoadResult {
+  const contentResult = readDiagramPilotSourceContent(path);
+
+  if (!contentResult.ok) {
+    return contentResult;
+  }
 
   if (path.toLowerCase().endsWith(".dp.json")) {
-    return {
-      ok: false,
-      failure: {
-        kind: "unsupported-source-format",
-        path,
-        message: `Unsupported DiagramPilot source file: ${path}. YAML is the supported source format; use a *.dp.yaml source file.`,
-      },
-    };
+    return unsupportedJsonSourceResult(path);
   }
 
-  if (path.toLowerCase().endsWith(".json")) {
-    return parseJsonSource(path, content);
-  }
-
-  return parseYamlSource(path, content);
+  return parseSourceContent(path, contentResult.content);
 }
 
 export function loadValidatedDiagramSpec(

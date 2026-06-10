@@ -1,8 +1,3 @@
-interface ValidateOptions {
-  json: boolean;
-  sourcePath: string;
-}
-
 interface ExportOptions {
   format: "d2" | "dot" | "mermaid";
   outPath?: string;
@@ -35,7 +30,6 @@ type ArgsResult<TOptions> =
       message: string;
     };
 
-type ValidateArgsResult = ArgsResult<ValidateOptions>;
 type ExportArgsResult = ArgsResult<ExportOptions>;
 type RenderArgsResult = ArgsResult<RenderCommandOptions>;
 type CheckArgsResult = ArgsResult<CheckCommandOptions>;
@@ -383,50 +377,7 @@ function parseOutputCommandArgs<TFormat extends string>(
   return outputCommandArgsFromValues(values.options, config);
 }
 
-export function parseValidateArgs(
-  args: readonly string[],
-): ValidateArgsResult {
-  let json = false;
-  let sourcePath: string | undefined;
-
-  for (const arg of args) {
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-
-    if (arg.startsWith("-")) {
-      return {
-        ok: false,
-        message: `Unknown validate option: ${arg}`,
-      };
-    }
-
-    if (sourcePath !== undefined) {
-      return {
-        ok: false,
-        message: `Unexpected validate argument: ${arg}`,
-      };
-    }
-
-    sourcePath = arg;
-  }
-
-  if (sourcePath === undefined) {
-    return {
-      ok: false,
-      message: "Missing source path.",
-    };
-  }
-
-  return {
-    ok: true,
-    options: {
-      json,
-      sourcePath,
-    },
-  };
-}
+export { parseValidateArgs } from "./validate-argument-parsing.js";
 
 export function parseExportArgs(args: readonly string[]): ExportArgsResult {
   return parseOutputCommandArgs(args, {

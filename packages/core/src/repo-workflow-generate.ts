@@ -282,23 +282,13 @@ async function discoverGenerateWorkflowContext(
       result: RepoWorkflowGenerateResult;
     }
 > {
-  const configResult =
-    dependencies.discoverRepoWorkflowConfig === undefined
-      ? { ok: true as const }
-      : await dependencies.discoverRepoWorkflowConfig(options.scopePath);
+  const configResult = await discoverGenerateWorkflowConfigFile(
+    options,
+    dependencies,
+  );
 
   if (!configResult.ok) {
-    return {
-      ok: false,
-      result: {
-        ok: false,
-        summary: emptySummary(),
-        written: [],
-        skipped: [],
-        failures: [],
-        failure: configResult.failure,
-      },
-    };
+    return generateWorkflowConfigFailureResult(configResult.failure);
   }
 
   const currentWorkingDirectory = dependencies.getCurrentWorkingDirectory();
@@ -312,18 +302,10 @@ async function discoverGenerateWorkflowContext(
   );
 
   if (!discoveryResult.ok) {
-    return {
-      ok: false,
-      result: {
-        ok: false,
-        ...resultConfigFields(displayConfig),
-        summary: emptySummary(),
-        written: [],
-        skipped: [],
-        failures: [],
-        failure: discoveryResult.failure,
-      },
-    };
+    return generateWorkflowDiscoveryFailureResult(
+      displayConfig,
+      discoveryResult.failure,
+    );
   }
 
   const configuredSources = configuredExplicitSourcesForScope(
@@ -343,6 +325,49 @@ async function discoverGenerateWorkflowContext(
       currentWorkingDirectory,
       scope: discoveryResult.scope,
       discoveredSources,
+    },
+  };
+}
+
+async function discoverGenerateWorkflowConfigFile(
+  options: RepoWorkflowGenerateOptions,
+  dependencies: RepoWorkflowGenerateDependencies,
+) {
+  return dependencies.discoverRepoWorkflowConfig === undefined
+    ? { ok: true as const }
+    : await dependencies.discoverRepoWorkflowConfig(options.scopePath);
+}
+
+function generateWorkflowConfigFailureResult(
+  failure: RepoWorkflowConfigFailure,
+): { ok: false; result: RepoWorkflowGenerateResult } {
+  return {
+    ok: false,
+    result: {
+      ok: false,
+      summary: emptySummary(),
+      written: [],
+      skipped: [],
+      failures: [],
+      failure,
+    },
+  };
+}
+
+function generateWorkflowDiscoveryFailureResult(
+  displayConfig: RepoWorkflowResultConfig | undefined,
+  failure: RepoWorkflowGenerateFailure,
+): { ok: false; result: RepoWorkflowGenerateResult } {
+  return {
+    ok: false,
+    result: {
+      ok: false,
+      ...resultConfigFields(displayConfig),
+      summary: emptySummary(),
+      written: [],
+      skipped: [],
+      failures: [],
+      failure,
     },
   };
 }

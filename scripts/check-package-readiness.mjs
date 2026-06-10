@@ -110,31 +110,45 @@ function sortedObjectJson(value) {
 }
 
 function collectPrivateWorkspaceIssues(rootPath) {
-  const issues = [];
+  return PRIVATE_WORKSPACES.flatMap((workspace) =>
+    collectPrivateWorkspaceManifestIssues(
+      workspace,
+      readJson(rootPath, workspace.repoPath),
+    ),
+  );
+}
 
-  for (const workspace of PRIVATE_WORKSPACES) {
-    const manifest = readJson(rootPath, workspace.repoPath);
+function collectPrivateWorkspaceManifestIssues(workspace, manifest) {
+  return [
+    ...collectPrivateWorkspaceNameIssue(workspace, manifest),
+    ...collectPrivateWorkspacePrivateIssue(workspace, manifest),
+    ...collectPrivateWorkspaceLicenseIssue(workspace, manifest),
+    ...collectPrivateWorkspacePublishConfigIssue(workspace, manifest),
+  ];
+}
 
-    if (manifest.name !== workspace.name) {
-      issues.push(
-        `${workspace.repoPath} name is ${manifest.name}; expected ${workspace.name}.`,
-      );
-    }
+function collectPrivateWorkspaceNameIssue(workspace, manifest) {
+  return manifest.name === workspace.name
+    ? []
+    : [`${workspace.repoPath} name is ${manifest.name}; expected ${workspace.name}.`];
+}
 
-    if (manifest.private !== true) {
-      issues.push(`${workspace.repoPath} must remain private and unpublished.`);
-    }
+function collectPrivateWorkspacePrivateIssue(workspace, manifest) {
+  return manifest.private === true
+    ? []
+    : [`${workspace.repoPath} must remain private and unpublished.`];
+}
 
-    if (manifest.license !== "MIT") {
-      issues.push(`${workspace.repoPath} license is ${manifest.license}; expected MIT.`);
-    }
+function collectPrivateWorkspaceLicenseIssue(workspace, manifest) {
+  return manifest.license === "MIT"
+    ? []
+    : [`${workspace.repoPath} license is ${manifest.license}; expected MIT.`];
+}
 
-    if (manifest.publishConfig !== undefined) {
-      issues.push(`${workspace.repoPath} must not define publishConfig.`);
-    }
-  }
-
-  return issues;
+function collectPrivateWorkspacePublishConfigIssue(workspace, manifest) {
+  return manifest.publishConfig === undefined
+    ? []
+    : [`${workspace.repoPath} must not define publishConfig.`];
 }
 
 function collectPublicPackageIdentityIssues(packageRecord, manifest) {
@@ -240,35 +254,42 @@ function collectPublicPackageKeywordIssues(packageRecord, manifest) {
 }
 
 function collectPublicPackagePublishIssues(packageRecord, manifest) {
-  const issues = [];
+  return [
+    ...collectPublicPublishAccessIssues(packageRecord, manifest),
+    ...collectPublicPackageFilesIssues(packageRecord, manifest),
+    ...collectPublicPackageBinIssues(packageRecord, manifest),
+  ];
+}
 
-  issues.push(
-    ...collectExpectedManifestValueIssues(packageRecord.repoPath, [
-      {
-        manifest,
-        fieldPath: "publishConfig.access",
-        label: "publishConfig.access",
-        expected: "public",
-      },
-    ]),
-  );
+function collectPublicPublishAccessIssues(packageRecord, manifest) {
+  return collectExpectedManifestValueIssues(packageRecord.repoPath, [
+    {
+      manifest,
+      fieldPath: "publishConfig.access",
+      label: "publishConfig.access",
+      expected: "public",
+    },
+  ]);
+}
 
-  if (sortedJson(manifest.files ?? []) !== sortedJson(REQUIRED_FILES)) {
-    issues.push(
-      `${packageRecord.repoPath} files must publish dist JS/types, maps, LICENSE, and README.md only.`,
-    );
+function collectPublicPackageFilesIssues(packageRecord, manifest) {
+  return sortedJson(manifest.files ?? []) === sortedJson(REQUIRED_FILES)
+    ? []
+    : [
+        `${packageRecord.repoPath} files must publish dist JS/types, maps, LICENSE, and README.md only.`,
+      ];
+}
+
+function collectPublicPackageBinIssues(packageRecord, manifest) {
+  if (packageRecord.bin === undefined) {
+    return [];
   }
 
-  if (
-    packageRecord.bin !== undefined &&
-    sortedObjectJson(manifest.bin) !== sortedObjectJson(packageRecord.bin)
-  ) {
-    issues.push(
-      `${packageRecord.repoPath} bin must publish the diagrampilot executable without npm manifest auto-correction.`,
-    );
-  }
-
-  return issues;
+  return sortedObjectJson(manifest.bin) === sortedObjectJson(packageRecord.bin)
+    ? []
+    : [
+        `${packageRecord.repoPath} bin must publish the diagrampilot executable without npm manifest auto-correction.`,
+      ];
 }
 
 function collectPublicPackageManifestIssues(rootPath, packageRecord) {
@@ -302,28 +323,38 @@ function runNpmPackDryRun(rootPath, packageName) {
   );
 
   if (result.status !== 0) {
-    return {
-      issues: [
-        `npm pack --dry-run failed for ${packageName}: ${result.stderr.trim() || result.stdout.trim()}`,
-      ],
-    };
+    return npmPackFailureResult(packageName, result);
   }
 
+  return parseNpmPackDryRunResult(packageName, result.stdout);
+}
+
+function npmPackFailureResult(packageName, result) {
+  return {
+    issues: [
+      `npm pack --dry-run failed for ${packageName}: ${result.stderr.trim() || result.stdout.trim()}`,
+    ],
+  };
+}
+
+function parseNpmPackDryRunResult(packageName, stdout) {
   try {
-    const packResult = JSON.parse(result.stdout);
-
-    if (!Array.isArray(packResult) || packResult.length !== 1) {
-      return {
-        issues: [`npm pack --dry-run returned unexpected JSON for ${packageName}.`],
-      };
-    }
-
-    return { packResult: packResult[0], issues: [] };
+    return validateNpmPackDryRunJson(packageName, JSON.parse(stdout));
   } catch (error) {
     return {
       issues: [`npm pack --dry-run returned invalid JSON for ${packageName}: ${error.message}.`],
     };
   }
+}
+
+function validateNpmPackDryRunJson(packageName, packResult) {
+  if (!Array.isArray(packResult) || packResult.length !== 1) {
+    return {
+      issues: [`npm pack --dry-run returned unexpected JSON for ${packageName}.`],
+    };
+  }
+
+  return { packResult: packResult[0], issues: [] };
 }
 
 function collectPackageLicenseIssues(rootPath, packageRecord, rootLicense) {
@@ -342,32 +373,46 @@ function collectPackageLicenseIssues(rootPath, packageRecord, rootLicense) {
 }
 
 function collectTarballFileIssues(packageRecord, files) {
-  const issues = [];
   const fileSet = new Set(files);
+  return [
+    ...collectRequiredTarballFileIssues(packageRecord, fileSet),
+    ...files.flatMap((filePath) =>
+      collectPublishedTarballFileIssues(packageRecord, filePath),
+    ),
+  ];
+}
 
-  for (const requiredPath of [
+function collectRequiredTarballFileIssues(packageRecord, fileSet) {
+  return [
     "package.json",
     "LICENSE",
     "README.md",
     "dist/index.js",
     "dist/index.d.ts",
-  ]) {
-    if (!fileSet.has(requiredPath)) {
-      issues.push(`${packageRecord.name} tarball must include ${requiredPath}.`);
-    }
-  }
+  ].flatMap((requiredPath) =>
+    fileSet.has(requiredPath)
+      ? []
+      : [`${packageRecord.name} tarball must include ${requiredPath}.`],
+  );
+}
 
-  for (const filePath of files) {
-    if (!ALLOWED_TARBALL_FILE_PATTERN.test(filePath)) {
-      issues.push(`${packageRecord.name} tarball includes unexpected file ${filePath}.`);
-    }
+function collectPublishedTarballFileIssues(packageRecord, filePath) {
+  return [
+    ...collectUnexpectedTarballFileIssue(packageRecord, filePath),
+    ...collectForbiddenTarballFileIssue(packageRecord, filePath),
+  ];
+}
 
-    if (FORBIDDEN_TARBALL_FILE_PATTERNS.some((pattern) => pattern.test(filePath))) {
-      issues.push(`${packageRecord.name} tarball includes forbidden file ${filePath}.`);
-    }
-  }
+function collectUnexpectedTarballFileIssue(packageRecord, filePath) {
+  return ALLOWED_TARBALL_FILE_PATTERN.test(filePath)
+    ? []
+    : [`${packageRecord.name} tarball includes unexpected file ${filePath}.`];
+}
 
-  return issues;
+function collectForbiddenTarballFileIssue(packageRecord, filePath) {
+  return FORBIDDEN_TARBALL_FILE_PATTERNS.some((pattern) => pattern.test(filePath))
+    ? [`${packageRecord.name} tarball includes forbidden file ${filePath}.`]
+    : [];
 }
 
 function collectTarballIssues(rootPath) {

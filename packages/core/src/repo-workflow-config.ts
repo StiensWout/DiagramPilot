@@ -1,7 +1,8 @@
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 
 import type { RepairableDiagnostic } from "./diagramspec-validation.js";
+import { discoverRepoWorkflowConfigWithParser } from "./repo-workflow-config-discovery.js";
 import {
   invalidConfig,
   isRecord,
@@ -254,8 +255,15 @@ function parseIgnoredSourcePatterns(
     return sourcesResult;
   }
 
-  const ignoreValue = sourcesResult.sources?.ignore;
+  return parseSourcesIgnoreList(configPath, sourcesResult.sources?.ignore);
+}
 
+function parseSourcesIgnoreList(
+  configPath: string,
+  ignoreValue: unknown,
+): RepoWorkflowConfigDiscoveryResult & {
+  ignore?: readonly string[];
+} {
   if (ignoreValue === undefined) {
     return {
       ok: true,
@@ -264,21 +272,13 @@ function parseIgnoredSourcePatterns(
   }
 
   if (!Array.isArray(ignoreValue)) {
-    return invalidConfig(configPath, {
-      path: "sources.ignore",
-      message: "`sources.ignore` must be a list.",
-      expected: "A list of gitignore-style paths relative to the config directory.",
-      suggestion: "Use `sources:\\n  ignore:\\n    - generated/**`.",
-      badValue: ignoreValue,
-    });
+    return invalidSourcesIgnoreList(configPath, ignoreValue);
   }
 
-  for (const [index, pattern] of ignoreValue.entries()) {
-    const failure = validateIgnorePattern(configPath, pattern, index);
+  const failure = validateIgnorePatterns(configPath, ignoreValue);
 
-    if (failure !== undefined) {
-      return failure;
-    }
+  if (failure !== undefined) {
+    return failure;
   }
 
   return {
@@ -287,30 +287,90 @@ function parseIgnoredSourcePatterns(
   };
 }
 
+function invalidSourcesIgnoreList(
+  configPath: string,
+  ignoreValue: unknown,
+): RepoWorkflowConfigDiscoveryResult {
+  return invalidConfig(configPath, {
+    path: "sources.ignore",
+    message: "`sources.ignore` must be a list.",
+    expected: "A list of gitignore-style paths relative to the config directory.",
+    suggestion: "Use `sources:\\n  ignore:\\n    - generated/**`.",
+    badValue: ignoreValue,
+  });
+}
+
+function validateIgnorePatterns(
+  configPath: string,
+  ignoreValue: readonly unknown[],
+): RepoWorkflowConfigDiscoveryResult | undefined {
+  for (const [index, pattern] of ignoreValue.entries()) {
+    const failure = validateIgnorePattern(configPath, pattern, index);
+
+    if (failure !== undefined) {
+      return failure;
+    }
+  }
+
+  return undefined;
+}
+
 function parseArtifactMappings(
   configPath: string,
   value: Record<string, unknown>,
 ): RepoWorkflowConfigDiscoveryResult & {
   artifacts?: readonly RepoWorkflowArtifactMapping[];
 } {
-  if (value.artifacts === undefined) {
+  return parseArtifactMappingList(configPath, value.artifacts);
+}
+
+function parseArtifactMappingList(
+  configPath: string,
+  artifactsValue: unknown,
+): RepoWorkflowConfigDiscoveryResult & {
+  artifacts?: readonly RepoWorkflowArtifactMapping[];
+} {
+  if (artifactsValue === undefined) {
     return {
       ok: true,
       artifacts: [],
     };
   }
 
-  if (!Array.isArray(value.artifacts)) {
-    return invalidConfig(configPath, {
-        path: "artifacts",
-        message: "`artifacts` must be a list.",
-        expected: "A list of configured artifact mappings.",
-        suggestion: "Use `artifacts:\\n  - source: docs/architecture.dp.yaml`.",
-        badValue: value.artifacts,
-    });
+  if (!Array.isArray(artifactsValue)) {
+    return invalidArtifactMappingsList(configPath, artifactsValue);
   }
 
-  for (const [index, mapping] of value.artifacts.entries()) {
+  const failure = validateArtifactMappings(configPath, artifactsValue);
+
+  if (failure !== undefined) {
+    return failure;
+  }
+
+  return {
+    ok: true,
+    artifacts: artifactsValue as RepoWorkflowArtifactMapping[],
+  };
+}
+
+function invalidArtifactMappingsList(
+  configPath: string,
+  artifactsValue: unknown,
+): RepoWorkflowConfigDiscoveryResult {
+  return invalidConfig(configPath, {
+    path: "artifacts",
+    message: "`artifacts` must be a list.",
+    expected: "A list of configured artifact mappings.",
+    suggestion: "Use `artifacts:\\n  - source: docs/architecture.dp.yaml`.",
+    badValue: artifactsValue,
+  });
+}
+
+function validateArtifactMappings(
+  configPath: string,
+  artifacts: readonly unknown[],
+): RepoWorkflowConfigDiscoveryResult | undefined {
+  for (const [index, mapping] of artifacts.entries()) {
     const failure = validateArtifactMapping(configPath, mapping, index);
 
     if (failure !== undefined) {
@@ -318,16 +378,20 @@ function parseArtifactMappings(
     }
   }
 
-  return {
-    ok: true,
-    artifacts: value.artifacts as RepoWorkflowArtifactMapping[],
-  };
+  return undefined;
 }
 
-function createRepoWorkflowConfigFromRoot(
+interface ParsedRepoWorkflowConfigParts {
+  ignore: readonly string[];
+  artifacts: readonly RepoWorkflowArtifactMapping[];
+}
+
+function parseRepoWorkflowConfigParts(
   configPath: string,
   value: Record<string, unknown>,
-): RepoWorkflowConfigDiscoveryResult {
+): RepoWorkflowConfigDiscoveryResult & {
+  parts?: ParsedRepoWorkflowConfigParts;
+} {
   const ignoredSourcesResult = parseIgnoredSourcePatterns(configPath, value);
 
   if (!ignoredSourcesResult.ok) {
@@ -342,15 +406,45 @@ function createRepoWorkflowConfigFromRoot(
 
   return {
     ok: true,
-    config: {
-      path: configPath,
-      directory: path.dirname(configPath),
-      version: 1,
-      sources: {
-        ignore: ignoredSourcesResult.ignore ?? [],
-      },
-      artifacts: artifactMappingsResult.artifacts ?? [],
+    parts: {
+      ignore: ignoredSourcesResult.ignore as readonly string[],
+      artifacts:
+        artifactMappingsResult.artifacts as readonly RepoWorkflowArtifactMapping[],
     },
+  };
+}
+
+function createRepoWorkflowConfig(
+  configPath: string,
+  parts: ParsedRepoWorkflowConfigParts,
+): RepoWorkflowConfig {
+  return {
+    path: configPath,
+    directory: path.dirname(configPath),
+    version: 1,
+    sources: {
+      ignore: parts.ignore,
+    },
+    artifacts: parts.artifacts,
+  };
+}
+
+function createRepoWorkflowConfigFromRoot(
+  configPath: string,
+  value: Record<string, unknown>,
+): RepoWorkflowConfigDiscoveryResult {
+  const partsResult = parseRepoWorkflowConfigParts(configPath, value);
+
+  if (!partsResult.ok) {
+    return partsResult;
+  }
+
+  return {
+    ok: true,
+    config: createRepoWorkflowConfig(
+      configPath,
+      partsResult.parts as ParsedRepoWorkflowConfigParts,
+    ),
   };
 }
 
@@ -378,46 +472,12 @@ function parseRepoWorkflowConfig(
     : rootResult;
 }
 
-function configSearchStartDirectory(scopePath?: string): string {
-  if (scopePath === undefined) {
-    return process.cwd();
-  }
-
-  try {
-    const stat = statSync(scopePath);
-
-    return stat.isFile() ? path.dirname(scopePath) : scopePath;
-  } catch {
-    return path.dirname(path.resolve(scopePath));
-  }
-}
-
 export async function discoverRepoWorkflowConfig(
   scopePath?: string,
 ): Promise<RepoWorkflowConfigDiscoveryResult> {
-  let directory = path.resolve(configSearchStartDirectory(scopePath));
-
-  while (true) {
-    const configPath = path.join(directory, repoWorkflowConfigFileName);
-
-    if (existsSync(configPath)) {
-      return parseRepoWorkflowConfig(configPath);
-    }
-
-    if (existsSync(path.join(directory, ".git"))) {
-      return {
-        ok: true,
-      };
-    }
-
-    const parentDirectory = path.dirname(directory);
-
-    if (parentDirectory === directory) {
-      return {
-        ok: true,
-      };
-    }
-
-    directory = parentDirectory;
-  }
+  return discoverRepoWorkflowConfigWithParser(
+    scopePath,
+    repoWorkflowConfigFileName,
+    parseRepoWorkflowConfig,
+  );
 }

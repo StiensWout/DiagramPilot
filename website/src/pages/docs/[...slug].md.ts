@@ -1,3 +1,4 @@
+import type { Dirent } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 
@@ -7,21 +8,31 @@ const publicDocsRoot = path.resolve(process.cwd(), "..", "docs-public");
 
 async function listMarkdownFiles(root: string, current = root): Promise<string[]> {
   const entries = await readdir(current, { withFileTypes: true });
-  const files: string[] = [];
+  const files = await Promise.all(
+    entries.map((entry) => listMarkdownEntryFiles(root, current, entry)),
+  );
 
-  for (const entry of entries) {
-    const absolutePath = path.join(current, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...(await listMarkdownFiles(root, absolutePath)));
-      continue;
-    }
+  return files.flat().sort();
+}
 
-    if (entry.isFile() && entry.name.endsWith(".md")) {
-      files.push(path.relative(root, absolutePath));
-    }
+async function listMarkdownEntryFiles(
+  root: string,
+  current: string,
+  entry: Dirent<string>,
+): Promise<string[]> {
+  const absolutePath = path.join(current, entry.name);
+
+  if (entry.isDirectory()) {
+    return listMarkdownFiles(root, absolutePath);
   }
 
-  return files.sort();
+  return isMarkdownFileEntry(entry)
+    ? [path.relative(root, absolutePath)]
+    : [];
+}
+
+function isMarkdownFileEntry(entry: Dirent<string>): boolean {
+  return entry.isFile() && entry.name.endsWith(".md");
 }
 
 export async function getStaticPaths() {

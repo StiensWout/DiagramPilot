@@ -44,20 +44,31 @@ function attributeList(attributes: readonly string[]): string {
   return ` [${attributes.join(", ")}]`;
 }
 
+type StringMetadataAttributeKey = "external_url" | "source";
+
+const metadataAttributeDescriptors: readonly {
+  key: StringMetadataAttributeKey;
+  name: string;
+}[] = [
+  { key: "external_url", name: "URL" },
+  { key: "source", name: "tooltip" },
+];
+
+function stringMetadataAttribute(
+  metadata: DiagramSpecMetadata | undefined,
+  key: StringMetadataAttributeKey,
+): string | undefined {
+  const value = metadata?.[key];
+  return typeof value === "string" ? value : undefined;
+}
+
 function metadataAttributes(
   metadata: DiagramSpecMetadata | undefined,
 ): string[] {
-  const attributes: string[] = [];
-
-  if (typeof metadata?.external_url === "string") {
-    attributes.push(`URL=${quoted(metadata.external_url)}`);
-  }
-
-  if (typeof metadata?.source === "string") {
-    attributes.push(`tooltip=${quoted(metadata.source)}`);
-  }
-
-  return attributes;
+  return metadataAttributeDescriptors.flatMap(({ key, name }) => {
+    const value = stringMetadataAttribute(metadata, key);
+    return value === undefined ? [] : [`${name}=${quoted(value)}`];
+  });
 }
 
 function labelAttributes(

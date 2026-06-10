@@ -188,55 +188,62 @@ function assertStringProvenanceField(
 function assertRendererProvenance(
   provenance: Partial<SvgArtifactProvenance>,
 ): void {
-  if (
-    provenance.renderer === null ||
-    typeof provenance.renderer !== "object"
-  ) {
+  if (!hasRendererObject(provenance)) {
     throw new Error(
       "Malformed DiagramPilot provenance: expected renderer object.",
     );
   }
 
-  if (typeof provenance.renderer.name !== "string") {
-    throw new Error(
-      "Malformed DiagramPilot provenance: expected string renderer.name.",
-    );
-  }
+  assertStringRendererField(provenance.renderer.name, "name");
+  assertStringRendererField(provenance.renderer.version, "version");
+}
 
-  if (typeof provenance.renderer.version !== "string") {
+function hasRendererObject(
+  provenance: Partial<SvgArtifactProvenance>,
+): provenance is Partial<SvgArtifactProvenance> & {
+  renderer: Partial<SvgArtifactRenderer>;
+} {
+  return provenance.renderer !== null && typeof provenance.renderer === "object";
+}
+
+function assertStringRendererField(value: unknown, fieldName: string): void {
+  if (typeof value !== "string") {
     throw new Error(
-      "Malformed DiagramPilot provenance: expected string renderer.version.",
+      `Malformed DiagramPilot provenance: expected string renderer.${fieldName}.`,
     );
   }
 }
+
+const svgArtifactProvenanceComparisons: readonly {
+  reason: SvgArtifactStaleReason;
+  value: (provenance: SvgArtifactProvenance) => string;
+}[] = [
+  { reason: "source-path-mismatch", value: (provenance) => provenance.sourcePath },
+  {
+    reason: "source-sha256-mismatch",
+    value: (provenance) => provenance.sourceSha256,
+  },
+  {
+    reason: "diagram-pilot-version-mismatch",
+    value: (provenance) => provenance.diagramPilotVersion,
+  },
+  {
+    reason: "renderer-name-mismatch",
+    value: (provenance) => provenance.renderer.name,
+  },
+  {
+    reason: "renderer-version-mismatch",
+    value: (provenance) => provenance.renderer.version,
+  },
+];
 
 function compareSvgArtifactProvenance(
   expected: SvgArtifactProvenance,
   actual: SvgArtifactProvenance,
 ): readonly SvgArtifactStaleReason[] {
-  const reasons: SvgArtifactStaleReason[] = [];
-
-  if (actual.sourcePath !== expected.sourcePath) {
-    reasons.push("source-path-mismatch");
-  }
-
-  if (actual.sourceSha256 !== expected.sourceSha256) {
-    reasons.push("source-sha256-mismatch");
-  }
-
-  if (actual.diagramPilotVersion !== expected.diagramPilotVersion) {
-    reasons.push("diagram-pilot-version-mismatch");
-  }
-
-  if (actual.renderer.name !== expected.renderer.name) {
-    reasons.push("renderer-name-mismatch");
-  }
-
-  if (actual.renderer.version !== expected.renderer.version) {
-    reasons.push("renderer-version-mismatch");
-  }
-
-  return reasons;
+  return svgArtifactProvenanceComparisons.flatMap(({ reason, value }) =>
+    value(actual) === value(expected) ? [] : [reason],
+  );
 }
 
 export async function checkExpectedSvgArtifactFreshnessForValidatedSource(

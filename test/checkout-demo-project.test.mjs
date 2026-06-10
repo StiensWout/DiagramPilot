@@ -38,6 +38,90 @@ function metadataSourceOf(value) {
   return value.metadata?.source;
 }
 
+const expectedCheckoutSourceSnippets = [
+  path.join("src", "api", "checkout-routes.ts"),
+  path.join("src", "data", "orders-repository.ts"),
+  path.join("src", "events", "order-events.ts"),
+  path.join("src", "services", "checkout-service.ts"),
+  path.join("src", "services", "inventory-service.ts"),
+  path.join("src", "services", "payment-provider.ts"),
+  path.join("src", "web", "checkout-page.tsx"),
+  path.join("src", "workers", "fulfillment-worker.ts"),
+];
+
+function assertCheckoutSourceSnippets(sourceSnippets) {
+  assert.deepEqual(sourceSnippets, expectedCheckoutSourceSnippets);
+}
+
+function assertLoadedCheckoutSpec(loadResult) {
+  assert.equal(loadResult.ok, true);
+
+  const { spec } = loadResult;
+  const objects = specObjects(spec);
+
+  assertUniqueObjectIds(objects);
+  assertSpecCounts(spec);
+  assertLucideIcons(spec);
+  assertEdgeLabels(spec);
+  assertCheckoutSystemContains(spec);
+
+  return sourceReferencesOf(spec, objects);
+}
+
+function specObjects(spec) {
+  return [...spec.nodes, ...(spec.groups ?? []), ...(spec.edges ?? [])];
+}
+
+function sourceReferencesOf(spec, objects) {
+  return [metadataSourceOf(spec), ...objects.map(metadataSourceOf)];
+}
+
+function assertUniqueObjectIds(objects) {
+  const ids = objects.map((object) => object.id);
+  assert.equal(new Set(ids).size, ids.length);
+}
+
+function assertSpecCounts(spec) {
+  assert.equal(spec.nodes.length, 8);
+  assert.equal(spec.groups?.length, 4);
+  assert.equal(spec.edges?.length, 8);
+}
+
+function assertLucideIcons(spec) {
+  assert.equal(spec.nodes.every((node) => node.icon?.startsWith("lucide:")), true);
+  assert.equal(
+    spec.groups?.every((group) => group.icon?.startsWith("lucide:")),
+    true,
+  );
+}
+
+function assertEdgeLabels(spec) {
+  assert.equal(
+    spec.edges?.every(
+      (edge) => typeof edge.label === "string" && edge.label.length > 0,
+    ),
+    true,
+  );
+}
+
+function assertCheckoutSystemContains(spec) {
+  assert.deepEqual(
+    spec.groups?.find((group) => group.id === "checkout_system")?.contains,
+    ["customer_experience", "checkout_runtime", "fulfillment_pipeline"],
+  );
+}
+
+async function assertSourceReferencesExist(sourceReferences) {
+  assert.equal(
+    sourceReferences.every((reference) => typeof reference === "string"),
+    true,
+  );
+
+  for (const sourceReference of sourceReferences) {
+    await access(path.join(checkoutDemoRoot, sourceReference));
+  }
+}
+
 test("checkout demo project has one canonical DiagramPilot source that validates through the CLI", async () => {
   assert.deepEqual(await findDiagramPilotSources(checkoutDemoRoot), [
     path.join("docs", "architecture.dp.yaml"),
@@ -108,57 +192,13 @@ test("checkout demo project SVG is rendered by the real CLI with deterministic p
 });
 
 test("checkout demo source demonstrates groups, icons, edge labels, and local source references", async () => {
-  assert.deepEqual(await findSourceSnippets(checkoutDemoRoot), [
-    path.join("src", "api", "checkout-routes.ts"),
-    path.join("src", "data", "orders-repository.ts"),
-    path.join("src", "events", "order-events.ts"),
-    path.join("src", "services", "checkout-service.ts"),
-    path.join("src", "services", "inventory-service.ts"),
-    path.join("src", "services", "payment-provider.ts"),
-    path.join("src", "web", "checkout-page.tsx"),
-    path.join("src", "workers", "fulfillment-worker.ts"),
-  ]);
+  assertCheckoutSourceSnippets(await findSourceSnippets(checkoutDemoRoot));
 
   const loadResult = loadValidatedDiagramSpec(
     path.join(checkoutDemoRoot, checkoutArchitectureSource),
   );
 
-  assert.equal(loadResult.ok, true);
+  const sourceReferences = assertLoadedCheckoutSpec(loadResult);
 
-  const { spec } = loadResult;
-  const objects = [
-    ...spec.nodes,
-    ...(spec.groups ?? []),
-    ...(spec.edges ?? []),
-  ];
-  const ids = objects.map((object) => object.id);
-  const sourceReferences = [
-    metadataSourceOf(spec),
-    ...objects.map(metadataSourceOf),
-  ];
-
-  assert.equal(new Set(ids).size, ids.length);
-  assert.equal(spec.nodes.length, 8);
-  assert.equal(spec.groups?.length, 4);
-  assert.equal(spec.edges?.length, 8);
-  assert.equal(spec.nodes.every((node) => node.icon?.startsWith("lucide:")), true);
-  assert.equal(
-    spec.groups?.every((group) => group.icon?.startsWith("lucide:")),
-    true,
-  );
-  assert.equal(
-    spec.edges?.every(
-      (edge) => typeof edge.label === "string" && edge.label.length > 0,
-    ),
-    true,
-  );
-  assert.deepEqual(
-    spec.groups?.find((group) => group.id === "checkout_system")?.contains,
-    ["customer_experience", "checkout_runtime", "fulfillment_pipeline"],
-  );
-
-  assert.equal(sourceReferences.every((reference) => typeof reference === "string"), true);
-  for (const sourceReference of sourceReferences) {
-    await access(path.join(checkoutDemoRoot, sourceReference));
-  }
+  await assertSourceReferencesExist(sourceReferences);
 });

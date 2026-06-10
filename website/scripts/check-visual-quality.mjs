@@ -277,14 +277,16 @@ async function checkReducedMotion(browser, baseUrl) {
 }
 
 function reducedMotionDomResult() {
-  const element = document.querySelector(".motion-rise");
-  const style = element ? getComputedStyle(element) : null;
-
   return {
     matches: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-    animationDuration: style?.animationDuration ?? "",
-    transitionDuration: style?.transitionDuration ?? "",
+    animationDuration: motionRiseDuration("animationDuration"),
+    transitionDuration: motionRiseDuration("transitionDuration"),
   };
+}
+
+function motionRiseDuration(propertyName) {
+  const element = document.querySelector(".motion-rise");
+  return element === null ? "" : getComputedStyle(element)[propertyName];
 }
 
 async function recordDomCheck(name, check) {

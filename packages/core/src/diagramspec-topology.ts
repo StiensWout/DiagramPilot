@@ -141,12 +141,46 @@ export function walkDiagramSpecTopology(
   }
 }
 
+function topologyObjectType(
+  id: string,
+  nodesById: ReadonlyMap<string, DiagramSpecNode>,
+  groupsById: ReadonlyMap<string, DiagramSpecGroup>,
+  edgesById: ReadonlyMap<string, DiagramSpecEdge>,
+): DiagramSpecTopologyObjectType {
+  if (nodesById.has(id)) return "node";
+  if (groupsById.has(id)) return "group";
+  if (edgesById.has(id)) return "edge";
+  return "unknown";
+}
+
+function diagramSpecEdges(spec: DiagramSpec): readonly DiagramSpecEdge[] {
+  return spec.edges ?? [];
+}
+
+function diagramSpecGroups(spec: DiagramSpec): readonly DiagramSpecGroup[] {
+  return spec.groups ?? [];
+}
+
+function rootNodesForTopology(
+  nodes: readonly DiagramSpecNode[],
+  parentGroupIdsByObjectId: ReadonlyMap<string, string>,
+): DiagramSpecNode[] {
+  return nodes.filter((node) => !parentGroupIdsByObjectId.has(node.id));
+}
+
+function rootGroupsForTopology(
+  groups: readonly DiagramSpecGroup[],
+  parentGroupIdsByObjectId: ReadonlyMap<string, string>,
+): DiagramSpecGroup[] {
+  return groups.filter((group) => !parentGroupIdsByObjectId.has(group.id));
+}
+
 export function createDiagramSpecTopology(
   spec: DiagramSpec,
 ): DiagramSpecTopology {
   const nodesById = new Map(spec.nodes.map((node) => [node.id, node]));
-  const edgesById = new Map((spec.edges ?? []).map((edge) => [edge.id, edge]));
-  const groups = spec.groups ?? [];
+  const edgesById = new Map(diagramSpecEdges(spec).map((edge) => [edge.id, edge]));
+  const groups = diagramSpecGroups(spec);
   const groupsById = new Map(
     groups.map((group) => [group.id, group]),
   );
@@ -159,22 +193,6 @@ export function createDiagramSpecTopology(
   const nodePathsById = new Map<string, readonly string[]>();
   const traversal: DiagramSpecTopologyEntry[] = [];
 
-  function getObjectType(id: string): DiagramSpecTopologyObjectType {
-    if (nodesById.has(id)) {
-      return "node";
-    }
-
-    if (groupsById.has(id)) {
-      return "group";
-    }
-
-    if (edgesById.has(id)) {
-      return "edge";
-    }
-
-    return "unknown";
-  }
-
   groups.forEach((group, parentGroupIndex) => {
     group.contains.forEach((containedId, containedIndex) => {
       parentGroupIdsByObjectId.set(containedId, group.id);
@@ -183,7 +201,12 @@ export function createDiagramSpecTopology(
         parentGroupIndex,
         containedId,
         containedIndex,
-        containedObjectType: getObjectType(containedId),
+        containedObjectType: topologyObjectType(
+          containedId,
+          nodesById,
+          groupsById,
+          edgesById,
+        ),
       });
     });
   });
@@ -222,6 +245,50 @@ export function createDiagramSpecTopology(
     };
   }
 
+  function addContainedGroupEntry(
+    entries: DiagramSpecTopologyEntry[],
+    childGroup: DiagramSpecGroup | undefined,
+    depth: number,
+    path: readonly string[],
+    parentGroupId: string,
+    activeGroupIds: ReadonlySet<string>,
+  ): boolean {
+    if (childGroup === undefined) {
+      return false;
+    }
+
+    const entry = createGroupEntry(childGroup, depth, path, parentGroupId);
+    entries.push(entry);
+    traversal.push(entry);
+
+    if (!activeGroupIds.has(childGroup.id)) {
+      addContainedObjects(
+        childGroup,
+        depth + 1,
+        path,
+        new Set([...activeGroupIds, childGroup.id]),
+      );
+    }
+
+    return true;
+  }
+
+  function addContainedNodeEntry(
+    entries: DiagramSpecTopologyEntry[],
+    childNode: DiagramSpecNode | undefined,
+    depth: number,
+    path: readonly string[],
+    parentGroupId: string,
+  ): void {
+    if (childNode === undefined) {
+      return;
+    }
+
+    const entry = createNodeEntry(childNode, depth, path, parentGroupId);
+    entries.push(entry);
+    traversal.push(entry);
+  }
+
   function addContainedObjects(
     group: DiagramSpecGroup,
     depth: number,
@@ -232,57 +299,51 @@ export function createDiagramSpecTopology(
 
     for (const containedId of group.contains) {
       const path = [...parentPath, containedId];
-      const childGroup = groupsById.get(containedId);
 
-      if (childGroup !== undefined) {
-        const entry = createGroupEntry(childGroup, depth, path, group.id);
-
-        entries.push(entry);
-        traversal.push(entry);
-        if (!activeGroupIds.has(childGroup.id)) {
-          addContainedObjects(
-            childGroup,
-            depth + 1,
-            path,
-            new Set([...activeGroupIds, childGroup.id]),
-          );
-        }
+      if (
+        addContainedGroupEntry(
+          entries,
+          groupsById.get(containedId),
+          depth,
+          path,
+          group.id,
+          activeGroupIds,
+        )
+      ) {
         continue;
       }
 
-      const childNode = nodesById.get(containedId);
-
-      if (childNode !== undefined) {
-        const entry = createNodeEntry(childNode, depth, path, group.id);
-
-        entries.push(entry);
-        traversal.push(entry);
-      }
+      addContainedNodeEntry(
+        entries,
+        nodesById.get(containedId),
+        depth,
+        path,
+        group.id,
+      );
     }
 
     containedObjectsByGroupId.set(group.id, entries);
   }
 
-  const rootNodes = spec.nodes.filter(
-    (node) => !parentGroupIdsByObjectId.has(node.id),
-  );
-  const rootGroups = groups.filter(
-    (group) => !parentGroupIdsByObjectId.has(group.id),
-  );
-
-  for (const node of rootNodes) {
-    const entry = createNodeEntry(node, 0, [node.id]);
-
-    traversal.push(entry);
+  function addRootNodeEntries(rootNodes: readonly DiagramSpecNode[]): void {
+    for (const node of rootNodes) {
+      traversal.push(createNodeEntry(node, 0, [node.id]));
+    }
   }
 
-  for (const group of rootGroups) {
-    const path = [group.id];
-    const entry = createGroupEntry(group, 0, path);
-
-    traversal.push(entry);
-    addContainedObjects(group, 1, path, new Set([group.id]));
+  function addRootGroupEntries(rootGroups: readonly DiagramSpecGroup[]): void {
+    for (const group of rootGroups) {
+      const path = [group.id];
+      traversal.push(createGroupEntry(group, 0, path));
+      addContainedObjects(group, 1, path, new Set([group.id]));
+    }
   }
+
+  const rootNodes = rootNodesForTopology(spec.nodes, parentGroupIdsByObjectId);
+  const rootGroups = rootGroupsForTopology(groups, parentGroupIdsByObjectId);
+
+  addRootNodeEntries(rootNodes);
+  addRootGroupEntries(rootGroups);
 
   return {
     nodesById,
