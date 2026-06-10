@@ -12,6 +12,15 @@ import {
   validationFailure,
 } from "./cli-command-planning-helpers.mjs";
 
+function assertSingleWritePlan(plan, write) {
+  assert.deepEqual(plan, {
+    exitCode: 0,
+    stdout: "",
+    stderr: "",
+    writes: [write],
+  });
+}
+
 test("plans validate success as stdout with no file writes", async () => {
   const plan = await planCommand(
     ["validate", "docs/architecture.dp.yaml"],
@@ -220,16 +229,9 @@ test("plans render success as an SVG file write", async () => {
     }),
   );
 
-  assert.deepEqual(plan, {
-    exitCode: 0,
-    stdout: "",
-    stderr: "",
-    writes: [
-      {
-        path: "docs/architecture.svg",
-        content: "<svg><title>Checkout</title></svg>",
-      },
-    ],
+  assertSingleWritePlan(plan, {
+    path: "docs/architecture.svg",
+    content: "<svg><title>Checkout</title></svg>",
   });
 });
 
@@ -248,16 +250,9 @@ test("plans render explicit SVG format as an SVG file write", async () => {
     }),
   );
 
-  assert.deepEqual(plan, {
-    exitCode: 0,
-    stdout: "",
-    stderr: "",
-    writes: [
-      {
-        path: "docs/architecture.svg",
-        content: "<svg><title>Checkout</title></svg>",
-      },
-    ],
+  assertSingleWritePlan(plan, {
+    path: "docs/architecture.svg",
+    content: "<svg><title>Checkout</title></svg>",
   });
 });
 

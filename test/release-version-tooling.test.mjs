@@ -12,6 +12,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import { assertMatchesAll } from "./assertion-helpers.mjs";
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const releaseMetadataPaths = [
   "package.json",
@@ -403,9 +405,11 @@ test("release version workflow documents issue versions and closeout requirement
     "utf8",
   );
 
-  assert.match(workflow, /55\s*\|\s*`0\.1\.1`\s*\|\s*Pre-Alpha Release/u);
-  assert.match(workflow, /61\s*\|\s*`0\.1\.8`\s*\|\s*Pre-Alpha Release/u);
-  assert.match(workflow, /63\s*\|\s*`0\.1\.9`\s*\|\s*Pre-Alpha Release/u);
+  assertMatchesAll(workflow, [
+    /55\s*\|\s*`0\.1\.1`\s*\|\s*Pre-Alpha Release/u,
+    /61\s*\|\s*`0\.1\.8`\s*\|\s*Pre-Alpha Release/u,
+    /63\s*\|\s*`0\.1\.9`\s*\|\s*Pre-Alpha Release/u,
+  ]);
   assert.match(
     workflow,
     /Issue 62 is `0\.2\.0`, the first Public Alpha Release/u,
@@ -414,11 +418,13 @@ test("release version workflow documents issue versions and closeout requirement
     workflow,
     /npm run sync:issue-release-version -- --issue <issue-file>/u,
   );
-  assert.match(workflow, /node scripts\/bump-release-version\.mjs <issue-version>/u);
-  assert.match(workflow, /node scripts\/check-release-version\.mjs/u);
-  assert.match(workflow, /npm run check:issue-release-version/u);
-  assert.match(workflow, /npm run check:package-publish-state -- --expect prealpha/u);
-  assert.match(workflow, /render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/u);
-  assert.match(workflow, /validation results/u);
-  assert.match(workflow, /Status: completed/u);
+  assertMatchesAll(workflow, [
+    /node scripts\/bump-release-version\.mjs <issue-version>/u,
+    /node scripts\/check-release-version\.mjs/u,
+    /npm run check:issue-release-version/u,
+    /npm run check:package-publish-state -- --expect prealpha/u,
+    /render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/u,
+    /validation results/u,
+    /Status: completed/u,
+  ]);
 });

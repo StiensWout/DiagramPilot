@@ -1,12 +1,4 @@
-import assert from "node:assert/strict";
-import {
-  chmod,
-  mkdir,
-  mkdtemp,
-  readFile,
-  rm,
-  writeFile,
-} from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -19,24 +11,19 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const scriptPath = path.join(repoRoot, "scripts", "check-package-publish-state.mjs");
 
 async function withFakeNpm(scriptSource, callback) {
-  const tempRoot = await mkdtemp(
-    path.join(os.tmpdir(), "diagrampilot-package-publish-state-"),
-  );
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "diagrampilot-npm-"));
 
   try {
     const binPath = path.join(tempRoot, "bin");
+    await mkdir(binPath, { recursive: true });
     const npmPath = path.join(binPath, "npm");
-
-    await mkdir(binPath);
-    await writeFile(npmPath, scriptSource);
+    await writeFile(npmPath, scriptSource, "utf8");
     await chmod(npmPath, 0o755);
 
-    return await callback({
+    await callback({
       env: {
         ...process.env,
-        FORCE_COLOR: "0",
-        NO_COLOR: "1",
-        PATH: `${binPath}${path.delimiter}${process.env.PATH ?? ""}`,
+        PATH: `${binPath}${path.delimiter}${process.env.PATH}`,
       },
     });
   } finally {
@@ -49,6 +36,24 @@ function runPublishStateCheck(args, env) {
     cwd: repoRoot,
     env,
   });
+}
+
+async function readWorkspaceVersion() {
+  const workspaceManifest = JSON.parse(
+    await readFile(path.join(repoRoot, "package.json"), "utf8"),
+  );
+  return workspaceManifest.version;
+}
+
+function fakeNpmPublishedVersion(version, expectedTag) {
+  const distTags =
+    expectedTag === "prealpha"
+      ? { prealpha: version, latest: "0.0.0" }
+      : { latest: version };
+
+  return `#!/usr/bin/env node
+process.stdout.write(${JSON.stringify(JSON.stringify(distTags))});
+`;
 }
 
 test("package publish-state check accepts available package names before reservation", async () => {
@@ -68,35 +73,31 @@ process.exit(1);
 });
 
 test("package publish-state check accepts prealpha package reservation", async () => {
-  const workspaceManifest = JSON.parse(
-    await readFile(path.join(repoRoot, "package.json"), "utf8"),
-  );
-  const fakeNpm = `#!/usr/bin/env node
-process.stdout.write(JSON.stringify({ prealpha: "${workspaceManifest.version}" }) + "\\n");
-`;
+  const workspaceVersion = await readWorkspaceVersion();
 
-  await withFakeNpm(fakeNpm, async ({ env }) => {
+  await withFakeNpm(
+    fakeNpmPublishedVersion(workspaceVersion, "prealpha"),
+    async ({ env }) => {
     const result = await runPublishStateCheck(["--expect", "prealpha"], env);
 
     assertCliSuccess(result, {
-      stdout: `DiagramPilot npm publish-state check passed: 8 packages publish ${workspaceManifest.version} under prealpha and latest is not moved.\n`,
+      stdout: `DiagramPilot npm publish-state check passed: 8 packages publish ${workspaceVersion} under prealpha and latest is not moved.\n`,
     });
-  });
+    },
+  );
 });
 
 test("package publish-state check accepts latest public release publication", async () => {
-  const workspaceManifest = JSON.parse(
-    await readFile(path.join(repoRoot, "package.json"), "utf8"),
-  );
-  const fakeNpm = `#!/usr/bin/env node
-process.stdout.write(JSON.stringify({ latest: "${workspaceManifest.version}" }) + "\\n");
-`;
+  const workspaceVersion = await readWorkspaceVersion();
 
-  await withFakeNpm(fakeNpm, async ({ env }) => {
+  await withFakeNpm(
+    fakeNpmPublishedVersion(workspaceVersion, "latest"),
+    async ({ env }) => {
     const result = await runPublishStateCheck(["--expect", "latest"], env);
 
     assertCliSuccess(result, {
-      stdout: `DiagramPilot npm publish-state check passed: 8 packages publish ${workspaceManifest.version} under latest.\n`,
+      stdout: `DiagramPilot npm publish-state check passed: 8 packages publish ${workspaceVersion} under latest.\n`,
     });
-  });
+    },
+  );
 });

@@ -1,39 +1,49 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
 import { loadValidatedDiagramSpec } from "../packages/core/dist/index.js";
+import {
+  assertFailedLoad,
+  brokenYamlSourceLines,
+  writeDiagramSource,
+} from "./diagramspec-loading-helpers.mjs";
 import { assertYamlSourceRepairHint } from "./source-format-assertions.mjs";
+import { withTempRepoPrefix } from "./temp-repo-helpers.mjs";
 
 async function withTempRepo(run) {
-  const tempRoot = await mkdtemp(
-    path.join(os.tmpdir(), "diagrampilot-validated-loading-"),
-  );
+  return withTempRepoPrefix("diagrampilot-validated-loading-", run);
+}
 
-  try {
-    return await run(tempRoot);
-  } finally {
-    await rm(tempRoot, { recursive: true, force: true });
-  }
+async function assertJsonSourceRejected(tempRoot, fileName, lines) {
+  const sourcePath = await writeDiagramSource(tempRoot, fileName, lines);
+  const result = loadValidatedDiagramSpec(sourcePath);
+
+  assertFailedLoad(result, "unsupported-source-format");
+  assert.equal(result.failure.path, sourcePath);
+  assertYamlSourceRepairHint(result.failure.message);
+}
+
+function assertFailureMessage(failure) {
+  assert.equal(typeof failure.message, "string");
+  assert.notEqual(failure.message.length, 0);
 }
 
 test("loadValidatedDiagramSpec returns a valid DiagramSpec with source context from YAML", async () => {
   await withTempRepo(async (tempRoot) => {
-    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
-    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
-
-    const sourceContent = [
+    const sourceLines = [
       "version: 1",
       "title: Checkout Architecture",
       "nodes:",
       "  - id: web_app",
       "    label: Web App",
-      "",
-    ].join("\n");
-
-    await writeFile(sourcePath, sourceContent, "utf8");
+    ];
+    const sourceContent = sourceLines.join("\n");
+    const sourcePath = await writeDiagramSource(
+      tempRoot,
+      "architecture.dp.yaml",
+      sourceLines,
+    );
 
     const result = loadValidatedDiagramSpec(sourcePath);
 
@@ -46,29 +56,15 @@ test("loadValidatedDiagramSpec returns a valid DiagramSpec with source context f
   });
 });
 
-test("loadValidatedDiagramSpec rejects an explicit JSON source path with a YAML repair hint", async () => {
+test("loadValidatedDiagramSpec rejects explicit JSON source paths with a YAML repair hint", async () => {
   await withTempRepo(async (tempRoot) => {
-    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
-    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.json");
-
-    const sourceContent = JSON.stringify(
-      {
-        version: 1,
-        title: "Checkout Architecture",
-        nodes: [{ id: "web_app", label: "Web App" }],
-      },
-      null,
-      2,
-    );
-
-    await writeFile(sourcePath, sourceContent, "utf8");
-
-    const result = loadValidatedDiagramSpec(sourcePath);
-
-    assert.equal(result.ok, false);
-    assert.equal(result.failure.kind, "unsupported-source-format");
-    assert.equal(result.failure.path, sourcePath);
-    assertYamlSourceRepairHint(result.failure.message);
+    await assertJsonSourceRejected(tempRoot, "architecture.dp.json", [
+      "{",
+      '  "version": 1,',
+      '  "title": "Checkout Architecture",',
+      '  "nodes": [{ "id": "web_app", "label": "Web App" }]',
+      "}",
+    ]);
   });
 });
 
@@ -78,91 +74,52 @@ test("loadValidatedDiagramSpec returns a read failure for an explicit unreadable
 
     const result = loadValidatedDiagramSpec(sourcePath);
 
-    assert.equal(result.ok, false);
-    assert.equal(result.failure.kind, "read");
+    assertFailedLoad(result, "read");
     assert.equal(result.failure.path, sourcePath);
-    assert.equal(typeof result.failure.message, "string");
-    assert.notEqual(result.failure.message.length, 0);
+    assertFailureMessage(result.failure);
   });
 });
 
 test("loadValidatedDiagramSpec returns a YAML parse failure before semantic validation", async () => {
   await withTempRepo(async (tempRoot) => {
-    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
-    const sourcePath = path.join(tempRoot, "docs", "broken.dp.yaml");
-
-    await writeFile(
-      sourcePath,
-      [
-        "version: 1",
-        "title: Broken Source",
-        "nodes: [",
-        "",
-      ].join("\n"),
-      "utf8",
+    const sourcePath = await writeDiagramSource(
+      tempRoot,
+      "broken.dp.yaml",
+      brokenYamlSourceLines,
     );
 
     const result = loadValidatedDiagramSpec(sourcePath);
 
-    assert.equal(result.ok, false);
-    assert.equal(result.failure.kind, "parse");
+    assertFailedLoad(result, "parse");
     assert.equal(result.failure.format, "yaml");
     assert.equal(result.failure.path, sourcePath);
-    assert.equal(typeof result.failure.message, "string");
-    assert.notEqual(result.failure.message.length, 0);
+    assertFailureMessage(result.failure);
   });
 });
 
 test("loadValidatedDiagramSpec rejects a JSON source path before parsing JSON syntax", async () => {
   await withTempRepo(async (tempRoot) => {
-    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
-    const sourcePath = path.join(tempRoot, "docs", "broken.dp.json");
-
-    await writeFile(
-      sourcePath,
-      [
-        "{",
-        '  "version": 1,',
-        '  "title": "Broken Source",',
-        '  "nodes": [',
-        '    { "id": "web_app", "label": "Web App" },',
-        "  ]",
-        "}",
-        "",
-      ].join("\n"),
-      "utf8",
-    );
-
-    const result = loadValidatedDiagramSpec(sourcePath);
-
-    assert.equal(result.ok, false);
-    assert.equal(result.failure.kind, "unsupported-source-format");
-    assert.equal(result.failure.path, sourcePath);
-    assertYamlSourceRepairHint(result.failure.message);
+    await assertJsonSourceRejected(tempRoot, "broken.dp.json", [
+      "{",
+      '  "version": 1,',
+      '  "title": "Broken Source",',
+      '  "nodes": [',
+    ]);
   });
 });
 
 test("loadValidatedDiagramSpec returns semantic validation failures with source context", async () => {
   await withTempRepo(async (tempRoot) => {
-    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
-    const sourcePath = path.join(tempRoot, "docs", "missing-title.dp.yaml");
-
-    await writeFile(
-      sourcePath,
-      [
-        "version: 1",
-        "nodes:",
-        "  - id: web_app",
-        "    label: Web App",
-        "",
-      ].join("\n"),
-      "utf8",
-    );
+    const sourcePath = await writeDiagramSource(tempRoot, "missing-title.dp.yaml", [
+      "version: 1",
+      "nodes:",
+      "  - id: web_app",
+      "    label: Web App",
+    ]);
 
     const result = loadValidatedDiagramSpec(sourcePath);
 
-    assert.equal(result.ok, false);
-    assert.equal(result.failure.kind, "validation");
+    assertFailedLoad(result, "validation");
     assert.equal(result.failure.source.path, sourcePath);
     assert.equal(result.failure.source.format, "yaml");
     assert.deepEqual(result.failure.errors, [

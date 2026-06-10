@@ -16,49 +16,57 @@ import {
 import {
   emptySvg,
   expectedSvgFreshnessOptions,
+  writeProvenanceFixture,
   writeValidArchitectureSource,
   provenanceSourcePath,
   validSourceContent,
   withTempRepo,
 } from "./svg-artifact-freshness-helpers.mjs";
 
+function assertSvgArtifactStatus(result, { sourcePath, artifactPath, status }) {
+  assert.equal(result.sourcePath, sourcePath);
+  assert.equal(result.artifactPath, artifactPath);
+  assert.equal(result.status, status);
+}
+
+function checkExpectedFreshnessForSource(sourcePath) {
+  return checkExpectedSvgArtifactFreshness(
+    expectedSvgFreshnessOptions(sourcePath),
+  );
+}
+
+async function assertMalformedArtifact({
+  tempRoot,
+  artifactContent,
+  messagePattern,
+}) {
+  const { sourcePath, artifactPath } = await writeValidArchitectureSource(
+    tempRoot,
+  );
+
+  await writeFile(artifactPath, artifactContent, "utf8");
+  const result = await checkExpectedFreshnessForSource(sourcePath);
+
+  assertSvgArtifactStatus(result, {
+    sourcePath,
+    artifactPath,
+    status: "malformed-artifact",
+  });
+  assert.match(result.message, messagePattern);
+}
+
 test("checkExpectedSvgArtifactFreshness returns fresh for a next-to-source SVG with matching provenance", async () => {
   await withTempRepo(async (tempRoot) => {
-    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
-    const artifactPath = path.join(tempRoot, "docs", "architecture.svg");
-    const sourceContent = [
-      "version: 1",
-      "title: Architecture",
-      "nodes:",
-      "  - id: web_app",
-      "    label: Web App",
-      "",
-    ].join("\n");
-
-    await mkdir(path.dirname(sourcePath), { recursive: true });
-    await writeFile(sourcePath, sourceContent, "utf8");
     const provenance = createSvgRendererProvenance({
-      sourcePath: "docs/architecture.dp.yaml",
-      sourceContent,
+      sourcePath: provenanceSourcePath,
+      sourceContent: validSourceContent,
     });
-
-    await writeFile(
-      artifactPath,
-      addSvgProvenanceMetadata(
-        '<svg xmlns="http://www.w3.org/2000/svg"><g /></svg>',
-        provenance,
-      ),
-      "utf8",
+    const { sourcePath, artifactPath } = await writeProvenanceFixture(
+      tempRoot,
+      provenance,
     );
 
-    const result = await checkExpectedSvgArtifactFreshness({
-      sourcePath,
-      provenanceSourcePath: "docs/architecture.dp.yaml",
-      renderer: {
-        name: SVG_RENDERER_NAME,
-        version: SVG_RENDERER_VERSION,
-      },
-    });
+    const result = await checkExpectedFreshnessForSource(sourcePath);
 
     assert.deepEqual(result, {
       sourcePath,
@@ -157,9 +165,11 @@ test("checkExpectedSvgArtifactFreshness reports an unreadable expected SVG artif
       },
     });
 
-    assert.equal(result.sourcePath, sourcePath);
-    assert.equal(result.artifactPath, artifactPath);
-    assert.equal(result.status, "unreadable-artifact");
+    assertSvgArtifactStatus(result, {
+      sourcePath,
+      artifactPath,
+      status: "unreadable-artifact",
+    });
     assert.match(result.message, /EISDIR|directory/i);
   });
 });
@@ -212,56 +222,33 @@ test("checkExpectedSvgArtifactFreshness leaves artifact freshness unchecked for 
       },
     });
 
-    assert.equal(result.sourcePath, sourcePath);
-    assert.equal(result.artifactPath, artifactPath);
-    assert.equal(result.status, "unchecked");
+    assertSvgArtifactStatus(result, {
+      sourcePath,
+      artifactPath,
+      status: "unchecked",
+    });
     assert.match(result.validationFailure.kind, /^(parse|validation)$/);
   });
 });
 
 test("checkExpectedSvgArtifactFreshness reports malformed DiagramPilot provenance separately from stale artifacts", async () => {
   await withTempRepo(async (tempRoot) => {
-    const { sourcePath, artifactPath } = await writeValidArchitectureSource(tempRoot);
-    await writeFile(
-      artifactPath,
-      '<svg xmlns="http://www.w3.org/2000/svg"><metadata id="diagrampilot-provenance">{not json}</metadata><g /></svg>',
-      "utf8",
-    );
-
-    const result = await checkExpectedSvgArtifactFreshness({
-      sourcePath,
-      provenanceSourcePath: "docs/architecture.dp.yaml",
-      renderer: {
-        name: SVG_RENDERER_NAME,
-        version: SVG_RENDERER_VERSION,
-      },
+    await assertMalformedArtifact({
+      tempRoot,
+      artifactContent:
+        '<svg xmlns="http://www.w3.org/2000/svg"><metadata id="diagrampilot-provenance">{not json}</metadata><g /></svg>',
+      messagePattern: /json|unexpected token|expected property name/i,
     });
-
-    assert.equal(result.sourcePath, sourcePath);
-    assert.equal(result.artifactPath, artifactPath);
-    assert.equal(result.status, "malformed-artifact");
-    assert.match(result.message, /json|unexpected token|expected property name/i);
   });
 });
 
 test("checkExpectedSvgArtifactFreshness reports malformed SVG separately from missing provenance", async () => {
   await withTempRepo(async (tempRoot) => {
-    const { sourcePath, artifactPath } = await writeValidArchitectureSource(tempRoot);
-    await writeFile(artifactPath, "not actually svg\n", "utf8");
-
-    const result = await checkExpectedSvgArtifactFreshness({
-      sourcePath,
-      provenanceSourcePath: "docs/architecture.dp.yaml",
-      renderer: {
-        name: SVG_RENDERER_NAME,
-        version: SVG_RENDERER_VERSION,
-      },
+    await assertMalformedArtifact({
+      tempRoot,
+      artifactContent: "not actually svg\n",
+      messagePattern: /svg/i,
     });
-
-    assert.equal(result.sourcePath, sourcePath);
-    assert.equal(result.artifactPath, artifactPath);
-    assert.equal(result.status, "malformed-artifact");
-    assert.match(result.message, /svg/i);
   });
 });
 
@@ -309,9 +296,11 @@ test("checkExpectedSvgArtifactFreshness reports stale provenance with explicit m
       },
     });
 
-    assert.equal(result.sourcePath, sourcePath);
-    assert.equal(result.artifactPath, artifactPath);
-    assert.equal(result.status, "stale");
+    assertSvgArtifactStatus(result, {
+      sourcePath,
+      artifactPath,
+      status: "stale",
+    });
     assert.deepEqual(result.reasons, [
       "source-path-mismatch",
       "source-sha256-mismatch",

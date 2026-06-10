@@ -1,55 +1,45 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
   SVG_RENDERER_NAME,
   SVG_RENDERER_VERSION,
-} from "../packages/render-svg/dist/index.js";
-import {
+  repoWorkflowCheckOptions,
   validSourceContent,
+  validSourceContext,
+  withTempRepo,
   writeFreshSvgArtifact,
   writeValidDiagramSource,
 } from "./repo-workflow-check-helpers.mjs";
 
-export { SVG_RENDERER_NAME, SVG_RENDERER_VERSION };
+export {
+  SVG_RENDERER_NAME,
+  SVG_RENDERER_VERSION,
+  repoWorkflowCheckOptions,
+  validSourceContext,
+  withTempRepo,
+};
 export { validSourceContent, writeFreshSvgArtifact, writeValidDiagramSource };
 
-export async function withTempRepo(run) {
-  const tempRoot = await mkdtemp(
-    path.join(os.tmpdir(), "diagrampilot-configured-artifacts-"),
+export async function writeArtifactConfig(tempRoot, artifactMapping) {
+  const configPath = path.join(tempRoot, "diagrampilot.config.yaml");
+
+  await writeFile(
+    configPath,
+    ["version: 1", "artifacts:", ...artifactMapping, ""].join("\n"),
+    "utf8",
   );
 
-  try {
-    return await run(tempRoot);
-  } finally {
-    await rm(tempRoot, { recursive: true, force: true });
-  }
+  return configPath;
 }
 
-export function repoWorkflowCheckOptions(scopePath) {
-  return {
-    scopePath,
-    renderer: {
-      name: SVG_RENDERER_NAME,
-      version: SVG_RENDERER_VERSION,
-    },
-  };
-}
-
-export function validSourceContext(sourcePath) {
-  return {
-    format: "yaml",
-    path: sourcePath,
-    content: validSourceContent,
-    value: {
-      version: 1,
-      title: "Architecture",
-      nodes: [{ id: "web_app", label: "Web App" }],
-    },
-  };
+export function assertInvalidConfigResult(result, { configPath, errorPath }) {
+  assert.equal(result.ok, false);
+  assert.equal(result.failure.kind, "invalid-config");
+  if (configPath !== undefined) assert.equal(result.failure.path, configPath);
+  assert.equal(result.failure.errors[0].path, errorPath);
 }
 
 export const generatedArchitectureEmbed = [

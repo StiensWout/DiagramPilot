@@ -1,47 +1,17 @@
 import assert from "node:assert/strict";
-import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 
 import { withTempRepo } from "./cli-smoke-helpers.mjs";
+import { exists, writeSource } from "./mcp-source-mutation-helpers.mjs";
 
 async function importMcpPackage() {
   return import("../packages/mcp/dist/index.js");
 }
 
-async function exists(filePath) {
-  try {
-    await access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function writeSource(tempRoot) {
-  await mkdir(path.join(tempRoot, "docs"), { recursive: true });
-  const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
-  await writeFile(
-    sourcePath,
-    [
-      "version: 1",
-      "title: Checkout Architecture",
-      "nodes:",
-      "  - id: web_app",
-      "    label: Web App",
-      "  - id: api",
-      "    label: API",
-      "edges:",
-      "  - id: web_app_to_api",
-      "    from: web_app",
-      "    to: api",
-      "    label: calls",
-      "",
-    ].join("\n"),
-    "utf8",
-  );
-
-  return sourcePath;
+async function writeRegistrySource(tempRoot) {
+  return writeSource(tempRoot, "architecture.dp.yaml", "calls");
 }
 
 async function withTempRepoCwd(run) {
@@ -71,6 +41,32 @@ async function writeArtifactConfig(tempRoot, outputPath) {
     ].join("\n"),
     "utf8",
   );
+}
+
+function assertGenerateFailure(generated, { sourcePath, errorPath, kind }) {
+  assert.equal(generated.isError, true);
+  assert.equal(generated.structuredContent.ok, false);
+  if (kind !== undefined) assert.equal(generated.structuredContent.kind, kind);
+  if (sourcePath !== undefined) {
+    assert.equal(generated.structuredContent.failures[0].sourcePath, sourcePath);
+  }
+  if (errorPath !== undefined) {
+    assert.equal(generated.structuredContent.failures[0].errors[0].path, errorPath);
+  }
+}
+
+async function generateRepoOutputsForSource(sourcePath) {
+  const { callDiagramPilotMcpTool } = await importMcpPackage();
+  return callDiagramPilotMcpTool("diagrampilot_generate_repo_outputs", {
+    source_paths: [sourcePath],
+  });
+}
+
+async function generateRepoOutputsForScope(scopePath) {
+  const { callDiagramPilotMcpTool } = await importMcpPackage();
+  return callDiagramPilotMcpTool("diagrampilot_generate_repo_outputs", {
+    scope_paths: [scopePath],
+  });
 }
 
 async function writeInvalidSource(tempRoot) {
@@ -188,7 +184,7 @@ test("MCP resources read schema docs examples discovered sources and check resul
   const { readDiagramPilotMcpResource } = await importMcpPackage();
 
   await withTempRepo(async (tempRoot) => {
-    await writeSource(tempRoot);
+    await writeRegistrySource(tempRoot);
     const docsScope = encodeURIComponent(tempRoot);
     const schema = await readDiagramPilotMcpResource("diagrampilot://schema/v1");
     const docs = await readDiagramPilotMcpResource("diagrampilot://docs/mcp");
@@ -225,7 +221,7 @@ test("MCP read tools validate check export and render without writing files", as
   const { callDiagramPilotMcpTool } = await importMcpPackage();
 
   await withTempRepo(async (tempRoot) => {
-    const sourcePath = await writeSource(tempRoot);
+    const sourcePath = await writeRegistrySource(tempRoot);
     const artifactPath = path.join(tempRoot, "docs", "architecture.svg");
 
     const validation = await callDiagramPilotMcpTool(
@@ -263,7 +259,7 @@ test("MCP generate tool writes explicit source scopes and returns structured sum
   const { callDiagramPilotMcpTool } = await importMcpPackage();
 
   await withTempRepoCwd(async (tempRoot) => {
-    await writeSource(tempRoot);
+    await writeRegistrySource(tempRoot);
     const artifactPath = path.join(tempRoot, "docs", "architecture.svg");
 
     const generated = await callDiagramPilotMcpTool(
@@ -324,7 +320,7 @@ test("MCP generate tool writes configured outputs for explicit directory scopes"
   const { callDiagramPilotMcpTool } = await importMcpPackage();
 
   await withTempRepoCwd(async (tempRoot) => {
-    await writeSource(tempRoot);
+    await writeRegistrySource(tempRoot);
     await writeFile(
       path.join(tempRoot, "diagrampilot.config.yaml"),
       [
@@ -392,8 +388,6 @@ test("MCP generate tool returns repairable failures without writes", async () =>
       { source_paths: ["docs/invalid.dp.yaml"] },
     );
 
-    assert.equal(generated.isError, true);
-    assert.equal(generated.structuredContent.ok, false);
     assert.deepEqual(generated.structuredContent.written, []);
     assert.equal(
       generated.structuredContent.failures[0].sourcePath,
@@ -408,7 +402,7 @@ test("MCP generate tool returns unsafe output path diagnostics without writes", 
   const { callDiagramPilotMcpTool } = await importMcpPackage();
 
   await withTempRepoCwd(async (tempRoot) => {
-    await writeSource(tempRoot);
+    await writeRegistrySource(tempRoot);
     await writeArtifactConfig(tempRoot, "../outside.svg");
 
     const generated = await callDiagramPilotMcpTool(
@@ -416,8 +410,6 @@ test("MCP generate tool returns unsafe output path diagnostics without writes", 
       { scope_paths: ["docs"] },
     );
 
-    assert.equal(generated.isError, true);
-    assert.equal(generated.structuredContent.ok, false);
     assert.deepEqual(generated.structuredContent.written, []);
     assert.equal(generated.structuredContent.failure.kind, "invalid-config");
     assert.match(

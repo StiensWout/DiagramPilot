@@ -14,11 +14,15 @@ import {
   assertCliSuccess,
   assertCliFailure,
   assertCliSucceeded,
+  assertLlmsPublicDocsLinks,
+  groupedCheckoutArchitectureSourceText,
   occurrenceCount,
+  readAgentSupportFiles,
   runBuiltCli,
   runDiagramPilot,
   sha256Hex,
   withTempRepo,
+  writeCheckoutArchitectureSource,
 } from "./cli-smoke-helpers.mjs";
 
 test("diagrampilot executable starts and reports its version", async () => {
@@ -48,14 +52,9 @@ test("diagrampilot init --docs creates adoption support files without generating
     assert.match(result.stdout, /Created llms\.txt/);
     assert.match(result.stdout, /Created docs\/diagrampilot\.md/);
 
-    const llmsText = await readFile(path.join(tempRoot, "llms.txt"), "utf8");
-    const guideText = await readFile(
-      path.join(tempRoot, "docs", "diagrampilot.md"),
-      "utf8",
-    );
+    const { llmsText, guideText } = await readAgentSupportFiles(tempRoot);
 
-    assert.match(llmsText, /https:\/\/diagrampilot\.com\/llms\.txt/);
-    assert.match(llmsText, /diagrampilot check/);
+    assertLlmsPublicDocsLinks(llmsText);
     assert.match(llmsText, /read-only repo review\/CI command/);
     assert.match(
       llmsText,
@@ -145,11 +144,7 @@ test("diagrampilot init --docs preserves existing support-file content and is id
     assert.equal(firstRun.stderr, "");
     assert.equal(secondRun.stderr, "");
 
-    const llmsText = await readFile(path.join(tempRoot, "llms.txt"), "utf8");
-    const guideText = await readFile(
-      path.join(tempRoot, "docs", "diagrampilot.md"),
-      "utf8",
-    );
+    const { llmsText, guideText } = await readAgentSupportFiles(tempRoot);
 
     assert.match(llmsText, /Keep this project-specific guidance/);
     assert.match(guideText, /Keep this local rendering convention/);
@@ -222,10 +217,7 @@ test("diagrampilot validate reads a YAML source file from an explicit path", asy
       tempRoot,
     );
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
-    assert.equal(result.stdout, "Valid docs/architecture.dp.yaml\n");
+    assertCliSuccess(result, { stdout: "Valid docs/architecture.dp.yaml\n" });
   });
 });
 
@@ -263,71 +255,33 @@ test("diagrampilot validate rejects a legacy JSON source with a YAML repair hint
 
 test("diagrampilot export prints Mermaid for a valid DiagramSpec", async () => {
   await withTempRepo(async (tempRoot) => {
-    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
-    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
-    const sourceText = [
-      "version: 1",
-      "title: Checkout Architecture",
-      "nodes:",
-      "  - id: web_app",
-      "    label: Web App",
-      "  - id: api_gateway",
-      "    label: API Gateway",
-      "edges:",
-      "  - id: web_app_to_api_gateway",
-      "    from: web_app",
-      "    to: api_gateway",
-      "    label: HTTPS",
-      "",
-    ].join("\n");
-
-    await writeFile(sourcePath, sourceText, "utf8");
+    const { sourcePath, sourceText } =
+      await writeCheckoutArchitectureSource(tempRoot);
 
     const result = await runBuiltCli(
       ["export", "docs/architecture.dp.yaml", "--format", "mermaid"],
       tempRoot,
     );
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
-    assert.equal(result.stdout, [
-      "flowchart LR",
-      "  web_app[\"Web App\"]",
-      "  api_gateway[\"API Gateway\"]",
-      "  web_app -->|HTTPS| api_gateway",
-      "",
-    ].join("\n"));
+    assertCliSuccess(result, {
+      stdout: [
+        "flowchart LR",
+        "  web_app[\"Web App\"]",
+        "  api_gateway[\"API Gateway\"]",
+        "  web_app -->|HTTPS| api_gateway",
+        "",
+      ].join("\n"),
+    });
     assert.equal(await readFile(sourcePath, "utf8"), sourceText);
   });
 });
 
 test("diagrampilot export prints DOT for a valid DiagramSpec", async () => {
   await withTempRepo(async (tempRoot) => {
-    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
-    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
-    const sourceText = [
-      "version: 1",
-      "title: Checkout Architecture",
-      "nodes:",
-      "  - id: web_app",
-      "    label: Web App",
-      "  - id: api_gateway",
-      "    label: API Gateway",
-      "groups:",
-      "  - id: frontend",
-      "    label: Frontend",
-      "    contains:",
-      "      - web_app",
-      "edges:",
-      "  - id: web_app_to_api_gateway",
-      "    from: web_app",
-      "    to: api_gateway",
-      "    directed: false",
-      "",
-    ].join("\n");
-
-    await writeFile(sourcePath, sourceText, "utf8");
+    const { sourcePath, sourceText } = await writeCheckoutArchitectureSource(
+      tempRoot,
+      groupedCheckoutArchitectureSourceText,
+    );
 
     const result = await runBuiltCli(
       ["export", "docs/architecture.dp.yaml", "--format", "dot"],
@@ -406,26 +360,7 @@ test("diagrampilot render writes SVG with deterministic provenance", async () =>
 
 test("diagrampilot render writes a valid non-empty PNG", async () => {
   await withTempRepo(async (tempRoot) => {
-    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
-    await writeFile(
-      path.join(tempRoot, "docs", "architecture.dp.yaml"),
-      [
-        "version: 1",
-        "title: Checkout Architecture",
-        "nodes:",
-        "  - id: web_app",
-        "    label: Web App",
-        "  - id: api_gateway",
-        "    label: API Gateway",
-        "edges:",
-        "  - id: web_app_to_api_gateway",
-        "    from: web_app",
-        "    to: api_gateway",
-        "    label: HTTPS",
-        "",
-      ].join("\n"),
-      "utf8",
-    );
+    const { sourceText } = await writeCheckoutArchitectureSource(tempRoot);
 
     const result = await runBuiltCli(
       [

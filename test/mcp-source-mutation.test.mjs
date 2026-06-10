@@ -5,10 +5,20 @@ import { test } from "node:test";
 
 import { withTempRepo } from "./cli-smoke-helpers.mjs";
 import {
+  assertFailedMutationPreservesSource,
   assertMutationFailedWithoutWrites,
+  assertMutationSucceeded,
+  assertSourceEquals,
   callMutateSource,
   writeSource,
 } from "./mcp-source-mutation-helpers.mjs";
+
+async function addBackendGroup(sourcePath) {
+  return callMutateSource(sourcePath, {
+    type: "add_group",
+    group: { id: "backend", label: "Backend", contains: ["api"] },
+  });
+}
 
 test("MCP mutate source tool updates a top-level title through a structured operation", async () => {
   await withTempRepo(async (tempRoot) => {
@@ -19,7 +29,7 @@ test("MCP mutate source tool updates a top-level title through a structured oper
       title: "Checkout Runtime",
     });
 
-    assert.equal(mutated.isError, undefined);
+    assertMutationSucceeded(mutated);
     assert.deepEqual(mutated.structuredContent, {
       ok: true,
       sourcePath,
@@ -42,9 +52,7 @@ test("MCP mutate source tool updates a top-level title through a structured oper
         groupCount: 0,
       },
     });
-    assert.equal(
-      await readFile(sourcePath, "utf8"),
-      [
+    await assertSourceEquals(sourcePath, [
         "version: 1",
         "title: Checkout Runtime",
         "direction: right",
@@ -59,8 +67,7 @@ test("MCP mutate source tool updates a top-level title through a structured oper
         "    to: api",
         "    label: Calls",
         "",
-      ].join("\n"),
-    );
+    ]);
     assert.doesNotMatch(mutated.content[0].text, /web_app_to_api/);
   });
 });
@@ -87,10 +94,7 @@ test("MCP mutate source tool updates top-level description direction and metadat
       key: "source",
     });
 
-    assert.equal(mutated.isError, undefined);
-    assert.equal(
-      await readFile(sourcePath, "utf8"),
-      [
+    await assertSourceEquals(sourcePath, [
         "version: 1",
         "title: Checkout Architecture",
         "description: Runtime dependency view.",
@@ -106,8 +110,7 @@ test("MCP mutate source tool updates top-level description direction and metadat
         "    to: api",
         "    label: Calls",
         "",
-      ].join("\n"),
-    );
+    ]);
   });
 });
 
@@ -126,9 +129,7 @@ test("MCP mutate source tool adds updates and removes nodes by Stable ID", async
       label: "Job Worker",
     });
 
-    assert.equal(
-      await readFile(sourcePath, "utf8"),
-      [
+    await assertSourceEquals(sourcePath, [
         "version: 1",
         "title: Checkout Architecture",
         "direction: right",
@@ -145,18 +146,14 @@ test("MCP mutate source tool adds updates and removes nodes by Stable ID", async
         "    to: api",
         "    label: Calls",
         "",
-      ].join("\n"),
-    );
+    ]);
 
     const removed = await callMutateSource(sourcePath, {
       type: "remove_node",
       id: "worker",
     });
 
-    assert.equal(removed.isError, undefined);
-    assert.equal(
-      await readFile(sourcePath, "utf8"),
-      [
+    await assertSourceEquals(sourcePath, [
         "version: 1",
         "title: Checkout Architecture",
         "direction: right",
@@ -171,8 +168,7 @@ test("MCP mutate source tool adds updates and removes nodes by Stable ID", async
         "    to: api",
         "    label: Calls",
         "",
-      ].join("\n"),
-    );
+    ]);
   });
 });
 
@@ -195,9 +191,7 @@ test("MCP mutate source tool adds updates and removes edges by Stable ID", async
       label: "Responds",
     });
 
-    assert.equal(
-      await readFile(sourcePath, "utf8"),
-      [
+    await assertSourceEquals(sourcePath, [
         "version: 1",
         "title: Checkout Architecture",
         "direction: right",
@@ -216,18 +210,14 @@ test("MCP mutate source tool adds updates and removes edges by Stable ID", async
         "    to: web_app",
         "    label: Responds",
         "",
-      ].join("\n"),
-    );
+    ]);
 
     const removed = await callMutateSource(sourcePath, {
       type: "remove_edge",
       id: "web_app_to_api",
     });
 
-    assert.equal(removed.isError, undefined);
-    assert.equal(
-      await readFile(sourcePath, "utf8"),
-      [
+    await assertSourceEquals(sourcePath, [
         "version: 1",
         "title: Checkout Architecture",
         "direction: right",
@@ -242,8 +232,7 @@ test("MCP mutate source tool adds updates and removes edges by Stable ID", async
         "    to: web_app",
         "    label: Responds",
         "",
-      ].join("\n"),
-    );
+    ]);
   });
 });
 
@@ -251,19 +240,14 @@ test("MCP mutate source tool adds updates and removes groups by Stable ID", asyn
   await withTempRepo(async (tempRoot) => {
     const sourcePath = await writeSource(tempRoot);
 
-    await callMutateSource(sourcePath, {
-      type: "add_group",
-      group: { id: "backend", label: "Backend", contains: ["api"] },
-    });
+    await addBackendGroup(sourcePath);
     await callMutateSource(sourcePath, {
       type: "update_group",
       id: "backend",
       label: "Backend Services",
     });
 
-    assert.equal(
-      await readFile(sourcePath, "utf8"),
-      [
+    await assertSourceEquals(sourcePath, [
         "version: 1",
         "title: Checkout Architecture",
         "direction: right",
@@ -283,18 +267,14 @@ test("MCP mutate source tool adds updates and removes groups by Stable ID", asyn
         "    to: api",
         "    label: Calls",
         "",
-      ].join("\n"),
-    );
+    ]);
 
     const removed = await callMutateSource(sourcePath, {
       type: "remove_group",
       id: "backend",
     });
 
-    assert.equal(removed.isError, undefined);
-    assert.equal(
-      await readFile(sourcePath, "utf8"),
-      [
+    await assertSourceEquals(sourcePath, [
         "version: 1",
         "title: Checkout Architecture",
         "direction: right",
@@ -309,8 +289,7 @@ test("MCP mutate source tool adds updates and removes groups by Stable ID", asyn
         "    to: api",
         "    label: Calls",
         "",
-      ].join("\n"),
-    );
+    ]);
   });
 });
 
@@ -318,10 +297,7 @@ test("MCP mutate source tool updates object metadata keys by Stable ID", async (
   await withTempRepo(async (tempRoot) => {
     const sourcePath = await writeSource(tempRoot);
 
-    await callMutateSource(sourcePath, {
-      type: "add_group",
-      group: { id: "backend", label: "Backend", contains: ["api"] },
-    });
+    await addBackendGroup(sourcePath);
     await callMutateSource(sourcePath, {
       type: "set_object_metadata",
       id: "web_app",
@@ -341,9 +317,7 @@ test("MCP mutate source tool updates object metadata keys by Stable ID", async (
       value: "service",
     });
 
-    assert.equal(
-      await readFile(sourcePath, "utf8"),
-      [
+    await assertSourceEquals(sourcePath, [
         "version: 1",
         "title: Checkout Architecture",
         "direction: right",
@@ -369,8 +343,7 @@ test("MCP mutate source tool updates object metadata keys by Stable ID", async (
         "    metadata:",
         "      protocol: https",
         "",
-      ].join("\n"),
-    );
+    ]);
 
     const deleted = await callMutateSource(sourcePath, {
       type: "delete_object_metadata",
@@ -386,20 +359,21 @@ test("MCP mutate source tool updates object metadata keys by Stable ID", async (
 test("MCP mutate source tool rolls back mutations that fail validation", async () => {
   await withTempRepo(async (tempRoot) => {
     const sourcePath = await writeSource(tempRoot);
-    const before = await readFile(sourcePath, "utf8");
-
-    const mutated = await callMutateSource(sourcePath, {
-      type: "add_edge",
-      edge: {
-        id: "web_app_to_missing_service",
-        from: "web_app",
-        to: "missing_service",
+    await assertFailedMutationPreservesSource(
+      sourcePath,
+      () =>
+        callMutateSource(sourcePath, {
+          type: "add_edge",
+          edge: {
+            id: "web_app_to_missing_service",
+            from: "web_app",
+            to: "missing_service",
+          },
+        }),
+      (mutated) => {
+        assert.match(mutated.structuredContent.errors[0].path, /edges/);
       },
-    });
-
-    assertMutationFailedWithoutWrites(mutated);
-    assert.match(mutated.structuredContent.errors[0].path, /edges/);
-    assert.equal(await readFile(sourcePath, "utf8"), before);
+    );
   });
 });
 
@@ -409,16 +383,17 @@ test("MCP mutate source tool returns diagnostics for invalid sources before muta
     const sourcePath = path.join(docsPath, "broken.dp.yaml");
     await mkdir(docsPath, { recursive: true });
     await writeFile(sourcePath, "version: 1\ntitle: [broken\n");
-    const before = await readFile(sourcePath, "utf8");
-
-    const mutated = await callMutateSource(sourcePath, {
-      type: "set_title",
-      title: "Recovered",
-    });
-
-    assertMutationFailedWithoutWrites(mutated);
-    assert.match(mutated.structuredContent.errors[0].message, /parse/i);
-    assert.equal(await readFile(sourcePath, "utf8"), before);
+    await assertFailedMutationPreservesSource(
+      sourcePath,
+      () =>
+        callMutateSource(sourcePath, {
+          type: "set_title",
+          title: "Recovered",
+        }),
+      (mutated) => {
+        assert.match(mutated.structuredContent.errors[0].message, /parse/i);
+      },
+    );
   });
 });
 

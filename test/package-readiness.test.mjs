@@ -4,7 +4,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-import { runProcess, sanitizedTestEnv } from "./process-helpers.mjs";
+import { assertMatchesAll } from "./assertion-helpers.mjs";
+import {
+  assertProcessSuccess,
+  runProcess,
+  sanitizedTestEnv,
+} from "./process-helpers.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const publicPackageReadmes = [
@@ -32,13 +37,9 @@ function runPackageReadinessCheck() {
 test("package readiness check passes for release-ready public package metadata and tarballs", async () => {
   const result = await runPackageReadinessCheck();
 
-  assert.equal(result.signal, null);
-  assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stderr, "");
-  assert.equal(
-    result.stdout,
-    "DiagramPilot package readiness checks passed for 8 public packages.\n",
-  );
+  assertProcessSuccess(result, {
+    stdout: "DiagramPilot package readiness checks passed for 8 public packages.\n",
+  });
 });
 
 test("CLI package publishes the diagrampilot binary without npm manifest auto-correction", async () => {
@@ -92,21 +93,23 @@ test("public alpha package publishing ADR captures license brand package set and
     "utf8",
   );
 
-  assert.match(adr, /^# Public Alpha Release And Package Publishing$/m);
-  assert.match(adr, /MIT Code License/);
-  assert.match(adr, /Brand Use Policy/);
-  assert.match(adr, /Public Package Set/);
-  assert.match(adr, /`diagrampilot`/);
-  assert.match(adr, /`@diagrampilot\/core`/);
-  assert.match(adr, /`@diagrampilot\/icons`/);
-  assert.match(adr, /`@diagrampilot\/export-mermaid`/);
-  assert.match(adr, /`@diagrampilot\/export-d2`/);
-  assert.match(adr, /`@diagrampilot\/export-dot`/);
-  assert.match(adr, /`@diagrampilot\/mcp`/);
-  assert.match(adr, /`@diagrampilot\/render-svg`/);
-  assert.match(adr, /prealpha/);
-  assert.match(adr, /v0\.2\.0/);
-  assert.match(adr, /latest/);
-  assert.match(adr, /root workspace and `website` workspace remain private/);
-  assert.match(adr, /npm pack --dry-run/);
+  assertMatchesAll(adr, [
+    /^# Public Alpha Release And Package Publishing$/m,
+    /MIT Code License/,
+    /Brand Use Policy/,
+    /Public Package Set/,
+    /`diagrampilot`/,
+    /`@diagrampilot\/core`/,
+    /`@diagrampilot\/icons`/,
+    /`@diagrampilot\/export-mermaid`/,
+    /`@diagrampilot\/export-d2`/,
+    /`@diagrampilot\/export-dot`/,
+    /`@diagrampilot\/mcp`/,
+    /`@diagrampilot\/render-svg`/,
+    /prealpha/,
+    /v0\.2\.0/,
+    /latest/,
+    /root workspace and `website` workspace remain private/,
+    /npm pack --dry-run/,
+  ]);
 });

@@ -2,12 +2,16 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-import { runProcess, sanitizedTestEnv } from "./process-helpers.mjs";
+import { assertMatchesAll } from "./assertion-helpers.mjs";
+import { repoRoot } from "./docs-public-boundary-helpers.mjs";
+import {
+  assertProcessSuccess,
+  runProcess,
+  sanitizedTestEnv,
+} from "./process-helpers.mjs";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const releaseNotesScriptPath = path.join(
   repoRoot,
   "scripts",
@@ -34,21 +38,45 @@ function runDraftValidation(args, options = {}) {
   return runScript(releaseDraftValidationScriptPath, args, options);
 }
 
+async function writeReleaseIssue(tempRoot, lines) {
+  const issuePath = path.join(
+    tempRoot,
+    ".scratch",
+    "release-ops",
+    "issues",
+    "64-release-ops-foundation-and-github-releases.md",
+  );
+
+  await mkdir(path.dirname(issuePath), { recursive: true });
+  await writeFile(issuePath, `${lines.join("\n")}\n`, "utf8");
+
+  return issuePath;
+}
+
+async function writeDraftJson(draftPath, overrides = {}) {
+  await writeFile(
+    draftPath,
+    `${JSON.stringify(
+      {
+        tagName: "v1.2.3",
+        name: "DiagramPilot v1.2.3",
+        body: "",
+        isDraft: true,
+        isPrerelease: false,
+        ...overrides,
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+}
+
 test("release-note generator derives a GitHub Release draft body from completed issue closeout fields", async () => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "diagrampilot-notes-"));
 
   try {
-    const issuePath = path.join(
-      tempRoot,
-      ".scratch",
-      "release-ops",
-      "issues",
-      "64-release-ops-foundation-and-github-releases.md",
-    );
-    await mkdir(path.dirname(issuePath), { recursive: true });
-    await writeFile(
-      issuePath,
-      [
+    const issuePath = await writeReleaseIssue(tempRoot, [
         "Status: completed",
         "Issue Version: 1.2.3",
         "",
@@ -79,9 +107,7 @@ test("release-note generator derives a GitHub Release draft body from completed 
         "",
         "- Watch the first automated release run.",
         "",
-      ].join("\n"),
-      "utf8",
-    );
+    ]);
 
     const result = await runReleaseNotes([
       "--issue",
@@ -92,24 +118,26 @@ test("release-note generator derives a GitHub Release draft body from completed 
       "v1.2.3",
     ]);
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
-    assert.match(result.stdout, /^# DiagramPilot v1\.2\.3$/m);
-    assert.match(result.stdout, /^Issue: Ship release ops foundation$/m);
-    assert.match(result.stdout, /^Issue Version: 1\.2\.3$/m);
-    assert.match(result.stdout, /^Tag: v1\.2\.3$/m);
+    assertProcessSuccess(result);
+    assertMatchesAll(result.stdout, [
+      /^# DiagramPilot v1\.2\.3$/m,
+      /^Issue: Ship release ops foundation$/m,
+      /^Issue Version: 1\.2\.3$/m,
+      /^Tag: v1\.2\.3$/m,
+    ]);
     assert.match(
       result.stdout,
       /^npm: https:\/\/www\.npmjs\.com\/package\/diagrampilot\/v\/1\.2\.3$/m,
     );
-    assert.match(result.stdout, /^Public Website: https:\/\/diagrampilot\.com$/m);
-    assert.match(result.stdout, /Make each clean `main` implementation merge/u);
-    assert.match(result.stdout, /Added release-note generation/u);
-    assert.match(result.stdout, /`npm test` passed/u);
-    assert.match(result.stdout, /https:\/\/diagrampilot\.com\/docs\/agents\/installation/u);
-    assert.match(result.stdout, /GitHub Release draft review remains manual/u);
-    assert.match(result.stdout, /Watch the first automated release run/u);
+    assertMatchesAll(result.stdout, [
+      /^Public Website: https:\/\/diagrampilot\.com$/m,
+      /Make each clean `main` implementation merge/u,
+      /Added release-note generation/u,
+      /`npm test` passed/u,
+      /https:\/\/diagrampilot\.com\/docs\/agents\/installation/u,
+      /GitHub Release draft review remains manual/u,
+      /Watch the first automated release run/u,
+    ]);
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
   }
@@ -120,30 +148,13 @@ test("GitHub Release draft validation accepts only a reviewed draft for the matc
 
   try {
     const draftPath = path.join(tempRoot, "draft.json");
-    await writeFile(
-      draftPath,
-      `${JSON.stringify(
-        {
-          tagName: "v1.2.3",
-          name: "DiagramPilot v1.2.3",
-          body: [
-            "# DiagramPilot v1.2.3",
-            "",
-            "Issue Version: 1.2.3",
-            "Tag: v1.2.3",
-            "",
-            "## Summary",
-            "",
-            "Reviewed release notes.",
-          ].join("\n"),
-          isDraft: true,
-          isPrerelease: false,
-        },
-        null,
-        2,
-      )}\n`,
-      "utf8",
-    );
+    await writeDraftJson(draftPath, {
+      body: [
+        "# DiagramPilot v1.2.3",
+        "Issue Version: 1.2.3",
+        "Tag: v1.2.3",
+      ].join("\n"),
+    });
 
     const accepted = await runDraftValidation([
       "--draft-json",
@@ -162,21 +173,7 @@ test("GitHub Release draft validation accepts only a reviewed draft for the matc
       "GitHub Release draft v1.2.3 is ready for publication.\n",
     );
 
-    await writeFile(
-      draftPath,
-      `${JSON.stringify(
-        {
-          tagName: "v1.2.3",
-          name: "DiagramPilot v1.2.3",
-          body: "",
-          isDraft: true,
-          isPrerelease: false,
-        },
-        null,
-        2,
-      )}\n`,
-      "utf8",
-    );
+    await writeDraftJson(draftPath);
 
     const rejected = await runDraftValidation([
       "--draft-json",
@@ -200,17 +197,7 @@ test("release-note generator can find the completed issue by Issue Version", asy
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "diagrampilot-notes-find-"));
 
   try {
-    const issuePath = path.join(
-      tempRoot,
-      ".scratch",
-      "release-ops",
-      "issues",
-      "64-release-ops-foundation-and-github-releases.md",
-    );
-    await mkdir(path.dirname(issuePath), { recursive: true });
-    await writeFile(
-      issuePath,
-      [
+    const issuePath = await writeReleaseIssue(tempRoot, [
         "Status: completed",
         "Issue Version: 1.2.3",
         "",
@@ -228,20 +215,18 @@ test("release-note generator can find the completed issue by Issue Version", asy
         "",
         "- `node --test` passed.",
         "",
-      ].join("\n"),
-      "utf8",
-    );
+    ]);
 
     const result = await runReleaseNotes(
       ["--version", "1.2.3", "--tag", "v1.2.3"],
       { cwd: tempRoot },
     );
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
-    assert.match(result.stdout, /^Issue: Release ops foundation$/m);
-    assert.match(result.stdout, /Ship guarded Issue Release operations/u);
+    assertProcessSuccess(result);
+    assertMatchesAll(result.stdout, [
+      /^Issue: Release ops foundation$/m,
+      /Ship guarded Issue Release operations/u,
+    ]);
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
   }

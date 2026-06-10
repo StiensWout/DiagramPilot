@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 
+import { assertMatchesAll } from "./assertion-helpers.mjs";
 import {
   exists,
   repoRoot,
@@ -23,15 +24,17 @@ async function readDeploymentGuide() {
 test("internal deployment guidance documents the static Vercel Pro path", async () => {
   const guide = await readDeploymentGuide();
 
-  assert.match(guide, /Vercel Pro is the only planned host/i);
-  assert.match(guide, /Root Directory:\s*`website\/`/i);
-  assert.match(guide, /Framework Preset:\s*`Astro`/i);
-  assert.match(guide, /Build Command:\s*`npm run build`/i);
-  assert.match(guide, /Output Directory:\s*`dist`/i);
-  assert.match(guide, /Include source files outside of the Root Directory:\s*enabled/i);
-  assert.match(guide, /static-only/i);
-  assert.match(guide, /root product tests/i);
-  assert.match(guide, /not part of the Vercel site build/i);
+  assertMatchesAll(guide, [
+    /Vercel Pro is the only planned host/i,
+    /Root Directory:\s*`website\/`/i,
+    /Framework Preset:\s*`Astro`/i,
+    /Build Command:\s*`npm run build`/i,
+    /Output Directory:\s*`dist`/i,
+    /Include source files outside of the Root Directory:\s*enabled/i,
+    /static-only/i,
+    /root product tests/i,
+    /not part of the Vercel site build/i,
+  ]);
   assert.match(guide, /Spend Management/i);
   assert.match(guide, /pause production deployment/i);
 

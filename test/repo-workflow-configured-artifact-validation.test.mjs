@@ -1,13 +1,22 @@
 import assert from "node:assert/strict";
-import { writeFile } from "node:fs/promises";
-import path from "node:path";
 import test from "node:test";
 
 import { checkDiagramPilotRepoWorkflow } from "../packages/core/dist/index.js";
 import {
+  assertInvalidConfigResult,
   repoWorkflowCheckOptions,
   withTempRepo,
+  writeArtifactConfig,
 } from "./repo-workflow-configured-artifacts-helpers.mjs";
+
+async function checkConfigWithArtifactMapping(tempRoot, artifactMapping) {
+  const configPath = await writeArtifactConfig(tempRoot, artifactMapping);
+  const result = await checkDiagramPilotRepoWorkflow(
+    repoWorkflowCheckOptions(tempRoot),
+  );
+
+  return { configPath, result };
+}
 
 test("checkDiagramPilotRepoWorkflow rejects artifact mappings without exactly one source selector", async () => {
   await withTempRepo(async (tempRoot) => {
@@ -33,24 +42,15 @@ test("checkDiagramPilotRepoWorkflow rejects artifact mappings without exactly on
     ];
 
     for (const testCase of cases) {
-      const configPath = path.join(tempRoot, "diagrampilot.config.yaml");
+      const { configPath, result } = await checkConfigWithArtifactMapping(
+        tempRoot,
+        testCase.artifactMapping,
+      );
 
-      await writeFile(
+      assertInvalidConfigResult(result, {
         configPath,
-        ["version: 1", "artifacts:", ...testCase.artifactMapping, ""].join(
-          "\n",
-        ),
-        "utf8",
-      );
-
-      const result = await checkDiagramPilotRepoWorkflow(
-        repoWorkflowCheckOptions(tempRoot),
-      );
-
-      assert.equal(result.ok, false);
-      assert.equal(result.failure.kind, "invalid-config");
-      assert.equal(result.failure.path, configPath);
-      assert.equal(result.failure.errors[0].path, "artifacts[0]");
+        errorPath: "artifacts[0]",
+      });
       assert.match(result.failure.message, testCase.expectedMessage);
     }
   });
@@ -58,29 +58,16 @@ test("checkDiagramPilotRepoWorkflow rejects artifact mappings without exactly on
 
 test("checkDiagramPilotRepoWorkflow rejects unsupported configured artifact output formats", async () => {
   await withTempRepo(async (tempRoot) => {
-    const configPath = path.join(tempRoot, "diagrampilot.config.yaml");
+    const { result } = await checkConfigWithArtifactMapping(tempRoot, [
+      "  - source: docs/architecture.dp.yaml",
+      "    outputs:",
+      "      - format: pdf",
+      "        path: docs/architecture.pdf",
+    ]);
 
-    await writeFile(
-      configPath,
-      [
-        "version: 1",
-        "artifacts:",
-        "  - source: docs/architecture.dp.yaml",
-        "    outputs:",
-        "      - format: pdf",
-        "        path: docs/architecture.pdf",
-        "",
-      ].join("\n"),
-      "utf8",
-    );
-
-    const result = await checkDiagramPilotRepoWorkflow(
-      repoWorkflowCheckOptions(tempRoot),
-    );
-
-    assert.equal(result.ok, false);
-    assert.equal(result.failure.kind, "invalid-config");
-    assert.equal(result.failure.errors[0].path, "artifacts[0].outputs[0].format");
+    assertInvalidConfigResult(result, {
+      errorPath: "artifacts[0].outputs[0].format",
+    });
     assert.match(result.failure.message, /Unsupported artifact output format/);
     assert.match(result.failure.message, /svg, png, mermaid, d2, dot, markdown/);
   });
@@ -88,29 +75,16 @@ test("checkDiagramPilotRepoWorkflow rejects unsupported configured artifact outp
 
 test("checkDiagramPilotRepoWorkflow rejects unsupported configured artifact path template variables", async () => {
   await withTempRepo(async (tempRoot) => {
-    const configPath = path.join(tempRoot, "diagrampilot.config.yaml");
+    const { result } = await checkConfigWithArtifactMapping(tempRoot, [
+      "  - source: docs/architecture.dp.yaml",
+      "    outputs:",
+      "      - format: svg",
+      "        path: docs/{name}.svg",
+    ]);
 
-    await writeFile(
-      configPath,
-      [
-        "version: 1",
-        "artifacts:",
-        "  - source: docs/architecture.dp.yaml",
-        "    outputs:",
-        "      - format: svg",
-        "        path: docs/{name}.svg",
-        "",
-      ].join("\n"),
-      "utf8",
-    );
-
-    const result = await checkDiagramPilotRepoWorkflow(
-      repoWorkflowCheckOptions(tempRoot),
-    );
-
-    assert.equal(result.ok, false);
-    assert.equal(result.failure.kind, "invalid-config");
-    assert.equal(result.failure.errors[0].path, "artifacts[0].outputs[0].path");
+    assertInvalidConfigResult(result, {
+      errorPath: "artifacts[0].outputs[0].path",
+    });
     assert.match(
       result.failure.message,
       /Unsupported artifact output path template variable/,
@@ -152,23 +126,12 @@ test("checkDiagramPilotRepoWorkflow rejects configured artifact paths outside th
     ];
 
     for (const testCase of cases) {
-      const configPath = path.join(tempRoot, "diagrampilot.config.yaml");
-
-      await writeFile(
-        configPath,
-        ["version: 1", "artifacts:", ...testCase.artifactMapping, ""].join(
-          "\n",
-        ),
-        "utf8",
+      const { result } = await checkConfigWithArtifactMapping(
+        tempRoot,
+        testCase.artifactMapping,
       );
 
-      const result = await checkDiagramPilotRepoWorkflow(
-        repoWorkflowCheckOptions(tempRoot),
-      );
-
-      assert.equal(result.ok, false);
-      assert.equal(result.failure.kind, "invalid-config");
-      assert.equal(result.failure.errors[0].path, testCase.expectedPath);
+      assertInvalidConfigResult(result, { errorPath: testCase.expectedPath });
       assert.match(result.failure.message, /config directory tree/);
     }
   });

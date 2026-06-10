@@ -3,14 +3,63 @@ import test from "node:test";
 
 import { createDiagramSpecTopology } from "../packages/core/dist/index.js";
 
-function traversalSummary(topology) {
-  return topology.traversal.map((entry) => ({
+function objectSummary(entry) {
+  return {
     objectType: entry.objectType,
     id: entry.id,
     depth: entry.depth,
     parentGroupId: entry.parentGroupId,
     path: Array.from(entry.path),
-  }));
+  };
+}
+
+function traversalSummary(topology) {
+  return topology.traversal.map(objectSummary);
+}
+
+function containedSummary(topology, groupId) {
+  return Array.from(topology.containedObjectsByGroupId.get(groupId)).map(
+    objectSummary,
+  );
+}
+
+function assertTopologyRoots(topology, { rootNodes, rootGroups, parents }) {
+  assert.deepEqual(
+    topology.rootNodes.map((node) => node.id),
+    rootNodes,
+  );
+  assert.deepEqual(
+    topology.rootGroups.map((group) => group.id),
+    rootGroups,
+  );
+  assert.deepEqual(
+    Array.from(topology.parentGroupIdsByObjectId.entries()),
+    parents,
+  );
+}
+
+function assertNodePaths(topology, expectedPaths) {
+  assert.deepEqual(Array.from(topology.nodePathsById.entries()), expectedPaths);
+}
+
+function topologyEntry(objectType, id, depth, parentGroupId, path) {
+  return { objectType, id, depth, parentGroupId, path };
+}
+
+function nodeEntry(id, depth, parentGroupId, path) {
+  return topologyEntry("node", id, depth, parentGroupId, path);
+}
+
+function groupEntry(id, depth, parentGroupId, path) {
+  return topologyEntry("group", id, depth, parentGroupId, path);
+}
+
+function backendServicePath(id) {
+  return ["backend_services", id];
+}
+
+function backendNodeEntry(id) {
+  return nodeEntry(id, 1, "backend_services", backendServicePath(id));
 }
 
 test("createDiagramSpecTopology describes ungrouped root nodes", () => {
@@ -44,7 +93,7 @@ test("createDiagramSpecTopology describes ungrouped root nodes", () => {
     Array.from(topology.parentGroupIdsByObjectId.entries()),
     [],
   );
-  assert.deepEqual(Array.from(topology.nodePathsById.entries()), [
+  assertNodePaths(topology, [
     ["web_app", ["web_app"]],
     ["api_gateway", ["api_gateway"]],
   ]);
@@ -86,28 +135,16 @@ test("createDiagramSpecTopology describes one group and its contained nodes", ()
 
   const topology = createDiagramSpecTopology(spec);
 
+  assertTopologyRoots(topology, {
+    rootNodes: ["web_app"],
+    rootGroups: ["backend_services"],
+    parents: [
+      ["api_gateway", "backend_services"],
+      ["orders_service", "backend_services"],
+    ],
+  });
   assert.deepEqual(
-    topology.rootNodes.map((node) => node.id),
-    ["web_app"],
-  );
-  assert.deepEqual(
-    topology.rootGroups.map((group) => group.id),
-    ["backend_services"],
-  );
-  assert.deepEqual(Array.from(topology.parentGroupIdsByObjectId.entries()), [
-    ["api_gateway", "backend_services"],
-    ["orders_service", "backend_services"],
-  ]);
-  assert.deepEqual(
-    Array.from(topology.containedObjectsByGroupId.get("backend_services")).map(
-      (entry) => ({
-        objectType: entry.objectType,
-        id: entry.id,
-        depth: entry.depth,
-        parentGroupId: entry.parentGroupId,
-        path: Array.from(entry.path),
-      }),
-    ),
+    containedSummary(topology, "backend_services"),
     [
       {
         objectType: "node",
@@ -125,40 +162,19 @@ test("createDiagramSpecTopology describes one group and its contained nodes", ()
       },
     ],
   );
-  assert.deepEqual(Array.from(topology.nodePathsById.entries()), [
+  assertNodePaths(topology, [
     ["web_app", ["web_app"]],
-    ["api_gateway", ["backend_services", "api_gateway"]],
+    ["api_gateway", backendServicePath("api_gateway")],
     ["orders_service", ["backend_services", "orders_service"]],
   ]);
   assert.deepEqual(traversalSummary(topology), [
-    {
-      objectType: "node",
-      id: "web_app",
-      depth: 0,
-      parentGroupId: undefined,
-      path: ["web_app"],
-    },
-    {
-      objectType: "group",
-      id: "backend_services",
-      depth: 0,
-      parentGroupId: undefined,
-      path: ["backend_services"],
-    },
-    {
-      objectType: "node",
-      id: "api_gateway",
-      depth: 1,
-      parentGroupId: "backend_services",
-      path: ["backend_services", "api_gateway"],
-    },
-    {
-      objectType: "node",
-      id: "orders_service",
-      depth: 1,
-      parentGroupId: "backend_services",
-      path: ["backend_services", "orders_service"],
-    },
+    nodeEntry("web_app", 0, undefined, ["web_app"]),
+    groupEntry("backend_services", 0, undefined, ["backend_services"]),
+    backendNodeEntry("api_gateway"),
+    nodeEntry("orders_service", 1, "backend_services", [
+      "backend_services",
+      "orders_service",
+    ]),
   ]);
 });
 
@@ -188,30 +204,18 @@ test("createDiagramSpecTopology describes nested groups and contained node paths
 
   const topology = createDiagramSpecTopology(spec);
 
+  assertTopologyRoots(topology, {
+    rootNodes: ["web_app"],
+    rootGroups: ["backend_services"],
+    parents: [
+      ["api_gateway", "backend_services"],
+      ["orders_runtime", "backend_services"],
+      ["orders_service", "orders_runtime"],
+      ["orders_db", "orders_runtime"],
+    ],
+  });
   assert.deepEqual(
-    topology.rootNodes.map((node) => node.id),
-    ["web_app"],
-  );
-  assert.deepEqual(
-    topology.rootGroups.map((group) => group.id),
-    ["backend_services"],
-  );
-  assert.deepEqual(Array.from(topology.parentGroupIdsByObjectId.entries()), [
-    ["api_gateway", "backend_services"],
-    ["orders_runtime", "backend_services"],
-    ["orders_service", "orders_runtime"],
-    ["orders_db", "orders_runtime"],
-  ]);
-  assert.deepEqual(
-    Array.from(topology.containedObjectsByGroupId.get("backend_services")).map(
-      (entry) => ({
-        objectType: entry.objectType,
-        id: entry.id,
-        depth: entry.depth,
-        parentGroupId: entry.parentGroupId,
-        path: Array.from(entry.path),
-      }),
-    ),
+    containedSummary(topology, "backend_services"),
     [
       {
         objectType: "node",
@@ -230,15 +234,7 @@ test("createDiagramSpecTopology describes nested groups and contained node paths
     ],
   );
   assert.deepEqual(
-    Array.from(topology.containedObjectsByGroupId.get("orders_runtime")).map(
-      (entry) => ({
-        objectType: entry.objectType,
-        id: entry.id,
-        depth: entry.depth,
-        parentGroupId: entry.parentGroupId,
-        path: Array.from(entry.path),
-      }),
-    ),
+    containedSummary(topology, "orders_runtime"),
     [
       {
         objectType: "node",
@@ -256,9 +252,9 @@ test("createDiagramSpecTopology describes nested groups and contained node paths
       },
     ],
   );
-  assert.deepEqual(Array.from(topology.nodePathsById.entries()), [
+  assertNodePaths(topology, [
     ["web_app", ["web_app"]],
-    ["api_gateway", ["backend_services", "api_gateway"]],
+    ["api_gateway", backendServicePath("api_gateway")],
     [
       "orders_service",
       ["backend_services", "orders_runtime", "orders_service"],
@@ -266,48 +262,23 @@ test("createDiagramSpecTopology describes nested groups and contained node paths
     ["orders_db", ["backend_services", "orders_runtime", "orders_db"]],
   ]);
   assert.deepEqual(traversalSummary(topology), [
-    {
-      objectType: "node",
-      id: "web_app",
-      depth: 0,
-      parentGroupId: undefined,
-      path: ["web_app"],
-    },
-    {
-      objectType: "group",
-      id: "backend_services",
-      depth: 0,
-      parentGroupId: undefined,
-      path: ["backend_services"],
-    },
-    {
-      objectType: "node",
-      id: "api_gateway",
-      depth: 1,
-      parentGroupId: "backend_services",
-      path: ["backend_services", "api_gateway"],
-    },
-    {
-      objectType: "group",
-      id: "orders_runtime",
-      depth: 1,
-      parentGroupId: "backend_services",
-      path: ["backend_services", "orders_runtime"],
-    },
-    {
-      objectType: "node",
-      id: "orders_service",
-      depth: 2,
-      parentGroupId: "orders_runtime",
-      path: ["backend_services", "orders_runtime", "orders_service"],
-    },
-    {
-      objectType: "node",
-      id: "orders_db",
-      depth: 2,
-      parentGroupId: "orders_runtime",
-      path: ["backend_services", "orders_runtime", "orders_db"],
-    },
+    nodeEntry("web_app", 0, undefined, ["web_app"]),
+    groupEntry("backend_services", 0, undefined, ["backend_services"]),
+    backendNodeEntry("api_gateway"),
+    groupEntry("orders_runtime", 1, "backend_services", [
+      "backend_services",
+      "orders_runtime",
+    ]),
+    nodeEntry("orders_service", 2, "orders_runtime", [
+      "backend_services",
+      "orders_runtime",
+      "orders_service",
+    ]),
+    nodeEntry("orders_db", 2, "orders_runtime", [
+      "backend_services",
+      "orders_runtime",
+      "orders_db",
+    ]),
   ]);
 });
 

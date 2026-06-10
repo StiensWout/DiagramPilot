@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 
@@ -7,7 +6,9 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 import { repoRoot, runBuiltCli, withTempRepo } from "./cli-smoke-helpers.mjs";
+import { writeSource } from "./mcp-source-mutation-helpers.mjs";
 import {
+  assertProcessSuccess,
   npmCommand,
   runProcess,
   sanitizedTestEnv,
@@ -27,31 +28,10 @@ function runMcpPackageExecutable(args) {
 }
 
 function assertMcpHelp(result, commandName) {
-  assert.equal(result.signal, null);
-  assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stderr, "");
+  assertProcessSuccess(result);
   assert.match(result.stdout, /DiagramPilot MCP server/);
   assert.match(result.stdout, new RegExp(`Usage: ${commandName}`));
   assert.match(result.stdout, /alpha DiagramPilot MCP server over stdio/);
-}
-
-async function writeSource(tempRoot) {
-  await mkdir(path.join(tempRoot, "docs"), { recursive: true });
-  const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
-  await writeFile(
-    sourcePath,
-    [
-      "version: 1",
-      "title: Checkout Architecture",
-      "nodes:",
-      "  - id: web_app",
-      "    label: Web App",
-      "",
-    ].join("\n"),
-    "utf8",
-  );
-
-  return sourcePath;
 }
 
 test("diagrampilot mcp --help documents the stdio MCP launch path", async () => {

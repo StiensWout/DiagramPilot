@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 
+import { assertMatchesAll } from "./assertion-helpers.mjs";
 import {
   exists,
   gitLsFiles,
@@ -92,18 +93,20 @@ function assertIncludesAll(source, expected, label) {
 test("internal Documentation Contract names canonical and generated documentation surfaces", async () => {
   const contract = await readContract();
 
-  assert.match(contract, /^# Documentation Contract$/m);
-  assert.match(contract, /docs-public\/.*canonical Public Documentation source/s);
-  assert.match(contract, /CONTEXT\.md/);
-  assert.match(contract, /docs\/development\/\*/);
-  assert.match(contract, /docs\/adr\/\*/);
-  assert.match(contract, /docs\/agents\/\*/);
-  assert.match(contract, /internal maintainer sources/);
-  assert.match(contract, /website\/.*static consumer/s);
-  assert.match(contract, /not a second source of\s+truth/);
-  assert.match(contract, /website\/src\/content\/docs\/docs\/.*generated synced Starlight/s);
-  assert.match(contract, /ignored/);
-  assert.match(contract, /not canonical/);
+  assertMatchesAll(contract, [
+    /^# Documentation Contract$/m,
+    /docs-public\/.*canonical Public Documentation source/s,
+    /CONTEXT\.md/,
+    /docs\/development\/\*/,
+    /docs\/adr\/\*/,
+    /docs\/agents\/\*/,
+    /internal maintainer sources/,
+    /website\/.*static consumer/s,
+    /not a second source of\s+truth/,
+    /website\/src\/content\/docs\/docs\/.*generated synced Starlight/s,
+    /ignored/,
+    /not canonical/,
+  ]);
 });
 
 test("Documentation Contract public route inventory is served by the website build", async () => {
