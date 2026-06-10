@@ -31,6 +31,7 @@ const publicPackageSet = [
   "@diagrampilot/export-mermaid",
   "@diagrampilot/export-d2",
   "@diagrampilot/export-dot",
+  "@diagrampilot/mcp",
   "@diagrampilot/render-svg",
 ];
 
@@ -100,8 +101,19 @@ function assertLatestPlan(plan, { baseVersion, shouldPublish }) {
   assert.equal(plan.publishVersion, baseVersion);
 }
 
+function extractReleaseWorkflowPackageSets(workflow) {
+  return [...workflow.matchAll(/packages=\(\n(?<body>[\s\S]*?)\n\s+\)/gu)].map(
+    (match) => [...match.groups.body.matchAll(/"(?<packageName>[^"]+)"/gu)].map(
+      (packageMatch) => packageMatch.groups.packageName,
+    ),
+  );
+}
+
 test("GitHub Actions release workflow validates releases before guarded publishing", async () => {
   const workflow = await readFile(releaseWorkflowPath, "utf8");
+  const packageSets = extractReleaseWorkflowPackageSets(workflow);
+
+  assert.deepEqual(packageSets, [publicPackageSet, publicPackageSet]);
 
   assertMatchesAll(workflow, [
     /^name: Release$/m,
@@ -193,6 +205,8 @@ test("release workflow gates CD side effects behind CI and validates reviewed Gi
   assertMatchesAll(publishPackagesJob, [
     /needs: validate-release/u,
     /npm run check:package-publish-state -- --expect latest/u,
+    /npm view "\$workspace@\$RELEASE_PUBLISH_VERSION" version/u,
+    /npm dist-tag add "\$workspace@\$RELEASE_PUBLISH_VERSION" "\$RELEASE_DIST_TAG"/u,
     /npm publish --workspace/u,
   ]);
 
