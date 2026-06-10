@@ -217,7 +217,7 @@ jobs:
       CI: "true"
       FORCE_COLOR: "0"
       NO_COLOR: "1"
-      GH_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       RELEASE_PUBLISH_VERSION: ${{ needs.validate-release.outputs.publish_version }}
       RELEASE_TAG: v${{ needs.validate-release.outputs.publish_version }}
 
@@ -302,7 +302,7 @@ jobs:
       CI: "true"
       FORCE_COLOR: "0"
       NO_COLOR: "1"
-      GH_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       RELEASE_PUBLISH_VERSION: ${{ needs.validate-release.outputs.publish_version }}
       RELEASE_TAG: v${{ needs.validate-release.outputs.publish_version }}
 
