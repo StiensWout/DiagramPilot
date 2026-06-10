@@ -35,6 +35,8 @@ limitations.
 - Removed health and duplicate debt baseline flags from the local
   `audit:fallow`, `audit:fallow:dupes`, `audit:fallow:health`, and
   `audit:fallow:changed` script path.
+- Synced shared release metadata to this issue's `0.2.16` release version so
+  release readiness can run against the completed issue.
 - Added regression tests for the clean-gate script contract, empty committed
   baseline files, and maintainability policy wording.
 - Updated maintainability policy to state that future Fallow findings should be
@@ -45,9 +47,12 @@ limitations.
 
 - [x] `node --test test/github-actions-ci.test.mjs`
 - [x] `node --test test/fallow-clean-gate-policy.test.mjs`
+- [x] `npm run check:release-version`
+- [x] `npm run check:issue-release-version`
 - [x] `npm test`
 - [x] `npm run audit:fallow`
 - [x] `npm run audit:fallow:changed`
+- [x] `npm run check:package-readiness`
 - [x] `git diff --check`
 
 ## Links
