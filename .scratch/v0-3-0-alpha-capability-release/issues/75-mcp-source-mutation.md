@@ -26,24 +26,24 @@ placement for top-level nodes, edges, and groups.
 
 ## Acceptance criteria
 
-- [ ] MCP exposes Structured Diagram Operations for Source Mutation.
-- [ ] Mutation tools do not accept raw YAML replacement as their public write
+- [x] MCP exposes Structured Diagram Operations for Source Mutation.
+- [x] Mutation tools do not accept raw YAML replacement as their public write
       path.
-- [ ] Mutation supports nodes, edges, groups, top-level title, description,
+- [x] Mutation supports nodes, edges, groups, top-level title, description,
       direction, top-level metadata keys, and object metadata keys.
-- [ ] Mutation targets existing objects by Stable ID only.
-- [ ] Invalid source files fail with diagnostics before mutation.
-- [ ] Each mutation tool call is atomic and rolls back invalid results.
-- [ ] Mutated sources validate before the tool reports success.
-- [ ] YAML rewrites use canonical key order.
-- [ ] Array order is preserved unless the mutation changes it.
-- [ ] Top-level node, edge, and group insertion supports optional `beforeId`
+- [x] Mutation targets existing objects by Stable ID only.
+- [x] Invalid source files fail with diagnostics before mutation.
+- [x] Each mutation tool call is atomic and rolls back invalid results.
+- [x] Mutated sources validate before the tool reports success.
+- [x] YAML rewrites use canonical key order.
+- [x] Array order is preserved unless the mutation changes it.
+- [x] Top-level node, edge, and group insertion supports optional `beforeId`
       and `afterId`.
-- [ ] `contains` positioning is not added.
-- [ ] Comment preservation is not promised.
-- [ ] The tool returns structured before/after summaries and written paths, not
+- [x] `contains` positioning is not added.
+- [x] Comment preservation is not promised.
+- [x] The tool returns structured before/after summaries and written paths, not
       a full diff.
-- [ ] Tests cover each supported operation family, Stable ID targeting,
+- [x] Tests cover each supported operation family, Stable ID targeting,
       invalid sources, validation rollback, canonical key order, array order,
       insertion positioning, no raw YAML replacement, no `contains`
       positioning, and structured responses.
@@ -73,9 +73,39 @@ placement for top-level nodes, edges, and groups.
 - Added shared topology-line formatting and test assertion helpers to close the 10 recorded Fallow duplicate backlog items.
 - Refreshed the duplicate baseline for remaining legacy duplicate groups surfaced after changed-file fingerprints moved; no new Fallow health or dead-code findings remain.
 
+## Acceptance criteria status
+
+- Structured Diagram Operations for Source Mutation: checked in
+  `packages/mcp/src/registry.ts`, `packages/mcp/src/runtime.ts`,
+  `packages/mcp/src/server.ts`, and `packages/mcp/src/source-mutation-tools.ts`.
+- No raw YAML replacement public write path: checked by
+  `test/mcp-source-mutation.test.mjs` rejecting `replace_yaml` without writes.
+- Fine-grained node, edge, group, top-level field, top-level metadata, and
+  object metadata mutations: checked by the mutation handler registry and
+  operation-family tests in `test/mcp-source-mutation.test.mjs`.
+- Stable ID-only mutation targets: checked by node, edge, group, and object
+  metadata mutation tests, plus unknown Stable ID errors in
+  `packages/mcp/src/source-mutation-tools.ts`.
+- Invalid source diagnostics before mutation: checked by parse-failure and
+  non-YAML source tests that preserve the original file.
+- Atomic validation rollback before write/success: checked by invalid mutation
+  tests asserting `writtenPaths: []` and unchanged source content.
+- Canonical YAML rewrites and array order preservation except requested
+  placement changes: checked by expected-file assertions after title, metadata,
+  node, edge, group, and object metadata mutations.
+- Optional `beforeId` and `afterId` insertion for top-level nodes, edges, and
+  groups: checked by node, edge, and group insertion tests.
+- No `contains` positioning support: checked by the `position_contains`
+  rejection test with no writes.
+- Comment preservation is not promised: checked against the public mutation
+  contract; no comment-preservation behavior is exposed.
+- Structured responses include summaries and written paths without full diffs:
+  checked by `structuredContent` assertions for success and failure paths.
+- Test coverage was re-run with `npm test`; 247 tests passed.
+
 ## Validation results
 
-- `npm test` passed.
+- `npm test` passed after acceptance-criteria review.
 - `node packages/cli/dist/index.js mcp --help` passed.
 - `git diff --check` passed.
 - `npm run audit:fallow` passed.

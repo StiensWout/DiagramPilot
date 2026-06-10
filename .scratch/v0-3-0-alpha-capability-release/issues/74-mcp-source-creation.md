@@ -1,5 +1,5 @@
 Status: completed
-Issue Version: 0.2.11
+Issue Version: 0.2.13
 
 # MCP Source Creation
 
@@ -23,19 +23,19 @@ tool reports success.
 
 ## Acceptance criteria
 
-- [ ] MCP exposes a Source Creation tool that accepts structured diagram input.
-- [ ] Source Creation writes YAML DiagramPilot Source Files only.
-- [ ] Source Creation requires caller-provided Stable IDs for created objects.
-- [ ] Source Creation rejects missing, duplicate, or invalid Stable IDs with
+- [x] MCP exposes a Source Creation tool that accepts structured diagram input.
+- [x] Source Creation writes YAML DiagramPilot Source Files only.
+- [x] Source Creation requires caller-provided Stable IDs for created objects.
+- [x] Source Creation rejects missing, duplicate, or invalid Stable IDs with
       repairable diagnostics.
-- [ ] A read-only Stable ID suggestion helper proposes valid IDs without
+- [x] A read-only Stable ID suggestion helper proposes valid IDs without
       writing files.
-- [ ] Created YAML uses canonical key order.
-- [ ] Created sources validate before the tool reports success.
-- [ ] Invalid structured input fails without writing files.
-- [ ] The tool returns a structured before/after summary and written paths, not
+- [x] Created YAML uses canonical key order.
+- [x] Created sources validate before the tool reports success.
+- [x] Invalid structured input fails without writing files.
+- [x] The tool returns a structured before/after summary and written paths, not
       a full diff.
-- [ ] Tests cover successful creation, required Stable IDs, invalid IDs,
+- [x] Tests cover successful creation, required Stable IDs, invalid IDs,
       duplicates, suggestion helper behavior, YAML-only output, canonical key
       order, validation-before-success, invalid input rollback, and structured
       tool responses.
@@ -50,6 +50,9 @@ tool reports success.
 ```bash
 npm test
 node packages/cli/dist/index.js mcp --help
+npm run sync:issue-release-version -- --issue .scratch/v0-3-0-alpha-capability-release/issues/74-mcp-source-creation.md
+npm run check:issue-release-version
+node scripts/check-release-version.mjs
 git diff --check
 npm run audit:fallow
 npm run audit:fallow:changed
@@ -65,6 +68,9 @@ npm run audit:fallow:changed
   with written paths instead of full source text.
 - Missing, invalid, and duplicate caller-provided Stable IDs fail before write.
 - Updated MCP registry, stdio schemas, launch snapshots, and public MCP docs.
+- PR #81 merged the implementation into `main` on 2026-06-09.
+- Follow-up closeout assigns issue 74 to release version `0.2.13` and syncs
+  shared release metadata.
 
 ## Acceptance criteria status
 
@@ -75,15 +81,22 @@ npm run audit:fallow:changed
 - Read-only Stable ID suggestions: done.
 - Canonical YAML key order and validation-before-success behavior: done.
 - Structured responses include summaries and paths without full diffs: done.
+- Post-merge issue status and release metadata reflect the actual merged state:
+  done.
 
 ## Validation results
 
 ```bash
 npm test
 node packages/cli/dist/index.js mcp --help
+npm run sync:issue-release-version -- --issue .scratch/v0-3-0-alpha-capability-release/issues/74-mcp-source-creation.md
+npm run check:issue-release-version
+node scripts/check-release-version.mjs
 git diff --check
 npm run audit:fallow
 npm run audit:fallow:changed
 ```
 
-All commands passed.
+All commands passed in the follow-up closeout. `npm run sync:issue-release-version`
+updated shared release metadata to `0.2.13` and refreshed version-sensitive
+artifacts.
