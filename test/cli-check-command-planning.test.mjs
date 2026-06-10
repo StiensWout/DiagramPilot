@@ -3,6 +3,8 @@ import test from "node:test";
 
 import { planCommand } from "../packages/cli/dist/index.js";
 import {
+  assertJsonFailurePlan,
+  assertStderrFailurePlan,
   createPlanningDependencies,
   freshWorkflowSource,
   invalidWorkflowSource,
@@ -170,25 +172,12 @@ test("plans check text failures with concise repair commands for invalid, missin
     }),
   );
 
-  assert.equal(plan.exitCode, 1);
-  assert.equal(plan.stdout, "");
-  assert.deepEqual(plan.writes, []);
-  assert.match(
-    plan.stderr,
+  assertStderrFailurePlan(plan, [
     /^Checked 4 DiagramPilot Source Files\. Found 3 workflow issues\.\n/m,
-  );
-  assert.match(
-    plan.stderr,
     /Invalid source: docs\/invalid\.dp\.yaml\. Run `diagrampilot validate docs\/invalid\.dp\.yaml`\./,
-  );
-  assert.match(
-    plan.stderr,
     /Missing SVG artifact: docs\/missing\.svg for docs\/missing\.dp\.yaml\. Run `diagrampilot render docs\/missing\.dp\.yaml --out docs\/missing\.svg`\./,
-  );
-  assert.match(
-    plan.stderr,
     /Stale SVG artifact: docs\/stale\.svg for docs\/stale\.dp\.yaml \(source-sha256-mismatch, renderer-version-mismatch\)\. Run `diagrampilot render docs\/stale\.dp\.yaml --out docs\/stale\.svg`\./,
-  );
+  ]);
   assert.doesNotMatch(plan.stderr, /DiagramSpec validation error/);
   assert.doesNotMatch(plan.stderr, /Bad value:/);
   assert.doesNotMatch(plan.stderr, /old-hash|new-hash|0\.1\.32/);
@@ -218,11 +207,7 @@ test("plans check json as an aggregate result including fresh and stale sources"
     }),
   );
 
-  assert.equal(plan.exitCode, 1);
-  assert.equal(plan.stderr, "");
-  assert.deepEqual(plan.writes, []);
-
-  const result = JSON.parse(plan.stdout);
+  const result = assertJsonFailurePlan(plan);
 
   assert.equal(result.ok, false);
   assert.deepEqual(result.scope, { kind: "directory", path: "/repo" });

@@ -115,6 +115,7 @@ test("MCP registry exposes the public resource tool and prompt names", async () 
       "diagrampilot_export_source",
       "diagrampilot_render_source",
       "diagrampilot_create_source",
+      "diagrampilot_mutate_source",
       "diagrampilot_generate_repo_outputs",
     ],
   );

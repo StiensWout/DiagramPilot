@@ -1,6 +1,6 @@
 import {
   createDiagramSpecTopology,
-  walkDiagramSpecTopology,
+  formatDiagramSpecTopologyLines,
 } from "@diagrampilot/core";
 import type {
   DiagramSpec,
@@ -56,28 +56,29 @@ function edgeDefinition(edge: DiagramSpecEdge): string {
   return `${edge.from} ${connector}|${escapeMermaidEdgeLabel(edge.label)}| ${edge.to}`;
 }
 
+function mermaidNodeLine(node: DiagramSpecNode, depth: number): string {
+  return `${indent(depth)}${nodeDefinition(node)}`;
+}
+
+function mermaidGroupStart(group: DiagramSpecGroup, depth: number): string[] {
+  return [`${indent(depth)}${groupDefinition(group)}`];
+}
+
+function mermaidGroupEnd(_group: DiagramSpecGroup, depth: number): string {
+  return `${indent(depth)}end`;
+}
+
 export function exportDiagramSpecToMermaid(spec: DiagramSpec): string {
   const lines = [`flowchart ${mermaidDirection(spec.direction)}`];
   const topology = createDiagramSpecTopology(spec);
-
-  function emitNode(node: DiagramSpecNode, depth: number): void {
-    lines.push(`${indent(depth)}${nodeDefinition(node)}`);
-  }
-
-  function enterGroup(group: DiagramSpecGroup, depth: number): void {
-    lines.push(`${indent(depth)}${groupDefinition(group)}`);
-  }
-
-  function exitGroup(_group: DiagramSpecGroup, depth: number): void {
-    lines.push(`${indent(depth)}end`);
-  }
-
-  walkDiagramSpecTopology(topology, {
-    rootDepth: 1,
-    node: emitNode,
-    enterGroup,
-    exitGroup,
-  });
+  lines.push(
+    ...formatDiagramSpecTopologyLines(topology, {
+      rootDepth: 1,
+      node: mermaidNodeLine,
+      enterGroup: mermaidGroupStart,
+      exitGroup: mermaidGroupEnd,
+    }),
+  );
 
   for (const edge of spec.edges ?? []) {
     lines.push(`${indent(1)}${edgeDefinition(edge)}`);

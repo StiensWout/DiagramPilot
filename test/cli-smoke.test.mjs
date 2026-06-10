@@ -12,6 +12,8 @@ import test from "node:test";
 import { getDiagramPilotVersion } from "../packages/core/dist/index.js";
 import {
   assertCliSuccess,
+  assertCliFailure,
+  assertCliSucceeded,
   occurrenceCount,
   runBuiltCli,
   runDiagramPilot,
@@ -22,19 +24,16 @@ import {
 test("diagrampilot executable starts and reports its version", async () => {
   const result = await runDiagramPilot(["--version"]);
 
-  assert.equal(result.signal, null);
-  assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stderr, "");
-  assert.equal(result.stdout, `diagrampilot ${getDiagramPilotVersion()}\n`);
+  assertCliSuccess(result, {
+    stdout: `diagrampilot ${getDiagramPilotVersion()}\n`,
+  });
 });
 
 test("diagrampilot init does not install local agent docs by default", async () => {
   await withTempRepo(async (tempRoot) => {
     const result = await runBuiltCli(["init"], tempRoot);
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
+    assertCliSucceeded(result);
     assert.match(result.stdout, /Local agent docs were not installed/);
     assert.match(result.stdout, /Run `diagrampilot init --docs`/);
     assert.deepEqual(await readdir(tempRoot), []);
@@ -45,9 +44,7 @@ test("diagrampilot init --docs creates adoption support files without generating
   await withTempRepo(async (tempRoot) => {
     const result = await runBuiltCli(["init", "--docs"], tempRoot);
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
+    assertCliSucceeded(result);
     assert.match(result.stdout, /Created llms\.txt/);
     assert.match(result.stdout, /Created docs\/diagrampilot\.md/);
 
@@ -91,9 +88,7 @@ test("diagrampilot init --config creates a minimal Repo Workflow Configuration",
   await withTempRepo(async (tempRoot) => {
     const result = await runBuiltCli(["init", "--config"], tempRoot);
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
+    assertCliSucceeded(result);
     assert.match(result.stdout, /Created diagrampilot\.config\.yaml/);
 
     const configText = await readFile(
@@ -114,12 +109,13 @@ test("diagrampilot init --config fails repairably when config already exists", a
 
     const result = await runBuiltCli(["init", "--config"], tempRoot);
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 1);
-    assert.equal(result.stdout, "");
-    assert.match(result.stderr, /Repo Workflow Configuration already exists/);
-    assert.match(result.stderr, /diagrampilot\.config\.yaml/);
-    assert.match(result.stderr, /Suggestion:/);
+    assertCliFailure(result, {
+      stderrPatterns: [
+        /Repo Workflow Configuration already exists/,
+        /diagrampilot\.config\.yaml/,
+        /Suggestion:/,
+      ],
+    });
     assert.equal(
       await readFile(configPath, "utf8"),
       "version: 1\nsources:\n  ignore: []\n",
@@ -166,11 +162,12 @@ test("diagrampilot init rejects unknown options without writing support files", 
   await withTempRepo(async (tempRoot) => {
     const result = await runBuiltCli(["init", "--doc"], tempRoot);
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 1);
-    assert.equal(result.stdout, "");
-    assert.match(result.stderr, /Unknown init option: --doc/);
-    assert.match(result.stderr, /Usage: diagrampilot init \[--docs\]/);
+    assertCliFailure(result, {
+      stderrPatterns: [
+        /Unknown init option: --doc/,
+        /Usage: diagrampilot init \[--docs\]/,
+      ],
+    });
     assert.deepEqual(await readdir(tempRoot), []);
   });
 });
@@ -254,15 +251,13 @@ test("diagrampilot validate rejects a legacy JSON source with a YAML repair hint
       tempRoot,
     );
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 1);
-    assert.equal(result.stdout, "");
-    assert.match(
-      result.stderr,
-      /Unsupported DiagramPilot source file: docs\/architecture\.dp\.json/,
-    );
-    assert.match(result.stderr, /YAML is the supported source format/);
-    assert.match(result.stderr, /\*\.dp\.yaml/);
+    assertCliFailure(result, {
+      stderrPatterns: [
+        /Unsupported DiagramPilot source file: docs\/architecture\.dp\.json/,
+        /YAML is the supported source format/,
+        /\*\.dp\.yaml/,
+      ],
+    });
   });
 });
 
@@ -339,9 +334,7 @@ test("diagrampilot export prints DOT for a valid DiagramSpec", async () => {
       tempRoot,
     );
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
+    assertCliSucceeded(result);
     assert.match(result.stdout, /^digraph "Checkout Architecture"/);
     assert.match(result.stdout, /subgraph "cluster_frontend"/);
     assert.match(result.stdout, /"web_app" -> "api_gateway" \[dir=none\];/);

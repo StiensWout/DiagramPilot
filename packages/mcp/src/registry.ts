@@ -153,6 +153,26 @@ export const DIAGRAMPILOT_MCP_TOOLS: readonly DiagramPilotMcpTool[] = [
     annotations: writeToolAnnotations,
   },
   {
+    name: "diagrampilot_mutate_source",
+    title: "Mutate DiagramPilot Source",
+    description:
+      "Apply one structured operation to an existing *.dp.yaml DiagramPilot Source File.",
+    arguments: [
+      {
+        name: "source_path",
+        description: "Local path to mutate as a *.dp.yaml DiagramPilot Source File.",
+        required: true,
+      },
+      {
+        name: "operation",
+        description:
+          "Structured source mutation operation, such as set_title.",
+        required: true,
+      },
+    ],
+    annotations: writeToolAnnotations,
+  },
+  {
     name: "diagrampilot_generate_repo_outputs",
     title: "Generate DiagramPilot Repo Outputs",
     description:

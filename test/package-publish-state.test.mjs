@@ -12,6 +12,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import { assertCliSuccess } from "./cli-smoke-helpers.mjs";
 import { runProcess } from "./process-helpers.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -59,13 +60,10 @@ process.exit(1);
   await withFakeNpm(fakeNpm, async ({ env }) => {
     const result = await runPublishStateCheck(["--expect", "available"], env);
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
-    assert.equal(
-      result.stdout,
-      "DiagramPilot npm publish-state check passed: 8 package names are available on npm.\n",
-    );
+    assertCliSuccess(result, {
+      stdout:
+        "DiagramPilot npm publish-state check passed: 8 package names are available on npm.\n",
+    });
   });
 });
 
@@ -80,13 +78,9 @@ process.stdout.write(JSON.stringify({ prealpha: "${workspaceManifest.version}" }
   await withFakeNpm(fakeNpm, async ({ env }) => {
     const result = await runPublishStateCheck(["--expect", "prealpha"], env);
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
-    assert.equal(
-      result.stdout,
-      `DiagramPilot npm publish-state check passed: 8 packages publish ${workspaceManifest.version} under prealpha and latest is not moved.\n`,
-    );
+    assertCliSuccess(result, {
+      stdout: `DiagramPilot npm publish-state check passed: 8 packages publish ${workspaceManifest.version} under prealpha and latest is not moved.\n`,
+    });
   });
 });
 
@@ -101,12 +95,8 @@ process.stdout.write(JSON.stringify({ latest: "${workspaceManifest.version}" }) 
   await withFakeNpm(fakeNpm, async ({ env }) => {
     const result = await runPublishStateCheck(["--expect", "latest"], env);
 
-    assert.equal(result.signal, null);
-    assert.equal(result.code, 0, result.stderr);
-    assert.equal(result.stderr, "");
-    assert.equal(
-      result.stdout,
-      `DiagramPilot npm publish-state check passed: 8 packages publish ${workspaceManifest.version} under latest.\n`,
-    );
+    assertCliSuccess(result, {
+      stdout: `DiagramPilot npm publish-state check passed: 8 packages publish ${workspaceManifest.version} under latest.\n`,
+    });
   });
 });

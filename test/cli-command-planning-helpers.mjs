@@ -1,3 +1,5 @@
+import assert from "node:assert/strict";
+
 export function validLoadResult(sourcePath = "docs/architecture.dp.yaml") {
   return {
     ok: true,
@@ -17,6 +19,22 @@ export function validLoadResult(sourcePath = "docs/architecture.dp.yaml") {
       nodes: [{ id: "web_app", label: "Web App" }],
     },
   };
+}
+
+export function assertJsonFailurePlan(plan) {
+  assert.equal(plan.exitCode, 1);
+  assert.equal(plan.stderr, "");
+  assert.deepEqual(plan.writes, []);
+  return JSON.parse(plan.stdout);
+}
+
+export function assertStderrFailurePlan(plan, stderrPatterns = []) {
+  assert.equal(plan.exitCode, 1);
+  assert.equal(plan.stdout, "");
+  assert.deepEqual(plan.writes, []);
+  for (const pattern of stderrPatterns) {
+    assert.match(plan.stderr, pattern);
+  }
 }
 
 export function readFailure(path = "docs/missing.dp.yaml") {

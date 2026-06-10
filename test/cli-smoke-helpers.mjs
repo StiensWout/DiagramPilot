@@ -15,7 +15,7 @@ import {
   sanitizedTestEnv,
 } from "./process-helpers.mjs";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+export const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cliEntryPoint = path.join(repoRoot, "packages", "cli", "dist", "index.js");
 
 export function runDiagramPilot(args) {
@@ -36,11 +36,27 @@ export function runBuiltCli(args, cwd = repoRoot) {
   });
 }
 
-export function assertCliSuccess(result, { stdout = "", stderr = "" } = {}) {
+export function assertCliSucceeded(result, { stderr = "" } = {}) {
   assert.equal(result.signal, null);
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(result.stdout, stdout);
   assert.equal(result.stderr, stderr);
+}
+
+export function assertCliSuccess(result, { stdout = "", stderr = "" } = {}) {
+  assertCliSucceeded(result, { stderr });
+  assert.equal(result.stdout, stdout);
+}
+
+export function assertCliFailure(
+  result,
+  { code = 1, stdout = "", stderrPatterns = [] } = {},
+) {
+  assert.equal(result.signal, null);
+  assert.equal(result.code, code);
+  assert.equal(result.stdout, stdout);
+  for (const pattern of stderrPatterns) {
+    assert.match(result.stderr, pattern);
+  }
 }
 
 export function assertFreshCheckOutput(result) {

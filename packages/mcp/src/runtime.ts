@@ -25,6 +25,7 @@ import {
 } from "@diagrampilot/render-svg";
 
 import { getDiagramPilotMcpPrompt } from "./prompts.js";
+import { mutateSourceTool } from "./source-mutation-tools.js";
 import { createSourceTool, suggestStableIdsTool } from "./source-tools.js";
 import {
   stringArgument,
@@ -442,6 +443,7 @@ const toolHandlers: Record<string, ToolHandler> = {
   diagrampilot_export_source: exportSourceTool,
   diagrampilot_render_source: renderSourceTool,
   diagrampilot_create_source: createSourceTool,
+  diagrampilot_mutate_source: mutateSourceTool,
   diagrampilot_generate_repo_outputs: generateRepoOutputsTool,
 };
 

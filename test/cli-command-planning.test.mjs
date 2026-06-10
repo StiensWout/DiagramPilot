@@ -3,6 +3,8 @@ import test from "node:test";
 
 import { planCommand } from "../packages/cli/dist/index.js";
 import {
+  assertJsonFailurePlan,
+  assertStderrFailurePlan,
   createPlanningDependencies,
   parseFailure,
   readFailure,
@@ -44,11 +46,7 @@ test("plans validate read failures as structured JSON on stdout", async () => {
     }),
   );
 
-  assert.equal(plan.exitCode, 1);
-  assert.equal(plan.stderr, "");
-  assert.deepEqual(plan.writes, []);
-
-  const result = JSON.parse(plan.stdout);
+  const result = assertJsonFailurePlan(plan);
 
   assert.equal(result.file, "docs/missing.dp.yaml");
   assert.equal(result.ok, false);
@@ -85,15 +83,11 @@ test("plans validate semantic failures as repairable stderr diagnostics", async 
     }),
   );
 
-  assert.equal(plan.exitCode, 1);
-  assert.equal(plan.stdout, "");
-  assert.deepEqual(plan.writes, []);
-  assert.match(
-    plan.stderr,
+  assertStderrFailurePlan(plan, [
     /DiagramSpec validation error in docs\/invalid\.dp\.yaml: Missing required top-level field: title\./,
-  );
-  assert.match(plan.stderr, /Path: title/);
-  assert.match(plan.stderr, /Suggestion: Add a title field\./);
+    /Path: title/,
+    /Suggestion: Add a title field\./,
+  ]);
 });
 
 test("plans export Mermaid success as stdout with no file writes", async () => {
@@ -213,10 +207,9 @@ test("plans export validation failures without stdout or file writes", async () 
     }),
   );
 
-  assert.equal(plan.exitCode, 1);
-  assert.equal(plan.stdout, "");
-  assert.deepEqual(plan.writes, []);
-  assert.match(plan.stderr, /DiagramSpec validation error in docs\/invalid/);
+  assertStderrFailurePlan(plan, [
+    /DiagramSpec validation error in docs\/invalid/,
+  ]);
 });
 
 test("plans render success as an SVG file write", async () => {
@@ -369,10 +362,9 @@ test("plans render validation failures without an SVG write", async () => {
     }),
   );
 
-  assert.equal(plan.exitCode, 1);
-  assert.equal(plan.stdout, "");
-  assert.deepEqual(plan.writes, []);
-  assert.match(plan.stderr, /DiagramSpec validation error in docs\/invalid/);
+  assertStderrFailurePlan(plan, [
+    /DiagramSpec validation error in docs\/invalid/,
+  ]);
 });
 
 test("plans render PNG validation failures before render adapter side effects", async () => {
@@ -396,10 +388,9 @@ test("plans render PNG validation failures before render adapter side effects", 
     }),
   );
 
-  assert.equal(plan.exitCode, 1);
-  assert.equal(plan.stdout, "");
-  assert.deepEqual(plan.writes, []);
-  assert.match(plan.stderr, /DiagramSpec validation error in docs\/invalid/);
+  assertStderrFailurePlan(plan, [
+    /DiagramSpec validation error in docs\/invalid/,
+  ]);
 });
 
 test("plans render adapter failures as stderr without file writes", async () => {
