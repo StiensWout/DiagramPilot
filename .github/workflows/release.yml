@@ -245,8 +245,9 @@ jobs:
           if git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG" > "$RUNNER_TEMP/release-tag.txt"; then
             remote_tag_sha="$(cut -f1 "$RUNNER_TEMP/release-tag.txt")"
             if [ "$remote_tag_sha" != "$GITHUB_SHA" ]; then
-              echo "Remote tag $RELEASE_TAG points at $remote_tag_sha, expected $GITHUB_SHA." >&2
-              exit 1
+              echo "Remote tag $RELEASE_TAG points at $remote_tag_sha; reusing existing release tag."
+            else
+              echo "Remote tag $RELEASE_TAG already points at $GITHUB_SHA."
             fi
           else
             git tag "$RELEASE_TAG" "$GITHUB_SHA"
@@ -330,4 +331,4 @@ jobs:
             --tag "$RELEASE_TAG"
 
       - name: Publish reviewed GitHub Release draft
-        run: gh release edit "$RELEASE_TAG" --draft=false --verify-tag --latest --target "$GITHUB_SHA"
+        run: gh release edit "$RELEASE_TAG" --draft=false --verify-tag --latest
