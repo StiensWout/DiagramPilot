@@ -269,7 +269,8 @@ test("canonical public install and removal guidance is complete and linked", asy
       "npx diagrampilot check",
       "npm install --save-dev diagrampilot",
       "npm install --global diagrampilot",
-      "DiagramPilot `0.2.0` is the first Public Alpha Release.",
+      "DiagramPilot v0.3.0 Alpha Capability Release is the current release-aligned public shape.",
+      "0.2 -> 0.3 Upgrade Guide",
       "npm `latest` release",
       "pnpm dlx diagrampilot check",
       "pnpm add -D diagrampilot",
@@ -356,4 +357,61 @@ test("maintainer docs cover MCP package readiness and smoke validation", async (
   );
   assert.match(contract, /diagrampilot mcp/);
   assert.match(contract, /https:\/\/diagrampilot\.com\/docs\/agents\/mcp\.md/);
+});
+
+test("release-aligned docs expose the v0.3.0 upgrade and package contract", async () => {
+  const readme = await readRepoFile("README.md");
+  const publicDocsIndex = await readRepoFile("docs-public/index.md");
+  const installationGuide = await readRepoFile("docs-public/agents/installation.md");
+  const cliReadme = await readRepoFile("packages/cli/README.md");
+  const mcpReadme = await readRepoFile("packages/mcp/README.md");
+  const contract = await readContract();
+
+  for (const [label, source] of [
+    ["README.md", readme],
+    ["docs-public/index.md", publicDocsIndex],
+    ["docs-public/agents/installation.md", installationGuide],
+  ]) {
+    assertMatchesAll(
+      source,
+      [
+        /v0\.3\.0 Alpha Capability Release/,
+        /0\.2\s*->\s*0\.3 upgrade/i,
+        /YAML-only/i,
+        /DOT/i,
+        /PNG/i,
+        /Repo Workflow Configuration/i,
+        /diagrampilot generate/i,
+        /Markdown embed/i,
+        /MCP/i,
+      ],
+      label,
+    );
+  }
+
+  assertMatchesAll(
+    cliReadme,
+    [/diagrampilot generate/i, /--format dot/i, /--format png/i, /MCP/i],
+    "packages/cli/README.md",
+  );
+  assertMatchesAll(
+    mcpReadme,
+    [
+      /v0\.3\.0 Alpha Capability Release/,
+      /Source Creation/i,
+      /Source Mutation/i,
+      /Stable IDs/i,
+      /Structured Diagram Operations/i,
+    ],
+    "packages/mcp/README.md",
+  );
+  assertMatchesAll(
+    contract,
+    [
+      /v0\.3\.0 Alpha Capability Release/,
+      /package-local README/i,
+      /0\.2\s*->\s*0\.3 upgrade/i,
+    ],
+    "docs/development/documentation-contract.md",
+  );
 });

@@ -35,6 +35,7 @@ import {
 import {
   checkUsageText,
   exportUsageText,
+  generateUsageText,
   jsonTextLine,
   renderUsageText,
   textLine,
@@ -446,6 +447,34 @@ const commandHandlers: Readonly<Record<string, CommandHandler>> = {
   validate: planValidate,
 };
 
+const commandHelpText: Readonly<Record<string, () => string>> = {
+  check: checkUsageText,
+  export: exportUsageText,
+  generate: generateUsageText,
+  render: renderUsageText,
+};
+
+const commandHelpArgs = new Set(["--help", "-h"]);
+
+function isCommandHelpArgs(args: readonly string[]): boolean {
+  return args.length === 1 && commandHelpArgs.has(args[0]);
+}
+
+function commandHelpPlan(
+  command: string,
+  args: readonly string[],
+): CommandPlan | undefined {
+  if (!isCommandHelpArgs(args)) return undefined;
+  const usageText = commandHelpText[command];
+  if (usageText === undefined) return undefined;
+  return {
+    exitCode: 0,
+    stdout: textLine(usageText()),
+    stderr: "",
+    writes: [],
+  };
+}
+
 export async function planCommand(
   args: readonly string[],
   dependencies: CommandPlanningDependencies = defaultCommandPlanningDependencies,
@@ -460,7 +489,11 @@ export async function planCommand(
   const handler = commandHandlers[firstArg];
 
   if (handler !== undefined) {
-    return await handler(args.slice(1), dependencies);
+    const commandArgs = args.slice(1);
+    const helpPlan = commandHelpPlan(firstArg, commandArgs);
+    if (helpPlan !== undefined) return helpPlan;
+
+    return await handler(commandArgs, dependencies);
   }
 
   return unknownCommandPlan(firstArg);

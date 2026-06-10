@@ -1,33 +1,48 @@
 # Install And Remove DiagramPilot
 
 Use the package install path for repositories that consume DiagramPilot. Source
-checkout setup is contributor workflow, not the public installation path.
+checkout setup is a contributor workflow, not the public installation path.
 
 Package installation does not create `llms.txt`, `docs/diagrampilot.md`, or
 `diagrampilot.config.yaml`. Those files are not required to use DiagramPilot.
 Agents can read `https://diagrampilot.com/llms.txt`, the public docs,
-repository instructions, or other configured context providers instead.
+repository instructions, or configured context providers instead.
 
 Normal `diagrampilot init` does not create or update local agent docs or Repo
-Workflow Configuration.
-`diagrampilot init --docs` creates or updates the managed local agent docs in
-`llms.txt` and `docs/diagrampilot.md`.
-`diagrampilot init --config` creates a minimal `diagrampilot.config.yaml` and
-fails with repair guidance when the config already exists.
+Workflow Configuration. `diagrampilot init --docs` creates or updates the managed local agent docs in `llms.txt` and `docs/diagrampilot.md`.
+`diagrampilot init --config` creates a minimal `diagrampilot.config.yaml`.
 
 Use `diagrampilot init --docs` only when the repository intentionally wants
-managed local agent docs checked into the project.
-Use `diagrampilot init --config` only when the repository intentionally wants
-Repo Workflow Configuration checked into the project.
-
-Do not copy DiagramPilot public docs into a consuming repository as part of
-installation. Keep repository docs for project-owned guidance.
+managed local agent docs. Use `diagrampilot init --config` only when the repository intentionally wants Repo Workflow Configuration checked into the
+project. Do not copy DiagramPilot public docs into a consuming repository as part of installation. Keep repository docs for project-owned guidance.
 
 ## Release Status
 
-DiagramPilot `0.2.0` is the first Public Alpha Release. The install commands
-below use the current npm `latest` release unless a consuming repository pins a
-specific package version.
+DiagramPilot v0.3.0 Alpha Capability Release is the current release-aligned public shape.
+The install commands below use the current npm `latest` release
+unless a consuming repository pins a specific package version.
+
+## 0.2 -> 0.3 Upgrade Guide
+
+Existing v0.2 repositories should review these changes before updating:
+
+- DiagramPilot Source Files are YAML-only. Convert legacy `*.dp.json` source
+  files to `*.dp.yaml`; explicit JSON source inputs now return repairable
+  diagnostics. JSON remains valid for `--json` CLI output, the DiagramSpec JSON
+  Schema, SVG provenance metadata, package manifests, and other non-source
+  tooling surfaces.
+- DOT export is available with `diagrampilot export --format dot`.
+- PNG rendering is available with `diagrampilot render --format png --out
+  <artifact.png>` and rasterizes the SVG render path.
+- Repo Workflow Configuration is optional. Use `diagrampilot init --config`
+  only when the repository wants checked-in `diagrampilot.config.yaml` artifact
+  mappings and source ignore rules.
+- `diagrampilot generate [path]` rewrites configured Derived Artifacts and
+  generated Markdown embed files for explicit scopes.
+- Generated Markdown embed files are standalone generated files. DiagramPilot
+  does not edit arbitrary prose documents in place.
+- MCP is a shipped alpha integration. Use `diagrampilot mcp` or
+  `diagrampilot-mcp` for local MCP clients.
 
 ## One-Off Use
 
@@ -131,10 +146,10 @@ Example client configuration:
 ```
 
 The MCP server exposes read-only resources, Stable ID suggestions, validation,
-repo workflow check, export, render, and prompt helpers. Its write tools are
-explicit: source creation writes one `*.dp.yaml` file from structured input, and
-repo output generation refreshes configured Derived Artifacts for explicit
-scopes.
+repo workflow check, export, render, and prompt helpers. Source Creation writes
+one `*.dp.yaml` file from structured input, Source Mutation applies Structured
+Diagram Operations using Stable IDs, and repo output generation refreshes
+configured Derived Artifacts for explicit scopes.
 
 ## Package Removal
 

@@ -1,13 +1,19 @@
 # @diagrampilot/render-svg
 
-SVG rendering and PNG rasterization adapter for DiagramPilot.
+SVG rendering adapter for validated DiagramSpec data.
 
-This package renders validated DiagramSpec data to review-stable SVG through
-DiagramPilot's SVG rendering path, and rasterizes that SVG output to PNG for
-the CLI PNG render format. Most users should use
-`diagrampilot render <path> --out <path>` or
-`diagrampilot render <path> --format png --out <path>` through the CLI.
+Most users should call the CLI:
+
+```bash
+diagrampilot render <path> --out <artifact.svg>
+diagrampilot render <path> --format png --out <artifact.png>
+```
+
+SVG remains the default render format. PNG rendering is part of the v0.3.0
+Alpha Capability Release and rasterizes the SVG render path so SVG and PNG stay
+visually aligned.
 
 Public documentation:
 
 - https://diagrampilot.com/docs/agents/quickstart.md
+- https://diagrampilot.com/docs/agents/spec.md

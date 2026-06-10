@@ -22,8 +22,16 @@ architecture decisions, and development process. They are not Public
 Documentation and must not be published through website docs routes.
 
 `README.md` and `llms.txt` are public entrypoints. They should summarize and
-link the canonical Public Documentation instead of becoming alternate
-long-form sources.
+link the canonical Public Documentation instead of becoming alternate long-form
+sources. Package-local README files are also public package documentation for
+npm consumers. They must stay aligned with root and website documentation for
+the Public Package Set, including CLI, renderer, exporter, and MCP packages.
+
+For the v0.3.0 Alpha Capability Release, public and package docs must describe
+the release-aligned behavior: YAML-only DiagramPilot Source Files, DOT export,
+PNG rendering, optional Repo Workflow Configuration, `diagrampilot generate`,
+generated Markdown embed files, MCP as a shipped alpha integration, and concise
+0.2 -> 0.3 upgrade guidance.
 
 ## Website Consumer
 
@@ -85,6 +93,7 @@ diagrampilot init
 diagrampilot init --docs
 diagrampilot init --config
 diagrampilot check
+diagrampilot generate
 diagrampilot mcp
 diagrampilot check docs --json
 diagrampilot validate docs/architecture.dp.yaml

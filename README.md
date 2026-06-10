@@ -2,7 +2,7 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/brand/diagrampilot-logo-light.svg">
-  <img src="assets/brand/diagrampilot-logo.svg" alt="DiagramPilot wordmark">
+  <img src="assets/brand/diagrampilot-logo.svg" alt="DiagramPilot">
 </picture>
 
 DiagramPilot is a local-first, repo-native diagram compiler for AI coding
@@ -10,25 +10,27 @@ agents. It validates structured DiagramSpec source files, renders review-stable
 SVG or PNG artifacts, and exports Mermaid, D2, or DOT text from the same source
 of truth.
 
+The v0.3.0 Alpha Capability Release is the release-aligned public shape:
+DiagramPilot Source Files are YAML-only, DOT export and PNG rendering are
+available, Repo Workflow Configuration can define expected artifacts,
+`diagrampilot generate` refreshes configured Derived Artifacts and generated
+Markdown embed files, and MCP is a shipped alpha integration. Existing users
+should review the
+[0.2 -> 0.3 upgrade guide](https://diagrampilot.com/docs/agents/installation.md#02---03-upgrade-guide).
+
 Public documentation is hosted at `https://diagrampilot.com`.
 
 ## Try DiagramPilot
 
-Install, run, or remove the package with the canonical public guide:
+Install, run, or remove the package:
 
 - [Installation and removal guide](https://diagrampilot.com/docs/agents/installation.md)
 
-Start with the canonical Checkout Demo Project quickstart:
+Start with the Checkout Demo Project:
 
 - [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md)
 - Demo source file: `demo-projects/checkout/docs/architecture.dp.yaml`
 - Demo SVG artifact: `demo-projects/checkout/docs/architecture.svg`
-
-The examples below assume `diagrampilot` is available on `PATH`. For
-contributor source checkouts of this repository, run `npm install` and
-`npm run build`; from
-`demo-projects/checkout`, use `node ../../packages/cli/dist/index.js` in place
-of `diagrampilot` if the binary is not linked.
 
 Run the primary workflow from the repository root:
 
@@ -45,21 +47,19 @@ diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architectu
 
 Use `check` as the read-only repo review/CI command. Use `validate` when you
 need explicit source repair output. `render` requires `--out`, defaults to SVG,
-and supports `--format svg|png`; `export` prints to stdout by default and
-writes a file only when `--out` is provided.
+and supports `--format svg|png`; PNG rendering rasterizes the SVG render path.
+`export` prints to stdout by default and writes only when `--out` is provided.
 
-## Source Of Truth
+## Source And Artifacts
 
-DiagramSpec is the source model. A DiagramPilot source file stores DiagramSpec
-as YAML:
+DiagramPilot source files store DiagramSpec as YAML:
 
 - `*.dp.yaml`
 
 Agents should update DiagramPilot source files and regenerate outputs rather
 than hand-editing generated artifacts. Rendered SVG artifacts include
 deterministic provenance metadata with the source path, source SHA-256 hash,
-DiagramPilot version, and renderer version. PNG rendering rasterizes the SVG
-render output from the same local render path.
+DiagramPilot version, and renderer version.
 
 DiagramPilot no longer accepts `*.dp.json` as a source file format. Explicit
 legacy JSON source inputs fail with repair guidance that points to
@@ -67,33 +67,18 @@ legacy JSON source inputs fail with repair guidance that points to
 JSON Schema, SVG provenance metadata, package manifests, and other tooling
 surfaces.
 
-The DiagramSpec v1 JSON Schema is a helper for editors, code generators, and
-other tooling. Core validation remains authoritative for semantic rules.
-
-## Public Documentation
-
-- [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md)
-- [Installation and removal guide](https://diagrampilot.com/docs/agents/installation.md)
-- [MCP guide](https://diagrampilot.com/docs/agents/mcp.md)
-- [DiagramSpec guide](https://diagrampilot.com/docs/agents/spec.md)
-- [Error repair guide](https://diagrampilot.com/docs/agents/error-repair.md)
-- [Agent examples](https://diagrampilot.com/docs/agents/examples.md)
-- [Agent prompting guide](https://diagrampilot.com/docs/agents/prompting.md)
-- [DiagramSpec v1 JSON Schema](https://diagrampilot.com/schema/diagramspec-v1.schema.json)
-
 ## License And Brand
 
-DiagramPilot code and repository materials use the [MIT Code License](LICENSE).
-The DiagramPilot name, mark, wordmark, `diagrampilot.com` domain, and official
-release identity are covered separately by the
+DiagramPilot is available under the [MIT Code License](LICENSE).
+
+The DiagramPilot name, logo, and related brand assets are governed by the
 [Brand Use Policy](BRAND_USE_POLICY.md).
 
-Canonical DiagramPilot Brand Assets live in `assets/brand/`: the
-[DiagramPilot mark](assets/brand/diagrampilot-mark.svg) for icon-sized
-placements, the [DiagramPilot wordmark](assets/brand/diagrampilot-logo.svg) for
-light surfaces, and the
-[DiagramPilot light wordmark](assets/brand/diagrampilot-logo-light.svg) for
-dark surfaces.
+Canonical DiagramPilot Brand Assets live in `assets/brand/`:
+
+- [DiagramPilot mark](assets/brand/diagrampilot-mark.svg)
+- [DiagramPilot wordmark](assets/brand/diagrampilot-logo.svg)
+- [DiagramPilot light wordmark](assets/brand/diagrampilot-logo-light.svg)
 
 ## CLI Commands
 
@@ -102,6 +87,7 @@ diagrampilot init
 diagrampilot init --docs
 diagrampilot init --config
 diagrampilot check
+diagrampilot generate
 diagrampilot mcp
 diagrampilot check docs --json
 diagrampilot validate docs/architecture.dp.yaml
@@ -114,26 +100,40 @@ diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architectu
 ```
 
 `init` does not create local agent docs or Repo Workflow Configuration by
-default. Use `init --docs` only when the repository intentionally wants managed
-`llms.txt` and `docs/diagrampilot.md` guidance. Use `init --config` to create a
-minimal `diagrampilot.config.yaml`; rerunning it fails with repair guidance if
-the config already exists.
+default. Use `init --docs` only when the repository wants managed `llms.txt`
+and `docs/diagrampilot.md` guidance. Use `init --config` to create a minimal
+`diagrampilot.config.yaml`; rerunning it fails with repair guidance if the
+config already exists.
 
 `check` discovers DiagramPilot source files in the current directory, one
 explicit directory, or one explicit source file. It validates them and checks
 expected artifacts without writing files. Without config it checks
-next-to-source same-stem expected SVG artifacts through DiagramPilot provenance
-metadata. Optional `diagrampilot.config.yaml` is discovered upward from the
-command scope, validated before source processing, reported in `--json` output,
-and can use `sources.ignore` for source discovery plus `artifacts` mappings for
+next-to-source same-stem Expected SVG Artifacts through DiagramPilot provenance
+metadata.
+
+Optional `diagrampilot.config.yaml` is discovered upward from the command
+scope, validated before source processing, reported in `--json` output, and can
+use `sources.ignore` for source discovery plus `artifacts` mappings for
 configured SVG, PNG, Mermaid, D2, DOT, and Markdown expectations. Configured
 Mermaid, D2, and DOT use content freshness; configured PNG is presence-only in
-v0.3.0. Configured Markdown outputs are standalone generated embed files. They
-link to the other configured artifacts in the same mapping with paths relative
-to the embed file, and `check` marks an embed stale when its content or a
-referenced artifact is not fresh.
+v0.3.0.
+
+Configured Markdown outputs are standalone generated embed files. They link to
+configured artifacts in the same mapping with paths relative to the embed file,
+and `check` marks an embed stale when the embed or a referenced artifact is
+missing, unreadable, unchecked, or not fresh. `diagrampilot generate [path]`
+rewrites configured Derived Artifacts and generated Markdown embed files for an
+explicit scope.
 
 `mcp` launches the alpha Model Context Protocol stdio server for local MCP
 clients. It exposes read-only DiagramPilot resources, validation, repo check,
 export, render, and prompt helpers. See the
 [MCP guide](https://diagrampilot.com/docs/agents/mcp.md).
+
+## Public References
+
+- [Public documentation](https://diagrampilot.com/docs/index.md)
+- [Installation and removal guide](https://diagrampilot.com/docs/agents/installation.md)
+- [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md)
+- [MCP guide](https://diagrampilot.com/docs/agents/mcp.md)
+- [DiagramSpec v1 JSON Schema](https://diagrampilot.com/schema/diagramspec-v1.schema.json)
