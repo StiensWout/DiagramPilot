@@ -416,3 +416,39 @@ test("plans version output", async () => {
     writes: [],
   });
 });
+
+test("plans subcommand help output", async () => {
+  for (const [command, expectedUsage] of [
+    ["check", "Usage: diagrampilot check [path] [--json]\n"],
+    ["generate", "Usage: diagrampilot generate [path] [--json]\n"],
+    [
+      "render",
+      [
+        "Usage:",
+        "  diagrampilot render <path> --out <path>",
+        "  diagrampilot render <path> --format svg --out <path>",
+        "  diagrampilot render <path> --format png --out <path>",
+        "",
+      ].join("\n"),
+    ],
+    [
+      "export",
+      [
+        "Usage:",
+        "  diagrampilot export <path> --format mermaid [--out <path>]",
+        "  diagrampilot export <path> --format d2 [--out <path>]",
+        "  diagrampilot export <path> --format dot [--out <path>]",
+        "",
+      ].join("\n"),
+    ],
+  ]) {
+    const plan = await planCommand([command, "--help"], createPlanningDependencies());
+
+    assert.deepEqual(plan, {
+      exitCode: 0,
+      stdout: expectedUsage,
+      stderr: "",
+      writes: [],
+    });
+  }
+});

@@ -423,7 +423,7 @@ test("public surface describes shipped DiagramPilot behavior only", async () => 
 
     assert.doesNotMatch(
       source,
-      /planned|deferred|future|not implemented|source mutation/i,
+      /planned|deferred|future|not implemented/i,
       repoPath,
     );
   }

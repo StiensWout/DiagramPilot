@@ -1,10 +1,17 @@
 # @diagrampilot/export-dot
 
-DOT export adapter for DiagramPilot.
+DOT export adapter for validated DiagramSpec data.
 
-This package converts validated DiagramSpec data into DOT text. Most users
-should use `diagrampilot export <path> --format dot` through the CLI.
+Most users should call the CLI:
+
+```bash
+diagrampilot export <path> --format dot
+```
+
+DOT export is part of the v0.3.0 Alpha Capability Release. The CLI prints DOT
+text to stdout by default and writes only when `--out` is provided.
 
 Public documentation:
 
-- https://diagrampilot.com/docs/agents/examples.md
+- https://diagrampilot.com/docs/agents/quickstart.md
+- https://diagrampilot.com/docs/agents/spec.md

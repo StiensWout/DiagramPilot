@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: completed
 
 # v0.3.0 Alpha Capability Release
 
@@ -535,3 +535,9 @@ rg -n "v0.3.0 Alpha Capability Release|Repo Workflow Configuration|MCP Source Mu
 node --test --test-concurrency=1 test/docs-public-boundary.test.mjs
 git diff --check
 ```
+
+## Closeout
+
+Issue 79 completed the v0.3.0 Alpha Capability Release closeout by syncing
+release metadata to `0.3.0`, reworking release-facing documentation, validating
+the public package set, and running the full release gate.

@@ -8,8 +8,9 @@ active planning should focus on the next release train and the next PRD.
 
 ## Current Position
 
-DiagramPilot is closing the `0.2.0` Public Alpha Release. The implemented
-product surface is a local TypeScript workspace with these CLI workflows:
+DiagramPilot is closing the v0.3.0 Alpha Capability Release. The implemented
+release-aligned product surface is a local TypeScript workspace with these CLI
+workflows:
 
 - `diagrampilot init`
 - `diagrampilot check [path]`
@@ -48,8 +49,8 @@ The current implementation includes:
 
 ## Current Contract
 
-These behaviors are the `0.2.0` product contract unless a future PRD explicitly
-changes them:
+These behaviors are the v0.3.0 Alpha Capability Release product contract unless
+a future PRD explicitly changes them:
 
 - DiagramSpec remains the source of truth.
 - DiagramPilot Source Files are `*.dp.yaml`.

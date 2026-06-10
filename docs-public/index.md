@@ -8,6 +8,13 @@
 DiagramPilot Public Documentation is for developers and AI coding agents using
 DiagramPilot in their own repositories.
 
+The v0.3.0 Alpha Capability Release is the current release-aligned public
+shape: DiagramPilot Source Files are YAML-only, DOT export and PNG rendering are
+available, Repo Workflow Configuration can define expected artifacts,
+`diagrampilot generate` rewrites configured Derived Artifacts and generated
+Markdown embed files, and MCP is a shipped alpha integration. Existing users
+should read the [0.2 -> 0.3 upgrade guide](agents/installation.md#02---03-upgrade-guide).
+
 Start with the Checkout Demo Project quickstart:
 
 - [Checkout demo quickstart](agents/quickstart.md)
@@ -31,6 +38,7 @@ diagrampilot init
 diagrampilot init --docs
 diagrampilot init --config
 diagrampilot check
+diagrampilot generate
 diagrampilot mcp
 diagrampilot check docs --json
 diagrampilot validate docs/architecture.dp.yaml
