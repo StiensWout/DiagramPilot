@@ -3,25 +3,33 @@ import path from "node:path";
 
 import type { CliStreams, CommandPlan } from "./types.js";
 
+function writeStreamIfPresent(
+  stream: CliStreams["stdout"] | CliStreams["stderr"],
+  content: string,
+): void {
+  if (content !== "") {
+    stream.write(content);
+  }
+}
+
+function writeContentEncoding(content: string | Uint8Array): "utf8" | undefined {
+  return typeof content === "string" ? "utf8" : undefined;
+}
+
+function executeWriteIntent(write: CommandPlan["writes"][number]): void {
+  mkdirSync(path.dirname(write.path), { recursive: true });
+  writeFileSync(write.path, write.content, writeContentEncoding(write.content));
+}
+
 export function executeCommandPlan(
   plan: CommandPlan,
   streams: CliStreams,
 ): number {
-  if (plan.stdout !== "") {
-    streams.stdout.write(plan.stdout);
-  }
-
-  if (plan.stderr !== "") {
-    streams.stderr.write(plan.stderr);
-  }
+  writeStreamIfPresent(streams.stdout, plan.stdout);
+  writeStreamIfPresent(streams.stderr, plan.stderr);
 
   for (const write of plan.writes) {
-    mkdirSync(path.dirname(write.path), { recursive: true });
-    writeFileSync(
-      write.path,
-      write.content,
-      typeof write.content === "string" ? "utf8" : undefined,
-    );
+    executeWriteIntent(write);
   }
 
   return plan.exitCode;

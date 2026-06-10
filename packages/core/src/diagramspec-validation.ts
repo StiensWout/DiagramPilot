@@ -222,57 +222,91 @@ function parseIconReference(value: string): IconReference | undefined {
   };
 }
 
-function validateIconReferenceValue(
+function iconReferenceShapeError(
   path: string,
   value: unknown,
-  errors: DiagramSpecValidationError[],
-): void {
-  if (typeof value !== "string" || value.trim() !== value) {
-    errors.push({
-      path,
-      message: `${path} must be a namespaced icon reference.`,
-      badValue: value,
-      expected: iconReferenceExpected,
-      suggestion: `Use a supported icon reference such as ${LUCIDE_ICON_NAMESPACE}:database.`,
-    });
-    return;
-  }
+): DiagramSpecValidationError {
+  return {
+    path,
+    message: `${path} must be a namespaced icon reference.`,
+    badValue: value,
+    expected: iconReferenceExpected,
+    suggestion: `Use a supported icon reference such as ${LUCIDE_ICON_NAMESPACE}:database.`,
+  };
+}
 
-  const reference = parseIconReference(value);
+function unsupportedIconNamespaceError(
+  path: string,
+  value: string,
+  reference: IconReference,
+): DiagramSpecValidationError {
+  return {
+    path,
+    message: `${path} uses unsupported icon namespace "${reference.namespace}".`,
+    badValue: value,
+    expected: `Supported icon namespaces: ${LUCIDE_ICON_NAMESPACE}.`,
+    suggestion: `Use ${LUCIDE_ICON_NAMESPACE}:<icon-name> with a packaged Lucide icon, such as ${LUCIDE_ICON_NAMESPACE}:database.`,
+  };
+}
 
-  if (reference === undefined) {
-    errors.push({
-      path,
-      message: `${path} must be a namespaced icon reference.`,
-      badValue: value,
-      expected: iconReferenceExpected,
-      suggestion: `Use a supported icon reference such as ${LUCIDE_ICON_NAMESPACE}:database.`,
-    });
-    return;
-  }
-
-  if (reference.namespace !== LUCIDE_ICON_NAMESPACE) {
-    errors.push({
-      path,
-      message: `${path} uses unsupported icon namespace "${reference.namespace}".`,
-      badValue: value,
-      expected: `Supported icon namespaces: ${LUCIDE_ICON_NAMESPACE}.`,
-      suggestion: `Use ${LUCIDE_ICON_NAMESPACE}:<icon-name> with a packaged Lucide icon, such as ${LUCIDE_ICON_NAMESPACE}:database.`,
-    });
-    return;
-  }
-
-  if (isPackagedLucideIconName(reference.name)) {
-    return;
-  }
-
-  errors.push({
+function unknownLucideIconError(
+  path: string,
+  value: string,
+  reference: IconReference,
+): DiagramSpecValidationError {
+  return {
     path,
     message: `${path} references unknown Lucide icon "${reference.name}".`,
     badValue: value,
     expected: "Known Lucide icon name.",
     suggestion: `Choose a packaged Lucide icon, such as ${LUCIDE_ICON_NAMESPACE}:database.`,
-  });
+  };
+}
+
+function parseIconReferenceValue(
+  path: string,
+  value: unknown,
+): { ok: true; value: string; reference: IconReference } | {
+  ok: false;
+  error: DiagramSpecValidationError;
+} {
+  if (typeof value !== "string" || value.trim() !== value) {
+    return { ok: false, error: iconReferenceShapeError(path, value) };
+  }
+
+  const reference = parseIconReference(value);
+
+  if (reference === undefined) {
+    return { ok: false, error: iconReferenceShapeError(path, value) };
+  }
+
+  return { ok: true, value, reference };
+}
+
+function validateIconReferenceValue(
+  path: string,
+  value: unknown,
+  errors: DiagramSpecValidationError[],
+): void {
+  const result = parseIconReferenceValue(path, value);
+
+  if (!result.ok) {
+    errors.push(result.error);
+    return;
+  }
+
+  if (result.reference.namespace !== LUCIDE_ICON_NAMESPACE) {
+    errors.push(
+      unsupportedIconNamespaceError(path, result.value, result.reference),
+    );
+    return;
+  }
+
+  if (isPackagedLucideIconName(result.reference.name)) {
+    return;
+  }
+
+  errors.push(unknownLucideIconError(path, result.value, result.reference));
 }
 
 function validateDiagramObjectIcons(
@@ -376,7 +410,7 @@ function validateRequiredTopLevelFields(
   }
 }
 
-function validateTopLevelScalarValues(
+function validateNonEmptyNodes(
   value: Record<string, unknown>,
   errors: DiagramSpecValidationError[],
 ): void {
@@ -389,7 +423,12 @@ function validateTopLevelScalarValues(
       suggestion: "Add at least one node to nodes.",
     });
   }
+}
 
+function validateDirectionValue(
+  value: Record<string, unknown>,
+  errors: DiagramSpecValidationError[],
+): void {
   if ("direction" in value && !isAllowedDirection(value.direction)) {
     errors.push({
       path: "direction",
@@ -399,6 +438,14 @@ function validateTopLevelScalarValues(
       suggestion: "Change direction to right, left, down, or up.",
     });
   }
+}
+
+function validateTopLevelScalarValues(
+  value: Record<string, unknown>,
+  errors: DiagramSpecValidationError[],
+): void {
+  validateNonEmptyNodes(value, errors);
+  validateDirectionValue(value, errors);
 }
 
 function validateDiagramSpecObject(

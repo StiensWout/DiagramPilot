@@ -95,10 +95,12 @@ function artifactFormat(artifact: CheckArtifact): string {
   return "format" in artifact ? artifact.format : "svg";
 }
 
+const uppercaseArtifactFormats = new Set(["d2", "dot", "png", "svg"]);
+
 function artifactLabel(artifact: CheckArtifact): string {
   const format = artifactFormat(artifact);
 
-  if (format === "d2" || format === "dot" || format === "png" || format === "svg") {
+  if (uppercaseArtifactFormats.has(format)) {
     return format.toUpperCase();
   }
 

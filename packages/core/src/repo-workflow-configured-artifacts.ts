@@ -216,10 +216,7 @@ function mapNonFreshConfiguredSvgArtifactResult(
     };
   }
 
-  if (
-    artifact.status === "unreadable-artifact" ||
-    artifact.status === "malformed-artifact"
-  ) {
+  if (isMessageConfiguredSvgArtifactResult(artifact)) {
     return {
       format: "svg",
       status: artifact.status,
@@ -242,6 +239,18 @@ function mapNonFreshConfiguredSvgArtifactResult(
     status: artifact.status,
     path: displayPath,
   };
+}
+
+function isMessageConfiguredSvgArtifactResult(
+  artifact: Exclude<SvgArtifactFreshnessCheckResult, { status: "fresh" }>,
+): artifact is Extract<
+  SvgArtifactFreshnessCheckResult,
+  { status: "unreadable-artifact" | "malformed-artifact" }
+> {
+  return (
+    artifact.status === "unreadable-artifact" ||
+    artifact.status === "malformed-artifact"
+  );
 }
 
 function mapConfiguredSvgArtifactResult(

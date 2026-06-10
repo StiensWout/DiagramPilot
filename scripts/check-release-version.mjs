@@ -92,26 +92,29 @@ function collectLockfileRootIssues(lockfile, expectedVersion) {
 }
 
 function collectLockfilePackageRecordIssues(lockfilePackages, records, expectedVersion) {
-  const issues = [];
+  return records.flatMap((record) =>
+    collectLockfilePackageRecordIssue(
+      lockfilePackages[record.lockKey],
+      record,
+      expectedVersion,
+    ),
+  );
+}
 
-  for (const record of records) {
-    const lockPackage = lockfilePackages[record.lockKey];
+function collectLockfilePackageRecordIssue(lockPackage, record, expectedVersion) {
+  const displayKey = record.lockKey || "<root>";
 
-    if (lockPackage === undefined) {
-      issues.push(
-        `package-lock.json packages.${record.lockKey || "<root>"} is missing.`,
-      );
-      continue;
-    }
-
-    if (lockPackage.version !== expectedVersion) {
-      issues.push(
-        `package-lock.json packages.${record.lockKey || "<root>"}.version is ${lockPackage.version}; expected ${expectedVersion}.`,
-      );
-    }
+  if (lockPackage === undefined) {
+    return [`package-lock.json packages.${displayKey} is missing.`];
   }
 
-  return issues;
+  if (lockPackage.version !== expectedVersion) {
+    return [
+      `package-lock.json packages.${displayKey}.version is ${lockPackage.version}; expected ${expectedVersion}.`,
+    ];
+  }
+
+  return [];
 }
 
 function collectLockfileDependencyIssues(
@@ -119,28 +122,36 @@ function collectLockfileDependencyIssues(
   publicPackageNames,
   expectedVersion,
 ) {
-  const issues = [];
+  return Object.entries(lockfilePackages).flatMap(([lockKey, lockPackage]) =>
+    collectLockfilePackageDependencyIssues(
+      lockKey,
+      lockPackage,
+      publicPackageNames,
+      expectedVersion,
+    ),
+  );
+}
 
-  for (const [lockKey, lockPackage] of Object.entries(lockfilePackages)) {
-    for (const field of DEPENDENCY_FIELDS) {
-      const dependencies = lockPackage[field];
+function collectLockfilePackageDependencyIssues(
+  lockKey,
+  lockPackage,
+  publicPackageNames,
+  expectedVersion,
+) {
+  return DEPENDENCY_FIELDS.flatMap((field) => {
+    const dependencies = lockPackage[field];
 
-      if (dependencies === undefined) {
-        continue;
-      }
-
-      issues.push(
-        ...collectDependencyVersionIssues(
-          `package-lock.json packages.${lockKey || "<root>"}.${field}`,
-          dependencies,
-          publicPackageNames,
-          expectedVersion,
-        ),
-      );
+    if (dependencies === undefined) {
+      return [];
     }
-  }
 
-  return issues;
+    return collectDependencyVersionIssues(
+      `package-lock.json packages.${lockKey || "<root>"}.${field}`,
+      dependencies,
+      publicPackageNames,
+      expectedVersion,
+    );
+  });
 }
 
 function collectLockfileIssues(

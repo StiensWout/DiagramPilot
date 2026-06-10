@@ -41,10 +41,18 @@ function isOfficialRepository(env) {
 }
 
 function isForkPullRequest(event) {
-  const headRepo = event.pull_request?.head?.repo?.full_name;
-  const baseRepo = event.pull_request?.base?.repo?.full_name;
+  const headRepo = pullRequestRepoFullName(event, "head");
+  const baseRepo = pullRequestRepoFullName(event, "base");
 
-  return headRepo !== undefined && baseRepo !== undefined && headRepo !== baseRepo;
+  return hasComparablePullRequestRepos(headRepo, baseRepo) && headRepo !== baseRepo;
+}
+
+function pullRequestRepoFullName(event, side) {
+  return event.pull_request?.[side]?.repo?.full_name;
+}
+
+function hasComparablePullRequestRepos(headRepo, baseRepo) {
+  return headRepo !== undefined && baseRepo !== undefined;
 }
 
 function isPublishEnabled(env) {
@@ -155,17 +163,29 @@ function requirePlainBaseVersion() {
 
 function createPlanContext(env, event) {
   const baseVersion = requirePlainBaseVersion();
-  const ref = env.GITHUB_REF ?? event.ref ?? "";
+  const ref = githubRef(env, event);
 
   return {
     baseVersion,
     env,
     event,
-    eventName: env.GITHUB_EVENT_NAME ?? "",
+    eventName: githubEventName(env),
     ref,
-    refName: env.GITHUB_REF_NAME ?? ref.replace(/^refs\/(?:heads|tags)\//u, ""),
+    refName: githubRefName(env, ref),
     nightlyVersion: createNightlyVersion(baseVersion, env),
   };
+}
+
+function githubRef(env, event) {
+  return env.GITHUB_REF ?? event.ref ?? "";
+}
+
+function githubEventName(env) {
+  return env.GITHUB_EVENT_NAME ?? "";
+}
+
+function githubRefName(env, ref) {
+  return env.GITHUB_REF_NAME ?? ref.replace(/^refs\/(?:heads|tags)\//u, "");
 }
 
 function createPushEventPlan(context) {

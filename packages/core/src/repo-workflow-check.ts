@@ -14,7 +14,10 @@ import type {
   ConfiguredTextArtifactFormat,
   RepoWorkflowCheckConfiguredArtifactResult,
 } from "./repo-workflow-configured-artifact-result.js";
-import { loadRepoWorkflowSource } from "./repo-workflow-loaded-source.js";
+import {
+  loadRepoWorkflowSource,
+  type LoadedRepoWorkflowSource,
+} from "./repo-workflow-loaded-source.js";
 import {
   deriveDefaultArtifactDisplayPath,
   deriveRepoWorkflowConfigDisplayPath,
@@ -187,6 +190,13 @@ function mapArtifactResult(
     currentWorkingDirectory,
   );
 
+  return mapCheckedArtifactResult(artifact, artifactPath);
+}
+
+function mapCheckedArtifactResult(
+  artifact: Exclude<SvgArtifactFreshnessCheckResult, { status: "unchecked" }>,
+  artifactPath: string,
+): RepoWorkflowCheckSourceResult["artifact"] {
   if (artifact.status === "fresh") {
     return {
       status: "fresh",
@@ -205,10 +215,7 @@ function mapArtifactResult(
     };
   }
 
-  if (
-    artifact.status === "unreadable-artifact" ||
-    artifact.status === "malformed-artifact"
-  ) {
+  if (isMessageArtifactResult(artifact)) {
     return {
       status: artifact.status,
       path: artifactPath,
@@ -220,6 +227,18 @@ function mapArtifactResult(
     status: artifact.status,
     path: artifactPath,
   };
+}
+
+function isMessageArtifactResult(
+  artifact: Exclude<SvgArtifactFreshnessCheckResult, { status: "unchecked" }>,
+): artifact is Extract<
+  SvgArtifactFreshnessCheckResult,
+  { status: "unreadable-artifact" | "malformed-artifact" }
+> {
+  return (
+    artifact.status === "unreadable-artifact" ||
+    artifact.status === "malformed-artifact"
+  );
 }
 
 export async function checkDiagramPilotRepoWorkflowWithDependencies(
@@ -242,6 +261,19 @@ interface RepoWorkflowCheckContext {
   scope: DiagramPilotSourceDiscoveryScope;
   sources: readonly DiscoveredDiagramPilotSourceFile[];
 }
+
+interface RepoWorkflowSourceCheckOptions {
+  source: RepoWorkflowCheckContext["sources"][number];
+  checkOptions: RepoWorkflowCheckOptions;
+  dependencies: RepoWorkflowCheckDependencies;
+  context: RepoWorkflowCheckContext;
+}
+
+type ConfiguredOutputsForSource = ReturnType<typeof configuredOutputsForSource>;
+type LoadedRepoWorkflowSourceSuccess = Extract<
+  LoadedRepoWorkflowSource,
+  { ok: true }
+>;
 
 async function discoverRepoWorkflowCheckContext(
   options: RepoWorkflowCheckOptions,
@@ -303,68 +335,68 @@ async function discoverRepoWorkflowCheckContext(
   };
 }
 
-async function checkRepoWorkflowSource(options: {
-  source: RepoWorkflowCheckContext["sources"][number];
-  checkOptions: RepoWorkflowCheckOptions;
-  dependencies: RepoWorkflowCheckDependencies;
-  context: RepoWorkflowCheckContext;
-}): Promise<RepoWorkflowCheckSourceResult> {
-  const loadedSource = loadRepoWorkflowSource({
-    source: options.source,
-    scope: options.context.scope,
+function validationFailureSourceResult(loadedSource: {
+  sourcePath: string;
+  errors: RepoWorkflowCheckSourceResult["validation"]["errors"];
+}): RepoWorkflowCheckSourceResult {
+  return {
+    sourcePath: loadedSource.sourcePath,
+    validation: {
+      ok: false,
+      errors: loadedSource.errors,
+    },
+    artifact: {
+      status: "unchecked",
+    },
+  };
+}
+
+function hasConfiguredOutputsForSource(
+  context: RepoWorkflowCheckContext,
+  configuredOutputs: ConfiguredOutputsForSource,
+): context is RepoWorkflowCheckContext & { config: RepoWorkflowConfig } {
+  return configuredOutputs.length > 0 && context.config !== undefined;
+}
+
+async function configuredArtifactSourceResult(
+  options: RepoWorkflowSourceCheckOptions,
+  loadedSource: LoadedRepoWorkflowSourceSuccess,
+  configuredOutputs: ConfiguredOutputsForSource,
+): Promise<RepoWorkflowCheckSourceResult> {
+  const artifacts = await checkConfiguredArtifactsForValidatedSource({
+    config: options.context.config as RepoWorkflowConfig,
+    source: loadedSource.source,
+    sourceAbsolutePath: loadedSource.sourceAbsolutePath,
+    provenanceSourcePath: loadedSource.sourcePath,
+    spec: loadedSource.spec,
+    outputs: configuredOutputs,
     currentWorkingDirectory: options.context.currentWorkingDirectory,
-    dependencies: options.dependencies,
+    diagramPilotVersion: options.checkOptions.diagramPilotVersion,
+    renderer: options.checkOptions.renderer,
+    checkExpectedSvgArtifactFreshnessForValidatedSource:
+      options.dependencies.checkExpectedSvgArtifactFreshnessForValidatedSource,
+    exportConfiguredTextArtifact:
+      options.dependencies.exportConfiguredTextArtifact,
   });
+  const [artifact] = artifacts;
 
-  if (!loadedSource.ok) {
-    return {
-      sourcePath: loadedSource.sourcePath,
-      validation: {
-        ok: false,
-        errors: loadedSource.errors,
-      },
-      artifact: {
-        status: "unchecked",
-      },
-    };
-  }
+  return {
+    sourcePath: loadedSource.sourcePath,
+    validation: {
+      ok: true,
+      errors: [],
+    },
+    artifact: artifact ?? {
+      status: "unchecked",
+    },
+    artifacts,
+  };
+}
 
-  const configuredOutputs = configuredOutputsForSource(
-    options.context.config,
-    loadedSource.sourceAbsolutePath,
-  );
-
-  if (configuredOutputs.length > 0 && options.context.config !== undefined) {
-    const artifacts = await checkConfiguredArtifactsForValidatedSource({
-      config: options.context.config,
-      source: loadedSource.source,
-      sourceAbsolutePath: loadedSource.sourceAbsolutePath,
-      provenanceSourcePath: loadedSource.sourcePath,
-      spec: loadedSource.spec,
-      outputs: configuredOutputs,
-      currentWorkingDirectory: options.context.currentWorkingDirectory,
-      diagramPilotVersion: options.checkOptions.diagramPilotVersion,
-      renderer: options.checkOptions.renderer,
-      checkExpectedSvgArtifactFreshnessForValidatedSource:
-        options.dependencies.checkExpectedSvgArtifactFreshnessForValidatedSource,
-      exportConfiguredTextArtifact:
-        options.dependencies.exportConfiguredTextArtifact,
-    });
-    const [artifact] = artifacts;
-
-    return {
-      sourcePath: loadedSource.sourcePath,
-      validation: {
-        ok: true,
-        errors: [],
-      },
-      artifact: artifact ?? {
-        status: "unchecked",
-      },
-      artifacts,
-    };
-  }
-
+async function defaultSvgArtifactSourceResult(
+  options: RepoWorkflowSourceCheckOptions,
+  loadedSource: LoadedRepoWorkflowSourceSuccess,
+): Promise<RepoWorkflowCheckSourceResult> {
   const artifact =
     await options.dependencies.checkExpectedSvgArtifactFreshnessForValidatedSource({
       source: loadedSource.source,
@@ -385,6 +417,36 @@ async function checkRepoWorkflowSource(options: {
       options.context.currentWorkingDirectory,
     ),
   };
+}
+
+async function checkRepoWorkflowSource(
+  options: RepoWorkflowSourceCheckOptions,
+): Promise<RepoWorkflowCheckSourceResult> {
+  const loadedSource = loadRepoWorkflowSource({
+    source: options.source,
+    scope: options.context.scope,
+    currentWorkingDirectory: options.context.currentWorkingDirectory,
+    dependencies: options.dependencies,
+  });
+
+  if (!loadedSource.ok) {
+    return validationFailureSourceResult(loadedSource);
+  }
+
+  const configuredOutputs = configuredOutputsForSource(
+    options.context.config,
+    loadedSource.sourceAbsolutePath,
+  );
+
+  if (hasConfiguredOutputsForSource(options.context, configuredOutputs)) {
+    return configuredArtifactSourceResult(
+      options,
+      loadedSource,
+      configuredOutputs,
+    );
+  }
+
+  return defaultSvgArtifactSourceResult(options, loadedSource);
 }
 
 async function checkRepoWorkflowSources(

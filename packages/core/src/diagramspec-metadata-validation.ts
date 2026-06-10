@@ -17,13 +17,29 @@ function isLocalSourceReference(value: unknown): value is string {
 
   const trimmedValue = value.trim();
 
-  return (
-    trimmedValue.length > 0 &&
-    trimmedValue === value &&
-    !urlSchemePattern.test(value) &&
-    !value.startsWith("/") &&
-    !value.startsWith("//")
-  );
+  const checks = [
+    trimmedValue.length > 0,
+    trimmedValue === value,
+    !urlSchemePattern.test(value),
+    !value.startsWith("/"),
+    !value.startsWith("//"),
+  ];
+
+  return checks.every(Boolean);
+}
+
+const externalUrlProtocols = new Set(["http:", "https:"]);
+
+function parseUrlReference(value: string): URL | undefined {
+  try {
+    return new URL(value);
+  } catch {
+    return undefined;
+  }
+}
+
+function isSupportedExternalUrl(url: URL): boolean {
+  return externalUrlProtocols.has(url.protocol) && url.hostname.length > 0;
 }
 
 function isExternalUrlReference(value: unknown): value is string {
@@ -31,16 +47,8 @@ function isExternalUrlReference(value: unknown): value is string {
     return false;
   }
 
-  try {
-    const url = new URL(value);
-
-    return (
-      (url.protocol === "http:" || url.protocol === "https:") &&
-      url.hostname.length > 0
-    );
-  } catch {
-    return false;
-  }
+  const url = parseUrlReference(value);
+  return url !== undefined && isSupportedExternalUrl(url);
 }
 
 function validateMetadataSourceReference(

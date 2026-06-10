@@ -27,15 +27,16 @@ function resolveReference(rootSchema, reference) {
 }
 
 function matchesJsonSchemaType(value, type) {
-  if (type === "array") {
-    return Array.isArray(value);
-  }
+  const matchers = {
+    array: Array.isArray,
+    object: isJsonSchemaObject,
+  };
 
-  if (type === "object") {
-    return typeof value === "object" && value !== null && !Array.isArray(value);
-  }
+  return (matchers[type] ?? ((candidate) => typeof candidate === type))(value);
+}
 
-  return typeof value === type;
+function isJsonSchemaObject(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function schemaError(path, keyword) {
@@ -89,10 +90,17 @@ function validatePatternKeyword(schema, candidate, candidatePath, errors) {
 function validateArrayKeywords(schema, candidate, candidatePath, errors, validate) {
   if (!Array.isArray(candidate)) return;
 
+  validateMinItems(schema, candidate, candidatePath, errors);
+  validateArrayItems(schema, candidate, candidatePath, validate);
+}
+
+function validateMinItems(schema, candidate, candidatePath, errors) {
   if (schema.minItems !== undefined && candidate.length < schema.minItems) {
     errors.push(schemaError(candidatePath, "minItems"));
   }
+}
 
+function validateArrayItems(schema, candidate, candidatePath, validate) {
   if (schema.items === undefined) return;
 
   candidate.forEach((item, index) => {

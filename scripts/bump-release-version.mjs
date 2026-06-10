@@ -18,16 +18,28 @@ function writeJson(filePath, data) {
 function updateInternalDependencies(manifest, publicPackageNames, version) {
   for (const field of DEPENDENCY_FIELDS) {
     const dependencies = manifest[field];
+    updateDependencyGroup(dependencies, publicPackageNames, version);
+  }
+}
 
-    if (dependencies === undefined) {
-      continue;
-    }
+function updateDependencyGroup(dependencies, publicPackageNames, version) {
+  if (dependencies === undefined) {
+    return;
+  }
 
-    for (const dependencyName of Object.keys(dependencies)) {
-      if (publicPackageNames.has(dependencyName)) {
-        dependencies[dependencyName] = version;
-      }
-    }
+  for (const dependencyName of Object.keys(dependencies)) {
+    updateDependencyVersion(dependencies, dependencyName, publicPackageNames, version);
+  }
+}
+
+function updateDependencyVersion(
+  dependencies,
+  dependencyName,
+  publicPackageNames,
+  version,
+) {
+  if (publicPackageNames.has(dependencyName)) {
+    dependencies[dependencyName] = version;
   }
 }
 
@@ -59,7 +71,13 @@ function updateLockfile(rootPath, records, publicPackageNames, version) {
   const lockfile = readJson(lockfilePath);
 
   lockfile.version = version;
+  updateLockfilePackageVersions(lockfile, records, version);
+  updateLockfilePackageDependencies(lockfile, publicPackageNames, version);
 
+  writeJson(lockfilePath, lockfile);
+}
+
+function updateLockfilePackageVersions(lockfile, records, version) {
   for (const record of records) {
     const lockPackage = lockfile.packages?.[record.lockKey];
 
@@ -67,12 +85,12 @@ function updateLockfile(rootPath, records, publicPackageNames, version) {
       lockPackage.version = version;
     }
   }
+}
 
+function updateLockfilePackageDependencies(lockfile, publicPackageNames, version) {
   for (const lockPackage of Object.values(lockfile.packages ?? {})) {
     updateInternalDependencies(lockPackage, publicPackageNames, version);
   }
-
-  writeJson(lockfilePath, lockfile);
 }
 
 function updateRuntimeVersion(rootPath, version) {
@@ -97,12 +115,7 @@ function usage() {
 }
 
 function parseVersionArg(args) {
-  if (
-    args.length !== 1 ||
-    args[0] === "--help" ||
-    args[0] === "-h" ||
-    !RELEASE_VERSION_PATTERN.test(args[0])
-  ) {
+  if (!hasValidVersionArg(args)) {
     return {
       ok: false,
     };
@@ -112,6 +125,15 @@ function parseVersionArg(args) {
     ok: true,
     version: args[0],
   };
+}
+
+function hasValidVersionArg(args) {
+  return (
+    args.length === 1 &&
+    args[0] !== "--help" &&
+    args[0] !== "-h" &&
+    RELEASE_VERSION_PATTERN.test(args[0])
+  );
 }
 
 function bumpReleaseVersion(version) {

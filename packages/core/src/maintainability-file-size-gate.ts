@@ -197,6 +197,14 @@ async function readDirectoryIfPresent(
   }
 }
 
+function shouldCollectDirectoryEntry(entry: Dirent): boolean {
+  return entry.isDirectory() && !ignoredDirectoryNames.has(entry.name);
+}
+
+function shouldCollectAuditFileEntry(entry: Dirent, relativePath: string): boolean {
+  return entry.isFile() && shouldAuditFile(relativePath);
+}
+
 async function collectFileEntry(
   rootPath: string,
   relativeDirectory: string,
@@ -207,12 +215,12 @@ async function collectFileEntry(
     path.join(relativeDirectory, entry.name),
   );
 
-  if (entry.isDirectory() && !ignoredDirectoryNames.has(entry.name)) {
+  if (shouldCollectDirectoryEntry(entry)) {
     await collectFiles(rootPath, relativePath, files);
     return;
   }
 
-  if (entry.isFile() && shouldAuditFile(relativePath)) {
+  if (shouldCollectAuditFileEntry(entry, relativePath)) {
     files.push(relativePath);
   }
 }
