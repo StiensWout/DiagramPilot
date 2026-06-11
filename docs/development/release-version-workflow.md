@@ -93,6 +93,12 @@ package needs npm trusted publisher setup for this GitHub repository and release
 workflow. Keep using `actions/setup-node` with
 `registry-url: https://registry.npmjs.org` and `id-token: write`; do not add
 long-lived `NPM_TOKEN` or `NODE_AUTH_TOKEN` secrets to the release workflow.
+Trusted publishing generates npm provenance automatically. If a nightly publish
+hits npm's transparency-log duplicate-entry failure before the package reaches
+the registry, the release publisher re-checks the package version and retries
+that nightly package once with `NPM_CONFIG_PROVENANCE=false`. This fallback is
+limited to `nightly`; final `latest` releases should keep provenance enabled and
+fail loudly for maintainer review.
 
 ## Reading GitHub Checks
 
