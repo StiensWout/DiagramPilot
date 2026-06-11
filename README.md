@@ -88,6 +88,7 @@ diagrampilot init --docs
 diagrampilot init --config
 diagrampilot check
 diagrampilot generate
+diagrampilot watch docs
 diagrampilot mcp
 diagrampilot check docs --json
 diagrampilot validate docs/architecture.dp.yaml
@@ -124,6 +125,11 @@ and `check` marks an embed stale when the embed or a referenced artifact is
 missing, unreadable, unchecked, or not fresh. `diagrampilot generate [path]`
 rewrites configured Derived Artifacts and generated Markdown embed files for an
 explicit scope.
+
+`diagrampilot watch [path]` runs a local authoring loop for an explicit scope.
+It watches `*.dp.yaml` and `diagrampilot.config.yaml`, debounces changes, runs
+repo workflow checks first, and generates only when the source/config state is
+valid.
 
 `mcp` launches the alpha Model Context Protocol stdio server for local MCP
 clients. It exposes read-only DiagramPilot resources, validation, repo check,

@@ -9,6 +9,7 @@ import { planCommand } from "./command-planning.js";
 import { executeCommandPlan } from "./execution.js";
 import { runInit } from "./init-command.js";
 import type { CliStreams } from "./types.js";
+import { runWatch } from "./watch-command.js";
 
 export { planCommand } from "./command-planning.js";
 export type {
@@ -17,6 +18,15 @@ export type {
   CommandWriteIntent,
 } from "./command-planning.js";
 export type { CliStreams, Writable } from "./types.js";
+export { runWatch } from "./watch-command.js";
+export type {
+  WatchChange,
+  WatchCommandDependencies,
+  WatchCreateOptions,
+  WatchCycleResult,
+  WatchHandle,
+  WatchScheduler,
+} from "./watch-command.js";
 
 export async function run(
   args: readonly string[],
@@ -32,6 +42,10 @@ export async function run(
     return runMcpCli(args.slice(1), streams, {
       commandName: "diagrampilot mcp",
     });
+  }
+
+  if (firstArg === "watch") {
+    return runWatch(args.slice(1), streams);
   }
 
   return executeCommandPlan(await planCommand(args), streams);
