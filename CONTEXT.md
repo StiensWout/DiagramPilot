@@ -16,14 +16,14 @@ diagram. It is distinct from any particular file format or rendered output.
 _Avoid_: Mermaid source, D2 source, diagram-as-code source
 
 **DiagramPilot Source File**:
-A repo file that stores a DiagramSpec, usually as `*.dp.yaml` or `*.dp.json`.
-It is the editable artifact agents should preserve and update.
+A repo file that stores a DiagramSpec as `*.dp.yaml`. It is the editable
+artifact agents should preserve and update.
 _Avoid_: Generated diagram, rendered artifact, output file
 
 **Authoring Format**:
-The concrete syntax used for a DiagramPilot Source File. YAML is the recommended
-authoring format for humans and agents, while JSON is currently supported for
-tooling and programmatic integrations.
+The concrete syntax used for a DiagramPilot Source File. YAML is the source
+authoring format for humans and agents, while JSON remains available only for
+non-source tooling surfaces.
 _Avoid_: Separate model, renderer format, export target
 
 **YAML-Only Source Support**:
@@ -31,6 +31,12 @@ The source-format direction where DiagramPilot Source Files use YAML as the
 only supported source syntax. It is about source files, not structured CLI
 output, schema helpers, provenance metadata, or package manifests.
 _Avoid_: JSON output removal, JSON Schema removal, provenance metadata removal
+
+**JSON Source Removal**:
+The product cleanup where legacy `*.dp.json` handling is removed from
+DiagramPilot Source File workflows while JSON remains available for non-source
+tooling surfaces.
+_Avoid_: JSON output removal, JSON Schema removal, package manifest removal
 
 **Derived Artifact**:
 Any file or text generated from a DiagramPilot Source File rather than edited as
@@ -108,10 +114,31 @@ A product capability that creates a new DiagramPilot Source File from
 DiagramSpec concepts rather than deriving an artifact from an existing source.
 _Avoid_: Artifact generation, init scaffolding, renderer export
 
+**Template-Based Source Creation**:
+Source Creation from a small maintained template set that gives agents a valid
+starting DiagramPilot Source File without scanning or inferring a repository.
+_Avoid_: Migration command, repo analyzer, generated artifact
+
 **Structured Diagram Operation**:
 An agent-facing operation that reads or changes DiagramSpec concepts through
 Diagram Objects, Stable IDs, and well-known fields rather than raw source text.
 _Avoid_: Free-form YAML edit, full-file replacement, renderer-specific edit
+
+**Agent Authoring Loop**:
+The repeated local workflow where an AI coding agent edits a DiagramPilot
+Source File, validates it, refreshes Derived Artifacts, and checks repo
+workflow health.
+_Avoid_: Hosted editing session, visual editor workflow, one-off render
+
+**Watch Authoring Loop**:
+An Agent Authoring Loop that reruns local DiagramPilot checks and output
+generation after relevant source or configuration changes.
+_Avoid_: Background daemon, hosted live preview, filesystem-wide watcher
+
+**Source Formatting**:
+A Source Mutation capability that rewrites a valid DiagramPilot Source File
+into canonical YAML shape while preserving DiagramSpec data.
+_Avoid_: Comment-preserving formatter, migration command, generated artifact
 
 **External Reference**:
 A URL outside the local repository that points to supporting context for a
@@ -154,6 +181,12 @@ The maintained agreement between canonical documentation sources, generated
 public outputs, published routes, and drift checks.
 _Avoid_: Manual docs audit, duplicated website content, one-off link cleanup
 
+**Link Context**:
+The documentation rendering context that determines whether a public link should
+target a repository-relative GitHub path, a hosted website URL, or a package
+consumer URL.
+_Avoid_: Universal hosted URL, one-off link exception, broken relative link
+
 **Current-State Public Surface**:
 Public Documentation, `README.md`, `llms.txt`, and Public Website copy that
 describe shipped DiagramPilot behavior rather than deferred product plans or
@@ -167,6 +200,12 @@ adoption, and contribution. Maintainer material may be committed without being
 part of the Public Repository Surface.
 _Avoid_: Public website surface, package publish surface, generated review
 reports
+
+**Private Maintainer Workflow**:
+Maintainer-only planning, release, and agent workflow knowledge kept outside
+the Public Repository Surface while remaining available to maintainers and
+agents through private workflow systems.
+_Avoid_: Public contributor guide, package documentation, hidden product behavior
 
 **Repo Workflow**:
 A DiagramPilot product capability area for operating on DiagramPilot Source
@@ -188,6 +227,11 @@ expectations.
 _Avoid_: Required project manifest, CLI-only flags, hosted workspace settings,
 renderer configuration
 
+**Output Profile**:
+A named repo workflow output setting that selects a maintained rendering or
+export presentation profile without adding styling fields to DiagramSpec.
+_Avoid_: DiagramSpec styling, arbitrary CSS theme, per-object styling
+
 **Artifact Freshness**:
 The relationship between a DiagramPilot Source File and a Derived Artifact when
 the artifact corresponds to the source and DiagramPilot generation context it
@@ -199,6 +243,11 @@ A Repo Workflow operation that evaluates local diagram workflow health across a
 repository, including discovered DiagramPilot Source Files and their expected
 Derived Artifacts.
 _Avoid_: Single-file validation, hosted project audit, codebase analyzer
+
+**Repo Workflow Inspect**:
+A read-only Repo Workflow operation that summarizes discovered DiagramPilot
+Source Files, Diagram Objects, Stable IDs, topology, and artifact expectations.
+_Avoid_: Generated artifact refresh, source rewrite, project analyzer
 
 **Read-Only Check**:
 A Repo Workflow Check that reports discovered workflow problems without
@@ -300,16 +349,25 @@ A versioned DiagramPilot release before the first Public Alpha Release. It may
 be taggable or publishable, but it is not the first public release milestone.
 _Avoid_: Public alpha, first public release, production-ready release
 
-**Issue Version**:
-A DiagramPilot version assigned to the completion of one implementation issue
-after the current planning baseline. Issue Versions advance release history
-through pre-alpha releases, the Public Alpha Release, and later alpha releases.
-_Avoid_: Unversioned issue closeout, prerelease suffix, code-only milestone
+**Milestone Release**:
+A versioned DiagramPilot Release produced from a completed planning milestone,
+not from each individual implementation issue.
+_Avoid_: Issue Release, Issue Version, code-only milestone
 
-**Issue Release**:
-A clean DiagramPilot Release produced when one completed implementation issue
-merges to `main` with its assigned Issue Version.
-_Avoid_: Unreleased merge, nightly build, PR dry run
+**Nightly Build**:
+A prerelease DiagramPilot build used to test work before a Milestone Release.
+Nightly Builds do not advance stable release history.
+_Avoid_: Issue Release, stable release, PR dry run
+
+**Nightly Release Note**:
+A compact prerelease GitHub Release body for a Nightly Build, focused on branch,
+issue, commit, validation, and package links rather than full milestone notes.
+_Avoid_: Milestone release notes, implementation log, local issue closeout
+
+**Release Closeout Issue**:
+The final implementation issue in a planning milestone, used to finish release
+cleanup after the milestone's feature work is complete.
+_Avoid_: First migration issue, recurring issue release, untracked cleanup
 
 **Public Alpha Release**:
 The first public DiagramPilot release milestone intended for external discovery
@@ -348,6 +406,11 @@ Package Set, and keeps the Public Website deployment path separate from package
 publishing.
 _Avoid_: Local validation only, manual package upload, website-only deployment
 
+**Manual Milestone Release**:
+A Milestone Release published by an explicit maintainer-triggered release
+workflow after milestone closeout, rather than by every merge to `main`.
+_Avoid_: Main-push release, Issue Release, automatic patch release
+
 **Public Package Set**:
 The installable DiagramPilot packages published together for a release so the
 CLI and runtime package dependencies resolve coherently.
@@ -357,6 +420,11 @@ _Avoid_: CLI-only package, website deployment, source checkout
 The release state where package metadata, licensing, tarball contents, package
 name ownership, and CI checks are sufficient to publish the Public Package Set.
 _Avoid_: Source-only release, unverified npm publish, website deployment
+
+**Package Size Budget**:
+A release quality constraint that measures and limits the installed or packed
+size of the Public Package Set.
+_Avoid_: Source file-size gate, website bundle budget, repository size cleanup
 
 **Release-Ready Public Documentation**:
 Public Documentation that is compact, coherent, published, current with the

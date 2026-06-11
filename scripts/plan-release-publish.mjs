@@ -100,18 +100,19 @@ function createPushPlan(baseVersion, nightlyVersion, ref, env) {
       baseVersion,
       distTag: "latest",
       publishVersion: baseVersion,
-      shouldPublish: true,
-      reason: "trusted main push publishes the clean shared version",
+      shouldPublish: false,
+      reason:
+        "trusted main push validation only; latest publishing runs from a manual milestone release",
     };
   }
 
-  if (ref.startsWith("refs/heads/issue-")) {
+  if (ref.startsWith("refs/heads/feature/")) {
     return {
       baseVersion,
       distTag: "nightly",
       publishVersion: nightlyVersion,
       shouldPublish: true,
-      reason: "trusted issue branch push publishes a unique nightly version",
+      reason: "trusted feature branch push publishes a unique nightly version",
     };
   }
 
@@ -135,7 +136,7 @@ function createPullRequestPlan(baseVersion, nightlyVersion, event) {
     publishVersion: nightlyVersion,
     shouldPublish: false,
     reason:
-      "pull request validation uses dry-run only; issue branch pushes publish nightly",
+      "pull request validation uses dry-run only; feature branch pushes publish nightly",
   };
 }
 

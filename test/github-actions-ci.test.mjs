@@ -32,7 +32,7 @@ test("GitHub Actions CI validates branch and pull request release-readiness gate
     "push:",
     "branches:",
     "main",
-    "issue-*",
+    "feature/**",
     "Fallow changed-code audit",
     "if: github.event_name == 'pull_request'",
     "fetch-depth: 0",
@@ -67,6 +67,7 @@ test("GitHub Actions CI validates branch and pull request release-readiness gate
   assertExcludesAll(workflow, [
     "health-baseline: fallow-baselines/health.json",
     "dupes-baseline: fallow-baselines/dupes.json",
+    "issue-*",
   ]);
 
   assert.doesNotMatch(workflow, /NPM_TOKEN|VERCEL|npm publish/u);
