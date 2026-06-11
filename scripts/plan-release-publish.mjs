@@ -3,11 +3,24 @@
 import { appendFileSync, readFileSync } from "node:fs";
 
 const OFFICIAL_REPOSITORY = "StiensWout/DiagramPilot";
+const RELEASE_CONFIG_PATH = "release.config.json";
 const PLAIN_RELEASE_VERSION_PATTERN = /^\d+\.\d+\.\d+$/u;
 const SAFE_PRERELEASE_IDENTIFIER_PATTERN = /^[0-9A-Za-z-]+$/u;
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
+}
+
+function readOptionalJson(path) {
+  try {
+    return readJson(path);
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      return {};
+    }
+
+    throw error;
+  }
 }
 
 function readEvent(path) {
@@ -81,6 +94,10 @@ function createTagPlan(baseVersion, refName) {
   }
 
   return {
+    releaseKind: "tag-validation",
+    releaseTag: refName,
+    milestone: "",
+    previousTag: "",
     baseVersion,
     distTag: "latest",
     publishVersion: baseVersion,
@@ -97,6 +114,10 @@ function createPushPlan(baseVersion, nightlyVersion, ref, env) {
 
   if (ref === "refs/heads/main") {
     return {
+      releaseKind: "validation",
+      releaseTag: `v${baseVersion}`,
+      milestone: "",
+      previousTag: "",
       baseVersion,
       distTag: "latest",
       publishVersion: baseVersion,
@@ -108,6 +129,10 @@ function createPushPlan(baseVersion, nightlyVersion, ref, env) {
 
   if (ref.startsWith("refs/heads/feature/")) {
     return {
+      releaseKind: "nightly",
+      releaseTag: `v${nightlyVersion}`,
+      milestone: "",
+      previousTag: "",
       baseVersion,
       distTag: "nightly",
       publishVersion: nightlyVersion,
@@ -122,6 +147,10 @@ function createPushPlan(baseVersion, nightlyVersion, ref, env) {
 function createPullRequestPlan(baseVersion, nightlyVersion, event) {
   if (isForkPullRequest(event)) {
     return {
+      releaseKind: "pull-request",
+      releaseTag: `v${nightlyVersion}`,
+      milestone: "",
+      previousTag: "",
       baseVersion,
       distTag: "nightly",
       publishVersion: nightlyVersion,
@@ -131,6 +160,10 @@ function createPullRequestPlan(baseVersion, nightlyVersion, event) {
   }
 
   return {
+    releaseKind: "pull-request",
+    releaseTag: `v${nightlyVersion}`,
+    milestone: "",
+    previousTag: "",
     baseVersion,
     distTag: "nightly",
     publishVersion: nightlyVersion,
@@ -142,6 +175,10 @@ function createPullRequestPlan(baseVersion, nightlyVersion, event) {
 
 function dryRunPlan(baseVersion, nightlyVersion, reason) {
   return {
+    releaseKind: "dry-run",
+    releaseTag: `v${nightlyVersion}`,
+    milestone: "",
+    previousTag: "",
     baseVersion,
     distTag: "nightly",
     publishVersion: nightlyVersion,
@@ -150,27 +187,121 @@ function dryRunPlan(baseVersion, nightlyVersion, reason) {
   };
 }
 
-function requirePlainBaseVersion() {
-  const baseVersion = readJson("package.json").version;
+function manualDryRunPlan(baseVersion, event) {
+  return {
+    releaseKind: "dry-run",
+    releaseTag: `v${baseVersion}`,
+    milestone: workflowInput(event, "milestone"),
+    previousTag: workflowInput(event, "previous_tag"),
+    baseVersion,
+    distTag: "latest",
+    publishVersion: baseVersion,
+    shouldPublish: false,
+    reason: "manual dry-run validation only",
+  };
+}
 
-  if (!PLAIN_RELEASE_VERSION_PATTERN.test(baseVersion)) {
+function workflowInput(event, name) {
+  return event.inputs?.[name] ?? "";
+}
+
+function createManualMilestonePlan(baseVersion, event) {
+  const requestedVersion = workflowInput(event, "version") || baseVersion;
+
+  if (requestedVersion !== baseVersion) {
     throw new Error(
-      `Shared version ${baseVersion} is not a plain release version like 0.1.8.`,
+      `Manual milestone release version ${requestedVersion} does not match shared version ${baseVersion}.`,
     );
   }
+
+  return {
+    releaseKind: "final",
+    releaseTag: `v${baseVersion}`,
+    milestone: workflowInput(event, "milestone"),
+    previousTag: workflowInput(event, "previous_tag"),
+    baseVersion,
+    distTag: "latest",
+    publishVersion: baseVersion,
+    shouldPublish: true,
+    reason: "manual milestone release publishes npm latest",
+  };
+}
+
+function createWorkflowDispatchPlan(context) {
+  const releaseKind = workflowInput(context.event, "release_kind") || "dry-run";
+
+  if (releaseKind === "milestone") {
+    return guardPublish(
+      createManualMilestonePlan(context.baseVersion, context.event),
+      context.env,
+    );
+  }
+
+  if (releaseKind === "dry-run") {
+    return manualDryRunPlan(context.baseVersion, context.event);
+  }
+
+  throw new Error(
+    `Unsupported workflow_dispatch release_kind ${releaseKind}. Use dry-run or milestone.`,
+  );
+}
+
+function requirePlainVersion(name, version) {
+  if (!PLAIN_RELEASE_VERSION_PATTERN.test(version)) {
+    throw new Error(
+      `${name} ${version} is not a plain release version like 0.1.8.`,
+    );
+  }
+}
+
+function requirePlainPackageVersion() {
+  const baseVersion = readJson("package.json").version;
+
+  requirePlainVersion("package.json version", baseVersion);
 
   return baseVersion;
 }
 
+function readNextReleaseVersion(packageVersion) {
+  const config = readOptionalJson(RELEASE_CONFIG_PATH);
+  const nextVersion =
+    typeof config.nextVersion === "string" && config.nextVersion !== ""
+      ? config.nextVersion
+      : packageVersion;
+
+  requirePlainVersion(`${RELEASE_CONFIG_PATH} nextVersion`, nextVersion);
+
+  return nextVersion;
+}
+
+function usesNextReleaseVersion(eventName, ref) {
+  return eventName === "pull_request"
+    || (eventName === "push" && ref.startsWith("refs/heads/feature/"));
+}
+
+function selectBaseVersion({ eventName, ref, packageVersion, nextVersion }) {
+  return usesNextReleaseVersion(eventName, ref) ? nextVersion : packageVersion;
+}
+
 function createPlanContext(env, event) {
-  const baseVersion = requirePlainBaseVersion();
   const ref = githubRef(env, event);
+  const eventName = githubEventName(env);
+  const packageVersion = requirePlainPackageVersion();
+  const nextVersion = readNextReleaseVersion(packageVersion);
+  const baseVersion = selectBaseVersion({
+    eventName,
+    ref,
+    packageVersion,
+    nextVersion,
+  });
 
   return {
     baseVersion,
+    packageVersion,
+    nextVersion,
     env,
     event,
-    eventName: githubEventName(env),
+    eventName,
     ref,
     refName: githubRefName(env, ref),
     nightlyVersion: createNightlyVersion(baseVersion, env),
@@ -225,12 +356,7 @@ const planFactories = [
   },
   {
     matches: (context) => context.eventName === "workflow_dispatch",
-    create: (context) =>
-      dryRunPlan(
-        context.baseVersion,
-        context.nightlyVersion,
-        "manual dry-run validation only",
-      ),
+    create: createWorkflowDispatchPlan,
   },
 ];
 
@@ -245,10 +371,15 @@ function defaultPlan(context) {
 function createPlan(env, event) {
   const context = createPlanContext(env, event);
   const factory = planFactories.find((candidate) => candidate.matches(context));
-
-  return factory === undefined
+  const plan = factory === undefined
     ? defaultPlan(context)
     : factory.create(context);
+
+  return {
+    packageVersion: context.packageVersion,
+    nextVersion: context.nextVersion,
+    ...plan,
+  };
 }
 
 function appendOutputs(plan, outputPath) {
@@ -260,9 +391,14 @@ function appendOutputs(plan, outputPath) {
     outputPath,
     [
       `base_version=${plan.baseVersion}`,
+      `next_version=${plan.nextVersion ?? plan.baseVersion}`,
       `publish_version=${plan.publishVersion}`,
       `dist_tag=${plan.distTag}`,
       `should_publish=${String(plan.shouldPublish)}`,
+      `release_kind=${plan.releaseKind}`,
+      `release_tag=${plan.releaseTag}`,
+      `milestone=${plan.milestone}`,
+      `previous_tag=${plan.previousTag}`,
       `reason=${plan.reason}`,
       "",
     ].join("\n"),
@@ -279,9 +415,14 @@ function appendEnvironment(plan, envPath) {
     envPath,
     [
       `RELEASE_BASE_VERSION=${plan.baseVersion}`,
+      `RELEASE_NEXT_VERSION=${plan.nextVersion ?? plan.baseVersion}`,
       `RELEASE_PUBLISH_VERSION=${plan.publishVersion}`,
       `RELEASE_DIST_TAG=${plan.distTag}`,
       `RELEASE_SHOULD_PUBLISH=${String(plan.shouldPublish)}`,
+      `RELEASE_KIND=${plan.releaseKind}`,
+      `RELEASE_TAG=${plan.releaseTag}`,
+      `RELEASE_MILESTONE=${plan.milestone}`,
+      `RELEASE_PREVIOUS_TAG=${plan.previousTag}`,
       `RELEASE_PLAN_REASON=${plan.reason}`,
       "",
     ].join("\n"),

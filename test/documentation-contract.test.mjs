@@ -346,7 +346,10 @@ test("maintainer docs cover MCP package readiness and smoke validation", async (
   assertIncludesAll(
     releaseWorkflow,
     [
-      "npm publish --workspace @diagrampilot/mcp --tag prealpha --access public",
+      "npm run check:package-readiness",
+      "npm run check:package-publish-state -- --expect latest",
+      "`nightly`",
+      "`latest`",
       "@diagrampilot/mcp",
       "diagrampilot mcp --help",
       "diagrampilot-mcp --help",

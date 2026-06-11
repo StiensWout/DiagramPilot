@@ -23,7 +23,7 @@ function assertExcludesAll(source, snippets) {
   }
 }
 
-test("GitHub Actions CI validates branch and pull request release-readiness gates", async () => {
+test("GitHub Actions CI validates pull requests and main release-readiness gates", async () => {
   const workflow = await readWorkflow();
 
   assertIncludesAll(workflow, [
@@ -32,8 +32,8 @@ test("GitHub Actions CI validates branch and pull request release-readiness gate
     "push:",
     "branches:",
     "main",
-    "feature/**",
-    "Fallow changed-code audit",
+    "Code quality audit (pull requests only)",
+    "Test suite and package readiness",
     "if: github.event_name == 'pull_request'",
     "fetch-depth: 0",
     "FALLOW_UPDATE_CHECK: \"off\"",
@@ -51,7 +51,6 @@ test("GitHub Actions CI validates branch and pull request release-readiness gate
     "npm ci",
     "npm run audit:fallow",
     "npm run check:release-version",
-    "npm run check:issue-release-version",
     "npm run build",
     "npm test",
     "npm run generate:schema",
@@ -68,6 +67,8 @@ test("GitHub Actions CI validates branch and pull request release-readiness gate
     "health-baseline: fallow-baselines/health.json",
     "dupes-baseline: fallow-baselines/dupes.json",
     "issue-*",
+    "feature/**",
+    "npm run check:issue-release-version",
   ]);
 
   assert.doesNotMatch(workflow, /NPM_TOKEN|VERCEL|npm publish/u);
