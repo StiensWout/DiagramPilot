@@ -118,6 +118,12 @@ managed local agent docs. `diagrampilot init --config` creates a minimal
 `diagrampilot.config.yaml` and fails with repair guidance if one already
 exists. Init does not scan the codebase or generate diagrams.
 
+`diagrampilot create <path> --template architecture|flow|package-map`
+: Creates one starter DiagramPilot Source File from a maintained template set.
+The path must end with `*.dp.yaml`, existing files are not overwritten, and the
+CLI output includes the next `validate` and SVG `render --out` commands.
+Templates are validated before their serialized YAML is planned for writing.
+
 `diagrampilot check [path] [--json]`
 : Runs the read-only repo review/CI workflow. It discovers DiagramPilot Source
 Files in the current directory, one explicit directory, or one explicit source

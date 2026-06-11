@@ -3,6 +3,7 @@ import type {
   RepoWorkflowInspectResult,
   RepoWorkflowInspectSourceResult,
 } from "@diagrampilot/core";
+import { diagramPilotSourceTemplateNames } from "@diagrampilot/core";
 
 import type { Writable } from "./types.js";
 
@@ -28,6 +29,7 @@ export function helpText(version: string): string {
     "",
     "MVP commands:",
     "  init [--docs] [--config]",
+    `  create <path> --template ${diagramPilotSourceTemplateNames.join("|")}`,
     "  validate <path> [--json]",
     "  format <path>",
     "  check [path] [--json]",
@@ -54,6 +56,10 @@ export function inspectUsageText(): string {
 
 export function generateUsageText(): string {
   return "Usage: diagrampilot generate [path] [--json]";
+}
+
+export function createUsageText(): string {
+  return `Usage: diagrampilot create <path> --template ${diagramPilotSourceTemplateNames.join("|")}`;
 }
 
 export function watchUsageText(): string {

@@ -38,6 +38,7 @@ Run the primary workflow from the repository root:
 cd demo-projects/checkout
 diagrampilot check
 diagrampilot inspect
+diagrampilot create docs/new-architecture.dp.yaml --template architecture
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot format docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
@@ -49,12 +50,13 @@ diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architectu
 
 Use `check` as the read-only repo review/CI command. Use `inspect` when an
 agent needs a read-only inventory of DiagramPilot Source Files, topology,
-Stable IDs, and artifact expectations before editing. Use `validate` when you
-need explicit source repair output. Use `format` to rewrite a valid DiagramPilot
-Source File into canonical YAML before review. `render` requires `--out`,
-defaults to SVG, and supports `--format svg|png`; PNG rendering rasterizes the
-SVG render path. `export` prints to stdout by default and writes only when
-`--out` is provided.
+Stable IDs, and artifact expectations before editing. Use `create` when a repo
+needs a starter `*.dp.yaml` source from the maintained `architecture`, `flow`,
+or `package-map` templates. Use `validate` when you need explicit source repair
+output. Use `format` to rewrite a valid DiagramPilot Source File into canonical
+YAML before review. `render` requires `--out`, defaults to SVG, and supports
+`--format svg|png`; PNG rendering rasterizes the SVG render path. `export`
+prints to stdout by default and writes only when `--out` is provided.
 
 ## Source And Artifacts
 
@@ -97,6 +99,7 @@ Canonical DiagramPilot Brand Assets live in `assets/brand/`:
 diagrampilot init
 diagrampilot init --docs
 diagrampilot init --config
+diagrampilot create docs/architecture.dp.yaml --template architecture
 diagrampilot check
 diagrampilot inspect
 diagrampilot generate
@@ -119,6 +122,10 @@ default. Use `init --docs` only when the repository wants managed `llms.txt`
 and `docs/diagrampilot.md` guidance. Use `init --config` to create a minimal
 `diagrampilot.config.yaml`; rerunning it fails with repair guidance if the
 config already exists.
+
+`create <path> --template architecture|flow|package-map` writes a valid starter
+DiagramPilot Source File, refuses to overwrite an existing file, and prints the
+next `validate` and SVG `render --out` commands.
 
 `check` discovers DiagramPilot source files in the current directory, one
 explicit directory, or one explicit source file. It validates them and checks

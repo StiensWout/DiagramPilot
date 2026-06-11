@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 import {
   checkDiagramPilotRepoWorkflow,
@@ -25,6 +25,7 @@ import {
 import { parseCheckArgs, parseInspectArgs } from "./argument-parsing.js";
 import {
   checkUsageText,
+  createUsageText,
   exportUsageText,
   formatUsageText,
   generateUsageText,
@@ -34,6 +35,7 @@ import {
 } from "./cli-output.js";
 import { checkResultPlan } from "./check-command-planning.js";
 import type { CommandPlanningDependencies } from "./command-planning-dependencies.js";
+import { planCreate } from "./create-command-planning.js";
 import { planGenerate } from "./generate-command-planning.js";
 import { inspectResultPlan } from "./inspect-command-planning.js";
 import {
@@ -66,6 +68,7 @@ const defaultCommandPlanningDependencies: CommandPlanningDependencies = {
   rasterizeSvgToPng,
   createSvgRendererProvenance,
   getDiagramPilotVersion,
+  pathExists: existsSync,
 };
 
 type CommandHandler = (
@@ -148,6 +151,7 @@ async function planInspect(
 
 const commandHandlers: Readonly<Record<string, CommandHandler>> = {
   check: planCheck,
+  create: planCreate,
   export: planExport,
   format: planFormat,
   generate: planGenerate,
@@ -158,6 +162,7 @@ const commandHandlers: Readonly<Record<string, CommandHandler>> = {
 
 const commandHelpText: Readonly<Record<string, () => string>> = {
   check: checkUsageText,
+  create: createUsageText,
   export: exportUsageText,
   format: formatUsageText,
   generate: generateUsageText,

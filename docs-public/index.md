@@ -37,6 +37,7 @@ Current CLI commands:
 diagrampilot init
 diagrampilot init --docs
 diagrampilot init --config
+diagrampilot create docs/architecture.dp.yaml --template architecture
 diagrampilot check
 diagrampilot inspect
 diagrampilot generate
@@ -56,13 +57,14 @@ diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architectu
 
 Use `init --docs` only when a repository intentionally wants managed local
 agent docs. Use `init --config` only when a repository intentionally wants
-`diagrampilot.config.yaml`. Use `check` as the read-only repo review/CI
-command. Use `inspect` for read-only source inventory, topology, Stable IDs,
-and artifact expectations before editing. `render` requires `--out`, defaults
-to SVG, and supports `--format svg|png`. `export` prints to stdout by default
-and writes a file only when `--out` is provided. `format <path>` validates one
-`*.dp.yaml` source and rewrites it in canonical YAML key order; in v0.4.0 YAML
-comments may be removed or moved. `watch [path]` watches `*.dp.yaml` and
-`diagrampilot.config.yaml`, debounces changes, checks first, and generates only
-when source/config state is valid. `mcp` launches the alpha MCP stdio server for
-local MCP clients.
+`diagrampilot.config.yaml`. Use `create` to write a starter `*.dp.yaml` source
+from the maintained `architecture`, `flow`, or `package-map` templates. Use
+`check` as the read-only repo review/CI command. Use `inspect` for read-only
+source inventory, topology, Stable IDs, and artifact expectations before
+editing. `render` requires `--out`, defaults to SVG, and supports `--format
+svg|png`. `export` prints to stdout by default and writes a file only when
+`--out` is provided. `format <path>` validates one `*.dp.yaml` source and
+rewrites it in canonical YAML key order; in v0.4.0 YAML comments may be removed
+or moved. `watch [path]` watches `*.dp.yaml` and `diagrampilot.config.yaml`,
+debounces changes, checks first, and generates only when source/config state is
+valid. `mcp` launches the alpha MCP stdio server for local MCP clients.

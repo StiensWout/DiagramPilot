@@ -4,6 +4,18 @@ These examples show the intended DiagramSpec style. They are deliberately small
 so agents can copy and adapt them. Use the quickstart for the full Checkout
 Demo Project workflow.
 
+Create a starter DiagramPilot Source File instead of copying an example when
+you want a maintained template:
+
+```bash
+diagrampilot create docs/architecture.dp.yaml --template architecture
+diagrampilot create docs/login-flow.dp.yaml --template flow
+diagrampilot create docs/packages.dp.yaml --template package-map
+```
+
+Each command writes a valid `*.dp.yaml` file, refuses to overwrite an existing
+file, and prints the next `validate` and `render` commands.
+
 ## Architecture Diagram
 
 ```yaml

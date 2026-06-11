@@ -1,8 +1,13 @@
 import assert from "node:assert/strict";
+import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 
-import { loadValidatedDiagramSpec } from "../packages/core/dist/index.js";
+import {
+  createDiagramPilotSourceTemplate,
+  diagramPilotSourceTemplateNames,
+  loadValidatedDiagramSpec,
+} from "../packages/core/dist/index.js";
 import {
   assertFailedLoad,
   brokenYamlSourceLines,
@@ -55,6 +60,26 @@ test("loadValidatedDiagramSpec returns a valid DiagramSpec with source context f
     assert.equal(result.source.content, sourceContent);
     assert.equal(result.spec.title, "Checkout Architecture");
     assert.deepEqual(result.spec.nodes, [{ id: "web_app", label: "Web App" }]);
+  });
+});
+
+test("built-in Source Creation templates serialize to valid DiagramPilot Source Files", async () => {
+  await withTempRepo(async (tempRoot) => {
+    for (const templateName of diagramPilotSourceTemplateNames) {
+      const template = createDiagramPilotSourceTemplate(templateName);
+
+      assert.equal(template.ok, true);
+
+      const sourcePath = path.join(tempRoot, `${templateName}.dp.yaml`);
+
+      await writeFile(sourcePath, template.content, "utf8");
+
+      const result = loadValidatedDiagramSpec(sourcePath);
+
+      assert.equal(result.ok, true);
+      assert.equal(result.spec.title, template.spec.title);
+      assert.equal(result.source.content, template.content);
+    }
   });
 });
 

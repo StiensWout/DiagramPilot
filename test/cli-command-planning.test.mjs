@@ -420,6 +420,10 @@ test("plans version output", async () => {
 test("plans subcommand help output", async () => {
   for (const [command, expectedUsage] of [
     ["check", "Usage: diagrampilot check [path] [--json]\n"],
+    [
+      "create",
+      "Usage: diagrampilot create <path> --template architecture|flow|package-map\n",
+    ],
     ["format", "Usage: diagrampilot format <path>\n"],
     ["generate", "Usage: diagrampilot generate [path] [--json]\n"],
     ["inspect", "Usage: diagrampilot inspect [path] [--json]\n"],

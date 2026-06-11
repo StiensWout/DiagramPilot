@@ -37,4 +37,5 @@ export interface CommandPlanningDependencies {
     options: CreateSvgRendererProvenanceOptions,
   ): SvgRendererProvenance;
   getDiagramPilotVersion(): string;
+  pathExists?(path: string): boolean;
 }

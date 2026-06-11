@@ -167,6 +167,58 @@ test("diagrampilot init rejects unknown options without writing support files", 
   });
 });
 
+test("diagrampilot create writes a valid template source and refuses overwrite", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const sourcePath = path.join(tempRoot, "docs", "login-flow.dp.yaml");
+
+    const createResult = await runBuiltCli(
+      ["create", "docs/login-flow.dp.yaml", "--template", "flow"],
+      tempRoot,
+    );
+
+    assertCliSucceeded(createResult);
+    assert.match(
+      createResult.stdout,
+      /Created docs\/login-flow\.dp\.yaml from flow template\./,
+    );
+    assert.match(
+      createResult.stdout,
+      /diagrampilot validate docs\/login-flow\.dp\.yaml/,
+    );
+    assert.match(
+      createResult.stdout,
+      /diagrampilot render docs\/login-flow\.dp\.yaml --out docs\/login-flow\.svg/,
+    );
+
+    const sourceText = await readFile(sourcePath, "utf8");
+
+    assert.match(sourceText, /title: Starter Flow/);
+    assert.match(sourceText, /id: decision_point/);
+
+    const validateResult = await runBuiltCli(
+      ["validate", "docs/login-flow.dp.yaml"],
+      tempRoot,
+    );
+
+    assertCliSuccess(validateResult, {
+      stdout: "Valid docs/login-flow.dp.yaml\n",
+    });
+
+    const overwriteResult = await runBuiltCli(
+      ["create", "docs/login-flow.dp.yaml", "--template", "flow"],
+      tempRoot,
+    );
+
+    assertCliFailure(overwriteResult, {
+      stderrPatterns: [
+        /DiagramPilot Source File already exists: docs\/login-flow\.dp\.yaml/,
+        /Suggestion: choose a new path/,
+      ],
+    });
+    assert.equal(await readFile(sourcePath, "utf8"), sourceText);
+  });
+});
+
 test(
   "diagrampilot init does not scan repository contents",
   { skip: process.platform === "win32" },
