@@ -93,9 +93,11 @@ diagrampilot init
 diagrampilot init --docs
 diagrampilot init --config
 diagrampilot check
+diagrampilot inspect
 diagrampilot generate
 diagrampilot mcp
 diagrampilot check docs --json
+diagrampilot inspect docs --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
 diagrampilot format docs/architecture.dp.yaml
@@ -107,7 +109,8 @@ diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architectu
 ```
 
 The Checkout Demo Project may use `demo-projects/checkout` as the sample
-`check --json` path, but it should describe the same command behavior.
+`check --json` and `inspect --json` path, but it should describe the same
+command behavior.
 
 ## Drift Checks
 
@@ -124,6 +127,8 @@ The drift checks should verify these public contract points:
   explicit managed-docs path and `diagrampilot init --config` is the explicit
   config creation path.
 - `diagrampilot check` remains the read-only repo review/CI command.
+- `diagrampilot inspect` remains the read-only source inventory and topology
+  command.
 - `diagrampilot mcp` launches the alpha MCP stdio server for local MCP
   clients.
 - `diagrampilot check --json` includes the config path when optional

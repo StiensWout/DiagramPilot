@@ -4,6 +4,8 @@ import type {
   RepoWorkflowCheckResult,
   RepoWorkflowGenerateOptions,
   RepoWorkflowGenerateResult,
+  RepoWorkflowInspectOptions,
+  RepoWorkflowInspectResult,
   ValidatedDiagramSpecLoadResult,
 } from "@diagrampilot/core";
 import type {
@@ -15,6 +17,9 @@ export interface CommandPlanningDependencies {
   checkDiagramPilotRepoWorkflow(
     options: RepoWorkflowCheckOptions,
   ): Promise<RepoWorkflowCheckResult>;
+  inspectDiagramPilotRepoWorkflow(
+    options: RepoWorkflowInspectOptions,
+  ): Promise<RepoWorkflowInspectResult>;
   generateDiagramPilotRepoWorkflow(
     options: RepoWorkflowGenerateOptions,
   ): Promise<RepoWorkflowGenerateResult>;

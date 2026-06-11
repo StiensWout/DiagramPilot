@@ -21,8 +21,10 @@ const implementedCliCommands = [
   "diagrampilot init",
   "diagrampilot init --docs",
   "diagrampilot check",
+  "diagrampilot inspect",
   "diagrampilot mcp",
   "diagrampilot check docs --json",
+  "diagrampilot inspect docs --json",
   "diagrampilot validate docs/architecture.dp.yaml",
   "diagrampilot validate docs/architecture.dp.yaml --json",
   "diagrampilot format docs/architecture.dp.yaml",
@@ -36,7 +38,9 @@ const quickstartCliCommands = [
   "diagrampilot init",
   "diagrampilot init --docs",
   "diagrampilot check",
+  "diagrampilot inspect",
   "diagrampilot check demo-projects/checkout --json",
+  "diagrampilot inspect demo-projects/checkout --json",
   "diagrampilot validate docs/architecture.dp.yaml",
   "diagrampilot validate docs/architecture.dp.yaml --json",
   "diagrampilot format docs/architecture.dp.yaml",
@@ -48,6 +52,7 @@ const quickstartCliCommands = [
 ];
 const demoWorkflowCommands = [
   "diagrampilot check",
+  "diagrampilot inspect",
   "diagrampilot validate docs/architecture.dp.yaml",
   "diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg",
   "diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png",

@@ -1,20 +1,21 @@
 import type {
   RepoWorkflowConfig,
-  RepoWorkflowConfigDiscoveryResult,
   RepoWorkflowConfigFailure,
 } from "./repo-workflow-config.js";
-import { createRepoWorkflowArtifactPlan } from "./repo-workflow-artifact-plan.js";
 import {
   checkConfiguredArtifactsForValidatedSource,
-  configuredExplicitSourcesForScope,
   configuredOutputsForSource,
-  configuredSourceDiscoveryOptions,
-  mergeDiscoveredAndConfiguredSources,
 } from "./repo-workflow-configured-artifacts.js";
+import { checkDefaultSvgArtifactForLoadedSource } from "./repo-workflow-default-svg-artifact.js";
 import type {
   ConfiguredTextArtifactFormat,
   RepoWorkflowCheckConfiguredArtifactResult,
 } from "./repo-workflow-configured-artifact-result.js";
+import {
+  discoverRepoWorkflowContext,
+  type RepoWorkflowContext,
+  type RepoWorkflowContextDependencies,
+} from "./repo-workflow-context.js";
 import {
   mapArtifactResult,
   summarizeSources,
@@ -26,13 +27,7 @@ import {
 import {
   deriveRepoWorkflowConfigDisplayPath,
 } from "./repo-workflow-paths.js";
-import type {
-  DiscoveredDiagramPilotSourceFile,
-  DiagramPilotSourceDiscoveryFailure,
-  DiagramPilotSourceDiscoveryOptions,
-  DiagramPilotSourceDiscoveryResult,
-  DiagramPilotSourceDiscoveryScope,
-} from "./source-discovery.js";
+import type { DiagramPilotSourceDiscoveryFailure } from "./source-discovery.js";
 import type {
   DiagramPilotSourceFile,
   RepairableDiagnosticReport,
@@ -57,14 +52,8 @@ export interface RepoWorkflowCheckOptions {
   }): string;
 }
 
-export interface RepoWorkflowCheckDependencies {
-  discoverRepoWorkflowConfig?(
-    scopePath?: string,
-  ): Promise<RepoWorkflowConfigDiscoveryResult>;
-  discoverDiagramPilotSourceFiles(
-    scopePath?: string,
-    options?: DiagramPilotSourceDiscoveryOptions,
-  ): Promise<DiagramPilotSourceDiscoveryResult>;
+export interface RepoWorkflowCheckDependencies
+  extends RepoWorkflowContextDependencies {
   loadValidatedDiagramSpec(path: string): ValidatedDiagramSpecLoadResult;
   checkExpectedSvgArtifactFreshnessForValidatedSource(options: {
     source: DiagramPilotSourceFile;
@@ -135,7 +124,7 @@ export type RepoWorkflowCheckResult =
       config?: {
         path: string;
       };
-      scope: DiagramPilotSourceDiscoveryScope;
+      scope: RepoWorkflowContext["scope"];
       summary: RepoWorkflowCheckSummary;
       sources: RepoWorkflowCheckSourceResult[];
     }
@@ -148,22 +137,20 @@ export async function checkDiagramPilotRepoWorkflowWithDependencies(
   options: RepoWorkflowCheckOptions,
   dependencies: RepoWorkflowCheckDependencies,
 ): Promise<RepoWorkflowCheckResult> {
-  const contextResult = await discoverRepoWorkflowCheckContext(
-    options,
+  const contextResult = await discoverRepoWorkflowContext(
+    options.scopePath,
     dependencies,
   );
 
   return contextResult.ok
     ? checkRepoWorkflowSources(options, dependencies, contextResult.context)
-    : contextResult.result;
+    : {
+        ok: false,
+        failure: contextResult.failure,
+      };
 }
 
-interface RepoWorkflowCheckContext {
-  config?: RepoWorkflowConfig;
-  currentWorkingDirectory: string;
-  scope: DiagramPilotSourceDiscoveryScope;
-  sources: readonly DiscoveredDiagramPilotSourceFile[];
-}
+type RepoWorkflowCheckContext = RepoWorkflowContext;
 
 interface RepoWorkflowSourceCheckOptions {
   source: RepoWorkflowCheckContext["sources"][number];
@@ -177,66 +164,6 @@ type LoadedRepoWorkflowSourceSuccess = Extract<
   LoadedRepoWorkflowSource,
   { ok: true }
 >;
-
-async function discoverRepoWorkflowCheckContext(
-  options: RepoWorkflowCheckOptions,
-  dependencies: RepoWorkflowCheckDependencies,
-): Promise<
-  | {
-      ok: true;
-      context: RepoWorkflowCheckContext;
-    }
-  | {
-      ok: false;
-      result: RepoWorkflowCheckResult;
-    }
-> {
-  const configResult =
-    dependencies.discoverRepoWorkflowConfig === undefined
-      ? { ok: true as const }
-      : await dependencies.discoverRepoWorkflowConfig(options.scopePath);
-
-  if (!configResult.ok) {
-    return {
-      ok: false,
-      result: {
-        ok: false,
-        failure: configResult.failure,
-      },
-    };
-  }
-
-  const discoveryResult = await dependencies.discoverDiagramPilotSourceFiles(
-    options.scopePath,
-    configuredSourceDiscoveryOptions(configResult.config),
-  );
-
-  if (!discoveryResult.ok) {
-    return {
-      ok: false,
-      result: {
-        ok: false,
-        failure: discoveryResult.failure,
-      },
-    };
-  }
-
-  const currentWorkingDirectory = dependencies.getCurrentWorkingDirectory();
-  const discoveredSources = mergeDiscoveredAndConfiguredSources(
-    discoveryResult.sources,
-    configuredExplicitSourcesForScope(configResult.config, discoveryResult.scope),
-  );
-
-  return {
-    ok: true,
-    context: {
-      config: configResult.config,
-      currentWorkingDirectory,
-      scope: discoveryResult.scope,
-      sources: discoveredSources,
-    },
-  };
-}
 
 function validationFailureSourceResult(loadedSource: {
   sourcePath: string;
@@ -300,20 +227,15 @@ async function defaultSvgArtifactSourceResult(
   options: RepoWorkflowSourceCheckOptions,
   loadedSource: LoadedRepoWorkflowSourceSuccess,
 ): Promise<RepoWorkflowCheckSourceResult> {
-  const [plannedOutput] = createRepoWorkflowArtifactPlan({
+  const { artifact } = await checkDefaultSvgArtifactForLoadedSource({
     config: options.context.config,
-    source: { ...loadedSource, outputs: [] },
     currentWorkingDirectory: options.context.currentWorkingDirectory,
-  }).outputs;
-
-  const artifact =
-    await options.dependencies.checkExpectedSvgArtifactFreshnessForValidatedSource({
-      source: loadedSource.source,
-      artifactPath: plannedOutput.absolutePath,
-      provenanceSourcePath: loadedSource.sourcePath,
-      diagramPilotVersion: options.checkOptions.diagramPilotVersion,
-      renderer: options.checkOptions.renderer,
-    });
+    diagramPilotVersion: options.checkOptions.diagramPilotVersion,
+    renderer: options.checkOptions.renderer,
+    loadedSource,
+    checkExpectedSvgArtifactFreshnessForValidatedSource:
+      options.dependencies.checkExpectedSvgArtifactFreshnessForValidatedSource,
+  });
 
   return {
     sourcePath: loadedSource.sourcePath,

@@ -1,9 +1,11 @@
 export {
   checkDiagramPilotRepoWorkflow,
   generateDiagramPilotRepoWorkflow,
+  inspectDiagramPilotRepoWorkflow,
 } from "./repo-workflow.js";
 export { checkDiagramPilotRepoWorkflowWithDependencies } from "./repo-workflow-check.js";
 export { generateDiagramPilotRepoWorkflowWithDependencies } from "./repo-workflow-generate.js";
+export { inspectDiagramPilotRepoWorkflowWithDependencies } from "./repo-workflow-inspect.js";
 export {
   createRepoWorkflowArtifactPlan,
   type RepoWorkflowArtifactPlan,
@@ -51,6 +53,15 @@ export type {
   RepoWorkflowGenerateSummary,
   RepoWorkflowGenerateWrittenArtifact,
 } from "./repo-workflow-generate.js";
+export type {
+  RepoWorkflowInspectArtifactResult,
+  RepoWorkflowInspectDependencies,
+  RepoWorkflowInspectDiagramSummary,
+  RepoWorkflowInspectOptions,
+  RepoWorkflowInspectResult,
+  RepoWorkflowInspectSourceResult,
+  RepoWorkflowInspectSummary,
+} from "./repo-workflow-inspect.js";
 export type {
   ConfiguredTextArtifactFormat,
   RepoWorkflowCheckConfiguredArtifactResult,

@@ -15,6 +15,8 @@ workflows:
 - `diagrampilot init`
 - `diagrampilot check [path]`
 - `diagrampilot check [path] --json`
+- `diagrampilot inspect [path]`
+- `diagrampilot inspect [path] --json`
 - `diagrampilot validate <path>`
 - `diagrampilot validate <path> --json`
 - `diagrampilot render <path> --out <artifact.svg>`
@@ -81,6 +83,10 @@ a future PRD explicitly changes them:
   including the config path when config is used.
 - `check` does not render, write files, update artifacts, rewrite sources, scan
   from the Git root by default, or generate configured artifacts.
+- `inspect [path]` reports discovered DiagramPilot Source Files, diagram
+  summaries, Stable IDs, topology, diagnostics, and artifact expectations
+  without rendering, exporting, generating, or rewriting files.
+- `inspect --json` emits stable agent inventory for the same read-only scope.
 - `render` defaults to SVG.
 - `render --format svg|png` supports SVG and PNG output.
 - `render` requires `--out`.
@@ -532,7 +538,9 @@ before rendering or rewriting artifacts:
 
 ```bash
 diagrampilot check
+diagrampilot inspect
 diagrampilot check demo-projects/checkout --json
+diagrampilot inspect demo-projects/checkout --json
 ```
 
 ### Maintainer Verification

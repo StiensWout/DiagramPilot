@@ -38,10 +38,12 @@ diagrampilot init
 diagrampilot init --docs
 diagrampilot init --config
 diagrampilot check
+diagrampilot inspect
 diagrampilot generate
 diagrampilot watch docs
 diagrampilot mcp
 diagrampilot check docs --json
+diagrampilot inspect docs --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
 diagrampilot format docs/architecture.dp.yaml
@@ -55,10 +57,12 @@ diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architectu
 Use `init --docs` only when a repository intentionally wants managed local
 agent docs. Use `init --config` only when a repository intentionally wants
 `diagrampilot.config.yaml`. Use `check` as the read-only repo review/CI
-command. `render` requires `--out`, defaults to SVG, and supports `--format
-svg|png`. `export` prints to stdout by default and writes a file only when
-`--out` is provided. `format <path>` validates one `*.dp.yaml` source and
-rewrites it in canonical YAML key order; in v0.4.0 YAML comments may be removed
-or moved. `watch [path]` watches `*.dp.yaml` and `diagrampilot.config.yaml`,
-debounces changes, checks first, and generates only when source/config state is
-valid. `mcp` launches the alpha MCP stdio server for local MCP clients.
+command. Use `inspect` for read-only source inventory, topology, Stable IDs,
+and artifact expectations before editing. `render` requires `--out`, defaults
+to SVG, and supports `--format svg|png`. `export` prints to stdout by default
+and writes a file only when `--out` is provided. `format <path>` validates one
+`*.dp.yaml` source and rewrites it in canonical YAML key order; in v0.4.0 YAML
+comments may be removed or moved. `watch [path]` watches `*.dp.yaml` and
+`diagrampilot.config.yaml`, debounces changes, checks first, and generates only
+when source/config state is valid. `mcp` launches the alpha MCP stdio server for
+local MCP clients.

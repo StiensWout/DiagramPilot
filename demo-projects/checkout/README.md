@@ -8,6 +8,7 @@ Run the repo workflow from this directory:
 
 ```bash
 diagrampilot check
+diagrampilot inspect
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
@@ -17,6 +18,8 @@ diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architectu
 ```
 
 Use `diagrampilot check` as the read-only repo review/CI command. Use
-`validate` for explicit source repair and `render --out` to refresh SVG or PNG
-artifacts. `render` defaults to SVG and accepts `--format svg|png`. `export`
-prints to stdout by default and writes a file only when `--out` is provided.
+`diagrampilot inspect` for read-only source inventory, Stable IDs, topology,
+and artifact expectations before editing. Use `validate` for explicit source
+repair and `render --out` to refresh SVG or PNG artifacts. `render` defaults to
+SVG and accepts `--format svg|png`. `export` prints to stdout by default and
+writes a file only when `--out` is provided.

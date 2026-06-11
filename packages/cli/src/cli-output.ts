@@ -1,4 +1,8 @@
-import type { RepoWorkflowCheckSourceResult } from "@diagrampilot/core";
+import type {
+  RepoWorkflowCheckSourceResult,
+  RepoWorkflowInspectResult,
+  RepoWorkflowInspectSourceResult,
+} from "@diagrampilot/core";
 
 import type { Writable } from "./types.js";
 
@@ -27,6 +31,7 @@ export function helpText(version: string): string {
     "  validate <path> [--json]",
     "  format <path>",
     "  check [path] [--json]",
+    "  inspect [path] [--json]",
     "  generate [path] [--json]",
     "  watch [path]",
     "  mcp",
@@ -41,6 +46,10 @@ export function helpText(version: string): string {
 
 export function checkUsageText(): string {
   return "Usage: diagrampilot check [path] [--json]";
+}
+
+export function inspectUsageText(): string {
+  return "Usage: diagrampilot inspect [path] [--json]";
 }
 
 export function generateUsageText(): string {
@@ -75,6 +84,118 @@ export function renderUsageText(): string {
 
 function formatSourceCount(count: number): string {
   return `${count} DiagramPilot Source File${count === 1 ? "" : "s"}`;
+}
+
+function plural(count: number, singular: string, pluralLabel = `${singular}s`): string {
+  return `${count} ${count === 1 ? singular : pluralLabel}`;
+}
+
+function formatValueList(values: readonly string[]): string {
+  return values.length === 0 ? "none" : values.join(", ");
+}
+
+function formatInspectSummary(
+  inspectResult: Extract<RepoWorkflowInspectResult, { ok: true }>,
+): string {
+  const invalidSources = inspectResult.summary.invalidSourceCount;
+  const artifactIssues = inspectResult.summary.artifactIssueCount;
+  const issueClauses = [
+    invalidSources === 0 ? undefined : plural(invalidSources, "invalid source"),
+    artifactIssues === 0 ? undefined : plural(artifactIssues, "artifact issue"),
+  ].filter((clause): clause is string => clause !== undefined);
+  const suffix =
+    issueClauses.length === 0 ? "" : ` ${issueClauses.join(", ")}.`;
+
+  return `Found ${formatSourceCount(
+    inspectResult.summary.discoveredSourceCount,
+  )} in ${inspectResult.scope.path}.${suffix}`;
+}
+
+function formatInspectObjectCounts(
+  diagram: NonNullable<RepoWorkflowInspectSourceResult["diagram"]>,
+): string {
+  return [
+    plural(diagram.counts.nodes, "node"),
+    plural(diagram.counts.edges, "edge"),
+    plural(diagram.counts.groups, "group"),
+  ].join(", ");
+}
+
+function formatInspectStableIds(
+  diagram: NonNullable<RepoWorkflowInspectSourceResult["diagram"]>,
+): string {
+  return [
+    `nodes=${formatValueList(diagram.stableIds.nodes)}`,
+    `edges=${formatValueList(diagram.stableIds.edges)}`,
+    `groups=${formatValueList(diagram.stableIds.groups)}`,
+  ].join("; ");
+}
+
+function formatInspectTopology(
+  diagram: NonNullable<RepoWorkflowInspectSourceResult["diagram"]>,
+): string {
+  return [
+    `root nodes=${formatValueList(diagram.topology.rootNodeIds)}`,
+    `root groups=${formatValueList(diagram.topology.rootGroupIds)}`,
+    `max depth=${diagram.topology.maxDepth}`,
+    `contains=${diagram.topology.containmentReferenceCount}`,
+  ].join("; ");
+}
+
+function formatInspectArtifacts(source: RepoWorkflowInspectSourceResult): string {
+  if (source.artifacts.length === 0) {
+    return "none";
+  }
+
+  return source.artifacts
+    .map((artifact) => `${artifact.format} ${artifact.path} ${artifact.status}`)
+    .join("; ");
+}
+
+function formatInvalidInspectSource(source: RepoWorkflowInspectSourceResult): string[] {
+  return [
+    source.sourcePath,
+    `  invalid: ${plural(source.validation.errors.length, "diagnostic")}`,
+    "  diagnostics:",
+    ...source.validation.errors.map(
+      (error) => `    - ${error.path}: ${error.message} Suggestion: ${error.suggestion}`,
+    ),
+  ];
+}
+
+function formatValidInspectSource(source: RepoWorkflowInspectSourceResult): string[] {
+  if (source.diagram === undefined) {
+    return [source.sourcePath, "  diagram: unavailable"];
+  }
+
+  return [
+    source.sourcePath,
+    `  title: ${source.diagram.title}`,
+    `  direction: ${source.diagram.direction ?? "unspecified"}`,
+    `  objects: ${formatInspectObjectCounts(source.diagram)}`,
+    `  Stable IDs: ${formatInspectStableIds(source.diagram)}`,
+    `  topology: ${formatInspectTopology(source.diagram)}`,
+    `  artifacts: ${formatInspectArtifacts(source)}`,
+  ];
+}
+
+function formatInspectSource(source: RepoWorkflowInspectSourceResult): string[] {
+  return source.validation.ok
+    ? formatValidInspectSource(source)
+    : formatInvalidInspectSource(source);
+}
+
+export function formatInspectTextReport(
+  inspectResult: Extract<RepoWorkflowInspectResult, { ok: true }>,
+): string {
+  if (inspectResult.sources.length === 0) {
+    return `No DiagramPilot Source Files found in ${inspectResult.scope.path}.`;
+  }
+
+  return [
+    formatInspectSummary(inspectResult),
+    ...inspectResult.sources.flatMap(formatInspectSource),
+  ].join("\n");
 }
 
 type CheckArtifact = RepoWorkflowCheckSourceResult["artifact"] | NonNullable<

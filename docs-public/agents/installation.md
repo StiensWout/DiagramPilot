@@ -53,6 +53,7 @@ Run DiagramPilot without adding it to the repository:
 
 ```bash
 npx diagrampilot check
+npx diagrampilot inspect
 npx diagrampilot validate docs/architecture.dp.yaml
 npx diagrampilot format docs/architecture.dp.yaml
 npx diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
@@ -114,6 +115,7 @@ tool across repositories:
 ```bash
 npm install --global diagrampilot
 diagrampilot check
+diagrampilot inspect
 ```
 
 Prefer a repository dev dependency for CI and other repeatable workflows.

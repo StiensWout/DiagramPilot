@@ -71,6 +71,7 @@ Run the workflow from the demo project directory:
 ```bash
 cd demo-projects/checkout
 diagrampilot check
+diagrampilot inspect
 ```
 
 Expected check result:
@@ -82,6 +83,11 @@ Checked 1 DiagramPilot Source File. All expected SVG artifacts are fresh.
 `diagrampilot check` is the repo-level review/CI command. It is read-only: it
 discovers DiagramPilot source files, validates them, and checks expected
 artifacts without rendering, fixing, or writing files.
+
+`diagrampilot inspect` is the read-only inventory command. It reports
+discovered DiagramPilot Source Files, title/direction, Diagram Object counts,
+Stable IDs, topology roots/depth, and expected artifact status before an agent
+edits a source.
 
 Without Repo Workflow Configuration, `check` uses the next-to-source same-stem
 Expected SVG Artifact. For `docs/architecture.dp.yaml`, the expected SVG
@@ -220,6 +226,7 @@ checking the Git diff.
 
 ```bash
 diagrampilot check
+diagrampilot inspect
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
@@ -268,9 +275,11 @@ diagrampilot init
 diagrampilot init --docs
 diagrampilot init --config
 diagrampilot check
+diagrampilot inspect
 diagrampilot generate
 diagrampilot watch docs
 diagrampilot check demo-projects/checkout --json
+diagrampilot inspect demo-projects/checkout --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
 diagrampilot format docs/architecture.dp.yaml
@@ -304,6 +313,14 @@ artifact mappings for matched sources.
 `diagrampilot check [path] --json`
 : Emits structured repo check results to stdout for agents and CI scripts,
 including the config path when config is used.
+
+`diagrampilot inspect [path]`
+: Emits concise read-only inventory for humans, including discovered source
+files, diagram counts, Stable IDs, topology summary, and artifact expectations.
+
+`diagrampilot inspect [path] --json`
+: Emits stable read-only inventory for agents, including invalid-source
+diagnostics and stale or missing artifact summaries when practical.
 
 `diagrampilot generate [path]`
 : Rewrites configured Derived Artifacts and generated Markdown embed files for
