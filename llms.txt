@@ -1,8 +1,8 @@
 # DiagramPilot
 
 > DiagramPilot is a local-first, repo-native diagram compiler for AI coding
-> agents. It helps agents check, validate, repair, render, and export diagrams
-> from structured `*.dp.yaml` source files.
+> agents. It helps agents create, check, validate, repair, render, and export
+> diagrams from structured `*.dp.yaml` source files.
 
 DiagramPilot uses DiagramSpec as its source model. A DiagramPilot source file is
 the editable artifact. Rendered SVG or PNG and exported Mermaid, D2, or DOT
@@ -47,4 +47,10 @@ Current MCP launch path:
 
 ```bash
 diagrampilot mcp
+```
+
+Current Source Creation path:
+
+```bash
+diagrampilot create docs/architecture.dp.yaml --template architecture
 ```

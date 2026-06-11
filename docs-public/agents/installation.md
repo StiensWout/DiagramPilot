@@ -53,6 +53,7 @@ Run DiagramPilot without adding it to the repository:
 
 ```bash
 npx diagrampilot check
+npx diagrampilot create docs/architecture.dp.yaml --template architecture
 npx diagrampilot inspect
 npx diagrampilot validate docs/architecture.dp.yaml
 npx diagrampilot format docs/architecture.dp.yaml

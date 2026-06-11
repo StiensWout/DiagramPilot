@@ -58,6 +58,19 @@ only when their render or export commands use `--out`.
 and PNG are derived artifacts; regenerate them from the source instead of
 hand-editing generated output.
 
+Create a new starter DiagramPilot Source File when a repository does not have
+one yet:
+
+```bash
+diagrampilot create docs/architecture.dp.yaml --template architecture
+diagrampilot validate docs/architecture.dp.yaml
+diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
+```
+
+Maintained Source Creation templates are `architecture`, `flow`, and
+`package-map`. `create` writes `*.dp.yaml` source files only and refuses to
+overwrite an existing file.
+
 `*.dp.json` is not a DiagramPilot Source File path. Source files are
 `*.dp.yaml` only, repo discovery ignores JSON source files, and DiagramPilot
 does not provide a migration command. JSON remains available for `--json`

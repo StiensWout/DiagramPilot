@@ -30,6 +30,10 @@ export {
 } from "./svg-artifact-freshness.js";
 export { validateDiagramSpec } from "./diagramspec-validation.js";
 export { serializeDiagramPilotSourceFile } from "./source-serialization.js";
+export {
+  createDiagramPilotSourceTemplate,
+  diagramPilotSourceTemplateNames,
+} from "./source-templates.js";
 export { DIAGRAMPILOT_VERSION, getDiagramPilotVersion } from "./version.js";
 export {
   MAINTAINABILITY_FILE_SIZE_GATE,
@@ -126,6 +130,10 @@ export type {
   DiagramSpecValidationResult,
   RepairableDiagnostic,
 } from "./diagramspec-validation.js";
+export type {
+  DiagramPilotSourceTemplateName,
+  DiagramPilotSourceTemplateResult,
+} from "./source-templates.js";
 export type {
   MaintainabilityFileSizeAuditFile,
   MaintainabilityFileSizeAuditResult,
