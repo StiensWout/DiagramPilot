@@ -4,6 +4,12 @@ export {
 } from "./repo-workflow.js";
 export { checkDiagramPilotRepoWorkflowWithDependencies } from "./repo-workflow-check.js";
 export { generateDiagramPilotRepoWorkflowWithDependencies } from "./repo-workflow-generate.js";
+export {
+  createRepoWorkflowArtifactPlan,
+  type RepoWorkflowArtifactPlan,
+  type RepoWorkflowArtifactPlanItem,
+  type RepoWorkflowArtifactPlanSource,
+} from "./repo-workflow-artifact-plan.js";
 export { createDiagramSpecV1JsonSchema } from "./diagramspec-schema.js";
 export { createDiagramSpecTopology } from "./diagramspec-topology.js";
 export { formatDiagramSpecTopologyLines } from "./diagramspec-topology-lines.js";
