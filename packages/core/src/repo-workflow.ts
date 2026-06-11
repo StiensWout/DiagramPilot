@@ -8,6 +8,11 @@ import {
   type RepoWorkflowGenerateOptions,
   type RepoWorkflowGenerateResult,
 } from "./repo-workflow-generate.js";
+import {
+  inspectDiagramPilotRepoWorkflowWithDependencies,
+  type RepoWorkflowInspectOptions,
+  type RepoWorkflowInspectResult,
+} from "./repo-workflow-inspect.js";
 import { discoverRepoWorkflowConfig } from "./repo-workflow-config.js";
 import { createRepairableDiagnosticReport, loadValidatedDiagramSpec } from "./source-loading.js";
 import { discoverDiagramPilotSourceFiles } from "./source-discovery.js";
@@ -34,6 +39,20 @@ export async function generateDiagramPilotRepoWorkflow(
     discoverRepoWorkflowConfig,
     discoverDiagramPilotSourceFiles,
     loadValidatedDiagramSpec,
+    createRepairableDiagnosticReport,
+    getCurrentWorkingDirectory: () => process.cwd(),
+  });
+}
+
+export async function inspectDiagramPilotRepoWorkflow(
+  options: RepoWorkflowInspectOptions,
+): Promise<RepoWorkflowInspectResult> {
+  return inspectDiagramPilotRepoWorkflowWithDependencies(options, {
+    discoverRepoWorkflowConfig,
+    discoverDiagramPilotSourceFiles,
+    loadValidatedDiagramSpec,
+    checkExpectedSvgArtifactFreshnessForValidatedSource,
+    exportConfiguredTextArtifact: options.exportConfiguredTextArtifact,
     createRepairableDiagnosticReport,
     getCurrentWorkingDirectory: () => process.cwd(),
   });

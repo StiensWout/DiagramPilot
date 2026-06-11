@@ -37,6 +37,7 @@ Run the primary workflow from the repository root:
 ```bash
 cd demo-projects/checkout
 diagrampilot check
+diagrampilot inspect
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot format docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
@@ -46,12 +47,14 @@ diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architectur
 diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot
 ```
 
-Use `check` as the read-only repo review/CI command. Use `validate` when you
-need explicit source repair output. Use `format` to rewrite a valid
-DiagramPilot Source File into canonical YAML before review. `render` requires
-`--out`, defaults to SVG, and supports `--format svg|png`; PNG rendering
-rasterizes the SVG render path. `export` prints to stdout by default and writes
-only when `--out` is provided.
+Use `check` as the read-only repo review/CI command. Use `inspect` when an
+agent needs a read-only inventory of DiagramPilot Source Files, topology,
+Stable IDs, and artifact expectations before editing. Use `validate` when you
+need explicit source repair output. Use `format` to rewrite a valid DiagramPilot
+Source File into canonical YAML before review. `render` requires `--out`,
+defaults to SVG, and supports `--format svg|png`; PNG rendering rasterizes the
+SVG render path. `export` prints to stdout by default and writes only when
+`--out` is provided.
 
 ## Source And Artifacts
 
@@ -95,10 +98,12 @@ diagrampilot init
 diagrampilot init --docs
 diagrampilot init --config
 diagrampilot check
+diagrampilot inspect
 diagrampilot generate
 diagrampilot watch docs
 diagrampilot mcp
 diagrampilot check docs --json
+diagrampilot inspect docs --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
 diagrampilot format docs/architecture.dp.yaml
@@ -120,6 +125,12 @@ explicit directory, or one explicit source file. It validates them and checks
 expected artifacts without writing files. Without config it checks
 next-to-source same-stem Expected SVG Artifacts through DiagramPilot provenance
 metadata.
+
+`inspect` discovers DiagramPilot source files and reports title, direction,
+Diagram Object counts, Stable IDs by object type, topology roots/depth, and
+artifact expectations. `inspect --json` emits the same read-only inventory for
+agents, including invalid-source diagnostics and stale or missing artifact
+summaries when practical.
 
 Optional `diagrampilot.config.yaml` is discovered upward from the command
 scope, validated before source processing, reported in `--json` output, and can

@@ -15,6 +15,11 @@ interface CheckCommandOptions {
   scopePath?: string;
 }
 
+interface InspectCommandOptions {
+  json: boolean;
+  scopePath?: string;
+}
+
 interface GenerateCommandOptions {
   json: boolean;
   scopePath?: string;
@@ -33,6 +38,7 @@ type ArgsResult<TOptions> =
 type ExportArgsResult = ArgsResult<ExportOptions>;
 type RenderArgsResult = ArgsResult<RenderCommandOptions>;
 type CheckArgsResult = ArgsResult<CheckCommandOptions>;
+type InspectArgsResult = ArgsResult<InspectCommandOptions>;
 type GenerateArgsResult = ArgsResult<GenerateCommandOptions>;
 
 const exportFormats = ["mermaid", "d2", "dot"] as const;
@@ -84,7 +90,7 @@ function isSupportedFormat<TFormat extends string>(
 
 function parseScopedJsonPositionalArg(
   arg: string,
-  commandName: "check" | "generate",
+  commandName: "check" | "generate" | "inspect",
   state: ScopedJsonParseState,
 ): ArgsResult<ScopedJsonParseState> {
   if (arg.startsWith("-")) {
@@ -112,7 +118,7 @@ function parseScopedJsonPositionalArg(
 
 function parseScopedJsonArg(
   arg: string,
-  commandName: "check" | "generate",
+  commandName: "check" | "generate" | "inspect",
   state: ScopedJsonParseState,
 ): ArgsResult<ScopedJsonParseState> {
   if (arg === "--json") {
@@ -130,7 +136,7 @@ function parseScopedJsonArg(
 
 function parseScopedJsonArgs(
   args: readonly string[],
-  commandName: "check" | "generate",
+  commandName: "check" | "generate" | "inspect",
 ): ArgsResult<CheckCommandOptions> {
   let state: ScopedJsonParseState = {
     json: false,
@@ -422,6 +428,10 @@ export function parseRenderArgs(args: readonly string[]): RenderArgsResult {
 
 export function parseCheckArgs(args: readonly string[]): CheckArgsResult {
   return parseScopedJsonArgs(args, "check");
+}
+
+export function parseInspectArgs(args: readonly string[]): InspectArgsResult {
+  return parseScopedJsonArgs(args, "inspect");
 }
 
 export function parseGenerateArgs(

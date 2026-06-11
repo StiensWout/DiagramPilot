@@ -260,6 +260,18 @@ export function createPlanningDependencies(overrides = {}) {
       };
     },
     exportDiagramSpecToMermaid: () => "flowchart LR\n",
+    inspectDiagramPilotRepoWorkflow: async () => ({
+      ok: true,
+      scope: { kind: "directory", path: "/repo" },
+      summary: {
+        discoveredSourceCount: 0,
+        validSourceCount: 0,
+        invalidSourceCount: 0,
+        artifactExpectationCount: 0,
+        artifactIssueCount: 0,
+      },
+      sources: [],
+    }),
     exportDiagramSpecToD2: () => "direction: right\n",
     exportDiagramSpecToDot: () => "digraph checkout_architecture {\n}\n",
     readSourceContent: () => "version: 1\n",

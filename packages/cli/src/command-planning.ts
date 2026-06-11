@@ -4,7 +4,12 @@ import {
   checkDiagramPilotRepoWorkflow,
   generateDiagramPilotRepoWorkflow,
   getDiagramPilotVersion,
+  inspectDiagramPilotRepoWorkflow,
   loadValidatedDiagramSpec,
+} from "@diagrampilot/core";
+import type {
+  ConfiguredTextArtifactFormat,
+  DiagramSpec,
 } from "@diagrampilot/core";
 import { exportDiagramSpecToD2 } from "@diagrampilot/export-d2";
 import { exportDiagramSpecToDot } from "@diagrampilot/export-dot";
@@ -17,18 +22,20 @@ import {
   SVG_RENDERER_VERSION,
 } from "@diagrampilot/render-svg";
 
-import { parseCheckArgs } from "./argument-parsing.js";
+import { parseCheckArgs, parseInspectArgs } from "./argument-parsing.js";
 import {
   checkUsageText,
   exportUsageText,
   formatUsageText,
   generateUsageText,
+  inspectUsageText,
   renderUsageText,
   textLine,
 } from "./cli-output.js";
 import { checkResultPlan } from "./check-command-planning.js";
 import type { CommandPlanningDependencies } from "./command-planning-dependencies.js";
 import { planGenerate } from "./generate-command-planning.js";
+import { inspectResultPlan } from "./inspect-command-planning.js";
 import {
   initialCommandPlan,
   unknownCommandPlan,
@@ -48,6 +55,7 @@ export type { CommandPlanningDependencies } from "./command-planning-dependencie
 
 const defaultCommandPlanningDependencies: CommandPlanningDependencies = {
   checkDiagramPilotRepoWorkflow,
+  inspectDiagramPilotRepoWorkflow,
   generateDiagramPilotRepoWorkflow,
   loadValidatedDiagramSpec,
   exportDiagramSpecToMermaid,
@@ -65,6 +73,25 @@ type CommandHandler = (
   dependencies: CommandPlanningDependencies,
 ) => CommandPlan | Promise<CommandPlan>;
 
+function repoWorkflowCommandOptions(dependencies: CommandPlanningDependencies) {
+  return {
+    diagramPilotVersion: dependencies.getDiagramPilotVersion(),
+    renderer: {
+      name: SVG_RENDERER_NAME,
+      version: SVG_RENDERER_VERSION,
+    },
+    exportConfiguredTextArtifact: ({
+      format,
+      spec,
+    }: {
+      format: ConfiguredTextArtifactFormat;
+      spec: DiagramSpec;
+    }) => {
+      return exportDiagramSpecTextArtifact(dependencies, format, spec);
+    },
+  };
+}
+
 async function planCheck(
   args: readonly string[],
   dependencies: CommandPlanningDependencies,
@@ -77,14 +104,7 @@ async function planCheck(
 
   const checkResult = await dependencies.checkDiagramPilotRepoWorkflow({
     scopePath: argsResult.options.scopePath,
-    diagramPilotVersion: dependencies.getDiagramPilotVersion(),
-    renderer: {
-      name: SVG_RENDERER_NAME,
-      version: SVG_RENDERER_VERSION,
-    },
-    exportConfiguredTextArtifact: ({ format, spec }) => {
-      return exportDiagramSpecTextArtifact(dependencies, format, spec);
-    },
+    ...repoWorkflowCommandOptions(dependencies),
   });
 
   if (!checkResult.ok) {
@@ -99,11 +119,39 @@ async function planCheck(
   return checkResultPlan(checkResult, argsResult.options.json);
 }
 
+async function planInspect(
+  args: readonly string[],
+  dependencies: CommandPlanningDependencies,
+): Promise<CommandPlan> {
+  const argsResult = parseInspectArgs(args);
+
+  if (!argsResult.ok) {
+    return usageFailurePlan(argsResult.message, inspectUsageText());
+  }
+
+  const inspectResult = await dependencies.inspectDiagramPilotRepoWorkflow({
+    scopePath: argsResult.options.scopePath,
+    ...repoWorkflowCommandOptions(dependencies),
+  });
+
+  if (!inspectResult.ok) {
+    return {
+      exitCode: 1,
+      stdout: "",
+      stderr: textLine(inspectResult.failure.message),
+      writes: [],
+    };
+  }
+
+  return inspectResultPlan(inspectResult, argsResult.options.json);
+}
+
 const commandHandlers: Readonly<Record<string, CommandHandler>> = {
   check: planCheck,
   export: planExport,
   format: planFormat,
   generate: planGenerate,
+  inspect: planInspect,
   render: planRender,
   validate: planValidate,
 };
@@ -113,6 +161,7 @@ const commandHelpText: Readonly<Record<string, () => string>> = {
   export: exportUsageText,
   format: formatUsageText,
   generate: generateUsageText,
+  inspect: inspectUsageText,
   render: renderUsageText,
 };
 

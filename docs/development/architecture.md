@@ -132,6 +132,13 @@ SVG freshness uses provenance, Mermaid/D2/DOT use content comparison, and PNG is
 presence-only in v0.3.0. The JSON form emits aggregate structured repo workflow
 results to stdout and includes the config path when config is used.
 
+`diagrampilot inspect [path] [--json]`
+: Runs read-only DiagramPilot inventory for one repo workflow scope. It reports
+discovered DiagramPilot Source Files, per-source validity, diagram
+title/direction, Diagram Object counts, Stable IDs by type, topology
+roots/depth, and artifact expectations. The JSON form is stable agent
+inventory; invalid sources remain in the inventory with repairable diagnostics.
+
 `diagrampilot generate [path] [--json]`
 : Rewrites configured Derived Artifacts and generated Markdown embed files for
 an explicit scope. It validates config and sources before planning writes, and
