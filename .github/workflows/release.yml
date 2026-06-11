@@ -49,7 +49,7 @@ permissions:
 
 jobs:
   validate-release:
-    name: Validate release and publish dry-run
+    name: Release safety checks (no packages published here)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
@@ -159,7 +159,7 @@ jobs:
           done
 
   publish-packages:
-    name: Publish public packages
+    name: Publish packages (nightly/final releases only)
     needs: validate-release
     if: needs.validate-release.outputs.should_publish == 'true'
     runs-on: ubuntu-latest
@@ -241,7 +241,7 @@ jobs:
           done
 
   publish-github-prerelease:
-    name: Publish nightly GitHub prerelease
+    name: Create GitHub prerelease (nightly only)
     needs: [validate-release, publish-packages]
     if: needs.validate-release.outputs.should_publish == 'true' && needs.validate-release.outputs.dist_tag == 'nightly'
     runs-on: ubuntu-latest
@@ -312,7 +312,7 @@ jobs:
           fi
 
   prepare-github-release-draft:
-    name: Prepare GitHub Release draft
+    name: Prepare GitHub Release draft (final release only)
     needs: [validate-release, publish-packages]
     if: needs.validate-release.outputs.should_publish == 'true' && needs.validate-release.outputs.dist_tag == 'latest'
     runs-on: ubuntu-latest
@@ -415,7 +415,7 @@ jobs:
             --tag "$RELEASE_TAG"
 
   publish-github-release:
-    name: Publish reviewed GitHub Release
+    name: Publish GitHub Release after approval (final only)
     needs: [validate-release, prepare-github-release-draft]
     if: needs.validate-release.outputs.should_publish == 'true' && needs.validate-release.outputs.dist_tag == 'latest'
     runs-on: ubuntu-latest

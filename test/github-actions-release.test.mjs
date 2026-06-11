@@ -40,6 +40,11 @@ test("GitHub Actions release workflow validates releases before guarded publishi
 
   assertMatchesAll(workflow, [
     /^name: Release$/m,
+    /name: Release safety checks \(no packages published here\)/u,
+    /name: Publish packages \(nightly\/final releases only\)/u,
+    /name: Create GitHub prerelease \(nightly only\)/u,
+    /name: Prepare GitHub Release draft \(final release only\)/u,
+    /name: Publish GitHub Release after approval \(final only\)/u,
     /pull_request:\n\s+branches:\n\s+- main/u,
     /push:\n\s+branches:\n\s+- main\n\s+- "feature\/\*\*"/u,
     /workflow_dispatch:/u,
@@ -79,7 +84,7 @@ test("GitHub Actions release workflow validates releases before guarded publishi
     /needs\.validate-release\.outputs\.should_publish == 'true'/u,
     /RELEASE_DIST_TAG == 'nightly'/u,
     /node scripts\/bump-release-version\.mjs "\$RELEASE_PUBLISH_VERSION"/u,
-    /Publish nightly GitHub prerelease/u,
+    /Create GitHub prerelease \(nightly only\)/u,
     /--prerelease/u,
     /--latest=false/u,
     /--kind nightly/u,

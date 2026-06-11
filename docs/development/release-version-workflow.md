@@ -75,6 +75,26 @@ workflow. Keep using `actions/setup-node` with
 `registry-url: https://registry.npmjs.org` and `id-token: write`; do not add
 long-lived `NPM_TOKEN` or `NODE_AUTH_TOKEN` secrets to the release workflow.
 
+## Reading GitHub Checks
+
+GitHub shows skipped jobs when a workflow includes jobs for a different release
+channel. A skipped job is expected when its name says it is for another channel.
+
+- `Code quality audit (pull requests only)` runs on PRs and is skipped on branch
+  pushes.
+- `Test suite and package readiness` runs the normal CI release-readiness gate.
+- `Release safety checks (no packages published here)` validates the release
+  workflow and package publish preview without publishing packages from that
+  job.
+- `Publish packages (nightly/final releases only)` runs only when the planner
+  selects a real nightly or final release. It is skipped for PRs, `main`
+  validation, and manual dry-runs.
+- `Create GitHub prerelease (nightly only)` runs only for nightly releases.
+- `Prepare GitHub Release draft (final release only)` runs only for final
+  milestone releases.
+- `Publish GitHub Release after approval (final only)` runs only after final
+  release draft review.
+
 ## Nightly Builds
 
 A trusted push to `feature/**` publishes a unique prerelease version to npm with
