@@ -151,6 +151,11 @@ correctness only.
 `diagrampilot validate <path> --json`
 : Emits structured validation output suitable for agents and scripts.
 
+`diagrampilot format <path>`
+: Validates and rewrites one explicit DiagramPilot Source File in canonical
+YAML key order. It preserves DiagramSpec data and object/array order, but does
+not promise YAML comment preservation in v0.4.0.
+
 `diagrampilot render <path> --out <artifact.svg>`
 : Validates and renders SVG. The `--out` flag is required and SVG is the
 default render format.

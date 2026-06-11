@@ -38,6 +38,7 @@ Run the primary workflow from the repository root:
 cd demo-projects/checkout
 diagrampilot check
 diagrampilot validate docs/architecture.dp.yaml
+diagrampilot format docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
 diagrampilot export docs/architecture.dp.yaml --format mermaid
@@ -46,9 +47,11 @@ diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architectu
 ```
 
 Use `check` as the read-only repo review/CI command. Use `validate` when you
-need explicit source repair output. `render` requires `--out`, defaults to SVG,
-and supports `--format svg|png`; PNG rendering rasterizes the SVG render path.
-`export` prints to stdout by default and writes only when `--out` is provided.
+need explicit source repair output. Use `format` to rewrite a valid
+DiagramPilot Source File into canonical YAML before review. `render` requires
+`--out`, defaults to SVG, and supports `--format svg|png`; PNG rendering
+rasterizes the SVG render path. `export` prints to stdout by default and writes
+only when `--out` is provided.
 
 ## Source And Artifacts
 
@@ -66,6 +69,11 @@ source files, explicit commands reject non-YAML source paths generically, and
 DiagramPilot does not provide a JSON-to-YAML migration command. JSON remains
 supported for `--json` CLI output, the DiagramSpec JSON Schema, SVG provenance
 metadata, package manifests, and other tooling surfaces.
+
+`diagrampilot format <path>` parses and validates one `*.dp.yaml` source before
+rewriting it in canonical YAML key order. Formatting preserves DiagramSpec data,
+unknown metadata, and object/array order. In v0.4.0 it does not promise comment
+preservation; YAML comments may be removed or moved during formatting.
 
 ## License And Brand
 
@@ -93,6 +101,7 @@ diagrampilot mcp
 diagrampilot check docs --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
+diagrampilot format docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
 diagrampilot export docs/architecture.dp.yaml --format mermaid

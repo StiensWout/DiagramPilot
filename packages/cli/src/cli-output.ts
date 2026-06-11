@@ -25,6 +25,7 @@ export function helpText(version: string): string {
     "MVP commands:",
     "  init [--docs] [--config]",
     "  validate <path> [--json]",
+    "  format <path>",
     "  check [path] [--json]",
     "  generate [path] [--json]",
     "  watch [path]",
@@ -48,6 +49,10 @@ export function generateUsageText(): string {
 
 export function watchUsageText(): string {
   return "Usage: diagrampilot watch [path]";
+}
+
+export function formatUsageText(): string {
+  return "Usage: diagrampilot format <path>";
 }
 
 export function exportUsageText(): string {

@@ -10,6 +10,12 @@ DiagramSpec is stored as YAML:
 
 - `*.dp.yaml`
 
+Use `diagrampilot format <path>` to parse, validate, and rewrite one
+DiagramPilot Source File into canonical YAML key order. Formatting preserves
+DiagramSpec data, unknown metadata, and object/array order. DiagramPilot v0.4.0
+does not promise comment preservation during formatting; YAML comments may be
+removed or moved.
+
 `*.dp.json` is not a DiagramPilot Source File path. Repo discovery ignores JSON
 source files, explicit commands reject non-YAML source paths generically, and
 DiagramPilot does not provide a migration command.
