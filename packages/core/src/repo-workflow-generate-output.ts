@@ -31,10 +31,12 @@ function isConfiguredTextArtifactFormat(
 async function generateSvgOutputContent(
   options: RepoWorkflowGenerateOptions,
   source: ValidGenerateSource,
+  output: RepoWorkflowArtifactOutput,
 ): Promise<string> {
   return options.renderSvgArtifact({
     source: source.source,
     provenanceSourcePath: source.sourcePath,
+    profile: output.profile,
     spec: source.spec,
     diagramPilotVersion: options.diagramPilotVersion,
     renderer: options.renderer,
@@ -44,8 +46,9 @@ async function generateSvgOutputContent(
 async function generateRasterOutputContent(
   options: RepoWorkflowGenerateOptions,
   source: ValidGenerateSource,
+  output: RepoWorkflowArtifactOutput,
 ): Promise<Uint8Array> {
-  const svg = await generateSvgOutputContent(options, source);
+  const svg = await generateSvgOutputContent(options, source, output);
   return options.rasterizeSvgArtifact(svg);
 }
 
@@ -60,6 +63,7 @@ function generateTextOutputContent(
 
   return options.exportTextArtifact({
     format: output.format,
+    profile: output.profile,
     spec: source.spec,
   });
 }
@@ -79,9 +83,10 @@ async function generateOutputContent(
     });
   }
 
-  if (output.format === "svg") return generateSvgOutputContent(options, source);
+  if (output.format === "svg")
+    return generateSvgOutputContent(options, source, output);
   if (output.format === "png")
-    return generateRasterOutputContent(options, source);
+    return generateRasterOutputContent(options, source, output);
 
   return generateTextOutputContent(options, source, output);
 }

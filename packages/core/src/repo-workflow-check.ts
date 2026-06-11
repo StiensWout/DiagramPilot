@@ -1,4 +1,5 @@
 import type {
+  RepoWorkflowArtifactOutput,
   RepoWorkflowConfig,
   RepoWorkflowConfigFailure,
 } from "./repo-workflow-config.js";
@@ -48,6 +49,7 @@ export interface RepoWorkflowCheckOptions {
   renderer: SvgArtifactRenderer;
   exportConfiguredTextArtifact?(options: {
     format: ConfiguredTextArtifactFormat;
+    profile?: RepoWorkflowArtifactOutput["profile"];
     spec: DiagramSpec;
   }): string;
 }
@@ -61,9 +63,11 @@ export interface RepoWorkflowCheckDependencies
     provenanceSourcePath: string;
     diagramPilotVersion?: string;
     renderer: SvgArtifactRenderer;
+    outputProfile?: RepoWorkflowArtifactOutput["profile"];
   }): Promise<SvgArtifactFreshnessCheckResult>;
   exportConfiguredTextArtifact?(options: {
     format: ConfiguredTextArtifactFormat;
+    profile?: RepoWorkflowArtifactOutput["profile"];
     spec: DiagramSpec;
   }): string;
   createRepairableDiagnosticReport(

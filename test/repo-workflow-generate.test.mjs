@@ -30,6 +30,58 @@ function generateOptions(scopePath) {
   };
 }
 
+function profileConfig(tempRoot, outputs) {
+  return {
+    ok: true,
+    config: {
+      path: path.join(tempRoot, "diagrampilot.config.yaml"),
+      directory: tempRoot,
+      version: 1,
+      sources: { ignore: [] },
+      artifacts: [
+        {
+          source: "docs/architecture.dp.yaml",
+          outputs,
+        },
+      ],
+    },
+  };
+}
+
+function validGenerateDependencies(options) {
+  const {
+    tempRoot,
+    sourcePath,
+    source,
+    configResult = { ok: true },
+    scope = { kind: "directory", path: tempRoot },
+    relativePath = "docs/architecture.dp.yaml",
+  } = options;
+
+  return {
+    discoverRepoWorkflowConfig: async () => configResult,
+    discoverDiagramPilotSourceFiles: async () => ({
+      ok: true,
+      scope,
+      sources: [
+        {
+          absolutePath: sourcePath,
+          relativePath,
+        },
+      ],
+    }),
+    loadValidatedDiagramSpec: () => ({
+      ok: true,
+      source,
+      spec: source.value,
+    }),
+    createRepairableDiagnosticReport: () => {
+      throw new Error("valid source should not need diagnostics");
+    },
+    getCurrentWorkingDirectory: () => tempRoot,
+  };
+}
+
 test("generateDiagramPilotRepoWorkflowWithDependencies returns a zero-config SVG write for a source file scope", async () => {
   await withTempRepo(async (tempRoot) => {
     const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
@@ -39,28 +91,13 @@ test("generateDiagramPilotRepoWorkflowWithDependencies returns a zero-config SVG
 
     const result = await generateDiagramPilotRepoWorkflowWithDependencies(
       generateOptions(sourcePath),
-      {
-        discoverRepoWorkflowConfig: async () => ({ ok: true }),
-        discoverDiagramPilotSourceFiles: async () => ({
-          ok: true,
-          scope: { kind: "file", path: sourcePath },
-          sources: [
-            {
-              absolutePath: sourcePath,
-              relativePath: "architecture.dp.yaml",
-            },
-          ],
-        }),
-        loadValidatedDiagramSpec: () => ({
-          ok: true,
-          source,
-          spec: source.value,
-        }),
-        createRepairableDiagnosticReport: () => {
-          throw new Error("valid source should not need diagnostics");
-        },
-        getCurrentWorkingDirectory: () => tempRoot,
-      },
+      validGenerateDependencies({
+        tempRoot,
+        sourcePath,
+        source,
+        scope: { kind: "file", path: sourcePath },
+        relativePath: "architecture.dp.yaml",
+      }),
     );
 
     assert.equal(result.ok, true);
@@ -179,6 +216,82 @@ test("generateDiagramPilotRepoWorkflow returns configured directory-scope writes
         "- [PNG artifact](../png/architecture.png)",
         "",
       ].join("\n"),
+    );
+  });
+});
+
+test("generateDiagramPilotRepoWorkflowWithDependencies passes configured output profiles to text artifact generation", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
+    const source = validSourceContext(sourcePath);
+    const receivedProfiles = [];
+
+    const result = await generateDiagramPilotRepoWorkflowWithDependencies(
+      {
+        ...generateOptions(tempRoot),
+        exportTextArtifact: ({ profile }) => {
+          receivedProfiles.push(profile);
+          return `${profile} output\n`;
+        },
+      },
+      {
+        ...validGenerateDependencies({
+          tempRoot,
+          sourcePath,
+          source,
+          configResult: profileConfig(tempRoot, [
+            {
+              format: "mermaid",
+              path: "generated/{stem}.mmd",
+              profile: "compact",
+            },
+          ]),
+        }),
+      },
+    );
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(receivedProfiles, ["compact"]);
+    assert.equal(result.written[0].content, "compact output\n");
+  });
+});
+
+test("generateDiagramPilotRepoWorkflowWithDependencies passes configured output profiles to SVG generation", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const receivedProfiles = [];
+    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
+    const source = validSourceContext(sourcePath);
+    const profiledGenerateOptions = {
+      ...generateOptions(tempRoot),
+      renderSvgArtifact: async ({ profile }) => {
+        receivedProfiles.push(profile);
+        return `<svg data-profile="${profile}"></svg>`;
+      },
+    };
+
+    const result = await generateDiagramPilotRepoWorkflowWithDependencies(
+      profiledGenerateOptions,
+      {
+        ...validGenerateDependencies({
+          tempRoot,
+          sourcePath,
+          source,
+          configResult: profileConfig(tempRoot, [
+            {
+              format: "svg",
+              path: "generated/{stem}.svg",
+              profile: "presentation",
+            },
+          ]),
+        }),
+      },
+    );
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(receivedProfiles, ["presentation"]);
+    assert.equal(
+      result.written[0].content,
+      '<svg data-profile="presentation"></svg>',
     );
   });
 });

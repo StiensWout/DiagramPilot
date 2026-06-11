@@ -135,8 +135,11 @@ Git root or filesystem root, validated before source processing, and may apply
 `sources.ignore` patterns to source discovery only. Configured artifact
 mappings replace the default SVG expectation for matched sources. Configured
 SVG freshness uses provenance, Mermaid/D2/DOT use content comparison, and PNG is
-presence-only in v0.3.0. The JSON form emits aggregate structured repo workflow
-results to stdout and includes the config path when config is used.
+presence-only in v0.3.0. Configured outputs may set the fixed output profiles
+`clean`, `compact`, and `presentation`; profiles remain repo workflow output
+settings and do not add styling fields to DiagramSpec. The JSON form emits
+aggregate structured repo workflow results to stdout and includes the config
+path when config is used.
 
 `diagrampilot inspect [path] [--json]`
 : Runs read-only DiagramPilot inventory for one repo workflow scope. It reports

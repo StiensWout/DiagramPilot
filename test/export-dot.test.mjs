@@ -34,6 +34,50 @@ test("exports nodes and directed edges as a DOT digraph", () => {
   ].join("\n"));
 });
 
+test("exports DOT output profiles with compatible clean output and Graphviz presentation attributes", () => {
+  const spec = {
+    version: 1,
+    title: "Checkout Architecture",
+    nodes: [
+      { id: "web_app", label: "Web App" },
+      { id: "api_gateway", label: "API Gateway" },
+    ],
+    edges: [
+      {
+        id: "web_app_to_api_gateway",
+        from: "web_app",
+        to: "api_gateway",
+      },
+    ],
+  };
+  const clean = exportDiagramSpecToDot(spec);
+  const explicitClean = exportDiagramSpecToDot(spec, { profile: "clean" });
+  const compact = exportDiagramSpecToDot(spec, { profile: "compact" });
+  const presentation = exportDiagramSpecToDot(spec, {
+    profile: "presentation",
+  });
+
+  assert.equal(explicitClean, clean);
+  assert.equal(
+    compact,
+    [
+      'digraph "Checkout Architecture" {',
+      'label="Checkout Architecture";',
+      "labelloc=t;",
+      "rankdir=LR;",
+      '"web_app" [label="Web App"];',
+      '"api_gateway" [label="API Gateway"];',
+      '"web_app" -> "api_gateway";',
+      "}",
+      "",
+    ].join("\n"),
+  );
+  assert.match(presentation, /graph \[bgcolor="transparent", pad="0.35"\];/);
+  assert.match(presentation, /node \[shape=box, style="rounded,filled"/);
+  assert.match(presentation, /edge \[color="#475569"/);
+  assert.notEqual(presentation, clean);
+});
+
 test("exports undirected DiagramSpec edges with dir none", () => {
   const dot = exportDiagramSpecToDot({
     version: 1,

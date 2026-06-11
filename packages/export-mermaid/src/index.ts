@@ -8,9 +8,14 @@ import type {
   DiagramSpecEdge,
   DiagramSpecGroup,
   DiagramSpecNode,
+  RepoWorkflowOutputProfile,
 } from "@diagrampilot/core";
 
 export const EXPORT_MERMAID_PACKAGE_NAME = "@diagrampilot/export-mermaid";
+
+export interface ExportDiagramSpecToMermaidOptions {
+  profile?: RepoWorkflowOutputProfile;
+}
 
 const mermaidDirections: Record<DiagramSpecDirection, string> = {
   right: "LR",
@@ -34,8 +39,17 @@ function escapeMermaidEdgeLabel(value: string): string {
   return value.replace(/\|/g, "&#124;").replace(/\r\n|\r|\n/g, "<br/>");
 }
 
-function indent(depth: number): string {
+function mermaidIndent(
+  profile: RepoWorkflowOutputProfile,
+  depth: number,
+): string {
+  if (profile === "compact") return "";
+
   return "  ".repeat(depth);
+}
+
+function mermaidProfileDepth(profile: RepoWorkflowOutputProfile): number {
+  return profile === "compact" ? 0 : 1;
 }
 
 function nodeDefinition(node: DiagramSpecNode): string {
@@ -56,32 +70,61 @@ function edgeDefinition(edge: DiagramSpecEdge): string {
   return `${edge.from} ${connector}|${escapeMermaidEdgeLabel(edge.label)}| ${edge.to}`;
 }
 
-function mermaidNodeLine(node: DiagramSpecNode, depth: number): string {
-  return `${indent(depth)}${nodeDefinition(node)}`;
+function mermaidNodeLine(
+  node: DiagramSpecNode,
+  depth: number,
+  profile: RepoWorkflowOutputProfile,
+): string {
+  return `${mermaidIndent(profile, depth)}${nodeDefinition(node)}`;
 }
 
-function mermaidGroupStart(group: DiagramSpecGroup, depth: number): string[] {
-  return [`${indent(depth)}${groupDefinition(group)}`];
+function mermaidGroupStart(
+  group: DiagramSpecGroup,
+  depth: number,
+  profile: RepoWorkflowOutputProfile,
+): string[] {
+  return [`${mermaidIndent(profile, depth)}${groupDefinition(group)}`];
 }
 
-function mermaidGroupEnd(_group: DiagramSpecGroup, depth: number): string {
-  return `${indent(depth)}end`;
+function mermaidGroupEnd(
+  _group: DiagramSpecGroup,
+  depth: number,
+  profile: RepoWorkflowOutputProfile,
+): string {
+  return `${mermaidIndent(profile, depth)}end`;
 }
 
-export function exportDiagramSpecToMermaid(spec: DiagramSpec): string {
-  const lines = [`flowchart ${mermaidDirection(spec.direction)}`];
+function presentationLines(profile: RepoWorkflowOutputProfile): string[] {
+  return profile === "presentation"
+    ? ['%%{init: {"theme":"base"}}%%']
+    : [];
+}
+
+export function exportDiagramSpecToMermaid(
+  spec: DiagramSpec,
+  options: ExportDiagramSpecToMermaidOptions = {},
+): string {
+  const profile = options.profile ?? "clean";
+  const lines = [
+    ...presentationLines(profile),
+    `flowchart ${mermaidDirection(spec.direction)}`,
+  ];
   const topology = createDiagramSpecTopology(spec);
   lines.push(
     ...formatDiagramSpecTopologyLines(topology, {
-      rootDepth: 1,
-      node: mermaidNodeLine,
-      enterGroup: mermaidGroupStart,
-      exitGroup: mermaidGroupEnd,
+      rootDepth: mermaidProfileDepth(profile),
+      node: (node, depth) => mermaidNodeLine(node, depth, profile),
+      enterGroup: (group, depth) => mermaidGroupStart(group, depth, profile),
+      exitGroup: (group, depth) => mermaidGroupEnd(group, depth, profile),
     }),
   );
 
   for (const edge of spec.edges ?? []) {
-    lines.push(`${indent(1)}${edgeDefinition(edge)}`);
+    const line = `${mermaidIndent(
+      profile,
+      mermaidProfileDepth(profile),
+    )}${edgeDefinition(edge)}`;
+    lines.push(line);
   }
 
   return `${lines.join("\n")}\n`;

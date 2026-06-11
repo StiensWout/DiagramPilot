@@ -2,6 +2,7 @@ import type {
   RepoWorkflowConfig,
   RepoWorkflowConfigDiscoveryResult,
   RepoWorkflowConfigFailure,
+  RepoWorkflowArtifactOutput,
   RepoWorkflowArtifactOutputFormat,
 } from "./repo-workflow-config.js";
 import {
@@ -42,6 +43,7 @@ export interface RepoWorkflowGenerateOptions {
   renderSvgArtifact(options: {
     source: DiagramPilotSourceFile;
     provenanceSourcePath: string;
+    profile?: RepoWorkflowArtifactOutput["profile"];
     spec: DiagramSpec;
     diagramPilotVersion?: string;
     renderer: SvgArtifactRenderer;
@@ -49,6 +51,7 @@ export interface RepoWorkflowGenerateOptions {
   rasterizeSvgArtifact(svg: string): Uint8Array;
   exportTextArtifact(options: {
     format: ConfiguredTextArtifactFormat;
+    profile?: RepoWorkflowArtifactOutput["profile"];
     spec: DiagramSpec;
   }): string;
 }

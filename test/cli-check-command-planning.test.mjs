@@ -12,6 +12,7 @@ import {
   repoWorkflowCheckResult,
   staleWorkflowSource,
   testRenderer,
+  validLoadResult,
 } from "./cli-command-planning-helpers.mjs";
 
 test("plans check no-source directory scopes as a successful no-op with no writes", async () => {
@@ -51,6 +52,8 @@ test("plans check by delegating Repo Workflow Check to the command adapter", asy
       checkExpectedSvgArtifactFreshnessForValidatedSource: async () => {
         throw new Error("check planning should delegate artifact freshness");
       },
+      exportDiagramSpecToMermaid: (_spec, options) =>
+        `profile:${options?.profile ?? "clean"}\n`,
     }),
   );
 
@@ -58,13 +61,10 @@ test("plans check by delegating Repo Workflow Check to the command adapter", asy
   assert.equal(
     receivedOptions.exportConfiguredTextArtifact({
       format: "mermaid",
-      spec: {
-        version: 1,
-        title: "Architecture",
-        nodes: [{ id: "web_app", label: "Web App" }],
-      },
+      profile: "compact",
+      spec: validLoadResult().spec,
     }),
-    "flowchart LR\n",
+    "profile:compact\n",
   );
   assert.deepEqual(
     {

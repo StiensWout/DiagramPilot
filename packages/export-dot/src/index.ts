@@ -5,6 +5,7 @@ import type {
   DiagramSpecGroup,
   DiagramSpecMetadata,
   DiagramSpecNode,
+  RepoWorkflowOutputProfile,
 } from "@diagrampilot/core";
 import {
   createDiagramSpecTopology,
@@ -12,6 +13,10 @@ import {
 } from "@diagrampilot/core";
 
 export const EXPORT_DOT_PACKAGE_NAME = "@diagrampilot/export-dot";
+
+export interface ExportDiagramSpecToDotOptions {
+  profile?: RepoWorkflowOutputProfile;
+}
 
 const dotRankDirections: Record<DiagramSpecDirection, string> = {
   right: "LR",
@@ -32,8 +37,18 @@ function quoted(value: string): string {
   return `"${escapeDotQuotedText(value)}"`;
 }
 
-function indent(depth: number): string {
-  return "  ".repeat(depth);
+function effectiveProfile(
+  options: ExportDiagramSpecToDotOptions,
+): RepoWorkflowOutputProfile {
+  return options.profile ?? "clean";
+}
+
+function indent(depth: number, profile: RepoWorkflowOutputProfile): string {
+  return profile === "compact" ? "" : "  ".repeat(depth);
+}
+
+function profileDepth(profile: RepoWorkflowOutputProfile): number {
+  return profile === "compact" ? 0 : 1;
 }
 
 function attributeList(attributes: readonly string[]): string {
@@ -102,37 +117,67 @@ function edgeDefinition(edge: DiagramSpecEdge): string {
   return `${connection}${attributeList(attributes)};`;
 }
 
-export function exportDiagramSpecToDot(spec: DiagramSpec): string {
+function presentationAttributeLines(
+  profile: RepoWorkflowOutputProfile,
+): string[] {
+  if (profile !== "presentation") return [];
+
+  const nodeAttributes = [
+    "shape=box",
+    'style="rounded,filled"',
+    'fillcolor="#F8FAFC"',
+    'color="#475569"',
+    'fontname="Inter"',
+  ];
+
+  return [
+    'graph [bgcolor="transparent", pad="0.35"];',
+    `node [${nodeAttributes.join(", ")}];`,
+    'edge [color="#475569", fontname="Inter"];',
+  ];
+}
+
+export function exportDiagramSpecToDot(
+  spec: DiagramSpec,
+  options: ExportDiagramSpecToDotOptions = {},
+): string {
+  const profile = effectiveProfile(options);
   const lines = [
     `digraph ${quoted(spec.title)} {`,
-    `${indent(1)}label=${quoted(spec.title)};`,
-    `${indent(1)}labelloc=t;`,
-    `${indent(1)}rankdir=${dotRankDirection(spec.direction)};`,
+    `${indent(1, profile)}label=${quoted(spec.title)};`,
+    `${indent(1, profile)}labelloc=t;`,
+    `${indent(1, profile)}rankdir=${dotRankDirection(spec.direction)};`,
+    ...presentationAttributeLines(profile).map(
+      (line) => `${indent(1, profile)}${line}`,
+    ),
   ];
   const topology = createDiagramSpecTopology(spec);
 
   for (const attribute of metadataAttributes(spec.metadata)) {
-    lines.push(`${indent(1)}${attribute};`);
+    lines.push(`${indent(1, profile)}${attribute};`);
   }
 
   lines.push(
     ...formatDiagramSpecTopologyLines(topology, {
-      rootDepth: 1,
-      node: (node, depth) => `${indent(depth)}${nodeDefinition(node)}`,
+      rootDepth: profileDepth(profile),
+      node: (node, depth) => `${indent(depth, profile)}${nodeDefinition(node)}`,
       enterGroup: (group, depth) => [
-        `${indent(depth)}${groupDefinition(group)}`,
-        `${indent(depth + 1)}label=${quoted(group.label)};`,
+        `${indent(depth, profile)}${groupDefinition(group)}`,
+        `${indent(depth + 1, profile)}label=${quoted(group.label)};`,
         ...metadataAttributes(group.metadata).map(
-          (attribute) => `${indent(depth + 1)}${attribute};`,
+          (attribute) => `${indent(depth + 1, profile)}${attribute};`,
         ),
       ],
-      exitGroup: (_group, depth) => `${indent(depth)}}`,
+      exitGroup: (_group, depth) => `${indent(depth, profile)}}`,
     }),
   );
 
-  for (const edge of spec.edges ?? []) {
-    lines.push(`${indent(1)}${edgeDefinition(edge)}`);
-  }
+  lines.push(
+    ...(spec.edges ?? []).map(
+      (edge) =>
+        `${indent(profileDepth(profile), profile)}${edgeDefinition(edge)}`,
+    ),
+  );
 
   lines.push("}");
 

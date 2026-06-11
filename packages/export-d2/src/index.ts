@@ -8,9 +8,14 @@ import type {
   DiagramSpecGroup,
   DiagramSpecNode,
   DiagramSpecTopology,
+  RepoWorkflowOutputProfile,
 } from "@diagrampilot/core";
 
 export const EXPORT_D2_PACKAGE_NAME = "@diagrampilot/export-d2";
+
+export interface ExportDiagramSpecToD2Options {
+  profile?: RepoWorkflowOutputProfile;
+}
 
 function escapeD2QuotedText(value: string): string {
   return value
@@ -54,19 +59,51 @@ function edgeDefinition(
   return `${connection}: ${quoted(edge.label)}`;
 }
 
-export function exportDiagramSpecToD2(spec: DiagramSpec): string {
+function effectiveProfile(
+  options: ExportDiagramSpecToD2Options,
+): RepoWorkflowOutputProfile {
+  return options.profile ?? "clean";
+}
+
+export function exportDiagramSpecToD2(
+  spec: DiagramSpec,
+  options: ExportDiagramSpecToD2Options = {},
+): string {
+  const profile = effectiveProfile(options);
   const topology = createDiagramSpecTopology(spec);
   const lines = [
-    ...directionLines(spec),
+    ...profileConfigLines(profile),
+    ...directionLines(spec, profile),
     ...topologySectionLines(topology),
-    ...edgeSectionLines(spec.edges ?? [], topology),
+    ...edgeSectionLines(spec.edges ?? [], topology, profile),
   ];
 
   return `${lines.join("\n")}\n`;
 }
 
-function directionLines(spec: DiagramSpec): string[] {
-  return [`direction: ${spec.direction ?? "right"}`, ""];
+function profileConfigLines(profile: RepoWorkflowOutputProfile): string[] {
+  if (profile !== "presentation") return [];
+
+  return [
+    "vars: {",
+    "  d2-config: {",
+    "    theme-id: 4",
+    "    sketch: true",
+    "  }",
+    "}",
+    "",
+  ];
+}
+
+function directionLines(
+  spec: DiagramSpec,
+  profile: RepoWorkflowOutputProfile,
+): string[] {
+  const lines = [`direction: ${spec.direction ?? "right"}`];
+
+  if (profile !== "compact") lines.push("");
+
+  return lines;
 }
 
 function topologySectionLines(topology: DiagramSpecTopology): string[] {
@@ -83,10 +120,13 @@ function topologySectionLines(topology: DiagramSpecTopology): string[] {
 function edgeSectionLines(
   edges: readonly DiagramSpecEdge[],
   topology: DiagramSpecTopology,
+  profile: RepoWorkflowOutputProfile,
 ): string[] {
   if (edges.length === 0) {
     return [];
   }
 
-  return ["", ...edges.map((edge) => edgeDefinition(edge, topology))];
+  const lines = edges.map((edge) => edgeDefinition(edge, topology));
+
+  return profile === "compact" ? lines : ["", ...lines];
 }

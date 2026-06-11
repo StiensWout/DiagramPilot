@@ -5,6 +5,7 @@ import { planCommand } from "../packages/cli/dist/index.js";
 import {
   createPlanningDependencies,
   testRenderer,
+  validLoadResult,
 } from "./cli-command-planning-helpers.mjs";
 
 function inspectResult(options = {}) {
@@ -104,6 +105,8 @@ test("plans inspect by delegating Repo Workflow Inspect to the command adapter",
 
         return inspectResult();
       },
+      exportDiagramSpecToMermaid: (_spec, options) =>
+        `profile:${options?.profile ?? "clean"}\n`,
     }),
   );
 
@@ -111,6 +114,14 @@ test("plans inspect by delegating Repo Workflow Inspect to the command adapter",
   assert.deepEqual(receivedOptions.renderer, testRenderer);
   assert.equal(receivedOptions.diagramPilotVersion, "0.1.0");
   assert.equal(typeof receivedOptions.exportConfiguredTextArtifact, "function");
+  assert.equal(
+    receivedOptions.exportConfiguredTextArtifact({
+      format: "mermaid",
+      profile: "compact",
+      spec: validLoadResult().spec,
+    }),
+    "profile:compact\n",
+  );
   assert.deepEqual(plan, {
     exitCode: 0,
     stdout: [

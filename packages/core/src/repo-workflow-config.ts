@@ -19,9 +19,13 @@ const repoWorkflowConfigFileName = "diagrampilot.config.yaml";
 export type RepoWorkflowArtifactOutputFormat =
   | "svg" | "png" | "mermaid" | "d2" | "dot" | "markdown";
 
+export type RepoWorkflowOutputProfile =
+  | "clean" | "compact" | "presentation";
+
 export interface RepoWorkflowArtifactOutput {
   format: RepoWorkflowArtifactOutputFormat;
   path: string;
+  profile?: RepoWorkflowOutputProfile;
 }
 
 export interface RepoWorkflowArtifactMapping {

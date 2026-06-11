@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 
 import { loadValidatedDiagramSpec, type DiagramPilotSourceFile, type ValidatedDiagramSpecLoadFailure } from "./source-loading.js";
 import { getDiagramPilotVersion } from "./version.js";
+import type { RepoWorkflowOutputProfile } from "./repo-workflow-config.js";
 
 export interface SvgArtifactProvenance {
   sourcePath: string;
@@ -12,6 +13,7 @@ export interface SvgArtifactProvenance {
     name: string;
     version: string;
   };
+  outputProfile?: RepoWorkflowOutputProfile;
 }
 
 export interface SvgArtifactRenderer {
@@ -24,6 +26,7 @@ export interface CreateSvgArtifactProvenanceOptions {
   sourceContent: string | Uint8Array;
   diagramPilotVersion?: string;
   renderer: SvgArtifactRenderer;
+  outputProfile?: RepoWorkflowOutputProfile;
 }
 
 export interface CheckExpectedSvgArtifactFreshnessOptions {
@@ -31,6 +34,7 @@ export interface CheckExpectedSvgArtifactFreshnessOptions {
   provenanceSourcePath: string;
   diagramPilotVersion?: string;
   renderer: SvgArtifactRenderer;
+  outputProfile?: RepoWorkflowOutputProfile;
 }
 
 export interface CheckExpectedSvgArtifactFreshnessForValidatedSourceOptions {
@@ -39,6 +43,7 @@ export interface CheckExpectedSvgArtifactFreshnessForValidatedSourceOptions {
   provenanceSourcePath: string;
   diagramPilotVersion?: string;
   renderer: SvgArtifactRenderer;
+  outputProfile?: RepoWorkflowOutputProfile;
 }
 
 export interface FreshSvgArtifactResult {
@@ -79,7 +84,8 @@ export type SvgArtifactStaleReason =
   | "source-sha256-mismatch"
   | "diagram-pilot-version-mismatch"
   | "renderer-name-mismatch"
-  | "renderer-version-mismatch";
+  | "renderer-version-mismatch"
+  | "output-profile-mismatch";
 
 export interface StaleSvgArtifactResult {
   sourcePath: string;
@@ -113,6 +119,11 @@ export function deriveExpectedSvgArtifactPath(sourcePath: string): string {
 export function createSvgArtifactProvenance(
   options: CreateSvgArtifactProvenanceOptions,
 ): SvgArtifactProvenance {
+  const outputProfile =
+    options.outputProfile === undefined
+      ? {}
+      : { outputProfile: options.outputProfile };
+
   return {
     sourcePath: options.sourcePath,
     sourceSha256: createHash("sha256")
@@ -120,6 +131,7 @@ export function createSvgArtifactProvenance(
       .digest("hex"),
     diagramPilotVersion: options.diagramPilotVersion ?? getDiagramPilotVersion(),
     renderer: options.renderer,
+    ...outputProfile,
   };
 }
 
@@ -171,6 +183,7 @@ function assertSvgArtifactProvenanceShape(
   assertStringProvenanceField(provenance, "sourcePath");
   assertStringProvenanceField(provenance, "sourceSha256");
   assertStringProvenanceField(provenance, "diagramPilotVersion");
+  assertOptionalOutputProfile(provenance);
   assertRendererProvenance(provenance);
 }
 
@@ -214,9 +227,24 @@ function assertStringRendererField(value: unknown, fieldName: string): void {
   }
 }
 
+function assertOptionalOutputProfile(
+  provenance: Partial<SvgArtifactProvenance>,
+): void {
+  if (
+    provenance.outputProfile === undefined ||
+    typeof provenance.outputProfile === "string"
+  ) {
+    return;
+  }
+
+  throw new Error(
+    "Malformed DiagramPilot provenance: expected string outputProfile.",
+  );
+}
+
 const svgArtifactProvenanceComparisons: readonly {
   reason: SvgArtifactStaleReason;
-  value: (provenance: SvgArtifactProvenance) => string;
+  value: (provenance: SvgArtifactProvenance) => string | undefined;
 }[] = [
   { reason: "source-path-mismatch", value: (provenance) => provenance.sourcePath },
   {
@@ -234,6 +262,10 @@ const svgArtifactProvenanceComparisons: readonly {
   {
     reason: "renderer-version-mismatch",
     value: (provenance) => provenance.renderer.version,
+  },
+  {
+    reason: "output-profile-mismatch",
+    value: (provenance) => provenance.outputProfile,
   },
 ];
 
@@ -261,6 +293,7 @@ export async function checkExpectedSvgArtifactFreshnessForValidatedSource(
     sourceContent: options.source.content,
     diagramPilotVersion: options.diagramPilotVersion,
     renderer: options.renderer,
+    outputProfile: options.outputProfile,
   });
   const actualProvenanceResult = extractSvgArtifactProvenanceResult(
     sourcePath,
@@ -413,5 +446,6 @@ export async function checkExpectedSvgArtifactFreshness(
     provenanceSourcePath: options.provenanceSourcePath,
     diagramPilotVersion: options.diagramPilotVersion,
     renderer: options.renderer,
+    outputProfile: options.outputProfile,
   });
 }

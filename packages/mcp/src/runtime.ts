@@ -10,6 +10,7 @@ import {
   getDiagramPilotVersion,
   loadValidatedDiagramSpec,
   type DiagramSpec,
+  type RepoWorkflowOutputProfile,
   type RepoWorkflowCheckResult,
   type RepoWorkflowGenerateResult,
 } from "@diagrampilot/core";
@@ -105,10 +106,14 @@ function readExample(name: string): string {
   ].join("\n");
 }
 
-function exportText(format: string, spec: DiagramSpec): string {
-  if (format === "mermaid") return exportDiagramSpecToMermaid(spec);
-  if (format === "d2") return exportDiagramSpecToD2(spec);
-  if (format === "dot") return exportDiagramSpecToDot(spec);
+function exportText(
+  format: string,
+  spec: DiagramSpec,
+  profile?: RepoWorkflowOutputProfile,
+): string {
+  if (format === "mermaid") return exportDiagramSpecToMermaid(spec, { profile });
+  if (format === "d2") return exportDiagramSpecToD2(spec, { profile });
+  if (format === "dot") return exportDiagramSpecToDot(spec, { profile });
 
   throw new Error(`Unsupported DiagramPilot export format: ${format}`);
 }
@@ -162,7 +167,8 @@ async function runRepoWorkflowCheck(
       name: SVG_RENDERER_NAME,
       version: SVG_RENDERER_VERSION,
     },
-    exportConfiguredTextArtifact: ({ format, spec }) => exportText(format, spec),
+    exportConfiguredTextArtifact: ({ format, profile, spec }) =>
+      exportText(format, spec, profile),
   });
 }
 
@@ -379,15 +385,18 @@ async function generateRepoOutputsForScope(
       name: SVG_RENDERER_NAME,
       version: SVG_RENDERER_VERSION,
     },
-    renderSvgArtifact: async ({ source, provenanceSourcePath, spec }) =>
+    renderSvgArtifact: async ({ source, provenanceSourcePath, profile, spec }) =>
       await render(spec, {
+        profile,
         provenance: createSvgRendererProvenance({
           sourcePath: provenanceSourcePath,
           sourceContent: source.content,
+          outputProfile: profile,
         }),
       }),
     rasterizeSvgArtifact: rasterizeSvgToPng,
-    exportTextArtifact: ({ format, spec }) => exportText(format, spec),
+    exportTextArtifact: ({ format, profile, spec }) =>
+      exportText(format, spec, profile),
   });
 }
 

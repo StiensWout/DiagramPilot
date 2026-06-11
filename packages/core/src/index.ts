@@ -108,6 +108,7 @@ export type {
   RepoWorkflowArtifactMapping,
   RepoWorkflowArtifactOutput,
   RepoWorkflowArtifactOutputFormat,
+  RepoWorkflowOutputProfile,
 } from "./repo-workflow-config.js";
 export type {
   CheckExpectedSvgArtifactFreshnessForValidatedSourceOptions,
