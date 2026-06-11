@@ -5,11 +5,11 @@ local files, review-stable rendering, readable specs, and repairable errors.
 
 ## Developer Rules
 
-- `.scratch/` issue numbers must be globally unique. Before creating or
-  renaming issue files, scan `.scratch/**/issues/<NN>-*.md`.
-- Create a task branch before implementation edits, e.g.
-  `git switch --create issue-17-slug --no-track origin/main`. Do not implement
-  on `main` or push implementation commits to `main`/`origin/main`.
+- Linear is the live planning tracker. GitHub Issues are public intake only and
+  sync into Linear; do not plan implementation work from GitHub alone.
+- Create the Linear-copied branch before implementation edits, e.g.
+  `git switch --create feature/dp-17-title --no-track origin/main`. Do not
+  implement on `main` or push implementation commits to `main`/`origin/main`.
 - After committing, run `git push -u origin HEAD`. Before a PR, verify current
   branch and upstream are the matching `origin/<task-branch>`. Use PR base
   `main` and current branch as head; never pass `--head main`.
@@ -20,8 +20,8 @@ local files, review-stable rendering, readable specs, and repairable errors.
   `npm run audit:fallow`; for PR-specific review also run
   `npm run audit:fallow:changed`. Fix new findings or add only narrow,
   documented config/baseline entries when a finding is intentional.
-- Finish implementation by adding a validation plan and updating the local
-  issue status, acceptance criteria, implementation notes, and validation plan.
+- Finish implementation by updating the Linear issue status, implementation
+  notes, acceptance criteria, and validation plan.
 
 ## Docs
 
@@ -44,14 +44,12 @@ local files, review-stable rendering, readable specs, and repairable errors.
 
 ### Issue tracker
 
-Issues and PRDs are tracked as local markdown files under `.scratch/`. See
-`docs/agents/issue-tracker.md`.
-Issue numbers must not overlap between PRD directories.
+Issues and PRDs are tracked in Linear. GitHub Issues are public intake only.
+See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-Triage uses the default local status vocabulary. See
-`docs/agents/triage-labels.md`.
+Triage uses Linear statuses. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
