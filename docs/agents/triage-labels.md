@@ -1,15 +1,17 @@
 # Triage Labels
 
-The skills speak in terms of five canonical triage roles. This file maps those roles to the actual status strings used in this repo's local markdown issue tracker.
+The skills speak in terms of five canonical triage roles. This file maps those
+roles to the Linear statuses used by the DiagramPilot team.
 
-| Label in mattpocock/skills | Status in our tracker | Meaning                                  |
-| -------------------------- | --------------------- | ---------------------------------------- |
-| `needs-triage`             | `needs-triage`        | Maintainer needs to evaluate this issue  |
-| `needs-info`               | `needs-info`          | Waiting on reporter for more information |
-| `ready-for-agent`          | `ready-for-agent`     | Fully specified, ready for an AFK agent  |
-| `ready-for-human`          | `ready-for-human`     | Requires human implementation            |
-| `wontfix`                  | `wontfix`             | Will not be actioned                     |
+| Label in mattpocock/skills | Linear status     | Meaning                                  |
+| -------------------------- | ----------------- | ---------------------------------------- |
+| `needs-triage`             | `Backlog`         | Maintainer needs to evaluate this issue  |
+| `needs-info`               | `Needs Info`      | Waiting on reporter for more information |
+| `ready-for-agent`          | `Ready For Agent` | Fully specified, ready for an AFK agent  |
+| `ready-for-human`          | `Todo`            | Requires human implementation            |
+| `wontfix`                  | `Canceled`        | Will not be actioned                     |
 
 When a skill mentions a role, use the corresponding status string from this table.
 
-Edit the right-hand column to match whatever vocabulary you actually use.
+Delivery work can then move through `In Progress`, `In Review`, and `Done`.
+Use `Duplicate` only when Linear should mark an issue as a duplicate.
