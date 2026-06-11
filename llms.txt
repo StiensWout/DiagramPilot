@@ -8,10 +8,11 @@ DiagramPilot uses DiagramSpec as its source model. A DiagramPilot source file is
 the editable artifact. Rendered SVG or PNG and exported Mermaid, D2, or DOT
 text are derived outputs.
 
-`*.dp.json` is no longer a DiagramPilot source format. Convert legacy JSON
-sources to `*.dp.yaml`; explicit JSON source inputs return repair guidance.
-JSON remains valid for `--json` CLI output, the DiagramSpec JSON Schema, SVG
-provenance metadata, package manifests, and other tooling surfaces.
+`*.dp.json` is not a DiagramPilot Source File path. Source files are
+`*.dp.yaml` only, repo discovery ignores JSON source files, and DiagramPilot
+does not provide a migration command. JSON remains valid for `--json` CLI
+output, the DiagramSpec JSON Schema, SVG provenance metadata, package manifests,
+and other tooling surfaces.
 
 Public documentation is hosted under `https://diagrampilot.com`.
 

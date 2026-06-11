@@ -198,8 +198,9 @@ test("public docs present YAML-only source support and JSON tooling compatibilit
   for (const publicSurface of [readme, llmsText, specGuide, quickstart]) {
     assert.match(publicSurface, /\*\.dp\.yaml/);
     assert.match(publicSurface, /\*\.dp\.json/);
-    assert.match(publicSurface, /no longer/i);
-    assert.match(publicSurface, /repair/i);
+    assert.match(publicSurface, /not a DiagramPilot Source File path/i);
+    assert.match(publicSurface, /repo discovery ignores JSON\s+source files/i);
+    assert.match(publicSurface, /does not provide .*migration command/i);
     assert.match(publicSurface, /--json/);
     assert.match(publicSurface, /JSON Schema/);
     assert.match(publicSurface, /provenance/i);

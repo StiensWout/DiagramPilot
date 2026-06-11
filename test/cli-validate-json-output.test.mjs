@@ -8,13 +8,13 @@ import {
   validLoadResult,
 } from "./cli-command-planning-helpers.mjs";
 
-function unsupportedSourceFormatFailure(path = "docs/architecture.dp.json") {
+function unsupportedSourceFormatFailure(path = "docs/architecture.dp.yml") {
   return {
     ok: false,
     failure: {
       kind: "unsupported-source-format",
       path,
-      message: `Unsupported DiagramPilot source file: ${path}. YAML is the supported source format; use a *.dp.yaml source file.`,
+      message: `Unsupported DiagramPilot source file: ${path}`,
     },
   };
 }
@@ -37,9 +37,9 @@ test("validate --json emits structured success output for YAML sources", async (
   });
 });
 
-test("validate --json emits structured repair hints for legacy JSON sources", async () => {
+test("validate --json emits structured failure output for unsupported source paths", async () => {
   const plan = await planCommand(
-    ["validate", "docs/architecture.dp.json", "--json"],
+    ["validate", "docs/architecture.dp.yml", "--json"],
     createPlanningDependencies({
       loadValidatedDiagramSpec: () => unsupportedSourceFormatFailure(),
     }),
@@ -47,13 +47,12 @@ test("validate --json emits structured repair hints for legacy JSON sources", as
 
   const result = assertJsonFailurePlan(plan);
 
-  assert.equal(result.file, "docs/architecture.dp.json");
+  assert.equal(result.file, "docs/architecture.dp.yml");
   assert.equal(result.ok, false);
   assert.deepEqual(result.errors, [
     {
       path: "$",
-      message:
-        "Unsupported DiagramPilot source file: docs/architecture.dp.json. YAML is the supported source format; use a *.dp.yaml source file.",
+      message: "Unsupported DiagramPilot source file: docs/architecture.dp.yml",
       expected: "YAML DiagramPilot Source File syntax.",
       suggestion: "Use a `*.dp.yaml` DiagramPilot Source File.",
     },

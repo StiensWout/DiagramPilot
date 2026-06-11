@@ -450,7 +450,10 @@ test("MCP mutate source tool rejects non-YAML source paths without writing", asy
     });
 
     assertMutationFailedWithoutWrites(mutated);
-    assert.match(mutated.structuredContent.errors[0].message, /\*\.dp\.yaml/);
+    assert.equal(
+      mutated.structuredContent.errors[0].message,
+      `Unsupported DiagramPilot source file: ${sourcePath}`,
+    );
     assert.equal(await readFile(sourcePath, "utf8"), before);
   });
 });

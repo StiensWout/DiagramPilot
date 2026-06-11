@@ -34,7 +34,7 @@ export function deriveDefaultArtifactDisplayPath(
     return relativeArtifactPath;
   }
 
-  return sourcePath.replace(/\.dp\.(yaml|json)$/iu, ".svg");
+  return sourcePath.replace(/\.dp\.yaml$/iu, ".svg");
 }
 
 export function deriveRepoWorkflowConfigDisplayPath(

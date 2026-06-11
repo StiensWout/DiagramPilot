@@ -10,9 +10,9 @@ DiagramSpec is stored as YAML:
 
 - `*.dp.yaml`
 
-`*.dp.json` is no longer a DiagramPilot source file format. Explicit legacy
-JSON source inputs fail with repair guidance that points to `*.dp.yaml`.
-DiagramPilot does not include a JSON-to-YAML migration command.
+`*.dp.json` is not a DiagramPilot Source File path. Repo discovery ignores JSON
+source files, explicit commands reject non-YAML source paths generically, and
+DiagramPilot does not provide a migration command.
 
 JSON remains supported for tooling surfaces such as `--json` CLI output, the
 DiagramSpec JSON Schema helper, SVG provenance metadata, package manifests, and

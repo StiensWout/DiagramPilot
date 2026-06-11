@@ -58,11 +58,11 @@ only when their render or export commands use `--out`.
 and PNG are derived artifacts; regenerate them from the source instead of
 hand-editing generated output.
 
-`*.dp.json` is no longer a DiagramPilot source format. If an older repository
-has JSON source files, convert them to `*.dp.yaml`; explicit JSON source inputs
-return a repairable diagnostic. JSON remains available for `--json` command
-output, the DiagramSpec JSON Schema helper, SVG provenance metadata, package
-manifests, and other tooling surfaces.
+`*.dp.json` is not a DiagramPilot Source File path. Source files are
+`*.dp.yaml` only, repo discovery ignores JSON source files, and DiagramPilot
+does not provide a migration command. JSON remains available for `--json`
+command output, the DiagramSpec JSON Schema helper, SVG provenance metadata,
+package manifests, and other tooling surfaces.
 
 ## Demo Workflow
 

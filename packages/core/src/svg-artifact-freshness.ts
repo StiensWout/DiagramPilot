@@ -107,7 +107,7 @@ export type SvgArtifactFreshnessCheckResult =
   | SvgArtifactUncheckedResult;
 
 export function deriveExpectedSvgArtifactPath(sourcePath: string): string {
-  return sourcePath.replace(/\.dp\.(yaml|json)$/iu, ".svg");
+  return sourcePath.replace(/\.dp\.yaml$/iu, ".svg");
 }
 
 export function createSvgArtifactProvenance(

@@ -58,15 +58,13 @@ promise source formatting, comment preservation, or ordering preservation.
 ## Current Responsibilities
 
 `packages/core`
-: DiagramSpec types, DiagramPilot Source File loading, YAML parsing,
+: DiagramSpec types, YAML-only DiagramPilot Source File loading, YAML parsing,
 DiagramSpec validation, Repairable Validation Error shape, Stable ID rules,
 Metadata reference rules, Icon Reference validation entrypoints, and version
 metadata. Core also owns DiagramPilot Source File discovery, expected SVG
 Artifact freshness checks, and the read-only Repo Workflow Check lifecycle.
-Explicit legacy `*.dp.json` source inputs return repairable unsupported-source
-diagnostics; JSON remains available for structured CLI output, the
-DiagramSpec JSON Schema helper, SVG provenance metadata, package manifests, and
-other tooling surfaces.
+JSON remains available for structured CLI output, the DiagramSpec JSON Schema
+helper, SVG provenance metadata, package manifests, and other tooling surfaces.
 
 `packages/cli`
 : User-facing commands, argument parsing, filesystem reads and writes, command

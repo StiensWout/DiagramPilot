@@ -8,7 +8,7 @@ import {
 } from "./diagramspec-validation.js";
 import { parseYamlDocument } from "./yaml-parse.js";
 
-export type DiagramPilotSourceFormat = "yaml" | "json";
+export type DiagramPilotSourceFormat = "yaml";
 
 export interface DiagramPilotSourceFile {
   format: DiagramPilotSourceFormat;
@@ -265,49 +265,6 @@ function parseYamlSource(path: string, content: string): SourceLoadResult {
   };
 }
 
-function jsonErrorPosition(message: string): { line?: number; column?: number } {
-  const match = /\(line (?<line>\d+) column (?<column>\d+)\)$/.exec(message);
-
-  if (match?.groups === undefined) {
-    return {};
-  }
-
-  return {
-    line: Number(match.groups.line),
-    column: Number(match.groups.column),
-  };
-}
-
-function parseJsonSource(path: string, content: string): SourceLoadResult {
-  try {
-    return {
-      ok: true,
-      source: {
-        format: "json",
-        path,
-        content,
-        value: JSON.parse(content),
-      },
-    };
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unable to parse JSON.";
-    const { line, column } = jsonErrorPosition(message);
-
-    return {
-      ok: false,
-      failure: {
-        kind: "parse",
-        format: "json",
-        path,
-        message,
-        line,
-        column,
-      },
-    };
-  }
-}
-
 function readDiagramPilotSourceContent(
   path: string,
 ): SourceContentReadResult {
@@ -328,35 +285,33 @@ function readDiagramPilotSourceContent(
   }
 }
 
-function unsupportedJsonSourceResult(path: string): SourceLoadResult {
+function unsupportedSourcePathResult(path: string): SourceLoadResult {
   return {
     ok: false,
     failure: {
       kind: "unsupported-source-format",
       path,
-      message: `Unsupported DiagramPilot source file: ${path}. YAML is the supported source format; use a *.dp.yaml source file.`,
+      message: `Unsupported DiagramPilot source file: ${path}`,
     },
   };
 }
 
-function parseSourceContent(path: string, content: string): SourceLoadResult {
-  return path.toLowerCase().endsWith(".json")
-    ? parseJsonSource(path, content)
-    : parseYamlSource(path, content);
+function isDiagramPilotSourcePath(path: string): boolean {
+  return path.toLowerCase().endsWith(".dp.yaml");
 }
 
 export function loadDiagramPilotSourceFile(path: string): SourceLoadResult {
+  if (!isDiagramPilotSourcePath(path)) {
+    return unsupportedSourcePathResult(path);
+  }
+
   const contentResult = readDiagramPilotSourceContent(path);
 
   if (!contentResult.ok) {
     return contentResult;
   }
 
-  if (path.toLowerCase().endsWith(".dp.json")) {
-    return unsupportedJsonSourceResult(path);
-  }
-
-  return parseSourceContent(path, contentResult.content);
+  return parseYamlSource(path, contentResult.content);
 }
 
 export function loadValidatedDiagramSpec(

@@ -26,11 +26,11 @@ unless a consuming repository pins a specific package version.
 
 Existing v0.2 repositories should review these changes before updating:
 
-- DiagramPilot Source Files are YAML-only. Convert legacy `*.dp.json` source
-  files to `*.dp.yaml`; explicit JSON source inputs now return repairable
-  diagnostics. JSON remains valid for `--json` CLI output, the DiagramSpec JSON
-  Schema, SVG provenance metadata, package manifests, and other non-source
-  tooling surfaces.
+- DiagramPilot Source Files are YAML-only. Use `*.dp.yaml`; `*.dp.json` is not
+  a DiagramPilot Source File path, repo discovery ignores JSON source files, and
+  DiagramPilot does not provide a migration command. JSON remains valid for
+  `--json` CLI output, the DiagramSpec JSON Schema, SVG provenance metadata,
+  package manifests, and other non-source tooling surfaces.
 - DOT export is available with `diagrampilot export --format dot`.
 - PNG rendering is available with `diagrampilot render --format png --out
   <artifact.png>` and rasterizes the SVG render path.
@@ -195,7 +195,7 @@ file and it contains no other project content.
 
 Do not delete adopted `*.dp.yaml`, SVG, Mermaid, D2, DOT, PNG, or Markdown
 embed artifacts by default. Once a repository uses those files for its
-architecture docs, they are project-owned source and derived artifacts. Legacy
-`*.dp.json` source files are not supported by current DiagramPilot commands;
-convert them to `*.dp.yaml` instead of deleting project-owned content during
+architecture docs, they are project-owned source and derived artifacts.
+`*.dp.json` files are not current DiagramPilot Source Files; convert
+project-owned diagram content to `*.dp.yaml` instead of deleting it during
 package cleanup.

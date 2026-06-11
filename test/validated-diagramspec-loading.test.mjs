@@ -8,20 +8,22 @@ import {
   brokenYamlSourceLines,
   writeDiagramSource,
 } from "./diagramspec-loading-helpers.mjs";
-import { assertYamlSourceRepairHint } from "./source-format-assertions.mjs";
 import { withTempRepoPrefix } from "./temp-repo-helpers.mjs";
 
 async function withTempRepo(run) {
   return withTempRepoPrefix("diagrampilot-validated-loading-", run);
 }
 
-async function assertJsonSourceRejected(tempRoot, fileName, lines) {
+async function assertNonYamlSourceRejected(tempRoot, fileName, lines) {
   const sourcePath = await writeDiagramSource(tempRoot, fileName, lines);
   const result = loadValidatedDiagramSpec(sourcePath);
 
   assertFailedLoad(result, "unsupported-source-format");
   assert.equal(result.failure.path, sourcePath);
-  assertYamlSourceRepairHint(result.failure.message);
+  assert.equal(
+    result.failure.message,
+    `Unsupported DiagramPilot source file: ${sourcePath}`,
+  );
 }
 
 function assertFailureMessage(failure) {
@@ -56,9 +58,9 @@ test("loadValidatedDiagramSpec returns a valid DiagramSpec with source context f
   });
 });
 
-test("loadValidatedDiagramSpec rejects explicit JSON source paths with a YAML repair hint", async () => {
+test("loadValidatedDiagramSpec rejects explicit non-YAML source paths generically", async () => {
   await withTempRepo(async (tempRoot) => {
-    await assertJsonSourceRejected(tempRoot, "architecture.dp.json", [
+    await assertNonYamlSourceRejected(tempRoot, "architecture.dp.json", [
       "{",
       '  "version": 1,',
       '  "title": "Checkout Architecture",',
@@ -97,9 +99,9 @@ test("loadValidatedDiagramSpec returns a YAML parse failure before semantic vali
   });
 });
 
-test("loadValidatedDiagramSpec rejects a JSON source path before parsing JSON syntax", async () => {
+test("loadValidatedDiagramSpec rejects non-YAML source paths before parsing content", async () => {
   await withTempRepo(async (tempRoot) => {
-    await assertJsonSourceRejected(tempRoot, "broken.dp.json", [
+    await assertNonYamlSourceRejected(tempRoot, "broken.dp.json", [
       "{",
       '  "version": 1,',
       '  "title": "Broken Source",',
