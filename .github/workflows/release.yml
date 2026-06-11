@@ -129,31 +129,7 @@ jobs:
         run: npm run check:package-readiness
 
       - name: Verify package publish dry-run
-        run: |
-          if [ "$RELEASE_DIST_TAG" = "latest" ] && npm run check:package-publish-state -- --expect latest; then
-            echo "Public Package Set already publishes $RELEASE_PUBLISH_VERSION under latest; skipping npm publish dry-run."
-            exit 0
-          fi
-
-          packages=(
-            "diagrampilot"
-            "@diagrampilot/core"
-            "@diagrampilot/icons"
-            "@diagrampilot/export-mermaid"
-            "@diagrampilot/export-d2"
-            "@diagrampilot/export-dot"
-            "@diagrampilot/mcp"
-            "@diagrampilot/render-svg"
-          )
-
-          for workspace in "${packages[@]}"; do
-            if npm view "$workspace@$RELEASE_PUBLISH_VERSION" version --silent > /dev/null 2>&1; then
-              echo "$workspace@$RELEASE_PUBLISH_VERSION already exists; skipping npm publish dry-run."
-              continue
-            fi
-
-            npm publish --dry-run --workspace "$workspace" --tag "$RELEASE_DIST_TAG" --access public
-          done
+        run: node scripts/publish-release-packages.mjs --mode dry-run
 
   publish-packages:
     name: Publish npm packages (nightly or final)
@@ -204,38 +180,7 @@ jobs:
         run: npm run check:package-readiness
 
       - name: Publish npm packages
-        run: |
-          if [ "$RELEASE_DIST_TAG" = "latest" ] && npm run check:package-publish-state -- --expect latest; then
-            echo "Public Package Set already publishes $RELEASE_PUBLISH_VERSION under latest; skipping npm publish."
-            exit 0
-          fi
-
-          packages=(
-            "diagrampilot"
-            "@diagrampilot/core"
-            "@diagrampilot/icons"
-            "@diagrampilot/export-mermaid"
-            "@diagrampilot/export-d2"
-            "@diagrampilot/export-dot"
-            "@diagrampilot/mcp"
-            "@diagrampilot/render-svg"
-          )
-
-          for workspace in "${packages[@]}"; do
-            if npm view "$workspace@$RELEASE_PUBLISH_VERSION" version --silent > /dev/null 2>&1; then
-              current_tag="$(npm view "$workspace" "dist-tags.$RELEASE_DIST_TAG" --silent 2>/dev/null || true)"
-
-              if [ "$current_tag" != "$RELEASE_PUBLISH_VERSION" ]; then
-                npm dist-tag add "$workspace@$RELEASE_PUBLISH_VERSION" "$RELEASE_DIST_TAG"
-              else
-                echo "$workspace@$RELEASE_PUBLISH_VERSION already publishes under $RELEASE_DIST_TAG; skipping npm publish."
-              fi
-
-              continue
-            fi
-
-            npm publish --workspace "$workspace" --tag "$RELEASE_DIST_TAG" --access public
-          done
+        run: node scripts/publish-release-packages.mjs --mode publish
 
   create-github-prerelease:
     name: Create nightly GitHub prerelease

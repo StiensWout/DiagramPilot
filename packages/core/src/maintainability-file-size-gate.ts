@@ -4,6 +4,7 @@ import path from "node:path";
 
 export interface MaintainabilityFileSizeGateDefinition {
   maxLineCount: number;
+  pressureLineCount: number;
   includedPathGlobs: readonly string[];
   excludedPathGlobs: readonly string[];
 }
@@ -28,6 +29,7 @@ export interface MaintainabilityFileSizeAuditResult {
 export const MAINTAINABILITY_FILE_SIZE_GATE: MaintainabilityFileSizeGateDefinition =
   {
     maxLineCount: 500,
+    pressureLineCount: 475,
     includedPathGlobs: [
       "packages/**/*.ts",
       "test/**/*.mjs",

@@ -12,6 +12,11 @@ const releaseWorkflowPath = path.join(
   "workflows",
   "release.yml",
 );
+const releasePackagePublisherPath = path.join(
+  repoRoot,
+  "scripts",
+  "publish-release-packages.mjs",
+);
 
 const publicPackageSet = [
   "diagrampilot",
@@ -24,19 +29,27 @@ const publicPackageSet = [
   "@diagrampilot/render-svg",
 ];
 
-function extractReleaseWorkflowPackageSets(workflow) {
-  return [...workflow.matchAll(/packages=\(\n(?<body>[\s\S]*?)\n\s+\)/gu)].map(
-    (match) => [...match.groups.body.matchAll(/"(?<packageName>[^"]+)"/gu)].map(
-      (packageMatch) => packageMatch.groups.packageName,
-    ),
+function extractReleasePublisherPackageSet(script) {
+  const match = script.match(
+    /const publicPackages = \[\n(?<body>[\s\S]*?)\n\];/u,
+  );
+
+  assert.notEqual(match, null);
+
+  return [...match.groups.body.matchAll(/"(?<packageName>[^"]+)"/gu)].map(
+    (packageMatch) => packageMatch.groups.packageName,
   );
 }
 
 test("GitHub Actions release workflow validates releases before guarded publishing", async () => {
   const workflow = await readFile(releaseWorkflowPath, "utf8");
-  const packageSets = extractReleaseWorkflowPackageSets(workflow);
+  const releasePackagePublisher = await readFile(
+    releasePackagePublisherPath,
+    "utf8",
+  );
+  const packageSet = extractReleasePublisherPackageSet(releasePackagePublisher);
 
-  assert.deepEqual(packageSets, [publicPackageSet, publicPackageSet]);
+  assert.deepEqual(packageSet, publicPackageSet);
 
   assertMatchesAll(workflow, [
     /^name: Release$/m,
@@ -83,16 +96,14 @@ test("GitHub Actions release workflow validates releases before guarded publishi
     /needs\.release-checks\.outputs\.should_publish == 'true'/u,
     /RELEASE_DIST_TAG == 'nightly'/u,
     /node scripts\/bump-release-version\.mjs "\$RELEASE_PUBLISH_VERSION"/u,
+    /node scripts\/publish-release-packages\.mjs --mode dry-run/u,
+    /node scripts\/publish-release-packages\.mjs --mode publish/u,
     /Create nightly GitHub prerelease/u,
     /--prerelease/u,
     /--latest=false/u,
     /--kind nightly/u,
     /--kind final/u,
     /gh pr list --state merged --base main/u,
-    /npm run check:package-publish-state -- --expect latest/u,
-    /already publishes \$RELEASE_PUBLISH_VERSION under latest/u,
-    /npm publish --workspace "\$workspace" --tag "\$RELEASE_DIST_TAG" --access public/u,
-    /npm publish --dry-run --workspace "\$workspace" --tag "\$RELEASE_DIST_TAG" --access public/u,
   ]);
   assertMatchesNone(workflow, [
     /npm run check:issue-release-version/u,
@@ -103,7 +114,10 @@ test("GitHub Actions release workflow validates releases before guarded publishi
   ]);
 
   for (const packageName of publicPackageSet) {
-    assert.match(workflow, new RegExp(packageName.replace("/", "\\/"), "u"));
+    assert.match(
+      releasePackagePublisher,
+      new RegExp(packageName.replace("/", "\\/"), "u"),
+    );
   }
 });
 
@@ -166,10 +180,7 @@ test("release workflow gates CD side effects behind CI and validates reviewed Gi
 
   assertMatchesAll(publishPackagesJob, [
     /needs: release-checks/u,
-    /npm run check:package-publish-state -- --expect latest/u,
-    /npm view "\$workspace@\$RELEASE_PUBLISH_VERSION" version/u,
-    /npm dist-tag add "\$workspace@\$RELEASE_PUBLISH_VERSION" "\$RELEASE_DIST_TAG"/u,
-    /npm publish --workspace/u,
+    /node scripts\/publish-release-packages\.mjs --mode publish/u,
   ]);
 
   const tagCreation = prepareGithubReleaseJob.indexOf('git tag "$RELEASE_TAG" "$GITHUB_SHA"');
@@ -228,6 +239,9 @@ test("release workflow docs explain npm trusted publisher setup", async () => {
     /scripts\/generate-release-notes\.mjs/u,
     /scripts\/validate-github-release-draft\.mjs/u,
     /npm `latest` publish succeeds/u,
+    /transparency-log duplicate-entry failure/u,
+    /NPM_CONFIG_PROVENANCE=false/u,
+    /limited to `nightly`/u,
     /Nightly .*create GitHub prereleases/u,
   ]);
 

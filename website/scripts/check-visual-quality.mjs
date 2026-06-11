@@ -1,9 +1,9 @@
-import http from "node:http";
-import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { runStaticReview } from "./visual-quality-static-review.mjs";
+import { startStaticServer } from "./visual-quality-static-server.mjs";
 
 const websiteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = path.resolve(websiteRoot, "..");
@@ -34,19 +34,6 @@ const routes = [
   },
 ];
 
-const contentTypes = new Map([
-  [".css", "text/css; charset=utf-8"],
-  [".html", "text/html; charset=utf-8"],
-  [".js", "text/javascript; charset=utf-8"],
-  [".json", "application/json; charset=utf-8"],
-  [".md", "text/markdown; charset=utf-8"],
-  [".png", "image/png"],
-  [".svg", "image/svg+xml"],
-  [".txt", "text/plain; charset=utf-8"],
-  [".wasm", "application/wasm"],
-  [".xml", "application/xml; charset=utf-8"],
-]);
-
 const report = {
   status: "running",
   builtSite: path.relative(repoRoot, distRoot),
@@ -60,7 +47,7 @@ const report = {
 const failures = [];
 
 await resetOutputDirectory();
-const server = await startStaticServer();
+const server = await startStaticServer(distRoot);
 const baseUrl = `http://127.0.0.1:${server.address().port}`;
 
 try {
@@ -129,64 +116,6 @@ async function assertDistExists() {
   }
 
   throw new Error("website/dist is missing. Run `npm --workspace website run build` first.");
-}
-
-async function startStaticServer() {
-  const server = http.createServer(async (request, response) => {
-    try {
-      const filePath = await resolveStaticPath(request.url ?? "/");
-      const body = await readFile(filePath);
-      response.writeHead(200, {
-        "content-type": contentTypes.get(path.extname(filePath)) ?? "application/octet-stream",
-      });
-      response.end(body);
-    } catch {
-      response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
-      response.end("Not found");
-    }
-  });
-
-  await new Promise((resolve, reject) => {
-    server.on("error", reject);
-    server.listen(0, "127.0.0.1", resolve);
-  });
-
-  return server;
-}
-
-function staticPathCandidates(pathname) {
-  return pathname.endsWith("/")
-    ? [path.join(distRoot, pathname, "index.html")]
-    : [
-        path.join(distRoot, pathname),
-        path.join(distRoot, pathname, "index.html"),
-      ];
-}
-
-async function readableStaticFilePath(candidate) {
-  const resolved = path.resolve(candidate);
-
-  if (!resolved.startsWith(distRoot + path.sep)) return undefined;
-
-  try {
-    const candidateStat = await stat(resolved);
-    return candidateStat.isFile() ? resolved : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-async function resolveStaticPath(requestUrl) {
-  const url = new URL(requestUrl, "http://127.0.0.1");
-  const pathname = decodeURIComponent(url.pathname);
-
-  for (const candidate of staticPathCandidates(pathname)) {
-    const readablePath = await readableStaticFilePath(candidate);
-
-    if (readablePath !== undefined) return readablePath;
-  }
-
-  throw new Error(`No static file for ${pathname}`);
 }
 
 async function checkRoute(browser, baseUrl, route, viewport) {

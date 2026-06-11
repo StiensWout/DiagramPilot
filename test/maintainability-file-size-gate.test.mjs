@@ -62,6 +62,7 @@ test("auditMaintainabilityFileSizes reports included authored files over the 500
     const result = await auditMaintainabilityFileSizes(tempRoot);
 
     assert.equal(MAINTAINABILITY_FILE_SIZE_GATE.maxLineCount, 500);
+    assert.equal(MAINTAINABILITY_FILE_SIZE_GATE.pressureLineCount, 475);
     assert.equal(result.ok, false);
     assert.deepEqual(result.violations, [
       {
@@ -77,6 +78,21 @@ test("maintainability file-size gate passes for the current repository", async (
   const result = await auditMaintainabilityFileSizes(repoRoot);
 
   assert.deepEqual(result.violations, []);
+});
+
+test("maintainability file-size gate keeps current authored files below the pressure line", async () => {
+  const result = await auditMaintainabilityFileSizes(repoRoot);
+  const pressureFiles = result.checkedFiles
+    .filter(
+      (file) =>
+        file.lineCount >= MAINTAINABILITY_FILE_SIZE_GATE.pressureLineCount,
+    )
+    .map((file) => ({
+      path: file.path,
+      lineCount: file.lineCount,
+    }));
+
+  assert.deepEqual(pressureFiles, []);
 });
 
 test("maintainability audit script exits nonzero for gate violations", async () => {

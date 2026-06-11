@@ -38,7 +38,9 @@ npm run benchmark -- --compare none --write-baseline benchmarks/workflow-baselin
 
 ## File-Size Gate
 
-The file-size gate threshold is **500 LOC**.
+The hard file-size gate threshold is **500 LOC**. Current authored files should
+also stay below the **475 LOC** pressure line so future changes have review
+headroom before they reach the hard gate.
 
 Included paths:
 
@@ -65,32 +67,24 @@ Excluded paths:
 - Vendored assets: `**/vendor/**`
 - Generated declaration files: `**/*.d.ts`
 
-Run the advisory audit:
+Run the audit:
 
 ```bash
 npm run audit:maintainability
 ```
 
-The audit reports each violating file with its current line count. It is
-advisory in the file-size gate definition slice so existing violations can be
-documented before refactor work begins.
+The audit reports each violating file with its current line count and exits
+nonzero when a file exceeds the hard gate.
 
 ## Known Violations
 
-Current known violations from `npm run audit:maintainability`:
-
-- `packages/core/src/index.ts`: 2366 LOC
-
-`packages/cli/src/index.ts` is currently 985 LOC, below the hard threshold but
-close enough that the CLI split remains part of the Productization And
-Maintainability phase.
+Current known violations from `npm run audit:maintainability`: none.
 
 ## Enforcement Blocker
 
-Hard enforcement is blocked until the core split removes
-`packages/core/src/index.ts` from the violation list. Issue 50,
-`Split core under file-size gate and enforce it`, is the enforcement point that
-should turn the advisory audit into a failing repository validation step.
+Hard file-size enforcement is active through `npm run audit:maintainability`.
+The current repository also has a test-backed pressure check that keeps
+authored files below 475 LOC unless that policy is intentionally changed.
 
 ## Fallow Codebase Intelligence
 

@@ -9,8 +9,16 @@
   ],
   "ignoreDependencies": [
     "dejavu-fonts-ttf",
-    // The published CLI package imports @diagrampilot/mcp for `diagrampilot mcp`.
-    // Fallow does not currently connect this workspace package dependency.
+    // Published DiagramPilot packages import these package names from source.
+    // Fallow does not currently connect those imports to this npm workspace's
+    // internal package dependencies, so keep these manifest dependencies
+    // intentional while the package graph remains repo-local.
+    "@diagrampilot/core",
+    "@diagrampilot/export-d2",
+    "@diagrampilot/export-dot",
+    "@diagrampilot/export-mermaid",
+    "@diagrampilot/icons",
+    "@diagrampilot/render-svg",
     "@diagrampilot/mcp"
   ],
   "ignoreExports": [
