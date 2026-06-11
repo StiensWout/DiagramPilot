@@ -211,13 +211,13 @@ validation step when changing landing page or docs presentation.
 The workflow uses `scripts/plan-release-publish.mjs` to select one publish
 plan from the GitHub event:
 
-- Trusted pushes to `issue-*` branches publish unique prerelease package
+- Trusted pushes to `feature/**` branches publish unique prerelease package
   versions under the `nightly` dist-tag.
 - Pull requests perform validation and npm publish dry-runs only, including
   same-repository pull requests.
 - `workflow_dispatch` runs perform manual dry-run validation only.
-- Trusted pushes to `main` publish the clean shared Issue Version under the
-  `latest` dist-tag.
+- Trusted pushes to `main` validate release candidates without publishing.
+  Final `latest` publishing belongs to the manual milestone release flow.
 
 Nightly versions are derived from the shared Issue Version plus GitHub run
 identity: `<issue-version>-nightly.<run-number>.<run-attempt>.<short-sha>`.
@@ -233,7 +233,8 @@ The `publish-packages` job is the only npm side-effect job. It needs
 verifies the intended Issue Version with
 `npm run check:release-version -- "$RELEASE_PUBLISH_VERSION"`, rebuilds package
 artifacts, reruns package readiness, and then publishes the Public Package Set.
-For trusted `main` pushes, GitHub Release publication only starts after npm `latest` publish succeeds for that same Issue Version.
+For a final `latest` release, GitHub Release publication only starts after npm
+`latest` publish succeeds for that same Issue Version.
 If the complete Public Package Set already publishes that Issue Version under
 `latest`, the workflow treats package publishing as idempotently complete and
 continues to GitHub Release draft preparation instead of retrying immutable npm
@@ -263,8 +264,8 @@ Real publish is disabled until the repository variable
 `DIAGRAMPILOT_NPM_PUBLISH_ENABLED` is set to `true`. Keep the variable unset
 while reviewing the workflow or before npm trusted publishers exist; the
 workflow still runs validation and package publish dry-runs. After setup,
-trusted `issue-*` branch pushes publish `nightly`, pull requests stay dry-run
-only, and trusted `main` pushes publish `latest`.
+trusted `feature/**` branch pushes publish `nightly`, pull requests stay
+dry-run only, and trusted `main` pushes stay validation-only.
 
 After a clean public release publishes under `latest`, verify all Public
 Package Set dist-tags point at the shared workspace version:

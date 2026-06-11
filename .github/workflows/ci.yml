@@ -7,7 +7,7 @@ on:
   push:
     branches:
       - main
-      - "issue-*"
+      - "feature/**"
 
 permissions:
   contents: read

@@ -118,7 +118,7 @@ test("GitHub Actions release workflow validates releases before guarded publishi
   assertMatchesAll(workflow, [
     /^name: Release$/m,
     /pull_request:\n\s+branches:\n\s+- main/u,
-    /push:\n\s+branches:\n\s+- main\n\s+- "issue-\*"/u,
+    /push:\n\s+branches:\n\s+- main\n\s+- "feature\/\*\*"/u,
     /workflow_dispatch:/u,
     /contents: read/u,
     /id-token: write/u,
@@ -244,16 +244,16 @@ test("release workflow gates CD side effects behind CI and validates reviewed Gi
   );
 });
 
-test("release publish planner routes issue branch pushes to unique nightly versions", async () => {
+test("release publish planner routes feature branch pushes to unique nightly versions", async () => {
   const baseVersion = await readWorkspaceVersion();
   const sha = "abcdef1234567890";
 
-  const result = await withGithubEvent({ ref: "refs/heads/issue-61-release" }, (eventPath) =>
+  const result = await withGithubEvent({ ref: "refs/heads/feature/dp-61-release" }, (eventPath) =>
     runReleasePlan(
       releasePlanEnv(eventPath, {
         GITHUB_EVENT_NAME: "push",
-        GITHUB_REF: "refs/heads/issue-61-release",
-        GITHUB_REF_NAME: "issue-61-release",
+        GITHUB_REF: "refs/heads/feature/dp-61-release",
+        GITHUB_REF_NAME: "feature/dp-61-release",
         GITHUB_RUN_NUMBER: "42",
         GITHUB_RUN_ATTEMPT: "3",
         GITHUB_SHA: sha,
@@ -269,11 +269,11 @@ test("release publish planner routes issue branch pushes to unique nightly versi
     runAttempt: "3",
     sha,
     shouldPublish: true,
-    reason: /trusted issue branch push/u,
+    reason: /trusted feature branch push/u,
   });
 });
 
-test("release publish planner routes main pushes to latest clean versions", async () => {
+test("release publish planner keeps main pushes validation-only", async () => {
   const baseVersion = await readWorkspaceVersion();
 
   const result = await withGithubEvent({ ref: "refs/heads/main" }, (eventPath) =>
@@ -290,20 +290,20 @@ test("release publish planner routes main pushes to latest clean versions", asyn
   );
 
   const plan = parseSuccessfulPlan(result);
-  assertLatestPlan(plan, { baseVersion, shouldPublish: true });
-  assert.match(plan.reason, /trusted main push/u);
+  assertLatestPlan(plan, { baseVersion, shouldPublish: false });
+  assert.match(plan.reason, /main push validation only/u);
 });
 
 test("release publish planner keeps trusted pushes dry-run until publishing is enabled", async () => {
   const baseVersion = await readWorkspaceVersion();
   const sha = "abcdef1234567890";
 
-  const result = await withGithubEvent({ ref: "refs/heads/issue-61-release" }, (eventPath) =>
+  const result = await withGithubEvent({ ref: "refs/heads/feature/dp-61-release" }, (eventPath) =>
     runReleasePlan(
       releasePlanEnv(eventPath, {
         GITHUB_EVENT_NAME: "push",
-        GITHUB_REF: "refs/heads/issue-61-release",
-        GITHUB_REF_NAME: "issue-61-release",
+        GITHUB_REF: "refs/heads/feature/dp-61-release",
+        GITHUB_REF_NAME: "feature/dp-61-release",
         GITHUB_RUN_NUMBER: "47",
         GITHUB_SHA: sha,
       }),
@@ -438,7 +438,9 @@ test("release workflow docs explain npm trusted publisher setup", async () => {
     /OIDC/u,
     /`nightly`/u,
     /`latest`/u,
+    /Trusted pushes to `feature\/\*\*` branches/u,
     /Pull requests perform validation and npm publish dry-runs only/u,
+    /Trusted pushes to `main` validate release candidates without publishing/u,
     /manual dry-run/u,
     /Issue Release/u,
     /GitHub Release draft/u,
