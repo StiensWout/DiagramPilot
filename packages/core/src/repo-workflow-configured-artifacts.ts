@@ -7,13 +7,17 @@ import type {
   RepoWorkflowArtifactOutputFormat,
   RepoWorkflowConfig,
 } from "./repo-workflow-config.js";
+import {
+  createRepoWorkflowArtifactPlan,
+  type RepoWorkflowArtifactPlanItem,
+} from "./repo-workflow-artifact-plan.js";
 import type {
   ConfiguredTextArtifactFormat,
   RepoWorkflowCheckConfiguredArtifactResult,
 } from "./repo-workflow-configured-artifact-result.js";
 import {
   createMarkdownEmbedContent,
-  createMarkdownEmbedReferences,
+  type MarkdownEmbedReferencedArtifact,
 } from "./repo-workflow-markdown-embed.js";
 import {
   markdownResultWithReferencedArtifactIssues,
@@ -34,9 +38,7 @@ export {
   configuredExplicitSourcesForScope,
   configuredOutputsForSource,
   configuredSourceDiscoveryOptions,
-  deriveConfiguredArtifactDisplayPath,
   mergeDiscoveredAndConfiguredSources,
-  resolveConfiguredOutputPath,
 } from "./repo-workflow-configured-artifact-paths.js";
 
 export interface CheckConfiguredArtifactsForValidatedSourceOptions {
@@ -180,14 +182,6 @@ function checkConfiguredTextArtifact(options: {
   };
 }
 
-function outputsInCheckOrder(
-  outputs: readonly RepoWorkflowArtifactOutput[],
-): RepoWorkflowArtifactOutput[] {
-  return [
-    ...outputs.filter((output) => output.format !== "markdown"),
-    ...outputs.filter((output) => output.format === "markdown"),
-  ];
-}
 
 function mapFreshConfiguredSvgArtifactResult(
   artifact: Extract<SvgArtifactFreshnessCheckResult, { status: "fresh" }>,
@@ -264,28 +258,6 @@ function mapConfiguredSvgArtifactResult(
   return mapNonFreshConfiguredSvgArtifactResult(artifact, displayPath);
 }
 
-function configuredOutputPaths(
-  options: CheckConfiguredArtifactsForValidatedSourceOptions,
-  output: RepoWorkflowArtifactOutput,
-): { artifactPath: string; displayPath: string } {
-  const artifactPath = resolveConfiguredOutputPath(
-    options.config,
-    options.sourceAbsolutePath,
-    output,
-  );
-  const displayPath = normalizePathForDisplay(
-    deriveConfiguredArtifactDisplayPath(
-      options.config.directory,
-      artifactPath,
-      options.currentWorkingDirectory,
-    ),
-  );
-
-  return {
-    artifactPath,
-    displayPath,
-  };
-}
 
 async function checkConfiguredSvgOutput(options: {
   workflow: CheckConfiguredArtifactsForValidatedSourceOptions;
@@ -334,6 +306,7 @@ function checkConfiguredMarkdownOutput(options: {
   workflow: CheckConfiguredArtifactsForValidatedSourceOptions;
   artifactPath: string;
   displayPath: string;
+  references: readonly MarkdownEmbedReferencedArtifact[];
   previousResults: readonly RepoWorkflowCheckConfiguredArtifactResult[];
 }): RepoWorkflowCheckConfiguredArtifactResult {
   const contentResult = checkConfiguredTextArtifact({
@@ -343,15 +316,7 @@ function checkConfiguredMarkdownOutput(options: {
     expectedContent: createMarkdownEmbedContent({
       spec: options.workflow.spec,
       embedPath: options.artifactPath,
-      references: createMarkdownEmbedReferences({
-        outputs: options.workflow.outputs,
-        resolvePath: (referencedOutput) =>
-          resolveConfiguredOutputPath(
-            options.workflow.config,
-            options.workflow.sourceAbsolutePath,
-            referencedOutput,
-          ),
-      }),
+      references: options.references,
     }),
   });
   const referenceIssues = options.previousResults
@@ -366,43 +331,42 @@ function checkConfiguredMarkdownOutput(options: {
 
 async function checkConfiguredOutput(options: {
   workflow: CheckConfiguredArtifactsForValidatedSourceOptions;
-  output: RepoWorkflowArtifactOutput;
+  plannedOutput: RepoWorkflowArtifactPlanItem;
+  markdownReferences: readonly MarkdownEmbedReferencedArtifact[];
   previousResults: readonly RepoWorkflowCheckConfiguredArtifactResult[];
 }): Promise<RepoWorkflowCheckConfiguredArtifactResult> {
-  const { artifactPath, displayPath } = configuredOutputPaths(
-    options.workflow,
-    options.output,
-  );
+  const { output, absolutePath, displayPath } = options.plannedOutput;
 
-  if (options.output.format === "svg") {
+  if (output.format === "svg") {
     return await checkConfiguredSvgOutput({
       workflow: options.workflow,
-      artifactPath,
+      artifactPath: absolutePath,
       displayPath,
     });
   }
 
-  if (isConfiguredTextArtifactFormat(options.output.format)) {
+  if (isConfiguredTextArtifactFormat(output.format)) {
     return checkConfiguredTextOutput({
       workflow: options.workflow,
-      format: options.output.format,
-      artifactPath,
+      format: output.format,
+      artifactPath: absolutePath,
       displayPath,
     });
   }
 
-  if (options.output.format === "markdown") {
+  if (output.format === "markdown") {
     return checkConfiguredMarkdownOutput({
       workflow: options.workflow,
-      artifactPath,
+      artifactPath: absolutePath,
       displayPath,
+      references: options.markdownReferences,
       previousResults: options.previousResults,
     });
   }
 
   return checkConfiguredPresenceOnlyArtifact({
-    format: options.output.format,
-    artifactPath,
+    format: output.format,
+    artifactPath: absolutePath,
     displayPath,
   });
 }
@@ -411,12 +375,24 @@ export async function checkConfiguredArtifactsForValidatedSource(
   options: CheckConfiguredArtifactsForValidatedSourceOptions,
 ): Promise<RepoWorkflowCheckConfiguredArtifactResult[]> {
   const results: RepoWorkflowCheckConfiguredArtifactResult[] = [];
+  const plan = createRepoWorkflowArtifactPlan({
+    config: options.config,
+    source: {
+      sourcePath: options.provenanceSourcePath,
+      sourceAbsolutePath: options.sourceAbsolutePath,
+      source: options.source,
+      spec: options.spec,
+      outputs: options.outputs,
+    },
+    currentWorkingDirectory: options.currentWorkingDirectory,
+  });
 
-  for (const output of outputsInCheckOrder(options.outputs)) {
+  for (const plannedOutput of plan.outputs) {
     results.push(
       await checkConfiguredOutput({
         workflow: options,
-        output,
+        plannedOutput,
+        markdownReferences: plan.markdownReferences,
         previousResults: results,
       }),
     );

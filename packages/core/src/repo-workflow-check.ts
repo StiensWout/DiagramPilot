@@ -3,6 +3,7 @@ import type {
   RepoWorkflowConfigDiscoveryResult,
   RepoWorkflowConfigFailure,
 } from "./repo-workflow-config.js";
+import { createRepoWorkflowArtifactPlan } from "./repo-workflow-artifact-plan.js";
 import {
   checkConfiguredArtifactsForValidatedSource,
   configuredExplicitSourcesForScope,
@@ -397,9 +398,16 @@ async function defaultSvgArtifactSourceResult(
   options: RepoWorkflowSourceCheckOptions,
   loadedSource: LoadedRepoWorkflowSourceSuccess,
 ): Promise<RepoWorkflowCheckSourceResult> {
+  const [plannedOutput] = createRepoWorkflowArtifactPlan({
+    config: options.context.config,
+    source: { ...loadedSource, outputs: [] },
+    currentWorkingDirectory: options.context.currentWorkingDirectory,
+  }).outputs;
+
   const artifact =
     await options.dependencies.checkExpectedSvgArtifactFreshnessForValidatedSource({
       source: loadedSource.source,
+      artifactPath: plannedOutput.absolutePath,
       provenanceSourcePath: loadedSource.sourcePath,
       diagramPilotVersion: options.checkOptions.diagramPilotVersion,
       renderer: options.checkOptions.renderer,
