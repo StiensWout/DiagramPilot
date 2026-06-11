@@ -81,6 +81,10 @@ function createTagPlan(baseVersion, refName) {
   }
 
   return {
+    releaseKind: "tag-validation",
+    releaseTag: refName,
+    milestone: "",
+    previousTag: "",
     baseVersion,
     distTag: "latest",
     publishVersion: baseVersion,
@@ -97,6 +101,10 @@ function createPushPlan(baseVersion, nightlyVersion, ref, env) {
 
   if (ref === "refs/heads/main") {
     return {
+      releaseKind: "validation",
+      releaseTag: `v${baseVersion}`,
+      milestone: "",
+      previousTag: "",
       baseVersion,
       distTag: "latest",
       publishVersion: baseVersion,
@@ -108,6 +116,10 @@ function createPushPlan(baseVersion, nightlyVersion, ref, env) {
 
   if (ref.startsWith("refs/heads/feature/")) {
     return {
+      releaseKind: "nightly",
+      releaseTag: `v${nightlyVersion}`,
+      milestone: "",
+      previousTag: "",
       baseVersion,
       distTag: "nightly",
       publishVersion: nightlyVersion,
@@ -122,6 +134,10 @@ function createPushPlan(baseVersion, nightlyVersion, ref, env) {
 function createPullRequestPlan(baseVersion, nightlyVersion, event) {
   if (isForkPullRequest(event)) {
     return {
+      releaseKind: "pull-request",
+      releaseTag: `v${nightlyVersion}`,
+      milestone: "",
+      previousTag: "",
       baseVersion,
       distTag: "nightly",
       publishVersion: nightlyVersion,
@@ -131,6 +147,10 @@ function createPullRequestPlan(baseVersion, nightlyVersion, event) {
   }
 
   return {
+    releaseKind: "pull-request",
+    releaseTag: `v${nightlyVersion}`,
+    milestone: "",
+    previousTag: "",
     baseVersion,
     distTag: "nightly",
     publishVersion: nightlyVersion,
@@ -142,12 +162,75 @@ function createPullRequestPlan(baseVersion, nightlyVersion, event) {
 
 function dryRunPlan(baseVersion, nightlyVersion, reason) {
   return {
+    releaseKind: "dry-run",
+    releaseTag: `v${nightlyVersion}`,
+    milestone: "",
+    previousTag: "",
     baseVersion,
     distTag: "nightly",
     publishVersion: nightlyVersion,
     shouldPublish: false,
     reason,
   };
+}
+
+function manualDryRunPlan(baseVersion, event) {
+  return {
+    releaseKind: "dry-run",
+    releaseTag: `v${baseVersion}`,
+    milestone: workflowInput(event, "milestone"),
+    previousTag: workflowInput(event, "previous_tag"),
+    baseVersion,
+    distTag: "latest",
+    publishVersion: baseVersion,
+    shouldPublish: false,
+    reason: "manual dry-run validation only",
+  };
+}
+
+function workflowInput(event, name) {
+  return event.inputs?.[name] ?? "";
+}
+
+function createManualMilestonePlan(baseVersion, event) {
+  const requestedVersion = workflowInput(event, "version") || baseVersion;
+
+  if (requestedVersion !== baseVersion) {
+    throw new Error(
+      `Manual milestone release version ${requestedVersion} does not match shared version ${baseVersion}.`,
+    );
+  }
+
+  return {
+    releaseKind: "final",
+    releaseTag: `v${baseVersion}`,
+    milestone: workflowInput(event, "milestone"),
+    previousTag: workflowInput(event, "previous_tag"),
+    baseVersion,
+    distTag: "latest",
+    publishVersion: baseVersion,
+    shouldPublish: true,
+    reason: "manual milestone release publishes npm latest",
+  };
+}
+
+function createWorkflowDispatchPlan(context) {
+  const releaseKind = workflowInput(context.event, "release_kind") || "dry-run";
+
+  if (releaseKind === "milestone") {
+    return guardPublish(
+      createManualMilestonePlan(context.baseVersion, context.event),
+      context.env,
+    );
+  }
+
+  if (releaseKind === "dry-run") {
+    return manualDryRunPlan(context.baseVersion, context.event);
+  }
+
+  throw new Error(
+    `Unsupported workflow_dispatch release_kind ${releaseKind}. Use dry-run or milestone.`,
+  );
 }
 
 function requirePlainBaseVersion() {
@@ -225,12 +308,7 @@ const planFactories = [
   },
   {
     matches: (context) => context.eventName === "workflow_dispatch",
-    create: (context) =>
-      dryRunPlan(
-        context.baseVersion,
-        context.nightlyVersion,
-        "manual dry-run validation only",
-      ),
+    create: createWorkflowDispatchPlan,
   },
 ];
 
@@ -263,6 +341,10 @@ function appendOutputs(plan, outputPath) {
       `publish_version=${plan.publishVersion}`,
       `dist_tag=${plan.distTag}`,
       `should_publish=${String(plan.shouldPublish)}`,
+      `release_kind=${plan.releaseKind}`,
+      `release_tag=${plan.releaseTag}`,
+      `milestone=${plan.milestone}`,
+      `previous_tag=${plan.previousTag}`,
       `reason=${plan.reason}`,
       "",
     ].join("\n"),
@@ -282,6 +364,10 @@ function appendEnvironment(plan, envPath) {
       `RELEASE_PUBLISH_VERSION=${plan.publishVersion}`,
       `RELEASE_DIST_TAG=${plan.distTag}`,
       `RELEASE_SHOULD_PUBLISH=${String(plan.shouldPublish)}`,
+      `RELEASE_KIND=${plan.releaseKind}`,
+      `RELEASE_TAG=${plan.releaseTag}`,
+      `RELEASE_MILESTONE=${plan.milestone}`,
+      `RELEASE_PREVIOUS_TAG=${plan.previousTag}`,
       `RELEASE_PLAN_REASON=${plan.reason}`,
       "",
     ].join("\n"),

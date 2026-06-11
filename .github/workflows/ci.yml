@@ -86,9 +86,6 @@ jobs:
       - name: Verify release version metadata
         run: npm run check:release-version
 
-      - name: Verify issue release version metadata
-        run: npm run check:issue-release-version
-
       - name: Build workspace
         run: npm run build
 

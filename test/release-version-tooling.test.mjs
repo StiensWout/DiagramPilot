@@ -399,32 +399,61 @@ test("issue release version sync reads an issue and updates metadata", async () 
   });
 });
 
-test("release version workflow documents issue versions and closeout requirements", async () => {
+test("release version workflow documents current channels and milestone closeout", async () => {
   const workflow = await readFile(
     path.join(repoRoot, "docs/development/release-version-workflow.md"),
     "utf8",
   );
 
   assertMatchesAll(workflow, [
-    /55\s*\|\s*`0\.1\.1`\s*\|\s*Pre-Alpha Release/u,
-    /61\s*\|\s*`0\.1\.8`\s*\|\s*Pre-Alpha Release/u,
-    /63\s*\|\s*`0\.1\.9`\s*\|\s*Pre-Alpha Release/u,
+    /Feature nightly/u,
+    /Trusted push to `feature\/\*\*`/u,
+    /`nightly`/u,
+    /Prerelease/u,
+    /Main validation/u,
+    /No, validation only/u,
+    /Manual dry-run/u,
+    /`release_kind=dry-run`/u,
+    /Milestone release/u,
+    /`release_kind=milestone`/u,
+    /Do not create one stable release per issue/u,
   ]);
-  assert.match(
-    workflow,
-    /Issue 62 is `0\.2\.0`, the first Public Alpha Release/u,
-  );
-  assert.match(
-    workflow,
-    /npm run sync:issue-release-version -- --issue <issue-file>/u,
-  );
   assertMatchesAll(workflow, [
-    /node scripts\/bump-release-version\.mjs <issue-version>/u,
-    /node scripts\/check-release-version\.mjs/u,
-    /npm run check:issue-release-version/u,
-    /npm run check:package-publish-state -- --expect prealpha/u,
-    /render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/u,
-    /validation results/u,
-    /Status: completed/u,
+    /npm run check:release-version/u,
+    /node scripts\/bump-release-version\.mjs <version>/u,
+    /`npm run check:issue-release-version` and\s+`npm run sync:issue-release-version` are legacy compatibility helpers/u,
+    /scripts\/plan-release-publish\.mjs/u,
+    /DIAGRAMPILOT_NPM_PUBLISH_ENABLED/u,
+    /npm trusted publishing through GitHub OIDC/u,
+    /<base-version>-nightly\.<run-number>\.<run-attempt>\.<short-sha>/u,
+    /github-release-publication/u,
+    /Linear closeout issue/u,
   ]);
+  assertMatchesAll(workflow, [
+    /node scripts\/generate-release-notes\.mjs \\\s+--kind final/u,
+    /Highlights/u,
+    /What's Changed/u,
+    /Breaking Changes/u,
+    /Upgrade Notes/u,
+    /Packages/u,
+    /Full Changelog/u,
+    /scripts\/validate-github-release-draft\.mjs/u,
+    /node scripts\/generate-release-notes\.mjs \\\s+--kind nightly/u,
+  ]);
+  assertMatchesAll(workflow, [
+    /npm run check:package-readiness/u,
+    /npm run check:package-publish-state -- --expect available/u,
+    /npm run check:package-publish-state -- --expect latest/u,
+    /npm run audit:fallow/u,
+    /npm run audit:fallow:changed/u,
+  ]);
+  assert.doesNotMatch(workflow, /55\s*\|\s*`0\.1\.1`/u);
+  assert.doesNotMatch(workflow, /Issue 62 is `0\.2\.0`/u);
+  assert.doesNotMatch(
+    workflow,
+    /Each implementation issue that merges to `main` should produce/u,
+  );
+  assert.doesNotMatch(workflow, /npm run sync:issue-release-version -- --issue <issue-file>/u);
+  assert.doesNotMatch(workflow, /render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/u);
+  assert.doesNotMatch(workflow, /## Validation Results/u);
 });

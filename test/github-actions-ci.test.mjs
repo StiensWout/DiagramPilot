@@ -51,7 +51,6 @@ test("GitHub Actions CI validates branch and pull request release-readiness gate
     "npm ci",
     "npm run audit:fallow",
     "npm run check:release-version",
-    "npm run check:issue-release-version",
     "npm run build",
     "npm test",
     "npm run generate:schema",
@@ -68,6 +67,7 @@ test("GitHub Actions CI validates branch and pull request release-readiness gate
     "health-baseline: fallow-baselines/health.json",
     "dupes-baseline: fallow-baselines/dupes.json",
     "issue-*",
+    "npm run check:issue-release-version",
   ]);
 
   assert.doesNotMatch(workflow, /NPM_TOKEN|VERCEL|npm publish/u);

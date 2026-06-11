@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -38,21 +38,6 @@ function runDraftValidation(args, options = {}) {
   return runScript(releaseDraftValidationScriptPath, args, options);
 }
 
-async function writeReleaseIssue(tempRoot, lines) {
-  const issuePath = path.join(
-    tempRoot,
-    ".scratch",
-    "release-ops",
-    "issues",
-    "64-release-ops-foundation-and-github-releases.md",
-  );
-
-  await mkdir(path.dirname(issuePath), { recursive: true });
-  await writeFile(issuePath, `${lines.join("\n")}\n`, "utf8");
-
-  return issuePath;
-}
-
 async function writeDraftJson(draftPath, overrides = {}) {
   await writeFile(
     draftPath,
@@ -72,71 +57,96 @@ async function writeDraftJson(draftPath, overrides = {}) {
   );
 }
 
-test("release-note generator derives a GitHub Release draft body from completed issue closeout fields", async () => {
+test("release-note generator derives final milestone notes from PR and Linear issue references", async () => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "diagrampilot-notes-"));
 
   try {
-    const issuePath = await writeReleaseIssue(tempRoot, [
-        "Status: completed",
-        "Issue Version: 1.2.3",
-        "",
-        "# Ship release ops foundation",
-        "",
-        "## What to build",
-        "",
-        "Make each clean `main` implementation merge publish as an Issue Release.",
-        "",
-        "## Implementation notes",
-        "",
-        "- Added release-note generation.",
-        "- Updated the release workflow.",
-        "",
-        "## Validation results",
-        "",
-        "- `npm test` passed.",
-        "",
-        "## User-facing docs links",
-        "",
-        "- https://diagrampilot.com/docs/agents/installation",
-        "",
-        "## Known limitations",
-        "",
-        "- GitHub Release draft review remains manual.",
-        "",
-        "## Follow-up",
-        "",
-        "- Watch the first automated release run.",
-        "",
-    ]);
+    const prsPath = path.join(tempRoot, "prs.json");
+    const highlightsPath = path.join(tempRoot, "highlights.md");
+    const breakingPath = path.join(tempRoot, "breaking.md");
+    const upgradePath = path.join(tempRoot, "upgrade.md");
+
+    await writeFile(
+      prsPath,
+      `${JSON.stringify(
+        [
+          {
+            number: 94,
+            title: "DP-6: Update CI for Linear nightly branches",
+            url: "https://github.com/StiensWout/DiagramPilot/pull/94",
+            headRefName: "feature/dp-6-update-ci-for-linear-branch-format-and-nightly-prereleases",
+            author: { login: "Wout" },
+          },
+          {
+            number: 93,
+            title: "DP-5: Update agent workflow for Linear",
+            url: "https://github.com/StiensWout/DiagramPilot/pull/93",
+            headRefName: "feature/dp-5-set-up-linear-based-agent-workflow-in-the-repo",
+            author: { login: "Wout" },
+          },
+          {
+            number: 92,
+            title: "Add final release workflow",
+            url: "https://github.com/StiensWout/DiagramPilot/pull/92",
+            headRefName: "feature/dp-7-add-manual-milestone-release-workflow-and-release-notes",
+            author: { login: "Wout" },
+          },
+        ],
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(highlightsPath, "- Linear-backed release train is ready.\n", "utf8");
+    await writeFile(breakingPath, "- Legacy JSON source handling is removed.\n", "utf8");
+    await writeFile(upgradePath, "- Use `feature/dp-*-title` branches for nightlies.\n", "utf8");
 
     const result = await runReleaseNotes([
-      "--issue",
-      issuePath,
+      "--kind",
+      "final",
       "--version",
-      "1.2.3",
+      "0.4.0",
       "--tag",
-      "v1.2.3",
+      "v0.4.0",
+      "--milestone",
+      "0.4.0",
+      "--previous-tag",
+      "v0.3.1",
+      "--prs-json",
+      prsPath,
+      "--highlights-file",
+      highlightsPath,
+      "--breaking-changes-file",
+      breakingPath,
+      "--upgrade-notes-file",
+      upgradePath,
     ]);
 
     assertProcessSuccess(result);
     assertMatchesAll(result.stdout, [
-      /^# DiagramPilot v1\.2\.3$/m,
-      /^Issue: Ship release ops foundation$/m,
-      /^Issue Version: 1\.2\.3$/m,
-      /^Tag: v1\.2\.3$/m,
+      /^# DiagramPilot v0\.4\.0$/m,
+      /^Release Version: 0\.4\.0$/m,
+      /^Tag: v0\.4\.0$/m,
+      /^Milestone: 0\.4\.0$/m,
+      /^## Highlights$/m,
+      /^## What's Changed$/m,
+      /^## Breaking Changes$/m,
+      /^## Upgrade Notes$/m,
+      /^## Packages$/m,
+      /^## Full Changelog$/m,
     ]);
     assert.match(
       result.stdout,
-      /^npm: https:\/\/www\.npmjs\.com\/package\/diagrampilot\/v\/1\.2\.3$/m,
+      /^npm: https:\/\/www\.npmjs\.com\/package\/diagrampilot\/v\/0\.4\.0$/m,
     );
     assertMatchesAll(result.stdout, [
       /^Public Website: https:\/\/diagrampilot\.com$/m,
-      /Make each clean `main` implementation merge/u,
-      /Added release-note generation/u,
-      /`npm test` passed/u,
-      /https:\/\/diagrampilot\.com\/docs\/agents\/installation/u,
-      /GitHub Release draft review remains manual/u,
-      /Watch the first automated release run/u,
+      /Linear-backed release train is ready/u,
+      /DP-6: Update CI for Linear nightly branches/u,
+      /DP-5: Update agent workflow for Linear/u,
+      /Add final release workflow \(DP-7\)/u,
+      /https:\/\/www\.npmjs\.com\/package\/@diagrampilot\/core\/v\/0\.4\.0/u,
+      /https:\/\/github\.com\/StiensWout\/DiagramPilot\/compare\/v0\.3\.1\.\.\.v0\.4\.0/u,
     ]);
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
@@ -151,8 +161,14 @@ test("GitHub Release draft validation accepts only a reviewed draft for the matc
     await writeDraftJson(draftPath, {
       body: [
         "# DiagramPilot v1.2.3",
-        "Issue Version: 1.2.3",
+        "Release Version: 1.2.3",
         "Tag: v1.2.3",
+        "## Highlights",
+        "## What's Changed",
+        "## Breaking Changes",
+        "## Upgrade Notes",
+        "## Packages",
+        "## Full Changelog",
       ].join("\n"),
     });
 
@@ -193,41 +209,31 @@ test("GitHub Release draft validation accepts only a reviewed draft for the matc
   }
 });
 
-test("release-note generator can find the completed issue by Issue Version", async () => {
-  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "diagrampilot-notes-find-"));
+test("release-note generator derives compact nightly prerelease notes", async () => {
+  const result = await runReleaseNotes([
+    "--kind",
+    "nightly",
+    "--version",
+    "1.2.3-nightly.4.5.abcdef0",
+    "--tag",
+    "v1.2.3-nightly.4.5.abcdef0",
+    "--branch",
+    "feature/dp-7-release-workflow",
+    "--commit",
+    "abcdef0123456789",
+    "--run-url",
+    "https://github.com/StiensWout/DiagramPilot/actions/runs/123",
+  ]);
 
-  try {
-    const issuePath = await writeReleaseIssue(tempRoot, [
-        "Status: completed",
-        "Issue Version: 1.2.3",
-        "",
-        "# Release ops foundation",
-        "",
-        "## What to build",
-        "",
-        "Ship guarded Issue Release operations.",
-        "",
-        "## Implementation notes",
-        "",
-        "- Added GitHub Release publication.",
-        "",
-        "## Validation results",
-        "",
-        "- `node --test` passed.",
-        "",
-    ]);
-
-    const result = await runReleaseNotes(
-      ["--version", "1.2.3", "--tag", "v1.2.3"],
-      { cwd: tempRoot },
-    );
-
-    assertProcessSuccess(result);
-    assertMatchesAll(result.stdout, [
-      /^Issue: Release ops foundation$/m,
-      /Ship guarded Issue Release operations/u,
-    ]);
-  } finally {
-    await rm(tempRoot, { recursive: true, force: true });
-  }
+  assertProcessSuccess(result);
+  assertMatchesAll(result.stdout, [
+    /^# DiagramPilot v1\.2\.3-nightly\.4\.5\.abcdef0$/m,
+    /^Pre-release: true$/m,
+    /^Release Version: 1\.2\.3-nightly\.4\.5\.abcdef0$/m,
+    /^Dist Tag: nightly$/m,
+    /^Branch: feature\/dp-7-release-workflow$/m,
+    /^Commit: abcdef0$/m,
+    /^## Packages$/m,
+    /^## Validation$/m,
+  ]);
 });

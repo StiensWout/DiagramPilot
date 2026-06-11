@@ -73,8 +73,14 @@ function validateDraft({ draft, version, tag }) {
   requireDraft(name.includes(tag), `draft name must include ${tag}`);
   requireDraft(body.trim() !== "", `draft body is empty for ${tag}`);
   requireDraft(body.includes(`# DiagramPilot ${tag}`), `draft body must include # DiagramPilot ${tag}`);
-  requireDraft(body.includes(`Issue Version: ${version}`), `draft body must include Issue Version: ${version}`);
+  requireDraft(body.includes(`Release Version: ${version}`), `draft body must include Release Version: ${version}`);
   requireDraft(body.includes(`Tag: ${tag}`), `draft body must include Tag: ${tag}`);
+  requireDraft(body.includes("## Highlights"), "draft body must include Highlights");
+  requireDraft(body.includes("## What's Changed"), "draft body must include What's Changed");
+  requireDraft(body.includes("## Breaking Changes"), "draft body must include Breaking Changes");
+  requireDraft(body.includes("## Upgrade Notes"), "draft body must include Upgrade Notes");
+  requireDraft(body.includes("## Packages"), "draft body must include Packages");
+  requireDraft(body.includes("## Full Changelog"), "draft body must include Full Changelog");
 }
 
 function main() {
