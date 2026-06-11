@@ -7,9 +7,9 @@ Most users should install the `diagrampilot` CLI. Use this package when you are
 building tooling that needs DiagramPilot core behavior directly.
 
 The v0.3.0 Alpha Capability Release core supports YAML-only DiagramPilot Source
-Files, repairable legacy `*.dp.json` diagnostics, read-only repo workflow
-checks, configured artifact freshness, and `generate` support for configured
-Derived Artifacts and generated Markdown embed files.
+Files, read-only repo workflow checks, configured artifact freshness, and
+`generate` support for configured Derived Artifacts and generated Markdown
+embed files.
 
 Public documentation:
 

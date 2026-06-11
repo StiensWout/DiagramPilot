@@ -38,10 +38,6 @@ function isDiagramPilotSourcePath(filePath: string): boolean {
 }
 
 function unsupportedSourceFileMessage(filePath: string): string {
-  if (filePath.toLowerCase().endsWith(".dp.json")) {
-    return `Unsupported DiagramPilot source file: ${filePath}. YAML is the supported source format; use a *.dp.yaml source file.`;
-  }
-
   return `Unsupported DiagramPilot source file: ${filePath}`;
 }
 

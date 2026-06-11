@@ -61,11 +61,11 @@ than hand-editing generated artifacts. Rendered SVG artifacts include
 deterministic provenance metadata with the source path, source SHA-256 hash,
 DiagramPilot version, and renderer version.
 
-DiagramPilot no longer accepts `*.dp.json` as a source file format. Explicit
-legacy JSON source inputs fail with repair guidance that points to
-`*.dp.yaml`. JSON remains supported for `--json` CLI output, the DiagramSpec
-JSON Schema, SVG provenance metadata, package manifests, and other tooling
-surfaces.
+`*.dp.json` is not a DiagramPilot Source File path. Repo discovery ignores JSON
+source files, explicit commands reject non-YAML source paths generically, and
+DiagramPilot does not provide a JSON-to-YAML migration command. JSON remains
+supported for `--json` CLI output, the DiagramSpec JSON Schema, SVG provenance
+metadata, package manifests, and other tooling surfaces.
 
 ## License And Brand
 

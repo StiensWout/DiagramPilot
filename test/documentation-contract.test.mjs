@@ -311,7 +311,7 @@ test("canonical public install and removal guidance is complete and linked", asy
   );
   assert.match(
     installationGuide,
-    /Legacy\s+`\*\.dp\.json` source files are\s+not supported by current DiagramPilot commands;\s+convert them to `\*\.dp\.yaml`/i,
+    /`\*\.dp\.json` files are not current DiagramPilot Source Files;\s+convert\s+project-owned diagram content to `\*\.dp\.yaml`/i,
   );
   assert.match(
     installationGuide,

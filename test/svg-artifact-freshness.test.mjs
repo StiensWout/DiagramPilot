@@ -6,6 +6,7 @@ import test from "node:test";
 import {
   checkExpectedSvgArtifactFreshness,
   checkExpectedSvgArtifactFreshnessForValidatedSource,
+  deriveExpectedSvgArtifactPath,
 } from "../packages/core/dist/index.js";
 import {
   SVG_RENDERER_NAME,
@@ -34,6 +35,17 @@ function checkExpectedFreshnessForSource(sourcePath) {
     expectedSvgFreshnessOptions(sourcePath),
   );
 }
+
+test("deriveExpectedSvgArtifactPath derives only from YAML Source File paths", () => {
+  assert.equal(
+    deriveExpectedSvgArtifactPath("docs/architecture.dp.yaml"),
+    "docs/architecture.svg",
+  );
+  assert.equal(
+    deriveExpectedSvgArtifactPath("docs/architecture.dp.json"),
+    "docs/architecture.dp.json",
+  );
+});
 
 async function assertMalformedArtifact({
   tempRoot,

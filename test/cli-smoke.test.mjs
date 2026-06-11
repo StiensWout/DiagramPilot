@@ -221,7 +221,7 @@ test("diagrampilot validate reads a YAML source file from an explicit path", asy
   });
 });
 
-test("diagrampilot validate rejects a legacy JSON source with a YAML repair hint", async () => {
+test("diagrampilot validate rejects a non-YAML source path generically", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });
     await writeFile(
@@ -246,10 +246,9 @@ test("diagrampilot validate rejects a legacy JSON source with a YAML repair hint
     assertCliFailure(result, {
       stderrPatterns: [
         /Unsupported DiagramPilot source file: docs\/architecture\.dp\.json/,
-        /YAML is the supported source format/,
-        /\*\.dp\.yaml/,
       ],
     });
+    assert.doesNotMatch(result.stderr, /YAML is the supported source format/);
   });
 });
 

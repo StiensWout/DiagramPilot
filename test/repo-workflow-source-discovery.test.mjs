@@ -5,7 +5,6 @@ import path from "node:path";
 import test from "node:test";
 
 import { discoverDiagramPilotSourceFiles } from "../packages/core/dist/index.js";
-import { assertYamlSourceRepairHint } from "./source-format-assertions.mjs";
 
 async function withTempRepo(run) {
   const tempRoot = await mkdtemp(
@@ -17,6 +16,15 @@ async function withTempRepo(run) {
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
   }
+}
+
+function assertUnsupportedSourcePath(result, sourcePath) {
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.failure, {
+    kind: "unsupported-source-path",
+    path: sourcePath,
+    message: `Unsupported DiagramPilot source file: ${sourcePath}`,
+  });
 }
 
 test("discoverDiagramPilotSourceFiles returns one explicit DiagramPilot source file", async () => {
@@ -51,16 +59,11 @@ test("discoverDiagramPilotSourceFiles rejects an explicit unsupported source ext
 
     const result = await discoverDiagramPilotSourceFiles(sourcePath);
 
-    assert.equal(result.ok, false);
-    assert.deepEqual(result.failure, {
-      kind: "unsupported-source-path",
-      path: sourcePath,
-      message: `Unsupported DiagramPilot source file: ${sourcePath}`,
-    });
+    assertUnsupportedSourcePath(result, sourcePath);
   });
 });
 
-test("discoverDiagramPilotSourceFiles rejects an explicit JSON source path with a YAML repair hint", async () => {
+test("discoverDiagramPilotSourceFiles rejects an explicit non-YAML source path generically", async () => {
   await withTempRepo(async (tempRoot) => {
     const sourcePath = path.join(tempRoot, "docs", "architecture.dp.json");
     await mkdir(path.dirname(sourcePath), { recursive: true });
@@ -76,10 +79,7 @@ test("discoverDiagramPilotSourceFiles rejects an explicit JSON source path with 
 
     const result = await discoverDiagramPilotSourceFiles(sourcePath);
 
-    assert.equal(result.ok, false);
-    assert.equal(result.failure.kind, "unsupported-source-path");
-    assert.equal(result.failure.path, sourcePath);
-    assertYamlSourceRepairHint(result.failure.message);
+    assertUnsupportedSourcePath(result, sourcePath);
   });
 });
 

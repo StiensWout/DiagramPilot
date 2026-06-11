@@ -27,8 +27,7 @@ workflows:
 The current implementation includes:
 
 - DiagramSpec v1 source loading from YAML DiagramPilot Source Files.
-- Repairable unsupported-source diagnostics for explicit legacy `*.dp.json`
-  source inputs.
+- Generic unsupported-source diagnostics for explicit non-YAML source paths.
 - Validated DiagramSpec loading through a shared core lifecycle.
 - Repairable text and JSON validation errors.
 - Stable lowercase snake case IDs across nodes, edges, and groups.
@@ -54,8 +53,9 @@ a future PRD explicitly changes them:
 
 - DiagramSpec remains the source of truth.
 - DiagramPilot Source Files are `*.dp.yaml`.
-- `*.dp.json` is not a source format; explicit legacy JSON source inputs
-  produce repairable diagnostics that point to `*.dp.yaml`.
+- `*.dp.json` is not a DiagramPilot Source File path; repo discovery ignores
+  JSON source files and explicit commands reject non-YAML source paths
+  generically.
 - Derived Artifact categories include SVG, Mermaid, D2, DOT, and PNG; current
   commands implement SVG, PNG, Mermaid, D2, and DOT.
 - `validate` validates explicit source file paths only.
@@ -186,17 +186,15 @@ repeatable publishing.
   field is required for the scoped release.
 - Keep JSON for structured CLI output, the DiagramSpec JSON Schema helper, SVG
   provenance metadata, package manifests, and other tooling surfaces.
-- `*.dp.json` source files produce repairable diagnostics that explain JSON
-  source files are no longer supported and should be converted to
-  `*.dp.yaml`.
+- `*.dp.json` source files are ignored by repo discovery rather than preserved
+  as a legacy source workflow.
 - Do not add a JSON-to-YAML migration command in v0.3.0; current expected usage
   does not justify a dedicated migration surface.
 - Mention JSON source removal prominently in v0.3.0 release notes and public
   docs, but do not create a large migration guide.
 - Repo workflow discovery ignores `*.dp.json` files when scanning directories.
-- Explicit commands such as `diagrampilot validate docs/old.dp.json` return a
-  repairable unsupported-source-format diagnostic instead of silently doing
-  nothing.
+- Explicit commands such as `diagrampilot validate docs/old.dp.json` reject the
+  path as an unsupported source path instead of silently doing nothing.
 
 **Repo Workflow Deepening**
 

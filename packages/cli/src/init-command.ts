@@ -49,7 +49,7 @@ const supportFiles = [
       "DiagramSpec is the source of truth for repository diagrams.",
       "",
       "Author DiagramPilot Source Files as `*.dp.yaml`.",
-      "`*.dp.json` is no longer a DiagramPilot source format.",
+      "`*.dp.json` is not a DiagramPilot Source File path.",
       "",
       "Run the read-only repo review/CI command first:",
       "",
