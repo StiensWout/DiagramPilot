@@ -25,7 +25,7 @@ const routes = [
   {
     name: "landing",
     path: "/",
-    checks: ["landingHero", "meaningfulVisual", "reducedMotion"],
+    checks: ["landingHero", "workflowDemo"],
   },
   {
     name: "docs-quickstart",
@@ -159,17 +159,10 @@ async function checkRoute(browser, baseUrl, route, viewport) {
       });
     }
 
-    if (route.checks.includes("meaningfulVisual")) {
-      await recordDomCheck(`${route.name}:${viewport.name}:hero-visual-nonblank`, async () => {
-        const stats = await page.evaluate(sampleHeroVisual);
-        assert(
-          stats.visibleWidth >= 280 && stats.visibleHeight >= 150,
-          `hero visual is too small: ${stats.visibleWidth}x${stats.visibleHeight}`,
-        );
-        assert(
-          stats.colorBuckets >= 12 && stats.luminanceSpread >= 18,
-          `hero visual looks blank: ${JSON.stringify(stats)}`,
-        );
+    if (route.checks.includes("workflowDemo")) {
+      await recordDomCheck(`${route.name}:${viewport.name}:workflow-demo-layout`, async () => {
+        const result = await page.evaluate(checkWorkflowDemoLayout);
+        assert(result.ok, result.message);
       });
     }
 
@@ -340,7 +333,7 @@ function heroOrderPairFailure(previous, current) {
 }
 
 function heroOrderFailure(items) {
-  const orderedSelectors = [".eyebrow", "#landing-title", ".promise", ".action-primary"];
+  const orderedSelectors = [".hero-eyebrow", ".promise", ".action-primary"];
 
   for (let index = 1; index < orderedSelectors.length; index += 1) {
     const { previous, current } = heroOrderPair(items, orderedSelectors, index);
@@ -354,11 +347,10 @@ function heroOrderFailure(items) {
 
 function checkLandingHeroLayout() {
   const selectors = [
-    [".eyebrow", /repo-native diagram compiler/i],
-    ["#landing-title", /^DiagramPilot$/],
-    [".promise", /repository files an AI coding agent can safely change/i],
-    [".action-primary", /Checkout Demo Project|Open Quickstart/i],
-    [".action-secondary", /Documentation|Read Docs/i],
+    [".hero-eyebrow", /repo-native diagram compiler/i],
+    [".promise", /Commit diagrams like code/i],
+    [".action-primary", /See the workflow/i],
+    [".action-secondary", /Install Guide|Read Docs/i],
   ];
   const items = [];
 
@@ -377,41 +369,93 @@ function checkLandingHeroLayout() {
   return { ok: true };
 }
 
-function sampleHeroVisual() {
-  const image = document.querySelector(".workflow-shell img");
-  if (!(image instanceof HTMLImageElement)) {
-    return { colorBuckets: 0, luminanceSpread: 0, visibleHeight: 0, visibleWidth: 0 };
-  }
+function checkedBounds(selector) {
+  const element = document.querySelector(selector);
+  if (!element) return { ok: false, message: `missing ${selector}` };
 
-  const rect = image.getBoundingClientRect();
-  const canvas = document.createElement("canvas");
-  canvas.width = 64;
-  canvas.height = 36;
-  const context = canvas.getContext("2d", { willReadFrequently: true });
-  context.drawImage(image, 0, 0, canvas.width, canvas.height);
-  const data = context.getImageData(0, 0, canvas.width, canvas.height).data;
-  const buckets = new Set();
-  let minLuminance = 255;
-  let maxLuminance = 0;
+  const rect = element.getBoundingClientRect();
+  const boundsFailure = emptyHeroLayoutFailure(selector, rect);
 
-  for (let index = 0; index < data.length; index += 4) {
-    const red = data[index];
-    const green = data[index + 1];
-    const blue = data[index + 2];
-    const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-    minLuminance = Math.min(minLuminance, luminance);
-    maxLuminance = Math.max(maxLuminance, luminance);
-    buckets.add(`${Math.round(red / 32)}-${Math.round(green / 32)}-${Math.round(blue / 32)}`);
-  }
+  return boundsFailure ?? { ok: true, rect: toRect(rect) };
+}
 
+function workflowButtonHeightFailure(rect, text) {
+  if (rect.height >= 44) return undefined;
   return {
-    colorBuckets: buckets.size,
-    luminanceSpread: Math.round(maxLuminance - minLuminance),
-    naturalHeight: image.naturalHeight,
-    naturalWidth: image.naturalWidth,
-    visibleHeight: Math.round(rect.height),
-    visibleWidth: Math.round(rect.width),
+    ok: false,
+    message: `workflow control "${text}" is shorter than 44px: ${Math.round(rect.height)}`,
   };
+}
+
+function workflowButtonHorizontalFailure(rect, text) {
+  if (rect.left >= -1 && rect.right <= window.innerWidth + 1) return undefined;
+  return {
+    ok: false,
+    message: `workflow control "${text}" is clipped horizontally: ${JSON.stringify(toRect(rect))}`,
+  };
+}
+
+function workflowButtonFailure(button) {
+  const rect = button.getBoundingClientRect();
+  const text = button.textContent?.replace(/\s+/g, " ").trim() ?? "";
+
+  return workflowButtonHeightFailure(rect, text) ?? workflowButtonHorizontalFailure(rect, text);
+}
+
+function workflowButtonsFailure(buttons) {
+  for (const button of buttons) {
+    const failure = workflowButtonFailure(button);
+    if (failure !== undefined) return failure;
+  }
+  return undefined;
+}
+
+function workflowTextFailure(stage) {
+  const text = stage.textContent?.replace(/\s+/g, " ").trim() ?? "";
+  const required = [/\.dp\.yaml/, /diagrampilot check/, /diagrampilot generate/];
+  required.push(/architecture\.svg/, /Review-stable SVG artifact/, /checkout API/);
+  required.push(/payment provider/, /orders DB/);
+
+  for (const pattern of required) {
+    if (!pattern.test(text)) {
+      return { ok: false, message: `workflow demo is missing ${pattern}` };
+    }
+  }
+
+  return undefined;
+}
+
+function workflowStageBoundsFailure() {
+  const stageBounds = checkedBounds("[data-demo-stage]");
+  if (!stageBounds.ok) return stageBounds;
+  if (stageBounds.rect.left >= -1 && stageBounds.rect.right <= window.innerWidth + 1) {
+    return undefined;
+  }
+  return {
+    ok: false,
+    message: `workflow demo is clipped horizontally: ${JSON.stringify(stageBounds.rect)}`,
+  };
+}
+
+function workflowControlCountFailure(buttons) {
+  return buttons.length !== 4
+    ? { ok: false, message: `expected 4 workflow controls, found ${buttons.length}` }
+    : undefined;
+}
+
+function checkWorkflowDemoLayout() {
+  const stage = document.querySelector("[data-demo-stage]");
+  if (!stage) return { ok: false, message: "missing workflow demo stage" };
+  const stageFailure = workflowStageBoundsFailure();
+  if (stageFailure !== undefined) return stageFailure;
+  const buttons = Array.from(document.querySelectorAll("[data-demo-control]"));
+  const demoFailure = [
+    workflowControlCountFailure(buttons),
+    workflowButtonsFailure(buttons),
+    workflowTextFailure(stage),
+  ].find((failure) => failure !== undefined);
+
+  return demoFailure ?? { ok: true };
 }
 
 function toRect(rect) {

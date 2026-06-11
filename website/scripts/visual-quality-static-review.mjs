@@ -13,7 +13,6 @@ export async function runStaticReview({
   websiteRoot,
 }) {
   await configureReportFonts({ outputRoot, repoRoot });
-  const sharp = await loadSharp();
   const landingHtml = await readFile(path.join(distRoot, "index.html"), "utf8");
   const docsHtml = await readFile(
     path.join(distRoot, "docs", "agents", "quickstart", "index.html"),
@@ -26,12 +25,13 @@ export async function runStaticReview({
 
   await recordDomCheck("static:landing:important-text", async () => {
     assertMatch(landingHtml, /<h1[^>]*>\s*DiagramPilot\s*<\/h1>/);
-    assertMatch(landingHtml, /Checkout Demo Project/);
-    assertMatch(landingHtml, /Documentation/);
+    assertMatch(landingHtml, /See the workflow/);
+    assertMatch(landingHtml, /Install Guide/);
     assertMatch(
       landingHtml,
-      /repository files an AI coding agent can safely change,\s*validate, and commit/i,
+      /Commit diagrams like code:\s*`\.dp\.yaml` source in the repo,\s*local\s*checks before review,\s*and SVG artifacts maintainers can inspect/i,
     );
+    assertMatch(landingHtml, /From `\.dp\.yaml` to review-stable SVG without leaving the repo/);
   });
 
   await recordDomCheck("static:docs-quickstart:important-text", async () => {
@@ -58,21 +58,11 @@ export async function runStaticReview({
     assertMatch(landingCss, /h1\s*{[^}]*line-height:\s*1;/s);
   });
 
-  await recordDomCheck("static:landing:hero-visual-nonblank", async () => {
-    const stats = await sharp(path.join(distRoot, "landing", "hero-workflow.png")).stats();
-    const channelSpread = stats.channels.reduce(
-      (largestSpread, channel) => Math.max(largestSpread, channel.max - channel.min),
-      0,
-    );
-    const channelDeviation = stats.channels.reduce(
-      (largestDeviation, channel) => Math.max(largestDeviation, channel.stdev),
-      0,
-    );
-
-    assert(
-      channelSpread >= 80 && channelDeviation >= 18,
-      `hero-workflow.png looks blank: spread=${channelSpread}, stdev=${channelDeviation}`,
-    );
+  await recordDomCheck("static:landing:artifact-diagram-present", async () => {
+    assertMatch(landingHtml, /class="demo-svg"/);
+    assertMatch(landingHtml, /artifact-node-service/);
+    assertMatch(landingHtml, /artifact-edge/);
+    assertMatch(landingHtml, /payment provider/);
   });
 
   for (const viewport of viewports) {
@@ -89,29 +79,20 @@ export async function runStaticReview({
   }
 }
 
-async function writeStaticLandingReport({ distRoot, outputRoot, viewport }) {
+async function writeStaticLandingReport({ outputRoot, viewport }) {
   const sharp = await loadSharp();
   const padding = viewport.width < 500 ? 24 : 56;
-  const heroWidth = Math.max(1, viewport.width - padding * 2);
-  const heroTop = viewport.width < 500 ? 460 : 420;
-  const heroImage = await sharp(path.join(distRoot, "landing", "hero-workflow.png"))
-    .resize({ width: heroWidth, withoutEnlargement: true })
-    .png()
-    .toBuffer();
-  const heroMeta = await sharp(heroImage).metadata();
+  const metrics = staticLandingMetrics(viewport.width < 500);
 
   await sharp({
     create: {
       width: viewport.width,
-      height: Math.max(viewport.height, heroTop + (heroMeta.height ?? 0) + padding),
+      height: Math.max(viewport.height, metrics.proofBottom + padding),
       channels: 4,
       background: "#05070a",
     },
   })
-    .composite([
-      { input: staticLandingOverlay(viewport, padding), left: 0, top: 0 },
-      { input: heroImage, left: padding, top: heroTop },
-    ])
+    .composite([{ input: staticLandingOverlay(viewport, padding), left: 0, top: 0 }])
     .png()
     .toFile(path.join(outputRoot, `landing-${viewport.name}.png`));
 }
@@ -144,14 +125,14 @@ function staticLandingEyebrow(padding, isMobile) {
 function staticLandingPromise(padding, promiseSize, isMobile) {
   return isMobile
     ? `<text x="${padding}" y="${padding + 142}" fill="#f8fafc" font-family="DejaVu Sans" font-size="${promiseSize}" font-weight="700">
-        <tspan x="${padding}">Diagrams are repository</tspan>
-        <tspan x="${padding}" dy="${promiseSize + 8}">files an AI coding agent</tspan>
-        <tspan x="${padding}" dy="${promiseSize + 8}">can safely change, validate,</tspan>
-        <tspan x="${padding}" dy="${promiseSize + 8}">and commit.</tspan>
+        <tspan x="${padding}">Commit diagrams like code:</tspan>
+        <tspan x="${padding}" dy="${promiseSize + 8}">.dp.yaml source in the repo,</tspan>
+        <tspan x="${padding}" dy="${promiseSize + 8}">local checks before review,</tspan>
+        <tspan x="${padding}" dy="${promiseSize + 8}">and SVG artifacts.</tspan>
       </text>`
     : `<text x="${padding}" y="${padding + 150}" fill="#f8fafc" font-family="DejaVu Sans" font-size="${promiseSize}" font-weight="700">
-        <tspan x="${padding}">Diagrams are repository files an AI coding agent</tspan>
-        <tspan x="${padding}" dy="${promiseSize + 8}">can safely change, validate, and commit.</tspan>
+        <tspan x="${padding}">Commit diagrams like code: .dp.yaml source in the repo,</tspan>
+        <tspan x="${padding}" dy="${promiseSize + 8}">local checks before review, and SVG artifacts.</tspan>
       </text>`;
 }
 
@@ -162,6 +143,12 @@ function staticLandingMetrics(isMobile) {
         promiseSize: 20,
         buttonTop: 322,
         primaryWidth: 252,
+        proofBottom: 744,
+        proofHeight: 300,
+        proofTop: 430,
+        proofStacked: true,
+        proofNodeGap: 12,
+        proofNodeWidth: 118,
         secondaryWidth: 184,
       }
     : {
@@ -169,13 +156,49 @@ function staticLandingMetrics(isMobile) {
         promiseSize: 34,
         buttonTop: 282,
         primaryWidth: 210,
+        proofBottom: 760,
+        proofHeight: 270,
+        proofTop: 410,
+        proofStacked: false,
+        proofNodeGap: 28,
+        proofNodeWidth: 156,
         secondaryWidth: 148,
       };
+}
+
+function staticLandingProofLayout(viewport, padding, metrics) {
+  const proofWidth = viewport.width - padding * 2;
+  const nodeWidth = metrics.proofNodeWidth;
+  const nodeTop = metrics.proofTop + 92;
+  const nodeLeft = padding + 22;
+  const serviceLeft = nodeLeft + nodeWidth + metrics.proofNodeGap;
+  const dataLeft = metrics.proofStacked
+    ? nodeLeft
+    : serviceLeft + nodeWidth + metrics.proofNodeGap;
+  const dataTop = metrics.proofStacked ? nodeTop + 86 : nodeTop;
+
+  return { dataLeft, dataTop, nodeLeft, nodeTop, nodeWidth, proofWidth, serviceLeft };
+}
+
+function staticLandingProofSvg(padding, metrics, layout) {
+  return `
+      <rect x="${padding}" y="${metrics.proofTop}" width="${layout.proofWidth}" height="${metrics.proofHeight}" rx="8" fill="#07111f" stroke="#1e3a35"/>
+      <text x="${padding + 22}" y="${metrics.proofTop + 34}" fill="#f8fafc" font-family="DejaVu Sans" font-size="17" font-weight="700">Review-stable SVG artifact</text>
+      <text x="${padding + 22}" y="${metrics.proofTop + 62}" fill="#94a3b8" font-family="DejaVu Sans" font-size="13">docs/architecture.svg</text>
+      <line x1="${layout.nodeLeft + layout.nodeWidth}" y1="${layout.nodeTop + 34}" x2="${layout.serviceLeft}" y2="${layout.nodeTop + 34}" stroke="#34d399" stroke-width="3"/>
+      <line x1="${layout.serviceLeft + layout.nodeWidth}" y1="${layout.nodeTop + 34}" x2="${layout.dataLeft}" y2="${layout.dataTop + 34}" stroke="#34d399" stroke-width="3"/>
+      <rect x="${layout.nodeLeft}" y="${layout.nodeTop}" width="${layout.nodeWidth}" height="68" rx="8" fill="#0b1726" stroke="#34d399"/>
+      <text x="${layout.nodeLeft + 18}" y="${layout.nodeTop + 41}" fill="#f8fafc" font-family="DejaVu Sans" font-size="14" font-weight="700">web app</text>
+      <rect x="${layout.serviceLeft}" y="${layout.nodeTop}" width="${layout.nodeWidth}" height="68" rx="8" fill="#0b1726" stroke="#34d399"/>
+      <text x="${layout.serviceLeft + 18}" y="${layout.nodeTop + 41}" fill="#f8fafc" font-family="DejaVu Sans" font-size="14" font-weight="700">checkout API</text>
+      <rect x="${layout.dataLeft}" y="${layout.dataTop}" width="${layout.nodeWidth}" height="68" rx="8" fill="#0b1726" stroke="#38bdf8"/>
+      <text x="${layout.dataLeft + 18}" y="${layout.dataTop + 41}" fill="#f8fafc" font-family="DejaVu Sans" font-size="14" font-weight="700">orders DB</text>`;
 }
 
 function staticLandingOverlay(viewport, padding) {
   const isMobile = viewport.width < 500;
   const metrics = staticLandingMetrics(isMobile);
+  const proofLayout = staticLandingProofLayout(viewport, padding, metrics);
 
   return Buffer.from(`
     <svg xmlns="http://www.w3.org/2000/svg" width="${viewport.width}" height="${viewport.height}">
@@ -184,9 +207,10 @@ function staticLandingOverlay(viewport, padding) {
       <text x="${padding}" y="${padding + 94}" fill="#ffffff" font-family="DejaVu Sans" font-size="${metrics.titleSize}" font-weight="700">DiagramPilot</text>
       ${staticLandingPromise(padding, metrics.promiseSize, isMobile)}
       <rect x="${padding}" y="${metrics.buttonTop}" width="${metrics.primaryWidth}" height="48" rx="8" fill="#34d399"/>
-      <text x="${padding + 20}" y="${metrics.buttonTop + 31}" fill="#03120c" font-family="DejaVu Sans" font-size="16" font-weight="700">Checkout Demo Project</text>
+      <text x="${padding + 20}" y="${metrics.buttonTop + 31}" fill="#03120c" font-family="DejaVu Sans" font-size="16" font-weight="700">See the workflow</text>
       <rect x="${padding}" y="${metrics.buttonTop + 60}" width="${metrics.secondaryWidth}" height="48" rx="8" fill="#0f172a" stroke="#475569"/>
-      <text x="${padding + 20}" y="${metrics.buttonTop + 91}" fill="#f8fafc" font-family="DejaVu Sans" font-size="16" font-weight="700">Documentation</text>
+      <text x="${padding + 20}" y="${metrics.buttonTop + 91}" fill="#f8fafc" font-family="DejaVu Sans" font-size="16" font-weight="700">Install Guide</text>
+      ${staticLandingProofSvg(padding, metrics, proofLayout)}
     </svg>`);
 }
 
