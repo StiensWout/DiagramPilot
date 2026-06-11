@@ -9,7 +9,7 @@ milestone release.
 
 | Channel | Trigger | Publishes npm | GitHub Release | Purpose |
 | --- | --- | --- | --- | --- |
-| Pull request | PR to `main` | No, dry-run only | None | Validate changes before merge. |
+| Pull request | PR to `main` | No | None | Validate changes before merge. |
 | Feature nightly | Trusted push to `feature/**` | `nightly` | Prerelease | Make issue work installable without moving stable users. |
 | Main validation | Trusted push to `main` | No, validation only | None | Prove the merged release candidate still passes. |
 | Manual dry-run | `workflow_dispatch`, `release_kind=dry-run` | No, dry-run only | None | Exercise the final release path before publishing. |
@@ -20,17 +20,30 @@ one milestone release when the scoped work is complete.
 
 Channel behavior in prose: Trusted pushes to `feature/**` branches publish
 unique nightly package versions under the `nightly` dist-tag and create GitHub
-prereleases. Pull requests perform validation and npm publish dry-runs only.
-Trusted pushes to `main` validate release candidates without publishing.
-Manual milestone dispatches publish npm `latest`, prepare a GitHub Release
-draft, and wait for maintainer review.
+prereleases. Pull requests run CI validation only. Trusted pushes to `main`
+validate release candidates without publishing. Manual milestone dispatches
+publish npm `latest`, prepare a GitHub Release draft, and wait for maintainer
+review.
 
 ## Version Metadata
 
-The root `package.json` version is the canonical release version. The same
-version must be reflected in the public packages, private workspace manifests,
-exact internal package dependencies, `package-lock.json`, and
-`packages/core/src/version.ts`.
+The root `package.json` version is the canonical stable release version for
+final milestone releases. The same version must be reflected in the public
+packages, private workspace manifests, exact internal package dependencies,
+`package-lock.json`, and `packages/core/src/version.ts`.
+
+`release.config.json` holds the active development line:
+
+```json
+{
+  "nextVersion": "0.4.0"
+}
+```
+
+Feature-branch nightlies use `nextVersion` as their base, so 0.4.0 issue work
+publishes `0.4.0-nightly...` packages even while `package.json` still records
+the last stable release. Do not use `package.json` as the nightly planning
+source while a milestone is in progress.
 
 Check release metadata before closeout:
 
@@ -55,11 +68,17 @@ path and should not be used for new milestone releases.
 
 ## CI/CD Workflow
 
-`.github/workflows/ci.yml` validates ordinary PR and branch work. It does not
-publish packages or create releases.
+`.github/workflows/ci.yml` validates pull requests and `main` pushes. It does
+not publish packages or create releases, and it does not listen to
+`feature/**` pushes.
 
-`.github/workflows/release.yml` is the guarded release workflow. Its
-`validate-release` job runs release validation before any side effect:
+`.github/workflows/release.yml` is the guarded npm trusted-publishing workflow.
+Keep npm trusted publishers configured to this filename. The workflow listens to
+trusted `feature/**` pushes for nightlies and to `workflow_dispatch` for manual
+dry-runs and final milestone releases. It does not listen to pull request
+events, which avoids duplicate PR checks from the same commit.
+
+The `release-checks` job runs release validation before any side effect:
 dependency install, release-version consistency, root build and tests, schema
 drift generation, website build/tests, checkout demo render plus
 `diagrampilot check`, Public Package Set readiness, and package publish
@@ -80,25 +99,24 @@ long-lived `NPM_TOKEN` or `NODE_AUTH_TOKEN` secrets to the release workflow.
 GitHub shows skipped jobs when a workflow includes jobs for a different release
 channel. A skipped job is expected when its name says it is for another channel.
 
-- `Code quality audit (pull requests only)` runs on PRs and is skipped on branch
-  pushes.
+- `Code quality audit (pull requests only)` runs on PRs.
 - `Test suite and package readiness` runs the normal CI release-readiness gate.
-- `Release safety checks (no packages published here)` validates the release
+- `Release checks (nightly or manual final)` validates the trusted publishing
   workflow and package publish preview without publishing packages from that
   job.
-- `Publish packages (nightly/final releases only)` runs only when the planner
-  selects a real nightly or final release. It is skipped for PRs, `main`
-  validation, and manual dry-runs.
-- `Create GitHub prerelease (nightly only)` runs only for nightly releases.
-- `Prepare GitHub Release draft (final release only)` runs only for final
-  milestone releases.
-- `Publish GitHub Release after approval (final only)` runs only after final
-  release draft review.
+- `Publish npm packages (nightly or final)` runs only when the planner selects
+  a real nightly or final release.
+- `Create nightly GitHub prerelease` runs only for nightly releases.
+- `Prepare final GitHub Release draft` runs only for final milestone releases.
+- `Publish final GitHub Release after approval` runs only after final release
+  draft review.
 
 ## Nightly Builds
 
 A trusted push to `feature/**` publishes a unique prerelease version to npm with
-the `nightly` dist-tag after validation passes. The nightly version format is:
+the `nightly` dist-tag after validation passes. The base version comes from
+`release.config.json` `nextVersion`, not from `package.json`. The nightly
+version format is:
 
 ```text
 <base-version>-nightly.<run-number>.<run-attempt>.<short-sha>
@@ -119,21 +137,24 @@ Use the manual milestone release only after the scoped work is complete and the
 closeout issue is ready.
 
 1. Confirm the intended stable version is in release metadata.
-2. Run local validation that matches the risk of the change, including
+2. Ensure `package.json` and workspace release metadata have been bumped to the
+   final stable version; final releases do not publish directly from
+   `release.config.json`.
+3. Run local validation that matches the risk of the change, including
    `npm test` and `npm run audit:fallow`.
-3. Open the `Release` workflow in GitHub Actions.
-4. Run `workflow_dispatch` with `release_kind=milestone`.
-5. Set `version` to the stable release version. It must match `package.json`.
-6. Set `milestone` to the release milestone name.
-7. Set `previous_tag` when a full changelog comparison is available.
-8. Fill `highlights`, `breaking_changes`, and `upgrade_notes` with reviewed
+4. Open the `Release` workflow in GitHub Actions.
+5. Run `workflow_dispatch` with `release_kind=milestone`.
+6. Set `version` to the stable release version. It must match `package.json`.
+7. Set `milestone` to the release milestone name.
+8. Set `previous_tag` when a full changelog comparison is available.
+9. Fill `highlights`, `breaking_changes`, and `upgrade_notes` with reviewed
    Markdown. Use `None.` when a required section has no entries.
-9. Let the workflow publish npm `latest`, create the release tag, and prepare
+10. Let the workflow publish npm `latest`, create the release tag, and prepare
    the GitHub Release draft.
-10. Review and edit the draft in GitHub if needed.
-11. Approve the `github-release-publication` environment to publish the final
+11. Review and edit the draft in GitHub if needed.
+12. Approve the `github-release-publication` environment to publish the final
     GitHub Release.
-12. Verify npm package state, GitHub release state, and the Linear closeout
+13. Verify npm package state, GitHub release state, and the Linear closeout
     issue.
 
 The final GitHub Release must not be marked as a prerelease.

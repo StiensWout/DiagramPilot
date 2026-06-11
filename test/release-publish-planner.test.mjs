@@ -25,6 +25,14 @@ async function readWorkspaceVersion() {
   return manifest.version;
 }
 
+async function readNextReleaseVersion() {
+  const config = JSON.parse(
+    await readFile(path.join(repoRoot, "release.config.json"), "utf8"),
+  );
+
+  return config.nextVersion;
+}
+
 async function withGithubEvent(eventPayload, callback) {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "diagrampilot-release-"));
 
@@ -84,7 +92,8 @@ function assertLatestPlan(plan, { baseVersion, shouldPublish }) {
 }
 
 test("release publish planner routes feature branch pushes to unique nightly versions", async () => {
-  const baseVersion = await readWorkspaceVersion();
+  const baseVersion = await readNextReleaseVersion();
+  const packageVersion = await readWorkspaceVersion();
   const sha = "abcdef1234567890";
 
   const result = await withGithubEvent({ ref: "refs/heads/feature/dp-61-release" }, (eventPath) =>
@@ -102,6 +111,8 @@ test("release publish planner routes feature branch pushes to unique nightly ver
   );
 
   const plan = parseSuccessfulPlan(result);
+  assert.equal(plan.packageVersion, packageVersion);
+  assert.equal(plan.nextVersion, baseVersion);
   assertNightlyPlan(plan, {
     baseVersion,
     runNumber: "42",
@@ -169,7 +180,7 @@ test("release publish planner routes manual milestone dispatches to latest publi
 });
 
 test("release publish planner keeps trusted pushes dry-run until publishing is enabled", async () => {
-  const baseVersion = await readWorkspaceVersion();
+  const baseVersion = await readNextReleaseVersion();
   const sha = "abcdef1234567890";
 
   const result = await withGithubEvent({ ref: "refs/heads/feature/dp-61-release" }, (eventPath) =>
@@ -194,7 +205,7 @@ test("release publish planner keeps trusted pushes dry-run until publishing is e
 });
 
 test("release publish planner keeps pull requests dry-run even when publishing is enabled", async () => {
-  const baseVersion = await readWorkspaceVersion();
+  const baseVersion = await readNextReleaseVersion();
   const sha = "123abc456def7890";
 
   const result = await withGithubEvent(
@@ -227,7 +238,8 @@ test("release publish planner keeps pull requests dry-run even when publishing i
 });
 
 test("release publish planner keeps fork pull requests and manual runs dry-run only", async () => {
-  const baseVersion = await readWorkspaceVersion();
+  const baseVersion = await readNextReleaseVersion();
+  const packageVersion = await readWorkspaceVersion();
   const forkSha = "fedcba9876543210";
 
   const forkResult = await withGithubEvent(
@@ -272,7 +284,7 @@ test("release publish planner keeps fork pull requests and manual runs dry-run o
   );
 
   const manualPlan = parseSuccessfulPlan(manualRun);
-  assertLatestPlan(manualPlan, { baseVersion, shouldPublish: false });
+  assertLatestPlan(manualPlan, { baseVersion: packageVersion, shouldPublish: false });
   assert.equal(manualPlan.releaseKind, "dry-run");
   assert.match(manualPlan.reason, /manual dry-run/u);
 });

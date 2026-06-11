@@ -23,7 +23,7 @@ function assertExcludesAll(source, snippets) {
   }
 }
 
-test("GitHub Actions CI validates branch and pull request release-readiness gates", async () => {
+test("GitHub Actions CI validates pull requests and main release-readiness gates", async () => {
   const workflow = await readWorkflow();
 
   assertIncludesAll(workflow, [
@@ -32,7 +32,6 @@ test("GitHub Actions CI validates branch and pull request release-readiness gate
     "push:",
     "branches:",
     "main",
-    "feature/**",
     "Code quality audit (pull requests only)",
     "Test suite and package readiness",
     "if: github.event_name == 'pull_request'",
@@ -68,6 +67,7 @@ test("GitHub Actions CI validates branch and pull request release-readiness gate
     "health-baseline: fallow-baselines/health.json",
     "dupes-baseline: fallow-baselines/dupes.json",
     "issue-*",
+    "feature/**",
     "npm run check:issue-release-version",
   ]);
 

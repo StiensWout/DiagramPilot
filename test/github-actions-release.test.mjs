@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 
-import { assertMatchesAll } from "./assertion-helpers.mjs";
+import { assertMatchesAll, assertMatchesNone } from "./assertion-helpers.mjs";
 import { repoRoot } from "./docs-public-boundary-helpers.mjs";
 
 const releaseWorkflowPath = path.join(
@@ -40,13 +40,12 @@ test("GitHub Actions release workflow validates releases before guarded publishi
 
   assertMatchesAll(workflow, [
     /^name: Release$/m,
-    /name: Release safety checks \(no packages published here\)/u,
-    /name: Publish packages \(nightly\/final releases only\)/u,
-    /name: Create GitHub prerelease \(nightly only\)/u,
-    /name: Prepare GitHub Release draft \(final release only\)/u,
-    /name: Publish GitHub Release after approval \(final only\)/u,
-    /pull_request:\n\s+branches:\n\s+- main/u,
-    /push:\n\s+branches:\n\s+- main\n\s+- "feature\/\*\*"/u,
+    /name: Release checks \(nightly or manual final\)/u,
+    /name: Publish npm packages \(nightly or final\)/u,
+    /name: Create nightly GitHub prerelease/u,
+    /name: Prepare final GitHub Release draft/u,
+    /name: Publish final GitHub Release after approval/u,
+    /push:\n\s+branches:\n\s+- "feature\/\*\*"/u,
     /workflow_dispatch:/u,
     /release_kind:/u,
     /milestone:/u,
@@ -81,10 +80,10 @@ test("GitHub Actions release workflow validates releases before guarded publishi
     /git diff --exit-code -- demo-projects\/checkout\/docs\/architecture\.svg/u,
     /npm run check:package-readiness/u,
     /node scripts\/plan-release-publish\.mjs --github-output/u,
-    /needs\.validate-release\.outputs\.should_publish == 'true'/u,
+    /needs\.release-checks\.outputs\.should_publish == 'true'/u,
     /RELEASE_DIST_TAG == 'nightly'/u,
     /node scripts\/bump-release-version\.mjs "\$RELEASE_PUBLISH_VERSION"/u,
-    /Create GitHub prerelease \(nightly only\)/u,
+    /Create nightly GitHub prerelease/u,
     /--prerelease/u,
     /--latest=false/u,
     /--kind nightly/u,
@@ -95,9 +94,13 @@ test("GitHub Actions release workflow validates releases before guarded publishi
     /npm publish --workspace "\$workspace" --tag "\$RELEASE_DIST_TAG" --access public/u,
     /npm publish --dry-run --workspace "\$workspace" --tag "\$RELEASE_DIST_TAG" --access public/u,
   ]);
-  assert.doesNotMatch(workflow, /npm run check:issue-release-version/u);
-  assert.doesNotMatch(workflow, /NPM_TOKEN|NODE_AUTH_TOKEN|VERCEL|--provenance/u);
-  assert.doesNotMatch(workflow, /check:visual|playwright install/u);
+  assertMatchesNone(workflow, [
+    /npm run check:issue-release-version/u,
+    /pull_request:/u,
+    /branches:\n\s+- main\n\s+- "feature\/\*\*"/u,
+    /NPM_TOKEN|NODE_AUTH_TOKEN|VERCEL|--provenance/u,
+    /check:visual|playwright install/u,
+  ]);
 
   for (const packageName of publicPackageSet) {
     assert.match(workflow, new RegExp(packageName.replace("/", "\\/"), "u"));
@@ -108,7 +111,7 @@ test("release workflow gates CD side effects behind CI and validates reviewed Gi
   const workflow = await readFile(releaseWorkflowPath, "utf8");
   const publishPackagesStart = workflow.indexOf("  publish-packages:");
   const publishGithubPrereleaseStart = workflow.indexOf(
-    "  publish-github-prerelease:",
+    "  create-github-prerelease:",
   );
   const prepareGithubReleaseStart = workflow.indexOf(
     "  prepare-github-release-draft:",
@@ -129,18 +132,18 @@ test("release workflow gates CD side effects behind CI and validates reviewed Gi
   const publishGithubReleaseJob = workflow.slice(publishGithubReleaseStart);
 
   assertMatchesAll(workflow, [
-    /^  validate-release:$/m,
+    /^  release-checks:$/m,
     /^  publish-packages:$/m,
-    /^  publish-github-prerelease:$/m,
+    /^  create-github-prerelease:$/m,
     /^  prepare-github-release-draft:$/m,
     /^  publish-github-release:$/m,
-    /publish-packages:\n(?:    .+\n)*    needs: validate-release/u,
-    /publish-github-prerelease:\n(?:    .+\n)*    needs: \[validate-release, publish-packages\]/u,
-    /prepare-github-release-draft:\n(?:    .+\n)*    needs: \[validate-release, publish-packages\]/u,
-    /publish-github-release:\n(?:    .+\n)*    needs: \[validate-release, prepare-github-release-draft\]/u,
+    /publish-packages:\n(?:    .+\n)*    needs: release-checks/u,
+    /create-github-prerelease:\n(?:    .+\n)*    needs: \[release-checks, publish-packages\]/u,
+    /prepare-github-release-draft:\n(?:    .+\n)*    needs: \[release-checks, publish-packages\]/u,
+    /publish-github-release:\n(?:    .+\n)*    needs: \[release-checks, prepare-github-release-draft\]/u,
     /ref: \$\{\{ github\.sha \}\}/u,
     /contents: write/u,
-    /needs\.validate-release\.outputs\.dist_tag == 'latest'/u,
+    /needs\.release-checks\.outputs\.dist_tag == 'latest'/u,
     /environment: github-release-publication/u,
     /GH_TOKEN: \$\{\{ secrets\.GITHUB_TOKEN \}\}/u,
     /reusing existing release tag/u,
@@ -154,7 +157,7 @@ test("release workflow gates CD side effects behind CI and validates reviewed Gi
   ]);
 
   assertMatchesAll(publishGithubPrereleaseJob, [
-    /needs\.validate-release\.outputs\.dist_tag == 'nightly'/u,
+    /needs\.release-checks\.outputs\.dist_tag == 'nightly'/u,
     /gh release create "\$RELEASE_TAG"/u,
     /--prerelease/u,
     /--latest=false/u,
@@ -162,7 +165,7 @@ test("release workflow gates CD side effects behind CI and validates reviewed Gi
   ]);
 
   assertMatchesAll(publishPackagesJob, [
-    /needs: validate-release/u,
+    /needs: release-checks/u,
     /npm run check:package-publish-state -- --expect latest/u,
     /npm view "\$workspace@\$RELEASE_PUBLISH_VERSION" version/u,
     /npm dist-tag add "\$workspace@\$RELEASE_PUBLISH_VERSION" "\$RELEASE_DIST_TAG"/u,
@@ -214,9 +217,11 @@ test("release workflow docs explain npm trusted publisher setup", async () => {
     /`nightly`/u,
     /`latest`/u,
     /Trusted pushes to `feature\/\*\*` branches/u,
-    /Pull requests perform validation and npm publish dry-runs only/u,
-    /Trusted pushes to `main` validate release candidates without publishing/u,
-    /Manual milestone dispatches publish npm `latest`/u,
+    /Pull requests run CI validation only/u,
+    /Trusted pushes to `main`\s+validate release candidates without publishing/u,
+    /Manual milestone dispatches\s+publish npm `latest`/u,
+    /Keep npm trusted publishers configured to this filename/u,
+    /does not listen to pull request\s+events/u,
     /Milestone Release/u,
     /GitHub prerelease/u,
     /GitHub Release draft/u,

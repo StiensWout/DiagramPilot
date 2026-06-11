@@ -12,7 +12,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-import { assertMatchesAll } from "./assertion-helpers.mjs";
+import { assertMatchesAll, assertMatchesNone } from "./assertion-helpers.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const releaseMetadataPaths = [
@@ -421,17 +421,20 @@ test("release version workflow documents current channels and milestone closeout
   assertMatchesAll(workflow, [
     /npm run check:release-version/u,
     /node scripts\/bump-release-version\.mjs <version>/u,
+    /release\.config\.json/u,
+    /"nextVersion": "0\.4\.0"/u,
+    /0\.4\.0-nightly/u,
     /`npm run check:issue-release-version` and\s+`npm run sync:issue-release-version` are legacy compatibility helpers/u,
     /scripts\/plan-release-publish\.mjs/u,
     /DIAGRAMPILOT_NPM_PUBLISH_ENABLED/u,
     /npm trusted publishing through GitHub OIDC/u,
     /Reading GitHub Checks/u,
     /Code quality audit \(pull requests only\)/u,
-    /Release safety checks \(no packages published here\)/u,
-    /Publish packages \(nightly\/final releases only\)/u,
-    /Create GitHub prerelease \(nightly only\)/u,
-    /Prepare GitHub Release draft \(final release only\)/u,
-    /Publish GitHub Release after approval \(final only\)/u,
+    /Release checks \(nightly or manual final\)/u,
+    /Publish npm packages \(nightly or final\)/u,
+    /Create nightly GitHub prerelease/u,
+    /Prepare final GitHub Release draft/u,
+    /Publish final GitHub Release after approval/u,
     /<base-version>-nightly\.<run-number>\.<run-attempt>\.<short-sha>/u,
     /github-release-publication/u,
     /Linear closeout issue/u,
@@ -454,13 +457,12 @@ test("release version workflow documents current channels and milestone closeout
     /npm run audit:fallow/u,
     /npm run audit:fallow:changed/u,
   ]);
-  assert.doesNotMatch(workflow, /55\s*\|\s*`0\.1\.1`/u);
-  assert.doesNotMatch(workflow, /Issue 62 is `0\.2\.0`/u);
-  assert.doesNotMatch(
-    workflow,
+  assertMatchesNone(workflow, [
+    /55\s*\|\s*`0\.1\.1`/u,
+    /Issue 62 is `0\.2\.0`/u,
     /Each implementation issue that merges to `main` should produce/u,
-  );
-  assert.doesNotMatch(workflow, /npm run sync:issue-release-version -- --issue <issue-file>/u);
-  assert.doesNotMatch(workflow, /render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/u);
-  assert.doesNotMatch(workflow, /## Validation Results/u);
+    /npm run sync:issue-release-version -- --issue <issue-file>/u,
+    /render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/u,
+    /## Validation Results/u,
+  ]);
 });
