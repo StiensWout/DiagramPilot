@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "id": "dp-8-workflow-baseline",
+  "suite": "diagrampilot-workflow-benchmark",
+  "fixture": "checkout-demo-configured-repo",
+  "unit": "relative-median",
+  "referenceScenarioId": "cli_validate",
+  "runsPerScenario": 3,
+  "results": [
+    {
+      "id": "cli_validate",
+      "label": "CLI validate DiagramPilot Source File",
+      "surface": "cli",
+      "coverage": [
+        "validate"
+      ],
+      "relativeMedian": 1
+    },
+    {
+      "id": "cli_check",
+      "label": "CLI check configured Repo Workflow",
+      "surface": "cli",
+      "coverage": [
+        "check"
+      ],
+      "relativeMedian": 1.009
+    },
+    {
+      "id": "cli_generate",
+      "label": "CLI generate configured Derived Artifacts",
+      "surface": "cli",
+      "coverage": [
+        "generate",
+        "svg",
+        "png",
+        "text exports",
+        "markdown embed"
+      ],
+      "relativeMedian": 19.533
+    },
+    {
+      "id": "cli_render_svg",
+      "label": "CLI render SVG artifact",
+      "surface": "cli",
+      "coverage": [
+        "svg render"
+      ],
+      "relativeMedian": 16.143
+    },
+    {
+      "id": "cli_render_png",
+      "label": "CLI render PNG artifact",
+      "surface": "cli",
+      "coverage": [
+        "png render"
+      ],
+      "relativeMedian": 15.611
+    },
+    {
+      "id": "mcp_validate_source",
+      "label": "MCP validate source tool",
+      "surface": "mcp",
+      "coverage": [
+        "mcp validate overhead"
+      ],
+      "relativeMedian": 0.034
+    },
+    {
+      "id": "mcp_check_repo",
+      "label": "MCP check repo tool",
+      "surface": "mcp",
+      "coverage": [
+        "mcp check overhead"
+      ],
+      "relativeMedian": 0.02
+    }
+  ]
+}
