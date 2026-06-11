@@ -61,6 +61,20 @@ test("public packages publish npm README files", async () => {
   }
 });
 
+test("root README links to npm pages for the Public Package Set", async () => {
+  const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
+
+  for (const [packageName] of publicPackageReadmes) {
+    assert.match(
+      readme,
+      new RegExp(
+        `https://www\\.npmjs\\.com/package/${packageName.replace("/", "\\/")}`,
+        "u",
+      ),
+    );
+  }
+});
+
 test("repository entrypoints separate the MIT Code License from the Brand Use Policy", async () => {
   const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
   const license = await readFile(path.join(repoRoot, "LICENSE"), "utf8");

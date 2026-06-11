@@ -81,8 +81,8 @@ events, which avoids duplicate PR checks from the same commit.
 The `release-checks` job runs release validation before any side effect:
 dependency install, release-version consistency, root build and tests, schema
 drift generation, website build/tests, checkout demo render plus
-`diagrampilot check`, Public Package Set readiness, and package publish
-dry-runs.
+`diagrampilot check`, Public Package Set readiness, package size budgets, and
+package publish dry-runs.
 
 The workflow uses `scripts/plan-release-publish.mjs` to choose the channel from
 the GitHub event. Real npm publish is disabled unless the repository variable
@@ -242,6 +242,24 @@ boundaries, or package contents change:
 npm run check:package-readiness
 ```
 
+Run the package size budget check whenever package contents or build output can
+change published tarball size:
+
+```bash
+npm run check:package-size-budgets
+```
+
+Initial packed tarball budgets are:
+
+- diagrampilot: 32 KiB
+- @diagrampilot/core: 80 KiB
+- @diagrampilot/icons: 8 KiB
+- @diagrampilot/export-mermaid: 8 KiB
+- @diagrampilot/export-d2: 8 KiB
+- @diagrampilot/export-dot: 8 KiB
+- @diagrampilot/mcp: 32 KiB
+- @diagrampilot/render-svg: 8 KiB
+
 Before an initial public publish, verify package-name availability:
 
 ```bash
@@ -285,6 +303,7 @@ Before closing a release issue or publishing a milestone:
 - Changed-code Fallow review passes when preparing a PR:
   `npm run audit:fallow:changed`.
 - Package readiness passes when package metadata or contents changed.
+- Package size budgets pass with `npm run check:package-size-budgets`.
 - Nightly builds, when used, are marked as GitHub prereleases.
 - The final milestone release draft has the required release-note sections.
 - The final release is not a prerelease.

@@ -452,6 +452,10 @@ test("release version workflow documents current channels and milestone closeout
   ]);
   assertMatchesAll(workflow, [
     /npm run check:package-readiness/u,
+    /npm run check:package-size-budgets/u,
+    /diagrampilot: 32 KiB/u,
+    /@diagrampilot\/core: 80 KiB/u,
+    /@diagrampilot\/mcp: 32 KiB/u,
     /npm run check:package-publish-state -- --expect available/u,
     /npm run check:package-publish-state -- --expect latest/u,
     /npm run audit:fallow/u,

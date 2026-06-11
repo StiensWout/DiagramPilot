@@ -61,6 +61,7 @@ test("GitHub Actions CI validates pull requests and main release-readiness gates
     "node ../../packages/cli/dist/index.js check",
     "git diff --exit-code -- demo-projects/checkout/docs/architecture.svg",
     "npm run check:package-readiness",
+    "npm run check:package-size-budgets",
   ]);
 
   assertExcludesAll(workflow, [
