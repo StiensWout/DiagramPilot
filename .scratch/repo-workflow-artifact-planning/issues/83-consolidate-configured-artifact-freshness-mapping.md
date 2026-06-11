@@ -1,4 +1,5 @@
 Status: completed
+Issue Version: 0.3.1
 
 # Consolidate configured artifact freshness mapping
 
@@ -25,7 +26,11 @@ After check and generate share artifact planning, remove avoidable duplicate con
 
 Configured artifact checking now receives planned artifact paths and planned Markdown references. Format-specific read-only freshness adapters remain explicit; stale path helper re-exports were removed after Fallow flagged them.
 
+2026-06-11 release follow-up: assigned Issue Version 0.3.1 after the first main release run attempted to prepare GitHub Release v0.3.0, which already existed as a published non-draft release. Synced shared release metadata to 0.3.1.
+
 ## Validation plan
 
 - `npm test`
 - `npm run audit:fallow`
+- `npm run check:release-version`
+- `npm run check:issue-release-version -- --issue .scratch/repo-workflow-artifact-planning/issues/83-consolidate-configured-artifact-freshness-mapping.md`
