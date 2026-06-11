@@ -27,6 +27,7 @@ export function helpText(version: string): string {
     "  validate <path> [--json]",
     "  check [path] [--json]",
     "  generate [path] [--json]",
+    "  watch [path]",
     "  mcp",
     "  render <path> --out <path>",
     "  render <path> --format svg --out <path>",
@@ -43,6 +44,10 @@ export function checkUsageText(): string {
 
 export function generateUsageText(): string {
   return "Usage: diagrampilot generate [path] [--json]";
+}
+
+export function watchUsageText(): string {
+  return "Usage: diagrampilot watch [path]";
 }
 
 export function exportUsageText(): string {

@@ -132,6 +132,17 @@ SVG freshness uses provenance, Mermaid/D2/DOT use content comparison, and PNG is
 presence-only in v0.3.0. The JSON form emits aggregate structured repo workflow
 results to stdout and includes the config path when config is used.
 
+`diagrampilot generate [path] [--json]`
+: Rewrites configured Derived Artifacts and generated Markdown embed files for
+an explicit scope. It validates config and sources before planning writes, and
+does not write when source/config state is invalid.
+
+`diagrampilot watch [path]`
+: Runs a local Watch Authoring Loop for one check scope. It watches
+`*.dp.yaml` and `diagrampilot.config.yaml`, debounces changes, runs repo
+workflow checks first, and calls `generate` only when source/config state is
+valid. It is not a hosted live preview or background daemon.
+
 `diagrampilot validate <path>`
 : Validates one explicit DiagramPilot Source File path. It collects all safely
 discoverable semantic errors, exits nonzero on failure, and validates source
@@ -167,9 +178,9 @@ Source File path to either:
 - a valid DiagramSpec with source context, or
 - a diagnostic-friendly read, parse, or semantic validation failure.
 
-`validate`, `export`, `render`, `check`, and future MCP tools should use this
-module instead of repeating the lifecycle. This module must not write files or
-rewrite source.
+`validate`, `export`, `render`, `check`, `generate`, `watch`, and future MCP
+tools should use this module instead of repeating the lifecycle. This module
+must not write files or rewrite source.
 
 ### DiagramSpec Topology
 

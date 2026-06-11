@@ -258,6 +258,8 @@ diagrampilot init
 diagrampilot init --docs
 diagrampilot init --config
 diagrampilot check
+diagrampilot generate
+diagrampilot watch docs
 diagrampilot check demo-projects/checkout --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
@@ -291,6 +293,15 @@ artifact mappings for matched sources.
 `diagrampilot check [path] --json`
 : Emits structured repo check results to stdout for agents and CI scripts,
 including the config path when config is used.
+
+`diagrampilot generate [path]`
+: Rewrites configured Derived Artifacts and generated Markdown embed files for
+the given scope.
+
+`diagrampilot watch [path]`
+: Runs a local authoring loop for the given scope. It watches `*.dp.yaml` and
+`diagrampilot.config.yaml`, debounces changes, checks first, and generates only
+when source/config state is valid.
 
 `diagrampilot validate <path>`
 : Validates one explicit DiagramPilot source file path.

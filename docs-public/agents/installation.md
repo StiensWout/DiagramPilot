@@ -39,6 +39,9 @@ Existing v0.2 repositories should review these changes before updating:
   mappings and source ignore rules.
 - `diagrampilot generate [path]` rewrites configured Derived Artifacts and
   generated Markdown embed files for explicit scopes.
+- `diagrampilot watch [path]` runs a local authoring loop that watches
+  `*.dp.yaml` and `diagrampilot.config.yaml`, debounces changes, checks first,
+  and generates only when source/config state is valid.
 - Generated Markdown embed files are standalone generated files. DiagramPilot
   does not edit arbitrary prose documents in place.
 - MCP is a shipped alpha integration. Use `diagrampilot mcp` or
