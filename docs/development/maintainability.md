@@ -4,6 +4,38 @@ DiagramPilot keeps authored implementation and test files below a file-size
 gate so maintainers and AI coding agents can review and navigate changes
 without oversized modules.
 
+## Workflow Performance Benchmark
+
+Run the local workflow benchmark before and after performance work:
+
+```bash
+npm run benchmark
+```
+
+The command builds the workspace, copies the checkout Demo Project into a
+temporary configured Repo Workflow fixture, and measures representative
+maintainer workflows. The benchmark covers `validate`, `check`, `generate`, SVG
+render, PNG render, and MCP validation/check overhead. Use JSON output when a
+before/after run needs to be diffed or attached to an implementation note:
+
+```bash
+npm run benchmark -- --format json
+```
+
+The checked-in baseline lives at `benchmarks/workflow-baseline.json`. It stores
+relative median values normalized to `cli_validate`, not raw sample timings or
+machine metadata. A result with a positive relative change is slower than the
+baseline for that workflow; a negative relative change is faster. Treat small
+changes as noise unless they repeat across multiple local runs on the same
+machine.
+
+Refresh the normalized baseline only when an intentional performance change
+lands:
+
+```bash
+npm run benchmark -- --compare none --write-baseline benchmarks/workflow-baseline.json
+```
+
 ## File-Size Gate
 
 The file-size gate threshold is **500 LOC**.
