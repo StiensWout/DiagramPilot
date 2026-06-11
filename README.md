@@ -137,3 +137,14 @@ export, render, and prompt helpers. See the
 - [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md)
 - [MCP guide](https://diagrampilot.com/docs/agents/mcp.md)
 - [DiagramSpec v1 JSON Schema](https://diagrampilot.com/schema/diagramspec-v1.schema.json)
+
+npm packages:
+
+- [diagrampilot](https://www.npmjs.com/package/diagrampilot)
+- [@diagrampilot/core](https://www.npmjs.com/package/@diagrampilot/core)
+- [@diagrampilot/icons](https://www.npmjs.com/package/@diagrampilot/icons)
+- [@diagrampilot/export-mermaid](https://www.npmjs.com/package/@diagrampilot/export-mermaid)
+- [@diagrampilot/export-d2](https://www.npmjs.com/package/@diagrampilot/export-d2)
+- [@diagrampilot/export-dot](https://www.npmjs.com/package/@diagrampilot/export-dot)
+- [@diagrampilot/mcp](https://www.npmjs.com/package/@diagrampilot/mcp)
+- [@diagrampilot/render-svg](https://www.npmjs.com/package/@diagrampilot/render-svg)
