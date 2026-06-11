@@ -13,6 +13,13 @@ const commandPlanningSourcePath = path.join(
   "src",
   "command-planning.ts",
 );
+const sourceCommandPlanningSourcePath = path.join(
+  repoRoot,
+  "packages",
+  "cli",
+  "src",
+  "source-command-planning.ts",
+);
 
 const commandPlanningBoundaries = {
   validatedLoading: {
@@ -46,8 +53,15 @@ async function readCommandPlanningSource() {
   return readFile(commandPlanningSourcePath, "utf8");
 }
 
+async function readSourceCommandPlanningSource() {
+  return [
+    await readCommandPlanningSource(),
+    await readFile(sourceCommandPlanningSourcePath, "utf8"),
+  ].join("\n");
+}
+
 test("CLI commands use validated DiagramSpec loading instead of lower-level loading primitives", async () => {
-  const commandPlanningSource = await readCommandPlanningSource();
+  const commandPlanningSource = await readSourceCommandPlanningSource();
 
   assertCommandPlanningBoundary(
     commandPlanningSource,
@@ -56,7 +70,7 @@ test("CLI commands use validated DiagramSpec loading instead of lower-level load
 });
 
 test("CLI commands route load failures through centralized repairable diagnostics", async () => {
-  const commandPlanningSource = await readCommandPlanningSource();
+  const commandPlanningSource = await readSourceCommandPlanningSource();
 
   assertCommandPlanningBoundary(
     commandPlanningSource,

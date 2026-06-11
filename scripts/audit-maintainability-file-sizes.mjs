@@ -13,6 +13,9 @@ const result = await auditMaintainabilityFileSizes(process.cwd());
 console.log("Maintainability file-size audit");
 console.log(`Gate: ${MAINTAINABILITY_FILE_SIZE_GATE.maxLineCount} LOC`);
 console.log(
+  `Pressure line: ${MAINTAINABILITY_FILE_SIZE_GATE.pressureLineCount} LOC`,
+);
+console.log(
   listBlock("Included paths", MAINTAINABILITY_FILE_SIZE_GATE.includedPathGlobs),
 );
 console.log(
