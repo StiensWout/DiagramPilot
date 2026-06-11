@@ -139,16 +139,16 @@ function staticLandingPromise(padding, promiseSize, isMobile) {
 function staticLandingMetrics(isMobile) {
   return isMobile
     ? {
-        titleSize: 44,
-        promiseSize: 20,
-        buttonTop: 322,
+        titleSize: 38,
+        promiseSize: 18,
+        buttonTop: 292,
         primaryWidth: 252,
-        proofBottom: 744,
-        proofHeight: 300,
-        proofTop: 430,
+        proofBottom: 706,
+        proofHeight: 276,
+        proofTop: 420,
         proofStacked: true,
         proofNodeGap: 12,
-        proofNodeWidth: 118,
+        proofNodeWidth: 124,
         secondaryWidth: 184,
       }
     : {

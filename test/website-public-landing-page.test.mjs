@@ -249,24 +249,44 @@ test("custom landing styles keep accessibility and motion controls explicit", as
     path.join(repoRoot, "website", "src", "styles", "landing-local-path.css"),
     "utf8",
   );
+  const mobileCss = await readFile(
+    path.join(repoRoot, "website", "src", "styles", "landing-mobile.css"),
+    "utf8",
+  );
 
-  assert.match(landingCss, /:focus-visible/);
-  assert.match(landingCss, /prefers-reduced-motion:\s*reduce/);
-  assert.match(workflowCss, /workflow-proof/);
-  assert.match(workflowCss, /demo-stage/);
-  assert.match(workflowCss, /artifact-node-service/);
-  assert.match(localPathCss, /repo-path-animation/);
-  assert.match(landingCss, /hero-wordmark/);
-  assert.match(landingCss, /\.hero-wordmark\s*{[^}]*width:\s*min\(44rem,\s*96vw\);/);
-  assert.match(landingCss, /sr-only/);
-  assert.match(landingCss, /image-band/);
-  assert.match(landingCss, /@keyframes\s+landing-rise/);
-  assert.match(landingCss, /motion-ready/);
-  assert.match(landingCss, /translate3d/);
-  assert.match(landingCss, /text-align:\s*center/);
-  assert.match(landingCss, /body\.landing-page/);
-  assert.match(landingCss, /\.hero-zone\s*{[^}]*min-height:\s*min\(96svh,\s*60rem\);/);
-  assert.match(landingCss, /overflow:\s*clip/);
+  assertMatchesAll(landingCss, [
+    /:focus-visible/,
+    /prefers-reduced-motion:\s*reduce/,
+    /hero-wordmark/,
+    /\.hero-wordmark\s*{[^}]*width:\s*min\(44rem,\s*96vw\);/,
+    /sr-only/,
+    /image-band/,
+    /@keyframes\s+landing-rise/,
+    /motion-ready/,
+    /translate3d/,
+    /text-align:\s*center/,
+    /body\.landing-page/,
+    /\.hero-zone\s*{[^}]*min-height:\s*min\(96svh,\s*60rem\);/,
+    /overflow:\s*clip/,
+  ]);
+  assertMatchesAll(workflowCss, [
+    /workflow-proof/,
+    /demo-stage/,
+    /artifact-node-service/,
+    /\.demo-step code\s*{[^}]*display:\s*none;/,
+    /\.demo-workspace\s*{[^}]*display:\s*flex;/,
+    /\.demo-output\s*{[^}]*order:\s*1;/,
+    /\.demo-svg\s*{[^}]*min-height:\s*0;/,
+  ]);
+  assertMatchesAll(localPathCss, [
+    /repo-path-animation/,
+    /\.repo-path-animation li\s*{[^}]*min-height:\s*3\.25rem;/,
+  ]);
+  assertMatchesAll(mobileCss, [
+    /\.hero-wordmark\s*{[^}]*width:\s*min\(22rem,\s*92vw\);/,
+    /\.hero-zone\s*{[^}]*min-height:\s*auto;/,
+    /\.final-cta \.hero-actions\s*{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/,
+  ]);
   assert.doesNotMatch(landingCss, /letter-spacing:\s*-/);
   assert.doesNotMatch(landingCss, /radial-gradient/);
 });

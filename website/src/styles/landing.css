@@ -398,31 +398,6 @@ code {
   }
 }
 
-@media (max-width: 38rem) {
-  .hero-zone {
-    padding-inline: 0.85rem;
-  }
-
-  .hero-actions {
-    align-items: stretch;
-    width: 100%;
-  }
-
-  .action {
-    width: 100%;
-  }
-
-  .quick-command {
-    display: flex;
-    width: 100%;
-  }
-
-  .quick-command code {
-    flex: 1;
-  }
-
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
