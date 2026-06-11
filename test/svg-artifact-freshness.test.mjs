@@ -36,6 +36,35 @@ function checkExpectedFreshnessForSource(sourcePath) {
   );
 }
 
+function architectureSourceFixture(tempRoot) {
+  const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
+  const artifactPath = path.join(tempRoot, "docs", "architecture.svg");
+  const sourceContent = [
+    "version: 1",
+    "title: Architecture",
+    "nodes:",
+    "  - id: web_app",
+    "    label: Web App",
+    "",
+  ].join("\n");
+
+  return {
+    sourcePath,
+    artifactPath,
+    sourceContent,
+    source: {
+      format: "yaml",
+      path: sourcePath,
+      content: sourceContent,
+      value: {
+        version: 1,
+        title: "Architecture",
+        nodes: [{ id: "web_app", label: "Web App" }],
+      },
+    },
+  };
+}
+
 test("deriveExpectedSvgArtifactPath derives only from YAML Source File paths", () => {
   assert.equal(
     deriveExpectedSvgArtifactPath("docs/architecture.dp.yaml"),
@@ -266,16 +295,8 @@ test("checkExpectedSvgArtifactFreshness reports malformed SVG separately from mi
 
 test("checkExpectedSvgArtifactFreshness reports stale provenance with explicit mismatch reasons", async () => {
   await withTempRepo(async (tempRoot) => {
-    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
-    const artifactPath = path.join(tempRoot, "docs", "architecture.svg");
-    const sourceContent = [
-      "version: 1",
-      "title: Architecture",
-      "nodes:",
-      "  - id: web_app",
-      "    label: Web App",
-      "",
-    ].join("\n");
+    const { sourcePath, artifactPath, sourceContent } =
+      architectureSourceFixture(tempRoot);
 
     await mkdir(path.dirname(sourcePath), { recursive: true });
     await writeFile(sourcePath, sourceContent, "utf8");
@@ -328,5 +349,47 @@ test("checkExpectedSvgArtifactFreshness reports stale provenance with explicit m
     assert.equal(result.expected.sourcePath, "docs/architecture.dp.yaml");
     assert.equal(result.expected.renderer.name, SVG_RENDERER_NAME);
     assert.equal(result.expected.renderer.version, SVG_RENDERER_VERSION);
+  });
+});
+
+test("checkExpectedSvgArtifactFreshnessForValidatedSource reports stale SVGs when output profiles differ", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const { sourcePath, artifactPath, sourceContent, source } =
+      architectureSourceFixture(tempRoot);
+
+    await mkdir(path.dirname(sourcePath), { recursive: true });
+    await writeFile(sourcePath, sourceContent, "utf8");
+
+    const actualProvenance = createSvgRendererProvenance({
+      sourcePath: provenanceSourcePath,
+      sourceContent,
+      outputProfile: "clean",
+    });
+
+    await writeFile(
+      artifactPath,
+      addSvgProvenanceMetadata(emptySvg, actualProvenance),
+      "utf8",
+    );
+
+    const result = await checkExpectedSvgArtifactFreshnessForValidatedSource({
+      source,
+      artifactPath,
+      provenanceSourcePath,
+      outputProfile: "presentation",
+      renderer: {
+        name: SVG_RENDERER_NAME,
+        version: SVG_RENDERER_VERSION,
+      },
+    });
+
+    assertSvgArtifactStatus(result, {
+      sourcePath,
+      artifactPath,
+      status: "stale",
+    });
+    assert.deepEqual(result.reasons, ["output-profile-mismatch"]);
+    assert.equal(result.expected.outputProfile, "presentation");
+    assert.equal(result.actual.outputProfile, "clean");
   });
 });

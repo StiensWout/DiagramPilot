@@ -1,5 +1,6 @@
 import type {
   DiagramSpec,
+  RepoWorkflowOutputProfile,
   RepoWorkflowCheckOptions,
   RepoWorkflowCheckResult,
   RepoWorkflowGenerateOptions,
@@ -24,13 +25,25 @@ export interface CommandPlanningDependencies {
     options: RepoWorkflowGenerateOptions,
   ): Promise<RepoWorkflowGenerateResult>;
   loadValidatedDiagramSpec(path: string): ValidatedDiagramSpecLoadResult;
-  exportDiagramSpecToMermaid(spec: DiagramSpec): string;
-  exportDiagramSpecToD2(spec: DiagramSpec): string;
-  exportDiagramSpecToDot(spec: DiagramSpec): string;
+  exportDiagramSpecToMermaid(
+    spec: DiagramSpec,
+    options?: { profile?: RepoWorkflowOutputProfile },
+  ): string;
+  exportDiagramSpecToD2(
+    spec: DiagramSpec,
+    options?: { profile?: RepoWorkflowOutputProfile },
+  ): string;
+  exportDiagramSpecToDot(
+    spec: DiagramSpec,
+    options?: { profile?: RepoWorkflowOutputProfile },
+  ): string;
   readSourceContent(path: string): string | Uint8Array;
   renderDiagramSpecToSvg(
     spec: DiagramSpec,
-    options: { provenance?: SvgRendererProvenance },
+    options: {
+      provenance?: SvgRendererProvenance;
+      profile?: RepoWorkflowOutputProfile;
+    },
   ): Promise<string>;
   rasterizeSvgToPng(svg: string): Uint8Array;
   createSvgRendererProvenance(

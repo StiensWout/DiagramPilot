@@ -73,6 +73,45 @@ test("checkDiagramPilotRepoWorkflow rejects unsupported configured artifact outp
   });
 });
 
+test("checkDiagramPilotRepoWorkflow rejects unsupported configured artifact output profiles", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const { result } = await checkConfigWithArtifactMapping(tempRoot, [
+      "  - source: docs/architecture.dp.yaml",
+      "    outputs:",
+      "      - format: svg",
+      "        path: docs/architecture.svg",
+      "        profile: neon",
+    ]);
+
+    assertInvalidConfigResult(result, {
+      errorPath: "artifacts[0].outputs[0].profile",
+    });
+    assert.match(result.failure.message, /Unsupported artifact output profile/);
+    assert.match(result.failure.message, /clean, compact, presentation/);
+  });
+});
+
+test("checkDiagramPilotRepoWorkflow rejects unsupported configured artifact output fields", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const { result } = await checkConfigWithArtifactMapping(tempRoot, [
+      "  - source: docs/architecture.dp.yaml",
+      "    outputs:",
+      "      - format: svg",
+      "        path: docs/architecture.svg",
+      "        styleProfile: compact",
+    ]);
+
+    assertInvalidConfigResult(result, {
+      errorPath: "artifacts[0].outputs[0].styleProfile",
+    });
+    assert.match(
+      result.failure.message,
+      /Unsupported artifact output field/,
+    );
+    assert.match(result.failure.message, /format, path, profile/);
+  });
+});
+
 test("checkDiagramPilotRepoWorkflow rejects unsupported configured artifact path template variables", async () => {
   await withTempRepo(async (tempRoot) => {
     const { result } = await checkConfigWithArtifactMapping(tempRoot, [

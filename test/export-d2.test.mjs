@@ -52,3 +52,44 @@ test("exports D2 direction, grouped nodes, and edges", () => {
     ].join("\n"),
   );
 });
+
+test("exports D2 output profiles with compatible clean output and target-native presentation config", () => {
+  const spec = {
+    title: "Checkout Architecture",
+    direction: "right",
+    nodes: [
+      { id: "web_app", label: "Web App" },
+      { id: "api_gateway", label: "API Gateway" },
+    ],
+    edges: [
+      {
+        id: "web_to_api",
+        from: "web_app",
+        to: "api_gateway",
+      },
+    ],
+  };
+  const clean = exportDiagramSpecToD2(spec);
+  const explicitClean = exportDiagramSpecToD2(spec, { profile: "clean" });
+  const compact = exportDiagramSpecToD2(spec, { profile: "compact" });
+  const presentation = exportDiagramSpecToD2(spec, {
+    profile: "presentation",
+  });
+
+  assert.equal(explicitClean, clean);
+  assert.equal(
+    compact,
+    [
+      "direction: right",
+      'web_app: "Web App"',
+      'api_gateway: "API Gateway"',
+      "web_app -> api_gateway",
+      "",
+    ].join("\n"),
+  );
+  assert.match(presentation, /^vars: \{/);
+  assert.match(presentation, /theme-id: 4/);
+  assert.match(presentation, /sketch: true/);
+  assert.match(presentation, /direction: right/);
+  assert.notEqual(presentation, clean);
+});

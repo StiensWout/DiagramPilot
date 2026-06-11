@@ -1,6 +1,9 @@
 import { createDiagramSpecTopology } from "./diagramspec-topology.js";
 import type { DiagramSpec, DiagramSpecDirection } from "./diagramspec-topology.js";
-import type { RepoWorkflowConfigFailure } from "./repo-workflow-config.js";
+import type {
+  RepoWorkflowArtifactOutput,
+  RepoWorkflowConfigFailure,
+} from "./repo-workflow-config.js";
 import {
   checkConfiguredArtifactsForValidatedSource,
   configuredOutputsForSource,
@@ -45,6 +48,7 @@ export interface RepoWorkflowInspectOptions {
 
 type ExportConfiguredTextArtifact = (options: {
   format: ConfiguredTextArtifactFormat;
+  profile?: RepoWorkflowArtifactOutput["profile"];
   spec: DiagramSpec;
 }) => string;
 
@@ -57,6 +61,7 @@ export interface RepoWorkflowInspectDependencies
     provenanceSourcePath: string;
     diagramPilotVersion?: string;
     renderer: SvgArtifactRenderer;
+    outputProfile?: RepoWorkflowArtifactOutput["profile"];
   }): Promise<SvgArtifactFreshnessCheckResult>;
   exportConfiguredTextArtifact?: ExportConfiguredTextArtifact;
   createRepairableDiagnosticReport(failure: ValidatedDiagramSpecLoadFailure): RepairableDiagnosticReport;

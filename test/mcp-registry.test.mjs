@@ -330,8 +330,10 @@ test("MCP generate tool writes configured outputs for explicit directory scopes"
         "    outputs:",
         "      - format: svg",
         "        path: generated/{stem}.svg",
+        "        profile: presentation",
         "      - format: mermaid",
         "        path: generated/{stem}.mmd",
+        "        profile: compact",
         "",
       ].join("\n"),
       "utf8",
@@ -341,8 +343,12 @@ test("MCP generate tool writes configured outputs for explicit directory scopes"
       "diagrampilot_generate_repo_outputs",
       { scope_paths: ["docs"] },
       {
-        renderDiagramSpecToSvg: async () =>
-          "<svg><title>Checkout Architecture</title></svg>",
+        renderDiagramSpecToSvg: async (_spec, options) =>
+          [
+            `<svg data-profile="${options.profile ?? "clean"}">`,
+            "<title>Checkout Architecture</title>",
+            "</svg>",
+          ].join(""),
       },
     );
 
@@ -370,8 +376,12 @@ test("MCP generate tool writes configured outputs for explicit directory scopes"
     );
     assert.deepEqual(generated.structuredContent.skipped, []);
     assert.equal(
+      await readFile(path.join(tempRoot, "generated", "architecture.svg"), "utf8"),
+      '<svg data-profile="presentation"><title>Checkout Architecture</title></svg>',
+    );
+    assert.equal(
       await readFile(path.join(tempRoot, "generated", "architecture.mmd"), "utf8"),
-      "flowchart LR\n  web_app[\"Web App\"]\n  api[\"API\"]\n  web_app -->|calls| api\n",
+      "flowchart LR\nweb_app[\"Web App\"]\napi[\"API\"]\nweb_app -->|calls| api\n",
     );
     assert.doesNotMatch(generated.content[0].text, /flowchart LR/);
   });

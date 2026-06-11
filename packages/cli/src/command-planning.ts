@@ -10,6 +10,7 @@ import {
 import type {
   ConfiguredTextArtifactFormat,
   DiagramSpec,
+  RepoWorkflowOutputProfile,
 } from "@diagrampilot/core";
 import { exportDiagramSpecToD2 } from "@diagrampilot/export-d2";
 import { exportDiagramSpecToDot } from "@diagrampilot/export-dot";
@@ -85,12 +86,14 @@ function repoWorkflowCommandOptions(dependencies: CommandPlanningDependencies) {
     },
     exportConfiguredTextArtifact: ({
       format,
+      profile,
       spec,
     }: {
       format: ConfiguredTextArtifactFormat;
+      profile?: RepoWorkflowOutputProfile;
       spec: DiagramSpec;
     }) => {
-      return exportDiagramSpecTextArtifact(dependencies, format, spec);
+      return exportDiagramSpecTextArtifact(dependencies, format, spec, profile);
     },
   };
 }

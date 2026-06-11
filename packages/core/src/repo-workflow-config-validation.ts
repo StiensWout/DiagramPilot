@@ -4,6 +4,7 @@ import type { RepairableDiagnostic } from "./diagramspec-validation.js";
 import type {
   RepoWorkflowArtifactOutputFormat,
   RepoWorkflowConfigDiscoveryResult,
+  RepoWorkflowOutputProfile,
 } from "./repo-workflow-config.js";
 
 const artifactOutputFormats = new Set<RepoWorkflowArtifactOutputFormat>([
@@ -16,6 +17,14 @@ const artifactOutputFormats = new Set<RepoWorkflowArtifactOutputFormat>([
 ]);
 
 const artifactOutputFormatList = "svg, png, mermaid, d2, dot, markdown";
+const artifactOutputFields = new Set(["format", "path", "profile"]);
+const artifactOutputFieldList = "format, path, profile";
+const artifactOutputProfiles = new Set<RepoWorkflowOutputProfile>([
+  "clean",
+  "compact",
+  "presentation",
+]);
+const artifactOutputProfileList = "clean, compact, presentation";
 const artifactOutputTemplateVariables = new Set([
   "stem",
   "sourceDir",
@@ -211,20 +220,80 @@ function validateArtifactOutput(
   output: unknown,
   outputPath: string,
 ): RepoWorkflowConfigDiscoveryResult | undefined {
-  if (!isRecord(output)) {
-    return invalidConfig(configPath, {
+  const outputResult = parseArtifactOutputObject(configPath, output, outputPath);
+
+  if (!outputResult.ok) return outputResult.failure;
+
+  return validateArtifactOutputProperties(
+    configPath,
+    outputResult.output,
+    outputPath,
+  );
+}
+
+function parseArtifactOutputObject(
+  configPath: string,
+  output: unknown,
+  outputPath: string,
+):
+  | {
+      ok: true;
+      output: Record<string, unknown>;
+    }
+  | {
+      ok: false;
+      failure: RepoWorkflowConfigDiscoveryResult;
+    } {
+  if (isRecord(output)) {
+    return {
+      ok: true,
+      output,
+    };
+  }
+
+  return {
+    ok: false,
+    failure: invalidConfig(configPath, {
       path: outputPath,
       message: "Artifact outputs must be YAML objects.",
       expected: "An object with `format` and `path`.",
       suggestion: "Use `format: svg` and `path: docs/{stem}.svg`.",
       badValue: output,
-    });
-  }
+    }),
+  };
+}
 
+function validateArtifactOutputProperties(
+  configPath: string,
+  output: Record<string, unknown>,
+  outputPath: string,
+): RepoWorkflowConfigDiscoveryResult | undefined {
   return (
+    validateArtifactOutputFields(configPath, output, outputPath) ??
     validateArtifactOutputFormat(configPath, output, outputPath) ??
+    validateArtifactOutputProfile(configPath, output, outputPath) ??
     validateArtifactOutputPath(configPath, output, outputPath)
   );
+}
+
+function validateArtifactOutputFields(
+  configPath: string,
+  output: Record<string, unknown>,
+  outputPath: string,
+): RepoWorkflowConfigDiscoveryResult | undefined {
+  const unsupportedField = Object.keys(output).find(
+    (fieldName) => !artifactOutputFields.has(fieldName),
+  );
+
+  if (unsupportedField === undefined) return undefined;
+
+  return invalidConfig(configPath, {
+    path: `${outputPath}.${unsupportedField}`,
+    message: `Unsupported artifact output field: ${unsupportedField}.`,
+    expected: `Supported artifact output fields: ${artifactOutputFieldList}.`,
+    suggestion: "Remove the unsupported field or use a supported output field.",
+    badValue: output[unsupportedField],
+  });
 }
 
 function validateArtifactOutputFormat(
@@ -242,6 +311,26 @@ function validateArtifactOutputFormat(
     expected: `One of: ${artifactOutputFormatList}.`,
     suggestion: "Use a supported Derived Artifact format.",
     badValue: output.format,
+  });
+}
+
+function validateArtifactOutputProfile(
+  configPath: string,
+  output: Record<string, unknown>,
+  outputPath: string,
+): RepoWorkflowConfigDiscoveryResult | undefined {
+  if (output.profile === undefined) return undefined;
+
+  if (artifactOutputProfiles.has(output.profile as RepoWorkflowOutputProfile)) {
+    return undefined;
+  }
+
+  return invalidConfig(configPath, {
+    path: `${outputPath}.profile`,
+    message: `Unsupported artifact output profile: ${String(output.profile)}.`,
+    expected: `One of: ${artifactOutputProfileList}.`,
+    suggestion: "Use a fixed output profile or remove the profile field.",
+    badValue: output.profile,
   });
 }
 

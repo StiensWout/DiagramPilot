@@ -1,4 +1,7 @@
-import type { DiagramSpec } from "@diagrampilot/core";
+import type {
+  DiagramSpec,
+  RepoWorkflowOutputProfile,
+} from "@diagrampilot/core";
 import { createSvgRendererProvenance } from "@diagrampilot/render-svg";
 
 export type Writable = Pick<NodeJS.WritableStream, "write">;
@@ -75,6 +78,7 @@ export interface DiagramPilotMcpToolDependencies {
     spec: DiagramSpec,
     options: {
       provenance: ReturnType<typeof createSvgRendererProvenance>;
+      profile?: RepoWorkflowOutputProfile;
     },
   ): Promise<string>;
   writeFile?(path: string, content: string | Uint8Array): void;

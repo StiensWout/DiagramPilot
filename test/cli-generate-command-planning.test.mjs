@@ -27,6 +27,7 @@ test("plans generate for a zero-config source file as one SVG write", async () =
 
 test("plans generate by delegating repo workflow generation to the command adapter", async () => {
   let receivedOptions;
+  let receivedProvenanceOptions;
 
   const plan = await planCommand(
     ["generate", ".", "--json"],
@@ -66,21 +67,61 @@ test("plans generate by delegating repo workflow generation to the command adapt
       loadValidatedDiagramSpec: () => {
         throw new Error("generate planning should delegate source loading");
       },
+      exportDiagramSpecToMermaid: (_spec, options) =>
+        `profile:${options?.profile ?? "clean"}\n`,
+      renderDiagramSpecToSvg: async (_spec, options) =>
+        `<svg data-profile="${options.profile ?? "clean"}"></svg>`,
+      createSvgRendererProvenance: (options) => {
+        receivedProvenanceOptions = options;
+
+        return {
+          sourcePath: options.sourcePath,
+          sourceSha256: "hash",
+          diagramPilotVersion: "0.1.0",
+          renderer: { name: "@terrastruct/d2", version: "0.1.33" },
+          outputProfile: options.outputProfile,
+        };
+      },
     }),
   );
 
   assert.equal(receivedOptions.scopePath, ".");
   assert.equal(typeof receivedOptions.renderSvgArtifact, "function");
   assert.equal(
+    await receivedOptions.renderSvgArtifact({
+      source: {
+        format: "yaml",
+        path: "docs/architecture.dp.yaml",
+        content: "version: 1\n",
+        value: {
+          version: 1,
+          title: "Architecture",
+          nodes: [{ id: "web_app", label: "Web App" }],
+        },
+      },
+      provenanceSourcePath: "docs/architecture.dp.yaml",
+      profile: "presentation",
+      spec: {
+        version: 1,
+        title: "Architecture",
+        nodes: [{ id: "web_app", label: "Web App" }],
+      },
+      renderer: { name: "@terrastruct/d2", version: "0.1.33" },
+    }),
+    '<svg data-profile="presentation"></svg>',
+  );
+  assert.equal(receivedProvenanceOptions.outputProfile, "presentation");
+  assert.equal(
     receivedOptions.exportTextArtifact({
       format: "mermaid",
+      profile: "compact",
       spec: {
         version: 1,
         title: "Architecture",
         nodes: [{ id: "web_app", label: "Web App" }],
       },
     }),
-    "flowchart LR\n",
+    "profile:compact\n",
   );
   assert.deepEqual(plan.writes, [
     {

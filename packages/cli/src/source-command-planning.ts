@@ -2,6 +2,7 @@ import {
   createRepairableDiagnosticReport,
   serializeDiagramPilotSourceFile,
   type DiagramSpec,
+  type RepoWorkflowOutputProfile,
   type ValidatedDiagramSpecLoadResult,
 } from "@diagrampilot/core";
 import type { SvgRendererProvenance } from "@diagrampilot/render-svg";
@@ -101,6 +102,7 @@ export function exportDiagramSpecTextArtifact(
   dependencies: CommandPlanningDependencies,
   format: TextExportFormat,
   spec: DiagramSpec,
+  profile?: RepoWorkflowOutputProfile,
 ): string {
   const exporters = {
     d2: dependencies.exportDiagramSpecToD2,
@@ -108,7 +110,7 @@ export function exportDiagramSpecTextArtifact(
     mermaid: dependencies.exportDiagramSpecToMermaid,
   };
 
-  return exporters[format](spec);
+  return exporters[format](spec, { profile });
 }
 
 function validateUsagePlan(message: string): CommandPlan {

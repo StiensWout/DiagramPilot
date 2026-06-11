@@ -149,8 +149,10 @@ artifacts:
     outputs:
       - format: svg
         path: docs/architecture.svg
+        profile: presentation
       - format: mermaid
         path: docs/architecture.mmd
+        profile: compact
       - format: png
         path: docs/architecture.png
       - format: markdown
@@ -168,6 +170,11 @@ embed files. They reference the other configured artifacts in the same mapping
 with paths relative to the embed file. `check` marks a Markdown embed stale
 when its generated content differs or when a referenced artifact is missing or
 stale.
+
+Configured outputs may set a fixed `profile`: `clean`, `compact`, or
+`presentation`. Omit `profile` for compatible clean output. Profiles are
+repo-workflow output settings only; do not add styling fields, CSS, themes, or
+per-object presentation choices to DiagramSpec source files.
 
 When `check` reports a source problem, use `validate` on the explicit source
 file to get the detailed repair loop:

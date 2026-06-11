@@ -9,6 +9,7 @@ import {
 import {
   addSvgProvenanceMetadata,
   createSvgRendererProvenance,
+  renderDiagramSpecToSvg,
 } from "@diagrampilot/render-svg";
 
 function sha256Hex(text) {
@@ -76,4 +77,21 @@ test("SVG provenance insertion writes metadata after the opening svg tag without
       provenance,
     )}</metadata><g></g></svg>`,
   );
+});
+
+test("renderDiagramSpecToSvg applies output profiles to rendered SVG output", async () => {
+  const spec = {
+    version: 1,
+    title: "Architecture",
+    nodes: [{ id: "web_app", label: "Web App" }],
+  };
+
+  const clean = await renderDiagramSpecToSvg(spec);
+  const presentation = await renderDiagramSpecToSvg(spec, {
+    profile: "presentation",
+  });
+
+  assert.match(clean, /<svg\b/);
+  assert.match(presentation, /<svg\b/);
+  assert.notEqual(presentation, clean);
 });

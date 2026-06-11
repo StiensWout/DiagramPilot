@@ -57,9 +57,11 @@ export interface CheckConfiguredArtifactsForValidatedSourceOptions {
     provenanceSourcePath: string;
     diagramPilotVersion?: string;
     renderer: SvgArtifactRenderer;
+    outputProfile?: RepoWorkflowArtifactOutput["profile"];
   }): Promise<SvgArtifactFreshnessCheckResult>;
   exportConfiguredTextArtifact?(options: {
     format: ConfiguredTextArtifactFormat;
+    profile?: RepoWorkflowArtifactOutput["profile"];
     spec: DiagramSpec;
   }): string;
 }
@@ -261,6 +263,7 @@ function mapConfiguredSvgArtifactResult(
 
 async function checkConfiguredSvgOutput(options: {
   workflow: CheckConfiguredArtifactsForValidatedSourceOptions;
+  output: RepoWorkflowArtifactOutput;
   artifactPath: string;
   displayPath: string;
 }): Promise<RepoWorkflowCheckConfiguredArtifactResult> {
@@ -271,6 +274,7 @@ async function checkConfiguredSvgOutput(options: {
       provenanceSourcePath: options.workflow.provenanceSourcePath,
       diagramPilotVersion: options.workflow.diagramPilotVersion,
       renderer: options.workflow.renderer,
+      outputProfile: options.output.profile,
     });
 
   return mapConfiguredSvgArtifactResult(artifact, options.displayPath);
@@ -278,13 +282,13 @@ async function checkConfiguredSvgOutput(options: {
 
 function checkConfiguredTextOutput(options: {
   workflow: CheckConfiguredArtifactsForValidatedSourceOptions;
-  format: ConfiguredTextArtifactFormat;
+  output: RepoWorkflowArtifactOutput & { format: ConfiguredTextArtifactFormat };
   artifactPath: string;
   displayPath: string;
 }): RepoWorkflowCheckConfiguredArtifactResult {
   if (options.workflow.exportConfiguredTextArtifact === undefined) {
     return {
-      format: options.format,
+      format: options.output.format,
       status: "unchecked",
       path: options.displayPath,
       message: "Configured text artifact freshness requires an exporter.",
@@ -292,11 +296,12 @@ function checkConfiguredTextOutput(options: {
   }
 
   return checkConfiguredTextArtifact({
-    format: options.format,
+    format: options.output.format,
     artifactPath: options.artifactPath,
     displayPath: options.displayPath,
     expectedContent: options.workflow.exportConfiguredTextArtifact({
-      format: options.format,
+      format: options.output.format,
+      profile: options.output.profile,
       spec: options.workflow.spec,
     }),
   });
@@ -340,6 +345,7 @@ async function checkConfiguredOutput(options: {
   if (output.format === "svg") {
     return await checkConfiguredSvgOutput({
       workflow: options.workflow,
+      output,
       artifactPath: absolutePath,
       displayPath,
     });
@@ -348,7 +354,9 @@ async function checkConfiguredOutput(options: {
   if (isConfiguredTextArtifactFormat(output.format)) {
     return checkConfiguredTextOutput({
       workflow: options.workflow,
-      format: output.format,
+      output: output as RepoWorkflowArtifactOutput & {
+        format: ConfiguredTextArtifactFormat;
+      },
       artifactPath: absolutePath,
       displayPath,
     });

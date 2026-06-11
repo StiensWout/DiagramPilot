@@ -1,5 +1,6 @@
 import {
   type DiagramSpec,
+  type RepoWorkflowOutputProfile,
   type RepoWorkflowGenerateOptions,
   type RepoWorkflowGenerateResult,
 } from "@diagrampilot/core";
@@ -20,12 +21,24 @@ export interface GenerateCommandPlanningDependencies {
   generateDiagramPilotRepoWorkflow(
     options: RepoWorkflowGenerateOptions,
   ): Promise<RepoWorkflowGenerateResult>;
-  exportDiagramSpecToMermaid(spec: DiagramSpec): string;
-  exportDiagramSpecToD2(spec: DiagramSpec): string;
-  exportDiagramSpecToDot(spec: DiagramSpec): string;
+  exportDiagramSpecToMermaid(
+    spec: DiagramSpec,
+    options?: { profile?: RepoWorkflowOutputProfile },
+  ): string;
+  exportDiagramSpecToD2(
+    spec: DiagramSpec,
+    options?: { profile?: RepoWorkflowOutputProfile },
+  ): string;
+  exportDiagramSpecToDot(
+    spec: DiagramSpec,
+    options?: { profile?: RepoWorkflowOutputProfile },
+  ): string;
   renderDiagramSpecToSvg(
     spec: DiagramSpec,
-    options: { provenance?: SvgRendererProvenance },
+    options: {
+      provenance?: SvgRendererProvenance;
+      profile?: RepoWorkflowOutputProfile;
+    },
   ): Promise<string>;
   rasterizeSvgToPng(svg: string): Uint8Array;
   createSvgRendererProvenance(
@@ -109,22 +122,24 @@ async function runGenerateCommand(
       name: SVG_RENDERER_NAME,
       version: SVG_RENDERER_VERSION,
     },
-    renderSvgArtifact: async ({ source, provenanceSourcePath, spec }) =>
+    renderSvgArtifact: async ({ source, provenanceSourcePath, profile, spec }) =>
       await dependencies.renderDiagramSpecToSvg(spec, {
+        profile,
         provenance: dependencies.createSvgRendererProvenance({
           sourcePath: provenanceSourcePath,
           sourceContent: source.content,
+          outputProfile: profile,
         }),
       }),
     rasterizeSvgArtifact: dependencies.rasterizeSvgToPng,
-    exportTextArtifact: ({ format, spec }) => {
+    exportTextArtifact: ({ format, profile, spec }) => {
       const exporters = {
         d2: dependencies.exportDiagramSpecToD2,
         dot: dependencies.exportDiagramSpecToDot,
         mermaid: dependencies.exportDiagramSpecToMermaid,
       };
 
-      return exporters[format](spec);
+      return exporters[format](spec, { profile });
     },
   });
 }
