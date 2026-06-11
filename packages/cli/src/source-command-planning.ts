@@ -1,5 +1,6 @@
 import {
   createRepairableDiagnosticReport,
+  serializeDiagramPilotSourceFile,
   type DiagramSpec,
   type ValidatedDiagramSpecLoadResult,
 } from "@diagrampilot/core";
@@ -12,6 +13,7 @@ import {
 } from "./argument-parsing.js";
 import {
   exportUsageText,
+  formatUsageText,
   jsonTextLine,
   renderUsageText,
   textLine,
@@ -32,6 +34,16 @@ type RenderFormat = "svg" | "png";
 type RepairableDiagnosticReport = ReturnType<
   typeof createRepairableDiagnosticReport
 >;
+
+type FormatArgsResult =
+  | {
+      ok: true;
+      sourcePath: string;
+    }
+  | {
+      ok: false;
+      message: string;
+    };
 
 export function usageFailurePlan(
   message: string,
@@ -104,6 +116,31 @@ function validateUsagePlan(message: string): CommandPlan {
     message,
     "Usage: diagrampilot validate <path> [--json]",
   );
+}
+
+function parseFormatArgs(args: readonly string[]): FormatArgsResult {
+  const [sourcePath, unexpectedArg] = args;
+
+  if (sourcePath === undefined) {
+    return { ok: false, message: "Missing source path." };
+  }
+
+  if (sourcePath.startsWith("-")) {
+    return { ok: false, message: `Unknown format option: ${sourcePath}` };
+  }
+
+  if (unexpectedArg !== undefined) {
+    return {
+      ok: false,
+      message: `Unexpected format argument: ${unexpectedArg}`,
+    };
+  }
+
+  return { ok: true, sourcePath };
+}
+
+function formatUsagePlan(message: string): CommandPlan {
+  return usageFailurePlan(message, formatUsageText());
 }
 
 function validateJsonFailurePlan(
@@ -230,6 +267,38 @@ export function planExport(
     stdout: exportedText,
     stderr: "",
     writes: [],
+  };
+}
+
+export function planFormat(
+  args: readonly string[],
+  dependencies: CommandPlanningDependencies,
+): CommandPlan {
+  const argsResult = parseFormatArgs(args);
+
+  if (!argsResult.ok) {
+    return formatUsagePlan(argsResult.message);
+  }
+
+  const loaded = loadValidatedDiagramSpecOrPlanFailure(
+    dependencies,
+    argsResult.sourcePath,
+  );
+
+  if (!loaded.ok) {
+    return loaded.plan;
+  }
+
+  return {
+    exitCode: 0,
+    stdout: "",
+    stderr: "",
+    writes: [
+      {
+        path: loaded.result.source.path,
+        content: serializeDiagramPilotSourceFile(loaded.result.spec),
+      },
+    ],
   };
 }
 

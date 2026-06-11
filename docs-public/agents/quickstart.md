@@ -167,6 +167,16 @@ Validate before rendering. Validation checks the DiagramPilot source file and
 reports repairable source errors. It does not check whether generated artifacts
 are fresh.
 
+Normalize source YAML before review when you want canonical key order:
+
+```bash
+diagrampilot format docs/architecture.dp.yaml
+```
+
+`format` parses and validates the source before rewriting it. It preserves
+DiagramSpec data, unknown metadata, and object/array order. In v0.4.0 it does
+not promise comment preservation; YAML comments may be removed or moved.
+
 Render the SVG artifact only after validation succeeds:
 
 ```bash
@@ -263,6 +273,7 @@ diagrampilot watch docs
 diagrampilot check demo-projects/checkout --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
+diagrampilot format docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
 diagrampilot export docs/architecture.dp.yaml --format mermaid
@@ -308,6 +319,11 @@ when source/config state is valid.
 
 `diagrampilot validate <path> --json`
 : Emits structured repairable validation errors for agents and scripts.
+
+`diagrampilot format <path>`
+: Validates and rewrites one `*.dp.yaml` source into canonical YAML. Formatting
+preserves DiagramSpec data and object/array order, but YAML comments may be
+removed or moved in v0.4.0.
 
 `diagrampilot render <path> --out <artifact.svg>`
 : Renders a valid DiagramPilot source file to SVG. `--out` is required and SVG is the default render format.

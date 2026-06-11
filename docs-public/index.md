@@ -44,6 +44,7 @@ diagrampilot mcp
 diagrampilot check docs --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
+diagrampilot format docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
 diagrampilot export docs/architecture.dp.yaml --format mermaid
@@ -56,7 +57,8 @@ agent docs. Use `init --config` only when a repository intentionally wants
 `diagrampilot.config.yaml`. Use `check` as the read-only repo review/CI
 command. `render` requires `--out`, defaults to SVG, and supports `--format
 svg|png`. `export` prints to stdout by default and writes a file only when
-`--out` is provided. `watch [path]` watches `*.dp.yaml` and
-`diagrampilot.config.yaml`, debounces changes, checks first, and generates only
-when source/config state is valid. `mcp` launches the alpha MCP stdio server
-for local MCP clients.
+`--out` is provided. `format <path>` validates one `*.dp.yaml` source and
+rewrites it in canonical YAML key order; in v0.4.0 YAML comments may be removed
+or moved. `watch [path]` watches `*.dp.yaml` and `diagrampilot.config.yaml`,
+debounces changes, checks first, and generates only when source/config state is
+valid. `mcp` launches the alpha MCP stdio server for local MCP clients.

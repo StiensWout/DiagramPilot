@@ -21,6 +21,7 @@ import { parseCheckArgs } from "./argument-parsing.js";
 import {
   checkUsageText,
   exportUsageText,
+  formatUsageText,
   generateUsageText,
   renderUsageText,
   textLine,
@@ -35,6 +36,7 @@ import {
 import {
   exportDiagramSpecTextArtifact,
   planExport,
+  planFormat,
   planRender,
   planValidate,
   usageFailurePlan,
@@ -100,6 +102,7 @@ async function planCheck(
 const commandHandlers: Readonly<Record<string, CommandHandler>> = {
   check: planCheck,
   export: planExport,
+  format: planFormat,
   generate: planGenerate,
   render: planRender,
   validate: planValidate,
@@ -108,6 +111,7 @@ const commandHandlers: Readonly<Record<string, CommandHandler>> = {
 const commandHelpText: Readonly<Record<string, () => string>> = {
   check: checkUsageText,
   export: exportUsageText,
+  format: formatUsageText,
   generate: generateUsageText,
   render: renderUsageText,
 };

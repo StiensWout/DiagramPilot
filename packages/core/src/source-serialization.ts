@@ -20,6 +20,8 @@ function orderedNode(node: DiagramSpecNode): Record<string, unknown> {
     id: node.id,
     label: node.label,
   };
+  setIfDefined(ordered, "kind", node.kind);
+  setIfDefined(ordered, "description", node.description);
   setIfDefined(ordered, "icon", node.icon);
   setIfDefined(ordered, "metadata", node.metadata);
   return ordered;
@@ -31,6 +33,9 @@ function orderedGroup(group: DiagramSpecGroup): Record<string, unknown> {
     label: group.label,
   };
   setIfDefined(ordered, "contains", group.contains);
+  setIfDefined(ordered, "kind", group.kind);
+  setIfDefined(ordered, "description", group.description);
+  setIfDefined(ordered, "icon", group.icon);
   setIfDefined(ordered, "metadata", group.metadata);
   return ordered;
 }
@@ -42,6 +47,9 @@ function orderedEdge(edge: DiagramSpecEdge): Record<string, unknown> {
     to: edge.to,
   };
   setIfDefined(ordered, "label", edge.label);
+  setIfDefined(ordered, "kind", edge.kind);
+  setIfDefined(ordered, "description", edge.description);
+  setIfDefined(ordered, "directed", edge.directed);
   setIfDefined(ordered, "metadata", edge.metadata);
   return ordered;
 }
