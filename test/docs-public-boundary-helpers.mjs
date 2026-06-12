@@ -8,6 +8,7 @@ export const repoRoot = path.resolve(
 );
 
 export const publicAgentDocs = [
+  "agent-workflow.md",
   "quickstart.md",
   "installation.md",
   "mcp.md",

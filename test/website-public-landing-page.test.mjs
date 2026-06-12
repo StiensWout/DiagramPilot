@@ -72,6 +72,8 @@ test("public landing page offers starting points including npm", async () => {
     /<h2>Starting points\.<\/h2>/,
     /href="https:\/\/www\.npmjs\.com\/package\/diagrampilot"/,
     /npm package/,
+    /href="\/docs\/agents\/agent-workflow\/"/,
+    /Agent Workflow/,
     /href="\/docs\/agents\/installation\/"/,
     /href="\/docs\/agents\/quickstart\/"/,
     /href="https:\/\/github\.com\/StiensWout\/DiagramPilot"/,

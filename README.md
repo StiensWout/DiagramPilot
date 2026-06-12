@@ -34,6 +34,10 @@ Install, run, or remove the package:
 
 - [Installation and removal guide](docs-public/agents/installation.md)
 
+Use the canonical Agent Authoring Loop:
+
+- [Agent workflow guide](docs-public/agents/agent-workflow.md)
+
 Start with the Checkout Demo Project:
 
 - [Checkout demo quickstart](docs-public/agents/quickstart.md)
@@ -68,6 +72,9 @@ prints to stdout by default and writes only when `--out` is provided.
 
 ## For AI Coding Agents
 
+- Follow the [Agent workflow guide](docs-public/agents/agent-workflow.md) for
+  the canonical create, format, validate, inspect `--json`, render, and check
+  loop.
 - Inspect the repository first with `diagrampilot inspect` or
   `diagrampilot inspect --json`.
 - Edit only `*.dp.yaml` DiagramPilot Source Files.
@@ -199,6 +206,7 @@ export, render, and prompt helpers. See the
 ## Public References
 
 - [Public documentation](docs-public/index.md)
+- [Agent workflow guide](docs-public/agents/agent-workflow.md)
 - [Installation and removal guide](docs-public/agents/installation.md)
 - [Checkout demo quickstart](docs-public/agents/quickstart.md)
 - [MCP guide](docs-public/agents/mcp.md)

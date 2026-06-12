@@ -19,6 +19,7 @@ Start with the Checkout Demo Project quickstart:
 
 Core public references:
 
+- [Agent workflow guide](agents/agent-workflow.md)
 - [Installation and removal guide](agents/installation.md)
 - [MCP guide](agents/mcp.md)
 - [DiagramSpec guide](agents/spec.md)
