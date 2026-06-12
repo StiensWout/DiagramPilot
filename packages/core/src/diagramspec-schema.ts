@@ -67,6 +67,14 @@ export function createDiagramSpecV1JsonSchema(): JsonSchemaDocument {
         },
         default: [],
       },
+      views: {
+        description: "Named projections from this DiagramSpec source.",
+        type: "array",
+        items: {
+          $ref: "#/$defs/view",
+        },
+        default: [],
+      },
       metadata: {
         $ref: "#/$defs/metadata",
       },
@@ -196,6 +204,56 @@ export function createDiagramSpecV1JsonSchema(): JsonSchemaDocument {
           },
           icon: {
             $ref: "#/$defs/iconReference",
+          },
+          metadata: {
+            $ref: "#/$defs/metadata",
+          },
+        },
+      },
+      view: {
+        description: "Named projection filters.",
+        type: "object",
+        additionalProperties: false,
+        required: ["id"],
+        properties: {
+          id: {
+            $ref: "#/$defs/stableId",
+          },
+          label: {
+            $ref: "#/$defs/plainText",
+          },
+          description: {
+            $ref: "#/$defs/plainText",
+          },
+          groups: {
+            type: "array",
+            items: {
+              $ref: "#/$defs/stableId",
+            },
+          },
+          nodes: {
+            type: "array",
+            items: {
+              $ref: "#/$defs/stableId",
+            },
+          },
+          edges: {
+            type: "array",
+            items: {
+              $ref: "#/$defs/stableId",
+            },
+          },
+          nodeKinds: {
+            type: "array",
+            items: {
+              $ref: "#/$defs/stableId",
+            },
+          },
+          edgeKinds: {
+            type: "array",
+            items: {
+              $ref: "#/$defs/stableId",
+            },
           },
           metadata: {
             $ref: "#/$defs/metadata",

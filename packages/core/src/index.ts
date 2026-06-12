@@ -30,6 +30,7 @@ export {
   normalizeSvgArtifactProvenanceSourcePath,
 } from "./svg-artifact-freshness.js";
 export { validateDiagramSpec } from "./diagramspec-validation.js";
+export { selectDiagramSpecView } from "./diagramspec-views.js";
 export {
   DIAGRAM_SPEC_LINT_THRESHOLDS,
   lintDiagramSpec,
@@ -70,6 +71,7 @@ export type {
   RepoWorkflowInspectResult,
   RepoWorkflowInspectSourceResult,
   RepoWorkflowInspectSummary,
+  RepoWorkflowInspectViewSummary,
 } from "./repo-workflow-inspect.js";
 export type {
   ConfiguredTextArtifactFormat,
@@ -90,7 +92,12 @@ export type {
   DiagramSpecTopologyNodeEntry,
   DiagramSpecTopologyObjectType,
   DiagramSpecTopologyWalkHandlers,
+  DiagramSpecView,
 } from "./diagramspec-topology.js";
+export type {
+  DiagramSpecViewProjectionCounts,
+  DiagramSpecViewProjectionResult,
+} from "./diagramspec-views.js";
 export type {
   DiagramPilotSourceFile,
   DiagramPilotSourceFormat,

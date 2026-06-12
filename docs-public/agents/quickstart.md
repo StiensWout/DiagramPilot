@@ -223,6 +223,16 @@ diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 `render` requires `--out` and defaults to SVG. Keep the rendered SVG next to
 the source when that is practical for review.
 
+Render a declared projection from the same source when a large diagram needs a
+focused review artifact:
+
+```bash
+diagrampilot render docs/architecture.dp.yaml --view runtime --out docs/architecture-runtime.svg
+```
+
+Views are declared in the DiagramSpec `views` collection. They filter the
+validated source before render/export and do not mutate the source file.
+
 Render PNG from the same local render path when a raster artifact is needed:
 
 ```bash
@@ -235,6 +245,7 @@ Export to another diagram-as-code format when needed:
 
 ```bash
 diagrampilot export docs/architecture.dp.yaml --format mermaid
+diagrampilot export docs/architecture.dp.yaml --view runtime --format mermaid --out docs/architecture-runtime.mmd
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
 diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot
 ```
@@ -318,8 +329,10 @@ diagrampilot lint docs/architecture.dp.yaml
 diagrampilot lint docs/architecture.dp.yaml --json
 diagrampilot format docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
+diagrampilot render docs/architecture.dp.yaml --view runtime --out docs/architecture-runtime.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
 diagrampilot export docs/architecture.dp.yaml --format mermaid
+diagrampilot export docs/architecture.dp.yaml --view runtime --format mermaid --out docs/architecture-runtime.mmd
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
 diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot
 ```
@@ -387,11 +400,18 @@ removed or moved.
 `diagrampilot render <path> --out <artifact.svg>`
 : Renders a valid DiagramPilot source file to SVG. `--out` is required and SVG is the default render format.
 
+`diagrampilot render <path> --view <view-id> --out <artifact.svg>`
+: Renders a declared DiagramSpec view projection to SVG without changing the
+source file.
+
 `diagrampilot render <path> --format svg|png --out <path>`
 : Renders SVG explicitly or renders PNG by rasterizing the SVG output from the local render path.
 
 `diagrampilot export <path> --format mermaid|d2|dot`
 : Prints an exported text format to stdout.
+
+`diagrampilot export <path> --view <view-id> --format mermaid|d2|dot`
+: Prints a declared view projection in the selected text format.
 
 `diagrampilot export <path> --format mermaid|d2|dot --out <path>`
 : Writes an exported text format to a file.

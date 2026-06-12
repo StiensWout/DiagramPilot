@@ -1,5 +1,10 @@
 import { createDiagramSpecTopology } from "./diagramspec-topology.js";
-import type { DiagramSpec, DiagramSpecDirection } from "./diagramspec-topology.js";
+import type {
+  DiagramSpec,
+  DiagramSpecDirection,
+  DiagramSpecView,
+} from "./diagramspec-topology.js";
+import { selectDiagramSpecView } from "./diagramspec-views.js";
 import type {
   RepoWorkflowArtifactOutput,
   RepoWorkflowConfigFailure,
@@ -85,6 +90,25 @@ export interface RepoWorkflowInspectDiagramSummary {
     rootGroupIds: string[];
     maxDepth: number;
     containmentReferenceCount: number;
+  };
+  views: RepoWorkflowInspectViewSummary[];
+}
+
+export interface RepoWorkflowInspectViewSummary {
+  id: string;
+  label: string | null;
+  description: string | null;
+  filters: {
+    groups: string[];
+    nodes: string[];
+    edges: string[];
+    nodeKinds: string[];
+    edgeKinds: string[];
+  };
+  counts: {
+    nodes: number;
+    edges: number;
+    groups: number;
   };
 }
 
@@ -208,7 +232,38 @@ function inspectDiagram(spec: DiagramSpec): RepoWorkflowInspectDiagramSummary {
       maxDepth,
       containmentReferenceCount: topology.containmentReferences.length,
     },
+    views: inspectViews(spec),
   };
+}
+
+function viewFilterValues(
+  view: DiagramSpecView,
+  field: keyof RepoWorkflowInspectViewSummary["filters"],
+): string[] {
+  return [...(view[field] ?? [])];
+}
+
+function inspectViews(spec: DiagramSpec): RepoWorkflowInspectViewSummary[] {
+  return (spec.views ?? []).map((view) => {
+    const projection = selectDiagramSpecView(spec, view.id);
+    const counts = projection.ok
+      ? projection.counts
+      : { nodes: 0, edges: 0, groups: 0 };
+
+    return {
+      id: view.id,
+      label: view.label ?? null,
+      description: view.description ?? null,
+      filters: {
+        groups: viewFilterValues(view, "groups"),
+        nodes: viewFilterValues(view, "nodes"),
+        edges: viewFilterValues(view, "edges"),
+        nodeKinds: viewFilterValues(view, "nodeKinds"),
+        edgeKinds: viewFilterValues(view, "edgeKinds"),
+      },
+      counts,
+    };
+  });
 }
 
 function mapInspectSvgArtifactResult(

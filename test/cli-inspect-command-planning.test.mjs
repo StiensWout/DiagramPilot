@@ -50,6 +50,25 @@ function inspectResult(options = {}) {
             maxDepth: 1,
             containmentReferenceCount: 1,
           },
+          views: [
+            {
+              id: "frontend_only",
+              label: "Frontend Only",
+              description: null,
+              filters: {
+                groups: ["frontend"],
+                nodes: [],
+                edges: [],
+                nodeKinds: [],
+                edgeKinds: [],
+              },
+              counts: {
+                nodes: 1,
+                edges: 0,
+                groups: 1,
+              },
+            },
+          ],
         },
         artifacts: [
           {
@@ -132,6 +151,7 @@ test("plans inspect by delegating Repo Workflow Inspect to the command adapter",
       "  objects: 2 nodes, 1 edge, 1 group",
       "  Stable IDs: nodes=web_app, api_gateway; edges=web_app_to_api_gateway; groups=frontend",
       "  topology: root nodes=api_gateway; root groups=frontend; max depth=1; contains=1",
+      "  views: frontend_only (1 node, 0 edges, 1 group)",
       "  artifacts: svg docs/architecture.svg missing-artifact",
       "",
     ].join("\n"),
@@ -187,6 +207,22 @@ test("plans inspect json as stable inventory for agents", async () => {
     nodes: ["web_app", "api_gateway"],
     edges: ["web_app_to_api_gateway"],
     groups: ["frontend"],
+  });
+  assert.equal(payload.sources[0].diagram.views.length, 1);
+  assert.equal(payload.sources[0].diagram.views[0].id, "frontend_only");
+  assert.equal(payload.sources[0].diagram.views[0].label, "Frontend Only");
+  assert.equal(payload.sources[0].diagram.views[0].description, null);
+  assert.deepEqual(payload.sources[0].diagram.views[0].filters.groups, [
+    "frontend",
+  ]);
+  assert.deepEqual(payload.sources[0].diagram.views[0].filters.nodes, []);
+  assert.deepEqual(payload.sources[0].diagram.views[0].filters.edges, []);
+  assert.deepEqual(payload.sources[0].diagram.views[0].filters.nodeKinds, []);
+  assert.deepEqual(payload.sources[0].diagram.views[0].filters.edgeKinds, []);
+  assert.deepEqual(payload.sources[0].diagram.views[0].counts, {
+    nodes: 1,
+    edges: 0,
+    groups: 1,
   });
   assert.deepEqual(payload.sources[0].artifacts, [
     {

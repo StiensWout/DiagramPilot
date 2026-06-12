@@ -65,8 +65,10 @@ diagrampilot lint docs/architecture.dp.yaml
 diagrampilot icons search database
 diagrampilot inspect docs --json
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
+diagrampilot render docs/architecture.dp.yaml --view runtime --out docs/architecture-runtime.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
 diagrampilot export docs/architecture.dp.yaml --format mermaid
+diagrampilot export docs/architecture.dp.yaml --view runtime --format mermaid --out docs/architecture-runtime.mmd
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
 diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot
 diagrampilot check

@@ -19,6 +19,24 @@ async function withTempRepo(run) {
   }
 }
 
+function validationErrorFacts(errors) {
+  return errors.map((error) => ({
+    path: error.path,
+    message: error.message,
+    badValue: error.badValue,
+    expected: error.expected,
+    suggestion: error.suggestion,
+  }));
+}
+
+function validateDiagramSpecWithoutMutation(spec) {
+  const sourceBeforeValidation = JSON.stringify(spec);
+  const validation = validateDiagramSpec(spec);
+
+  assert.equal(JSON.stringify(spec), sourceBeforeValidation);
+  return validation;
+}
+
 test("validateDiagramSpec preserves unknown metadata keys on a loaded DiagramSpec", async () => {
   await withTempRepo(async (tempRoot) => {
     await mkdir(path.join(tempRoot, "docs"), { recursive: true });
@@ -112,20 +130,11 @@ test("validateDiagramSpec reports repairable containment failures without rewrit
       },
     ],
   };
-  const sourceBeforeValidation = JSON.stringify(spec);
-
-  const validation = validateDiagramSpec(spec);
+  const validation = validateDiagramSpecWithoutMutation(spec);
 
   assert.equal(validation.ok, false);
-  assert.equal(JSON.stringify(spec), sourceBeforeValidation);
   assert.deepEqual(
-    validation.errors.map((error) => ({
-      path: error.path,
-      message: error.message,
-      badValue: error.badValue,
-      expected: error.expected,
-      suggestion: error.suggestion,
-    })),
+    validationErrorFacts(validation.errors),
     [
       {
         path: "groups[1].contains[1]",
@@ -170,6 +179,94 @@ test("validateDiagramSpec reports repairable containment failures without rewrit
         expected: "One of: api_gateway, orders_db.",
         suggestion:
           "Change edges[0].to to an existing node ID instead of a group ID.",
+      },
+    ],
+  );
+});
+
+test("validateDiagramSpec reports repairable view filter failures", () => {
+  const spec = {
+    version: 1,
+    title: "View Filter Architecture",
+    nodes: [
+      { id: "api_gateway", label: "API Gateway", kind: "service" },
+      { id: "orders_service", label: "Orders Service", kind: "service" },
+    ],
+    edges: [
+      {
+        id: "api_gateway_to_orders_service",
+        from: "api_gateway",
+        to: "orders_service",
+        kind: "request",
+      },
+    ],
+    groups: [
+      {
+        id: "backend",
+        label: "Backend",
+        contains: ["orders_service"],
+      },
+    ],
+    views: [
+      { id: "runtime", groups: ["backend"] },
+      { id: "runtime", nodes: ["api_gateway"] },
+      { id: "unmatched", nodeKinds: ["worker"] },
+      {
+        id: "broken_refs",
+        groups: ["missing_group"],
+        nodes: ["missing_node"],
+        edges: ["missing_edge"],
+      },
+    ],
+  };
+  const validation = validateDiagramSpecWithoutMutation(spec);
+
+  assert.equal(validation.ok, false);
+  assert.deepEqual(
+    validationErrorFacts(validation.errors),
+    [
+      {
+        path: "views[1].id",
+        message: 'views[1].id duplicates views[0].id "runtime".',
+        badValue: "runtime",
+        expected: "One unique stable ID per DiagramSpec view.",
+        suggestion: "Assign a unique stable ID to this view.",
+      },
+      {
+        path: "views[3].groups[0]",
+        message:
+          'views[3].groups[0] references unknown group "missing_group".',
+        badValue: "missing_group",
+        expected: "One of: backend.",
+        suggestion:
+          'Add a group with id "missing_group" or change views[3].groups[0] to an existing group ID.',
+      },
+      {
+        path: "views[3].nodes[0]",
+        message: 'views[3].nodes[0] references unknown node "missing_node".',
+        badValue: "missing_node",
+        expected: "One of: api_gateway, orders_service.",
+        suggestion:
+          'Add a node with id "missing_node" or change views[3].nodes[0] to an existing node ID.',
+      },
+      {
+        path: "views[3].edges[0]",
+        message: 'views[3].edges[0] references unknown edge "missing_edge".',
+        badValue: "missing_edge",
+        expected: "One of: api_gateway_to_orders_service.",
+        suggestion:
+          'Add an edge with id "missing_edge" or change views[3].edges[0] to an existing edge ID.',
+      },
+      {
+        path: "views[2]",
+        message: 'View "unmatched" filters do not match any diagram objects.',
+        badValue: {
+          id: "unmatched",
+          nodeKinds: ["worker"],
+        },
+        expected: "At least one matching node, edge, or group.",
+        suggestion:
+          "Change the view filters to reference existing groups, nodes, edges, node kinds, or edge kinds.",
       },
     ],
   );

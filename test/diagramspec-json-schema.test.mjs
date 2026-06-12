@@ -209,6 +209,7 @@ test("DiagramSpec v1 JSON Schema describes source object shapes without closing 
   assert.equal(schema.properties.nodes.items.$ref, "#/$defs/node");
   assert.equal(schema.properties.edges.items.$ref, "#/$defs/edge");
   assert.equal(schema.properties.groups.items.$ref, "#/$defs/group");
+  assert.equal(schema.properties.views.items.$ref, "#/$defs/view");
   assert.equal(schema.properties.metadata.$ref, "#/$defs/metadata");
 
   assert.equal(schema.$defs.stableId.pattern, "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$");
@@ -231,6 +232,15 @@ test("DiagramSpec v1 JSON Schema describes source object shapes without closing 
   assert.equal(schema.$defs.group.properties.id.$ref, "#/$defs/stableId");
   assert.equal(schema.$defs.group.properties.kind.$ref, "#/$defs/stableId");
   assert.equal(schema.$defs.group.properties.contains.items.$ref, "#/$defs/stableId");
+
+  assert.deepEqual(schema.$defs.view.required, ["id"]);
+  assert.equal(schema.$defs.view.properties.id.$ref, "#/$defs/stableId");
+  assert.equal(schema.$defs.view.properties.groups.items.$ref, "#/$defs/stableId");
+  assert.equal(schema.$defs.view.properties.nodes.items.$ref, "#/$defs/stableId");
+  assert.equal(schema.$defs.view.properties.edges.items.$ref, "#/$defs/stableId");
+  assert.equal(schema.$defs.view.properties.nodeKinds.items.$ref, "#/$defs/stableId");
+  assert.equal(schema.$defs.view.properties.edgeKinds.items.$ref, "#/$defs/stableId");
+  assert.equal(schema.$defs.view.properties.metadata.$ref, "#/$defs/metadata");
 
   assert.equal(schema.$defs.metadata.type, "object");
   assert.equal(schema.$defs.metadata.additionalProperties, true);
@@ -305,6 +315,21 @@ test("DiagramSpec v1 JSON Schema validates representative source fixtures", asyn
         },
       },
     ],
+    views: [
+      {
+        id: "runtime",
+        label: "Runtime",
+        description: "Focused runtime projection.",
+        groups: ["checkout_surface"],
+        nodes: ["web_app"],
+        edges: ["web_app_to_api_gateway"],
+        nodeKinds: ["frontend"],
+        edgeKinds: ["request"],
+        metadata: {
+          audience: "agent_review",
+        },
+      },
+    ],
   };
 
   assert.deepEqual(validateWithSchema(schema, validSpec), []);
@@ -360,6 +385,22 @@ test("DiagramSpec v1 JSON Schema validates representative source fixtures", asyn
         groups: [{ id: "checkout_surface", label: "Checkout Surface" }],
       },
       expected: schemaError("$.groups[0].contains", "required"),
+    },
+    {
+      name: "requires view IDs",
+      spec: {
+        ...validSpec,
+        views: [{ groups: ["checkout_surface"] }],
+      },
+      expected: schemaError("$.views[0].id", "required"),
+    },
+    {
+      name: "checks view filter ID shapes",
+      spec: {
+        ...validSpec,
+        views: [{ id: "runtime", groups: ["Checkout Surface"] }],
+      },
+      expected: schemaError("$.views[0].groups[0]", "pattern"),
     },
     {
       name: "keeps metadata.source local",

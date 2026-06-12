@@ -36,6 +36,18 @@ export interface DiagramSpecGroup {
   metadata?: DiagramSpecMetadata;
 }
 
+export interface DiagramSpecView {
+  id: string;
+  label?: string;
+  description?: string;
+  groups?: string[];
+  nodes?: string[];
+  edges?: string[];
+  nodeKinds?: string[];
+  edgeKinds?: string[];
+  metadata?: DiagramSpecMetadata;
+}
+
 export interface DiagramSpec {
   version: number;
   title: string;
@@ -44,6 +56,7 @@ export interface DiagramSpec {
   nodes: DiagramSpecNode[];
   edges?: DiagramSpecEdge[];
   groups?: DiagramSpecGroup[];
+  views?: DiagramSpecView[];
   metadata?: DiagramSpecMetadata;
 }
 

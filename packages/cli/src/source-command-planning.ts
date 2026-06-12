@@ -21,6 +21,7 @@ import {
 } from "./cli-output.js";
 import type { CommandPlanningDependencies } from "./command-planning-dependencies.js";
 import type { CommandPlan } from "./types.js";
+import { selectOptionalViewOrPlanFailure } from "./view-command-planning.js";
 
 type SuccessfulValidatedDiagramSpecLoadResult = Extract<
   ValidatedDiagramSpecLoadResult,
@@ -32,9 +33,14 @@ type FailedValidatedDiagramSpecLoadResult = Extract<
 >;
 type TextExportFormat = "d2" | "dot" | "mermaid";
 type RenderFormat = "svg" | "png";
-type RepairableDiagnosticReport = ReturnType<
-  typeof createRepairableDiagnosticReport
->;
+type RepairableDiagnosticReport = ReturnType<typeof createRepairableDiagnosticReport>;
+type LoadedViewSelectionResult =
+  | {
+      ok: true;
+      result: SuccessfulValidatedDiagramSpecLoadResult;
+      spec: DiagramSpec;
+    }
+  | { ok: false; plan: CommandPlan };
 
 type FormatArgsResult =
   | {
@@ -98,6 +104,30 @@ function loadValidatedDiagramSpecOrPlanFailure(
   };
 }
 
+function loadSelectedDiagramSpecOrPlanFailure(
+  dependencies: CommandPlanningDependencies,
+  sourcePath: string,
+  viewId: string | undefined,
+): LoadedViewSelectionResult {
+  const loaded = loadValidatedDiagramSpecOrPlanFailure(dependencies, sourcePath);
+
+  if (!loaded.ok) {
+    return loaded;
+  }
+
+  const selected = selectOptionalViewOrPlanFailure(loaded.result, viewId);
+
+  if (!selected.ok) {
+    return selected;
+  }
+
+  return {
+    ok: true,
+    result: loaded.result,
+    spec: selected.spec,
+  };
+}
+
 export function exportDiagramSpecTextArtifact(
   dependencies: CommandPlanningDependencies,
   format: TextExportFormat,
@@ -114,10 +144,7 @@ export function exportDiagramSpecTextArtifact(
 }
 
 function validateUsagePlan(message: string): CommandPlan {
-  return usageFailurePlan(
-    message,
-    "Usage: diagrampilot validate <path> [--json]",
-  );
+  return usageFailurePlan(message, "Usage: diagrampilot validate <path> [--json]");
 }
 
 function parseFormatArgs(args: readonly string[]): FormatArgsResult {
@@ -235,19 +262,20 @@ export function planExport(
     return usageFailurePlan(argsResult.message, exportUsageText());
   }
 
-  const loaded = loadValidatedDiagramSpecOrPlanFailure(
+  const selected = loadSelectedDiagramSpecOrPlanFailure(
     dependencies,
     argsResult.options.sourcePath,
+    argsResult.options.viewId,
   );
 
-  if (!loaded.ok) {
-    return loaded.plan;
+  if (!selected.ok) {
+    return selected.plan;
   }
 
   const exportedText = exportDiagramSpecTextArtifact(
     dependencies,
     argsResult.options.format,
-    loaded.result.spec,
+    selected.spec,
   );
 
   if (argsResult.options.outPath !== undefined) {
@@ -321,8 +349,9 @@ function renderProvenance(
 async function renderValidatedDiagramSpecToSvg(
   dependencies: CommandPlanningDependencies,
   result: SuccessfulValidatedDiagramSpecLoadResult,
+  spec: DiagramSpec,
 ): Promise<string> {
-  return dependencies.renderDiagramSpecToSvg(result.spec, {
+  return dependencies.renderDiagramSpecToSvg(spec, {
     provenance: renderProvenance(dependencies, result),
   });
 }
@@ -379,19 +408,21 @@ export async function planRender(
     return renderUsagePlan(argsResult.message);
   }
 
-  const loaded = loadValidatedDiagramSpecOrPlanFailure(
+  const selected = loadSelectedDiagramSpecOrPlanFailure(
     dependencies,
     argsResult.options.sourcePath,
+    argsResult.options.viewId,
   );
 
-  if (!loaded.ok) {
-    return loaded.plan;
+  if (!selected.ok) {
+    return selected.plan;
   }
 
   try {
     const renderedSvg = await renderValidatedDiagramSpecToSvg(
       dependencies,
-      loaded.result,
+      selected.result,
+      selected.spec,
     );
     const renderedContent = renderContentForFormat(
       dependencies,
@@ -401,6 +432,6 @@ export async function planRender(
 
     return renderWritePlan(argsResult.options.outPath, renderedContent);
   } catch (error) {
-    return renderFailurePlan(loaded.result.source.path, error);
+    return renderFailurePlan(selected.result.source.path, error);
   }
 }

@@ -25,6 +25,11 @@ const groupedSourceContent = [
   "    label: Frontend",
   "    contains:",
   "      - web_app",
+  "views:",
+  "  - id: frontend_only",
+  "    label: Frontend Only",
+  "    groups:",
+  "      - frontend",
   "edges:",
   "  - id: web_app_to_api_gateway",
   "    from: web_app",
@@ -98,6 +103,25 @@ test("inspectDiagramPilotRepoWorkflow reports source inventory, topology, Stable
       maxDepth: 1,
       containmentReferenceCount: 1,
     });
+    assert.deepEqual(source.diagram.views, [
+      {
+        id: "frontend_only",
+        label: "Frontend Only",
+        description: null,
+        filters: {
+          groups: ["frontend"],
+          nodes: [],
+          edges: [],
+          nodeKinds: [],
+          edgeKinds: [],
+        },
+        counts: {
+          nodes: 1,
+          edges: 0,
+          groups: 1,
+        },
+      },
+    ]);
     assert.deepEqual(source.artifacts, [
       {
         format: "svg",

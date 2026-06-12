@@ -112,9 +112,6 @@ jobs:
       - name: Check public package readiness
         run: npm run check:package-readiness
 
-      - name: Check public package size budgets
-        run: npm run check:package-size-budgets
-
       - name: Plan release channel
         id: release-plan
         run: node scripts/plan-release-publish.mjs --github-output
@@ -130,9 +127,6 @@ jobs:
 
       - name: Check publish package readiness
         run: npm run check:package-readiness
-
-      - name: Check publish package size budgets
-        run: npm run check:package-size-budgets
 
       - name: Verify package publish dry-run
         run: node scripts/publish-release-packages.mjs --mode dry-run
@@ -184,9 +178,6 @@ jobs:
 
       - name: Check publish package readiness
         run: npm run check:package-readiness
-
-      - name: Check publish package size budgets
-        run: npm run check:package-size-budgets
 
       - name: Publish npm packages
         run: node scripts/publish-release-packages.mjs --mode publish

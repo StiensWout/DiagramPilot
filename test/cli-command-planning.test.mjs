@@ -11,7 +11,6 @@ import {
   validLoadResult,
   validationFailure,
 } from "./cli-command-planning-helpers.mjs";
-
 function assertSingleWritePlan(plan, write) {
   assert.deepEqual(plan, {
     exitCode: 0,
@@ -128,6 +127,7 @@ test("plans export missing format as usage on stderr", async () => {
       "Missing export format.",
       "Usage:",
       "  diagrampilot export <path> --format mermaid [--out <path>]",
+      "  diagrampilot export <path> --view <view-id> --format mermaid [--out <path>]",
       "  diagrampilot export <path> --format d2 [--out <path>]",
       "  diagrampilot export <path> --format dot [--out <path>]",
       "",
@@ -309,6 +309,7 @@ test("plans render missing output path as usage on stderr", async () => {
       "Missing render output path.",
       "Usage:",
       "  diagrampilot render <path> --out <path>",
+      "  diagrampilot render <path> --view <view-id> --out <path>",
       "  diagrampilot render <path> --format svg --out <path>",
       "  diagrampilot render <path> --format png --out <path>",
       "",
@@ -341,6 +342,7 @@ test("plans unsupported render format as repairable usage without loading the so
       "Unsupported render format: pdf",
       "Usage:",
       "  diagrampilot render <path> --out <path>",
+      "  diagrampilot render <path> --view <view-id> --out <path>",
       "  diagrampilot render <path> --format svg --out <path>",
       "  diagrampilot render <path> --format png --out <path>",
       "",
@@ -442,6 +444,7 @@ test("plans subcommand help output", async () => {
       [
         "Usage:",
         "  diagrampilot render <path> --out <path>",
+        "  diagrampilot render <path> --view <view-id> --out <path>",
         "  diagrampilot render <path> --format svg --out <path>",
         "  diagrampilot render <path> --format png --out <path>",
         "",
@@ -452,6 +455,7 @@ test("plans subcommand help output", async () => {
       [
         "Usage:",
         "  diagrampilot export <path> --format mermaid [--out <path>]",
+        "  diagrampilot export <path> --view <view-id> --format mermaid [--out <path>]",
         "  diagrampilot export <path> --format d2 [--out <path>]",
         "  diagrampilot export <path> --format dot [--out <path>]",
         "",

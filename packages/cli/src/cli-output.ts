@@ -46,9 +46,11 @@ export function helpText(version: string): string {
     "  icons list",
     "  icons search <query>",
     "  render <path> --out <path>",
+    "  render <path> --view <view-id> --out <path>",
     "  render <path> --format svg --out <path>",
     "  render <path> --format png --out <path>",
     "  export <path> --format mermaid [--out <path>]",
+    "  export <path> --view <view-id> --format mermaid [--out <path>]",
     "  export <path> --format d2 [--out <path>]",
     "  export <path> --format dot [--out <path>]",
   ].join("\n");
@@ -94,6 +96,7 @@ export function exportUsageText(): string {
   return [
     "Usage:",
     "  diagrampilot export <path> --format mermaid [--out <path>]",
+    "  diagrampilot export <path> --view <view-id> --format mermaid [--out <path>]",
     "  diagrampilot export <path> --format d2 [--out <path>]",
     "  diagrampilot export <path> --format dot [--out <path>]",
   ].join("\n");
@@ -103,6 +106,7 @@ export function renderUsageText(): string {
   return [
     "Usage:",
     "  diagrampilot render <path> --out <path>",
+    "  diagrampilot render <path> --view <view-id> --out <path>",
     "  diagrampilot render <path> --format svg --out <path>",
     "  diagrampilot render <path> --format png --out <path>",
   ].join("\n");
@@ -158,11 +162,33 @@ function formatInspectSummary(
 function formatInspectObjectCounts(
   diagram: NonNullable<RepoWorkflowInspectSourceResult["diagram"]>,
 ): string {
+  return formatInspectCounts(diagram.counts);
+}
+
+function formatInspectCounts(counts: {
+  nodes: number;
+  edges: number;
+  groups: number;
+}): string {
   return [
-    plural(diagram.counts.nodes, "node"),
-    plural(diagram.counts.edges, "edge"),
-    plural(diagram.counts.groups, "group"),
+    plural(counts.nodes, "node"),
+    plural(counts.edges, "edge"),
+    plural(counts.groups, "group"),
   ].join(", ");
+}
+
+function formatInspectViews(
+  diagram: NonNullable<RepoWorkflowInspectSourceResult["diagram"]>,
+): string | undefined {
+  const views = diagram.views ?? [];
+
+  if (views.length === 0) {
+    return undefined;
+  }
+
+  return `views: ${views
+    .map((view) => `${view.id} (${formatInspectCounts(view.counts)})`)
+    .join("; ")}`;
 }
 
 function formatInspectStableIds(
@@ -219,6 +245,9 @@ function formatValidInspectSource(source: RepoWorkflowInspectSourceResult): stri
     `  objects: ${formatInspectObjectCounts(source.diagram)}`,
     `  Stable IDs: ${formatInspectStableIds(source.diagram)}`,
     `  topology: ${formatInspectTopology(source.diagram)}`,
+    ...(formatInspectViews(source.diagram) === undefined
+      ? []
+      : [`  ${formatInspectViews(source.diagram)}`]),
     `  artifacts: ${formatInspectArtifacts(source)}`,
   ];
 }
