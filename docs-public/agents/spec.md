@@ -330,3 +330,98 @@ MVP rendering targets:
 - PNG
 
 Interop targets are not the source of truth.
+
+## Export Fidelity
+
+DiagramPilot Source Files remain the source of truth. Mermaid, D2, and DOT are
+Derived Artifacts for review, embedding, and tool interoperability. The same
+small DiagramSpec can be exported to each target, but each target keeps only the
+semantics that fit its format.
+
+Source:
+
+```yaml
+version: 1
+title: Checkout Export Sample
+direction: right
+nodes:
+  - id: web_app
+    label: Web App
+    kind: frontend
+    icon: lucide:globe
+    metadata:
+      source: src/web/checkout-page.tsx
+  - id: api_gateway
+    label: API Gateway
+    kind: service
+    icon: lucide:server
+groups:
+  - id: backend
+    label: Backend
+    contains:
+      - api_gateway
+edges:
+  - id: web_app_to_api_gateway
+    from: web_app
+    to: api_gateway
+    label: HTTPS
+```
+
+### Mermaid
+
+```mermaid
+flowchart LR
+  web_app["Web App"]
+  subgraph backend["Backend"]
+    api_gateway["API Gateway"]
+  end
+  web_app -->|HTTPS| api_gateway
+```
+
+### D2
+
+```d2
+direction: right
+
+web_app: "Web App"
+backend: {
+  label: "Backend"
+  api_gateway: "API Gateway"
+}
+
+web_app -> backend.api_gateway: "HTTPS"
+```
+
+### DOT
+
+```dot
+digraph "Checkout Export Sample" {
+  label="Checkout Export Sample";
+  labelloc=t;
+  rankdir=LR;
+  "web_app" [label="Web App", tooltip="src/web/checkout-page.tsx"];
+  subgraph "cluster_backend" {
+    label="Backend";
+    "api_gateway" [label="API Gateway"];
+  }
+  "web_app" -> "api_gateway" [label="HTTPS"];
+}
+```
+
+Read preserved as meaning the semantic is represented directly, approximated as
+meaning the target uses a native construct with similar review value, and
+dropped as meaning the target output does not carry that DiagramSpec field.
+
+| Semantic | Mermaid | D2 | DOT |
+| --- | --- | --- | --- |
+| Titles | Dropped; Mermaid output starts with `flowchart`. | Dropped; D2 output starts with `direction`. | Preserved as the digraph name and top label. |
+| Directions | Preserved as `LR`, `RL`, `TB`, or `BT`. | Preserved as `direction`. | Preserved as `rankdir`. |
+| Nodes | Preserved as Stable IDs and labels. | Preserved as Stable IDs and labels. | Preserved as Stable IDs and labels. |
+| Groups | Approximated as Mermaid subgraphs. | Preserved as nested containers; edge endpoints use container paths. | Approximated as Graphviz clusters. |
+| Edge labels | Preserved with Mermaid edge labels. | Preserved after the connection. | Preserved as edge `label` attributes. |
+| Edge direction | Preserved with arrow or undirected connectors. | Preserved with directed or undirected connectors. | Preserved with directed edges and `dir=none` for undirected edges. |
+| Icons | Dropped. | Dropped. | Dropped. |
+| Kinds | Dropped. | Dropped. | Dropped. |
+| Metadata | Dropped. | Dropped. | Partly preserved: `source` becomes `tooltip`, and `external_url` becomes `URL`; other metadata is dropped. |
+| Provenance | Dropped; SVG provenance is only in generated SVG artifacts. | Dropped; SVG provenance is only in generated SVG artifacts. | Dropped; SVG provenance is only in generated SVG artifacts. |
+| Views and layout hints | Dropped because these fields are outside the current DiagramSpec v1 source contract. | Dropped because these fields are outside the current DiagramSpec v1 source contract. | Dropped because these fields are outside the current DiagramSpec v1 source contract. |
