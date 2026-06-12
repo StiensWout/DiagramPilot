@@ -1,4 +1,4 @@
-import { access } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -13,6 +13,7 @@ export const publicAgentDocs = [
   "installation.md",
   "mcp.md",
   "spec.md",
+  "icons.md",
   "error-repair.md",
   "examples.md",
   "prompting.md",
@@ -38,4 +39,12 @@ export async function exists(repoPath) {
   } catch {
     return false;
   }
+}
+
+export function readPublicAgentDoc(fileName) {
+  return readFile(path.join(repoRoot, "docs-public", "agents", fileName), "utf8");
+}
+
+export function readRepoText(repoPath) {
+  return readFile(path.join(repoRoot, repoPath), "utf8");
 }

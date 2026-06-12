@@ -222,6 +222,9 @@ kebab-case names, such as `database-backup`. MVP renderers support packaged
 Lucide icons. Validation rejects unsupported icon namespaces and unknown icons
 in supported namespaces.
 
+Use the [Icon reference](icons.md) or `diagrampilot icons search <query>` to
+discover valid packaged `lucide:*` references locally.
+
 Reserved icon namespaces include:
 
 ```text

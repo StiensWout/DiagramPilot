@@ -1,22 +1,17 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import test from "node:test";
 
 import { assertMatchesAll } from "./assertion-helpers.mjs";
-import { repoRoot } from "./docs-public-boundary-helpers.mjs";
+import {
+  readPublicAgentDoc,
+  readRepoText,
+} from "./docs-public-boundary-helpers.mjs";
 
 test("public agent workflow guide documents the canonical authoring loop", async () => {
-  const agentWorkflow = await readFile(
-    path.join(repoRoot, "docs-public", "agents", "agent-workflow.md"),
-    "utf8",
-  );
-  const publicDocsIndex = await readFile(
-    path.join(repoRoot, "docs-public", "index.md"),
-    "utf8",
-  );
-  const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
-  const llmsText = await readFile(path.join(repoRoot, "llms.txt"), "utf8");
+  const agentWorkflow = await readPublicAgentDoc("agent-workflow.md");
+  const publicDocsIndex = await readRepoText("docs-public/index.md");
+  const readme = await readRepoText("README.md");
+  const llmsText = await readRepoText("llms.txt");
 
   assertMatchesAll(agentWorkflow, [
     /# Agent Workflow/,
@@ -51,10 +46,7 @@ test("public agent workflow guide documents the canonical authoring loop", async
 });
 
 test("public installation guide documents pinned nightly test installs", async () => {
-  const installationGuide = await readFile(
-    path.join(repoRoot, "docs-public", "agents", "installation.md"),
-    "utf8",
-  );
+  const installationGuide = await readPublicAgentDoc("installation.md");
 
   assertMatchesAll(installationGuide, [
     /## Nightly Build Testing/,

@@ -48,6 +48,7 @@ Compare DiagramPilot with adjacent tools and wire it into automation:
 
 - [Comparisons and adjacent tools](docs-public/agents/comparisons.md)
 - [Integrations and agent recipes](docs-public/agents/integrations.md)
+- [Icon reference](docs-public/agents/icons.md)
 
 Run the primary workflow from the repository root:
 
@@ -55,6 +56,7 @@ Run the primary workflow from the repository root:
 cd demo-projects/checkout
 diagrampilot check
 diagrampilot inspect
+diagrampilot icons search database
 diagrampilot create docs/new-architecture.dp.yaml --template architecture
 diagrampilot create docs/system-context.dp.yaml --template system-context
 diagrampilot create docs/service-map.dp.yaml --template service-map
@@ -77,6 +79,8 @@ DiagramPilot Source File into canonical YAML before review. `render` requires
 `--out`, defaults to SVG, and supports `--format svg|png`; PNG rendering
 rasterizes the SVG render path. `export` prints to stdout by default and writes
 only when `--out` is provided.
+Use `icons list` and `icons search <query>` to discover packaged `lucide:*`
+icon references for nodes and groups.
 
 ## For AI Coding Agents
 
@@ -150,6 +154,8 @@ diagrampilot inspect
 diagrampilot generate
 diagrampilot watch docs
 diagrampilot mcp
+diagrampilot icons list
+diagrampilot icons search database
 diagrampilot check docs --json
 diagrampilot inspect docs --json
 diagrampilot validate docs/architecture.dp.yaml
@@ -213,6 +219,10 @@ It exposes read-only DiagramPilot resources, validation, repo check,
 export, render, and prompt helpers. See the
 [MCP guide](docs-public/agents/mcp.md).
 
+`icons list` prints packaged `lucide:*` icon references in stable order.
+`icons search <query>` searches packaged Lucide names locally and prints
+matching `lucide:*` references, one per line.
+
 ## Public References
 
 - [Public documentation](docs-public/index.md)
@@ -220,6 +230,7 @@ export, render, and prompt helpers. See the
 - [Installation and removal guide](docs-public/agents/installation.md)
 - [Checkout demo quickstart](docs-public/agents/quickstart.md)
 - [MCP guide](docs-public/agents/mcp.md)
+- [Icon reference](docs-public/agents/icons.md)
 - [Comparisons and adjacent tools](docs-public/agents/comparisons.md)
 - [Integrations and agent recipes](docs-public/agents/integrations.md)
 - [DiagramSpec v1 JSON Schema](schema/diagramspec-v1.schema.json)

@@ -59,6 +59,7 @@ diagrampilot create docs/system-context.dp.yaml --template system-context
 diagrampilot create docs/service-map.dp.yaml --template service-map
 diagrampilot format docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml
+diagrampilot icons search database
 diagrampilot inspect docs --json
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
@@ -98,6 +99,7 @@ complement text renderers such as Mermaid, D2, and DOT.
 - [Installation and removal](https://diagrampilot.com/docs/agents/installation.md): Canonical package install paths, uninstall commands, and repository cleanup guidance.
 - [MCP guide](https://diagrampilot.com/docs/agents/mcp.md): Model Context Protocol server launch and client configuration guidance.
 - [DiagramSpec](https://diagrampilot.com/docs/agents/spec.md): Structured source model for diagrams.
+- [Icon reference](https://diagrampilot.com/docs/agents/icons.md): Local packaged `lucide:*` icon discovery with `diagrampilot icons list` and `diagrampilot icons search <query>`.
 - [Error repair](https://diagrampilot.com/docs/agents/error-repair.md): How agents should interpret and fix validation errors.
 - [Examples](https://diagrampilot.com/docs/agents/examples.md): Canonical diagram examples.
 - [Prompting guide](https://diagrampilot.com/docs/agents/prompting.md): Recommended instructions for agents using DiagramPilot.
