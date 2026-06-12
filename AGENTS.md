@@ -30,28 +30,7 @@ local files, review-stable rendering, readable specs, and repairable errors.
   `docs-public/agents/installation.md`, `docs-public/agents/spec.md`,
   `docs-public/agents/error-repair.md`, `docs-public/agents/examples.md`,
   `docs-public/agents/prompting.md`.
-- Internal: `CONTEXT.md`, `docs/development/documentation-contract.md`,
-  `docs/development/public-website-deployment.md`,
-  `docs/development/architecture.md`, `docs/development/roadmap.md`,
-  `docs/development/release-version-workflow.md`,
-  `docs/agents/issue-tracker.md`, `docs/agents/triage-labels.md`,
-  `docs/agents/domain.md`,
-  `docs/adr/0006-public-docs-live-under-docs-public.md`,
-  `docs/adr/0008-public-alpha-release-and-package-publishing.md`,
-  `docs/adr/0009-package-install-does-not-install-local-agent-docs.md`.
-
-## Agent skills
-
-### Issue tracker
-
-Issues and PRDs are tracked in Linear. GitHub Issues are public intake only.
-See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-Triage uses Linear statuses. See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-This repo uses a single-context domain docs layout. See
-`docs/agents/domain.md`.
+- Private maintainer workflow lives in Linear. Use the active Linear issue and
+  the `DP-19 Internal Maintainer Workflow Migration Map` project document for
+  tracker rules, triage states, domain context, release workflow, closeout
+  notes, and migration state.

@@ -228,6 +228,26 @@ test("Documentation Contract internal sources are not published and synced websi
   assert.equal(trackedGeneratedFiles, "");
 });
 
+test("Documentation Contract defines the private maintainer workflow relocation gate", async () => {
+  assertMatchesAll(await readContract(), [
+    /## Private Maintainer Workflow Relocation/,
+    /Public Repository Surface/,
+    /Private Maintainer Workflow/,
+    /Linear is the\s+canonical home/i,
+    /DP-19 Internal Maintainer Workflow Migration Map/,
+    /\.scratch\/\*\*/,
+    /CONTEXT\.md/,
+    /docs\/adr\/\*\*/,
+    /docs\/agents\/\*\*/,
+    /docs\/development\/\*/,
+    /No final deletion/i,
+    /dependent\s+tooling and docs/i,
+    /AGENTS\.md/,
+    /npm test/,
+    /npm run audit:fallow/,
+  ]);
+});
+
 test("Documentation Contract drift checks align commands and canonical public links", async () => {
   await websiteBuild();
 

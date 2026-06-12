@@ -21,6 +21,31 @@ Internal maintainer sources explain project workflow, implementation plans,
 architecture decisions, and development process. They are not Public
 Documentation and must not be published through website docs routes.
 
+## Private Maintainer Workflow Relocation
+
+The Public Repository Surface should expose usage, package, website, and
+contribution paths, not the full Private Maintainer Workflow. Linear is the
+canonical home for maintainer planning, issue workflow, release workflow,
+domain context, and implementation closeout notes. The Linear project document
+`DP-19 Internal Maintainer Workflow Migration Map` records the active map from
+repo-visible internal files to Linear documents or deletion.
+
+These current repo paths are transitional maintainer sources while dependent
+tooling and docs are moved:
+
+- `.scratch/**`
+- `CONTEXT.md`
+- `docs/adr/**`
+- `docs/agents/**`
+- `docs/development/**`
+
+No final deletion should happen until dependent tooling and docs no longer
+require the local paths. At minimum, `AGENTS.md`, documentation drift tests,
+package readiness checks, website route checks, release-version tooling, and
+closeout-history checks must either stop depending on the transitional paths or
+encode the relevant behavior directly. Before removing any transitional source,
+run `npm test` and `npm run audit:fallow`.
+
 `README.md` and `llms.txt` are public entrypoints. They should summarize and
 link the canonical Public Documentation instead of becoming alternate long-form
 sources. Package-local README files are also public package documentation for
