@@ -9,6 +9,8 @@ DiagramPilot is a local-first, repo-native diagram compiler for AI coding
 agents. It validates structured DiagramSpec source files, renders review-stable
 SVG or PNG artifacts, and exports Mermaid, D2, or DOT text from the same source
 of truth.
+Agents use DiagramPilot to create, update, validate, and render software
+architecture diagrams directly inside a repository.
 
 DiagramPilot Source Files are YAML-only. The CLI supports local agent authoring
 loops with `create`, `inspect`, `format`, `watch`, configured outputs, fixed
@@ -16,6 +18,15 @@ Output Profiles, SVG/PNG rendering, Mermaid/D2/DOT export, and an MCP server
 for local agent clients.
 
 Public documentation is hosted at `https://diagrampilot.com`.
+
+## Use It For
+
+- Codebase architecture diagrams that stay reviewable in Git.
+- Dependency and module maps generated from one structured source file.
+- Service interaction diagrams for runtime, data, and integration flows.
+- AI-maintained documentation that needs stable, repairable source.
+- Pull request architecture reviews backed by `check` and generated artifacts.
+- Repo-native diagram artifacts committed beside the source they came from.
 
 ## Try DiagramPilot
 
@@ -55,6 +66,19 @@ YAML before review. `render` requires `--out`, defaults to SVG, and supports
 `--format svg|png`; PNG rendering rasterizes the SVG render path. `export`
 prints to stdout by default and writes only when `--out` is provided.
 
+## For AI Coding Agents
+
+- Inspect the repository first with `diagrampilot inspect` or
+  `diagrampilot inspect --json`.
+- Edit only `*.dp.yaml` DiagramPilot Source Files.
+- Preserve Stable IDs when labels, descriptions, or grouping change.
+- Run `diagrampilot format` and `diagrampilot validate` before rendering.
+- Run `diagrampilot render` or `diagrampilot generate` to refresh Derived
+  Artifacts.
+- Run `diagrampilot check` before committing diagram changes.
+- Never hand-edit generated artifacts such as SVG, PNG, Mermaid, D2, DOT, or
+  Markdown embed outputs.
+
 ## Source And Artifacts
 
 DiagramPilot source files store DiagramSpec as YAML:
@@ -76,6 +100,13 @@ metadata, package manifests, and other tooling surfaces.
 rewriting it in canonical YAML key order. Formatting preserves DiagramSpec data,
 unknown metadata, and object/array order. It does not promise comment
 preservation; YAML comments may be removed or moved during formatting.
+
+## Mermaid And DiagramPilot
+
+Mermaid is a diagram syntax for writing diagrams as text. DiagramPilot is an
+agent-safe compiler and workflow for maintaining DiagramSpec source, validating
+it locally, rendering review-stable artifacts, and exporting Mermaid when that
+text format is the right downstream target.
 
 ## License And Brand
 
