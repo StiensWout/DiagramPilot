@@ -1,6 +1,6 @@
 {
   "name": "@diagrampilot/icons",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Packaged icon metadata for DiagramPilot.",
   "type": "module",
   "license": "MIT",
