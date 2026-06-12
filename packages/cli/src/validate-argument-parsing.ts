@@ -1,4 +1,4 @@
-interface ValidateOptions {
+interface SourceJsonOptions {
   json: boolean;
   sourcePath: string;
 }
@@ -13,20 +13,23 @@ type ArgsResult<TOptions> =
       message: string;
     };
 
-type ValidateArgsResult = ArgsResult<ValidateOptions>;
+type SourceJsonArgsResult = ArgsResult<SourceJsonOptions>;
 
-interface ValidateCommandParseState {
+interface SourceJsonCommandParseState {
   json: boolean;
   sourcePath?: string;
 }
 
-export function parseValidateArgs(
+type SourceJsonCommandName = "lint" | "validate";
+
+function parseSourceJsonArgs(
   args: readonly string[],
-): ValidateArgsResult {
-  let state: ValidateCommandParseState = { json: false };
+  commandName: SourceJsonCommandName,
+): SourceJsonArgsResult {
+  let state: SourceJsonCommandParseState = { json: false };
 
   for (const arg of args) {
-    const result = parseValidateArg(state, arg);
+    const result = parseSourceJsonArg(state, arg, commandName);
 
     if (!result.ok) {
       return result;
@@ -35,31 +38,32 @@ export function parseValidateArgs(
     state = result.options;
   }
 
-  return validateArgsFromState(state);
+  return sourceJsonArgsFromState(state);
 }
 
-function parseValidateArg(
-  state: ValidateCommandParseState,
+function parseSourceJsonArg(
+  state: SourceJsonCommandParseState,
   arg: string,
-): ArgsResult<ValidateCommandParseState> {
+  commandName: SourceJsonCommandName,
+): ArgsResult<SourceJsonCommandParseState> {
   if (arg === "--json") {
     return { ok: true, options: { ...state, json: true } };
   }
 
   if (arg.startsWith("-")) {
-    return { ok: false, message: `Unknown validate option: ${arg}` };
+    return { ok: false, message: `Unknown ${commandName} option: ${arg}` };
   }
 
   if (state.sourcePath !== undefined) {
-    return { ok: false, message: `Unexpected validate argument: ${arg}` };
+    return { ok: false, message: `Unexpected ${commandName} argument: ${arg}` };
   }
 
   return { ok: true, options: { ...state, sourcePath: arg } };
 }
 
-function validateArgsFromState(
-  state: ValidateCommandParseState,
-): ValidateArgsResult {
+function sourceJsonArgsFromState(
+  state: SourceJsonCommandParseState,
+): SourceJsonArgsResult {
   if (state.sourcePath === undefined) {
     return { ok: false, message: "Missing source path." };
   }
@@ -71,4 +75,14 @@ function validateArgsFromState(
       sourcePath: state.sourcePath,
     },
   };
+}
+
+export function parseValidateArgs(
+  args: readonly string[],
+): SourceJsonArgsResult {
+  return parseSourceJsonArgs(args, "validate");
+}
+
+export function parseLintArgs(args: readonly string[]): SourceJsonArgsResult {
+  return parseSourceJsonArgs(args, "lint");
 }

@@ -436,6 +436,7 @@ test("plans subcommand help output", async () => {
       ].join("\n"),
     ],
     ["inspect", "Usage: diagrampilot inspect [path] [--json]\n"],
+    ["lint", "Usage: diagrampilot lint <path> [--json]\n"],
     [
       "render",
       [

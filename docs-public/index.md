@@ -9,9 +9,9 @@ DiagramPilot Public Documentation is for developers and AI coding agents using
 DiagramPilot in their own repositories.
 
 DiagramPilot Source Files are YAML-only. The CLI supports local agent authoring
-loops with `create`, `inspect`, `format`, `watch`, configured outputs, fixed
-Output Profiles, SVG/PNG rendering, Mermaid/D2/DOT export, and an MCP server
-for local agent clients.
+loops with `create`, `inspect`, `format`, `lint`, `watch`, configured outputs,
+fixed Output Profiles, SVG/PNG rendering, Mermaid/D2/DOT export, and an MCP
+server for local agent clients.
 
 Start with the Checkout Demo Project quickstart:
 
@@ -53,6 +53,8 @@ diagrampilot check docs --json
 diagrampilot inspect docs --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
+diagrampilot lint docs/architecture.dp.yaml
+diagrampilot lint docs/architecture.dp.yaml --json
 diagrampilot format docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
@@ -67,9 +69,11 @@ agent docs. Use `init --config` only when a repository intentionally wants
 from the maintained `architecture`, `flow`, `package-map`, `system-context`, or
 `service-map` templates. Use `check` as the read-only repo review/CI command.
 Use `inspect` for read-only source inventory, topology, Stable IDs, and
-artifact expectations before editing. `render` requires `--out`, defaults to
-SVG, and supports `--format svg|png`. `export` prints to stdout by default and
-writes a file only when `--out` is provided. `format <path>` validates one
+artifact expectations before editing. Use `lint <path>` for read-only
+readability warnings on one valid source; it differs from `validate` source
+correctness and `check` artifact freshness. `render` requires `--out`, defaults
+to SVG, and supports `--format svg|png`. `export` prints to stdout by default
+and writes a file only when `--out` is provided. `format <path>` validates one
 `*.dp.yaml` source and rewrites it in canonical YAML key order; YAML comments
 may be removed
 or moved. `watch [path]` watches `*.dp.yaml` and `diagrampilot.config.yaml`,

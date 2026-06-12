@@ -5,6 +5,7 @@ import {
   generateDiagramPilotRepoWorkflow,
   getDiagramPilotVersion,
   inspectDiagramPilotRepoWorkflow,
+  lintDiagramSpec,
   loadValidatedDiagramSpec,
 } from "@diagrampilot/core";
 import type {
@@ -36,6 +37,7 @@ import {
   generateUsageText,
   iconsUsageText,
   inspectUsageText,
+  lintUsageText,
   renderUsageText,
   textLine,
 } from "./cli-output.js";
@@ -56,6 +58,7 @@ import {
   planValidate,
   usageFailurePlan,
 } from "./source-command-planning.js";
+import { planLint } from "./lint-command-planning.js";
 import type { CommandPlan } from "./types.js";
 
 export type { CommandPlan, CommandWriteIntent } from "./types.js";
@@ -66,6 +69,7 @@ const defaultCommandPlanningDependencies: CommandPlanningDependencies = {
   inspectDiagramPilotRepoWorkflow,
   generateDiagramPilotRepoWorkflow,
   loadValidatedDiagramSpec,
+  lintDiagramSpec,
   exportDiagramSpecToMermaid,
   exportDiagramSpecToD2,
   exportDiagramSpecToDot,
@@ -258,6 +262,7 @@ const commandHandlers: Readonly<Record<string, CommandHandler>> = {
   generate: planGenerate,
   icons: planIcons,
   inspect: planInspect,
+  lint: planLint,
   render: planRender,
   validate: planValidate,
 };
@@ -270,6 +275,7 @@ const commandHelpText: Readonly<Record<string, () => string>> = {
   generate: generateUsageText,
   icons: iconsUsageText,
   inspect: inspectUsageText,
+  lint: lintUsageText,
   render: renderUsageText,
 };
 
