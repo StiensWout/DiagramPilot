@@ -8,12 +8,10 @@
 DiagramPilot Public Documentation is for developers and AI coding agents using
 DiagramPilot in their own repositories.
 
-The v0.4.0 Alpha Capability Release is the current release-aligned public
-shape: DiagramPilot Source Files are YAML-only after complete JSON Source
-Removal, `create`, `inspect`, `format`, and `watch` support local agent
-authoring loops, configured outputs can use fixed Output Profiles, and stable
-publishing uses a Manual Milestone Release with npm package links. Existing
-users should read the [0.3 -> 0.4 upgrade guide](agents/installation.md#03---04-upgrade-guide).
+DiagramPilot Source Files are YAML-only. The CLI supports local agent authoring
+loops with `create`, `inspect`, `format`, `watch`, configured outputs, fixed
+Output Profiles, SVG/PNG rendering, Mermaid/D2/DOT export, and an MCP server
+for local agent clients.
 
 Start with the Checkout Demo Project quickstart:
 
@@ -64,7 +62,7 @@ source inventory, topology, Stable IDs, and artifact expectations before
 editing. `render` requires `--out`, defaults to SVG, and supports `--format
 svg|png`. `export` prints to stdout by default and writes a file only when
 `--out` is provided. `format <path>` validates one `*.dp.yaml` source and
-rewrites it in canonical YAML key order; in v0.4.0 YAML comments may be removed
+rewrites it in canonical YAML key order; YAML comments may be removed
 or moved. `watch [path]` watches `*.dp.yaml` and `diagrampilot.config.yaml`,
 debounces changes, checks first, and generates only when source/config state is
-valid. `mcp` launches the alpha MCP stdio server for local MCP clients.
+valid. `mcp` launches the MCP stdio server for local MCP clients.

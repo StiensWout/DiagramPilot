@@ -199,7 +199,7 @@ test("MCP resources read schema docs examples discovered sources and check resul
     assert.equal(schema.mimeType, "application/schema+json");
     assert.match(schema.text, /"title": "DiagramSpec v1"/);
     assert.equal(docs.mimeType, "text/markdown");
-    assert.match(docs.text, /MCP support is alpha/);
+    assert.match(docs.text, /DiagramPilot MCP server/);
     assert.equal(examples.mimeType, "text/markdown");
     assert.match(examples.text, /Checkout Architecture/);
     assert.equal(sources.mimeType, "application/json");

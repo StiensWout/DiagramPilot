@@ -8,12 +8,7 @@ import { startStaticServer } from "./visual-quality-static-server.mjs";
 const websiteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = path.resolve(websiteRoot, "..");
 const distRoot = path.join(websiteRoot, "dist");
-const outputRoot = path.join(
-  repoRoot,
-  ".scratch",
-  "productization-and-maintainability",
-  "visual-quality",
-);
+const outputRoot = path.join(websiteRoot, "visual-quality-report");
 
 const viewports = [
   { name: "mobile", width: 375, height: 812 },

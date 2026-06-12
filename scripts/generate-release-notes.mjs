@@ -2,13 +2,6 @@
 
 import { readFileSync } from "node:fs";
 
-import {
-  findIssuePathByVersion,
-  readIssueMetadata,
-  readIssueText,
-  readIssueTitle,
-} from "./release-issue-utils.mjs";
-
 const REPOSITORY_URL = "https://github.com/StiensWout/DiagramPilot";
 const LINEAR_IDENTIFIER_PATTERN = /\b[A-Z]+-\d+\b/giu;
 const PUBLIC_PACKAGE_SET = [
@@ -21,23 +14,13 @@ const PUBLIC_PACKAGE_SET = [
   "@diagrampilot/mcp",
   "@diagrampilot/render-svg",
 ];
-const SECTION_LABELS = new Map([
-  ["What to build", "Summary"],
-  ["Implementation notes", "Implementation Notes"],
-  ["Validation results", "Validation Results"],
-  ["User-facing docs links", "User-Facing Docs Links"],
-  ["Known limitations", "Known Limitations"],
-  ["Follow-up", "Follow-Up"],
-]);
 const USAGE = [
   "Usage:",
   "  node scripts/generate-release-notes.mjs --kind final --version <version> [--tag <tag>] [--milestone <name>] [--previous-tag <tag>] [--prs-json <path>] [--highlights-file <path>] [--breaking-changes-file <path>] [--upgrade-notes-file <path>]",
   "  node scripts/generate-release-notes.mjs --kind nightly --version <version> [--tag <tag>] [--branch <name>] [--commit <sha>] [--run-url <url>]",
-  "  node scripts/generate-release-notes.mjs --kind issue [--issue <path>] --version <version> [--tag <tag>]",
 ].join("\n");
 const OPTION_FIELDS = new Map([
   ["--kind", "kind"],
-  ["--issue", "issuePath"],
   ["--version", "version"],
   ["--tag", "tag"],
   ["--milestone", "milestone"],
@@ -54,7 +37,6 @@ const OPTION_FIELDS = new Map([
 function parseArgs(args) {
   const parsed = {
     kind: "",
-    issuePath: "",
     version: "",
     tag: "",
     milestone: "",
@@ -101,90 +83,15 @@ function requireParsedVersion(parsed) {
 function withParsedDefaults(parsed) {
   return {
     ...parsed,
-    kind: parsed.kind === "" ? (parsed.issuePath === "" ? "final" : "issue") : parsed.kind,
+    kind: parsed.kind === "" ? "final" : parsed.kind,
     tag: parsed.tag === "" ? `v${parsed.version}` : parsed.tag,
   };
-}
-
-function readSections(issueText) {
-  const sections = new Map();
-  const headingPattern = /^##\s+(.+)$/gmu;
-  const headings = [...issueText.matchAll(headingPattern)];
-
-  for (let index = 0; index < headings.length; index += 1) {
-    const heading = headings[index];
-    const title = heading[1].trim();
-    const contentStart = heading.index + heading[0].length;
-    const nextHeading = headings[index + 1];
-    const contentEnd = nextHeading?.index ?? issueText.length;
-    const content = issueText.slice(contentStart, contentEnd).trim();
-
-    sections.set(title, content);
-  }
-
-  return sections;
-}
-
-function validateReleaseIssueMetadata({ status, issueVersion, version, tag }) {
-  const error = [
-    validateCompletedIssueStatus(status),
-    validateIssueVersion(issueVersion, version),
-    validateReleaseTag(tag, version, "Issue Version"),
-  ].find((message) => message !== undefined);
-
-  if (error !== undefined) throw new Error(error);
-}
-
-function validateCompletedIssueStatus(status) {
-  return status === "completed"
-    ? undefined
-    : `Issue status must be completed before generating release notes; found ${status || "missing"}.`;
-}
-
-function validateIssueVersion(issueVersion, version) {
-  return issueVersion === version
-    ? undefined
-    : `Issue Version ${issueVersion || "missing"} does not match requested release version ${version}.`;
 }
 
 function validateReleaseTag(tag, version, label = "Release Version") {
   return tag === `v${version}`
     ? undefined
     : `Release tag ${tag} does not match ${label} ${version}.`;
-}
-
-function appendReleaseSections(output, sections) {
-  for (const [sectionName, outputName] of SECTION_LABELS.entries()) {
-    const content = sections.get(sectionName);
-
-    if (content !== undefined && content !== "") {
-      output.push("", `## ${outputName}`, "", content);
-    }
-  }
-}
-
-function formatIssueReleaseNotes({ issueText, version, tag }) {
-  const status = readIssueMetadata(issueText, "Status");
-  const issueVersion = readIssueMetadata(issueText, "Issue Version");
-  const title = readIssueTitle(issueText);
-  const sections = readSections(issueText);
-
-  validateReleaseIssueMetadata({ status, issueVersion, version, tag });
-
-  const output = [
-    `# DiagramPilot ${tag}`,
-    "",
-    `Issue: ${title}`,
-    `Issue Version: ${issueVersion}`,
-    `Tag: ${tag}`,
-    packageLinkLine("npm", "diagrampilot", version),
-    "Public Website: https://diagrampilot.com",
-  ];
-
-  appendReleaseSections(output, sections);
-  output.push("");
-
-  return output.join("\n");
 }
 
 function readOptionalFile(path, fallback) {
@@ -402,25 +309,7 @@ function validateNightlyReleaseOptions({ version, tag }) {
   }
 }
 
-function formatIssueReleaseNotesForOptions(options) {
-  const selectedIssuePath = selectIssuePath(options);
-  const issueText = readIssueText(selectedIssuePath);
-
-  return formatIssueReleaseNotes({
-    issueText,
-    version: options.version,
-    tag: options.tag,
-  });
-}
-
-function selectIssuePath(options) {
-  return options.issuePath === ""
-    ? findIssuePathByVersion(process.cwd(), options.version)
-    : options.issuePath;
-}
-
 const RELEASE_NOTE_GENERATORS = new Map([
-  ["issue", formatIssueReleaseNotesForOptions],
   ["final", formatFinalReleaseNotes],
   ["nightly", formatNightlyReleaseNotes],
 ]);

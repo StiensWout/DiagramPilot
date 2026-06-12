@@ -49,7 +49,7 @@ export function mcpHelpText(commandName = "diagrampilot-mcp"): string {
     "",
     `Usage: ${commandName}`,
     "",
-    "Starts the alpha DiagramPilot MCP server over stdio.",
+    "Starts the DiagramPilot MCP server over stdio.",
     "",
   ].join("\n");
 }

@@ -5,8 +5,8 @@ import test from "node:test";
 
 import {
   exists,
-  internalDocs,
   publicAgentDocs,
+  removedInternalPlanningPaths,
   repoRoot,
 } from "./docs-public-boundary-helpers.mjs";
 import { assertMatchesAll } from "./assertion-helpers.mjs";
@@ -20,7 +20,7 @@ function assertQuickstartArtifactWorkflow(quickstart) {
     /next-to-source same-stem Expected SVG Artifact/i,
     /SVG freshness is provenance-based/i,
     /Configured Mermaid, D2, and DOT artifacts use content comparison/i,
-    /Configured PNG freshness is presence-only in v0\.4\.0/i,
+    /Configured PNG freshness is presence-only/i,
     /diagrampilot\.config\.yaml/,
     /sources\.ignore/,
     /artifacts/,
@@ -113,14 +113,9 @@ test("public-facing agent usage docs live under the public docs root", async () 
   }
 });
 
-test("internal maintainer docs remain under the internal docs tree", async () => {
-  for (const repoPath of internalDocs) {
-    assert.equal(await exists(repoPath), true, `${repoPath} should exist`);
-    assert.equal(
-      await exists(path.join("docs-public", path.relative("docs", repoPath))),
-      false,
-      `${repoPath} should not be copied into docs-public`,
-    );
+test("final closeout removes internal planning artifacts from the public repo", async () => {
+  for (const repoPath of removedInternalPlanningPaths) {
+    assert.equal(await exists(repoPath), false, `${repoPath} should be removed`);
   }
 });
 
@@ -159,7 +154,7 @@ test("llms.txt reflects current public docs and the published schema helper", as
     llmsText,
     /https:\/\/diagrampilot\.com\/docs\/agents\/mcp\.md/,
   );
-  assert.match(llmsText, /Alpha Model Context Protocol server/);
+  assert.match(llmsText, /Model Context Protocol server/);
   assert.match(llmsText, /diagrampilot mcp/);
   assert.doesNotMatch(llmsText, /planned|deferred|future|not implemented|source mutation/i);
   assert.doesNotMatch(
@@ -224,7 +219,8 @@ test("repository guidance separates public docs from private maintainer workflow
   assert.doesNotMatch(agentGuide, /docs\/agents\/error-repair\.md/);
 
   assert.match(agentGuide, /Private maintainer workflow lives in Linear/i);
-  assert.match(agentGuide, /DP-19 Internal Maintainer Workflow Migration Map/);
+  assert.doesNotMatch(agentGuide, /DP-19 Internal Maintainer Workflow Migration Map/);
+  assert.doesNotMatch(agentGuide, /migration state/i);
   assert.doesNotMatch(agentGuide, /docs\/agents\/issue-tracker\.md/);
   assert.doesNotMatch(agentGuide, /docs\/agents\/triage-labels\.md/);
   assert.doesNotMatch(agentGuide, /docs\/agents\/domain\.md/);
@@ -234,27 +230,20 @@ test("repository guidance separates public docs from private maintainer workflow
   assert.doesNotMatch(agentGuide, /docs\/adr\/0009-package-install-does-not-install-local-agent-docs\.md/);
 });
 
-test("internal maintainer docs treat repo workflow check as shipped", async () => {
-  const roadmap = await readFile(
-    path.join(repoRoot, "docs", "development", "roadmap.md"),
-    "utf8",
-  );
-  const architecture = await readFile(
-    path.join(repoRoot, "docs", "development", "architecture.md"),
+test("public docs treat repo workflow check as shipped", async () => {
+  const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
+  const quickstart = await readFile(
+    path.join(repoRoot, "docs-public", "agents", "quickstart.md"),
     "utf8",
   );
 
-  assert.match(roadmap, /`diagrampilot check \[path\] \[--json\]`/);
-  assert.match(roadmap, /Repo Workflow Check is complete/);
-  assert.match(architecture, /`diagrampilot check \[path\] \[--json\]`/);
-  assert.doesNotMatch(
-    roadmap,
-    /The next product capability phase is the first Repo Workflow Check/,
-  );
-  assert.doesNotMatch(
-    architecture,
-    /the next architecture work is about deepening the current modules/,
-  );
+  for (const publicDoc of [readme, quickstart]) {
+    assert.match(publicDoc, /diagrampilot check/);
+    assert.doesNotMatch(
+      publicDoc,
+      /The next product capability phase is the first Repo Workflow Check/,
+    );
+  }
 });
 
 test("README describes current behavior and public docs only", async () => {
@@ -278,7 +267,7 @@ test("README describes current behavior and public docs only", async () => {
   assert.doesNotMatch(readme, /\.scratch\//);
   assert.match(readme, /docs-public\/agents\/mcp\.md/);
   assert.match(readme, /diagrampilot mcp/);
-  assert.match(readme, /alpha Model Context Protocol stdio server/);
+  assert.match(readme, /Model Context Protocol stdio server/);
   assert.doesNotMatch(readme, /planned|deferred|future|not implemented|source mutation/i);
 });
 
@@ -418,7 +407,7 @@ test("public surface describes shipped DiagramPilot behavior only", async () => 
   assert.equal(
     await exists(path.join("docs-public", "agents", "mcp.md")),
     true,
-    "MCP should be published as a public alpha guide",
+    "MCP should be published as a public guide",
   );
 
   for (const repoPath of publicSurfaceFiles) {

@@ -9,9 +9,8 @@ diagrampilot render <path> --out <artifact.svg>
 diagrampilot render <path> --format png --out <artifact.png>
 ```
 
-SVG remains the default render format. PNG rendering is part of the v0.4.0
-Alpha Capability Release and rasterizes the SVG render path so SVG and PNG stay
-visually aligned.
+SVG remains the default render format. PNG rendering rasterizes the SVG render
+path so SVG and PNG stay visually aligned.
 
 Public documentation:
 

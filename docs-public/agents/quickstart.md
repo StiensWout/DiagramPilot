@@ -109,7 +109,7 @@ artifact is `docs/architecture.svg`.
 SVG freshness is provenance-based. `check` reads DiagramPilot provenance
 metadata from the expected SVG artifact; it does not render to compare output.
 Configured Mermaid, D2, and DOT artifacts use content comparison against the
-current export output. Configured PNG freshness is presence-only in v0.4.0:
+current export output. Configured PNG freshness is presence-only:
 `check` verifies the configured PNG file exists and defers PNG byte comparison
 until readable PNG provenance is available.
 
@@ -200,8 +200,8 @@ diagrampilot format docs/architecture.dp.yaml
 ```
 
 `format` parses and validates the source before rewriting it. It preserves
-DiagramSpec data, unknown metadata, and object/array order. In v0.4.0 it does
-not promise comment preservation; YAML comments may be removed or moved.
+DiagramSpec data, unknown metadata, and object/array order. It does not promise
+comment preservation; YAML comments may be removed or moved.
 
 Render the SVG artifact only after validation succeeds:
 
@@ -360,7 +360,7 @@ when source/config state is valid.
 `diagrampilot format <path>`
 : Validates and rewrites one `*.dp.yaml` source into canonical YAML. Formatting
 preserves DiagramSpec data and object/array order, but YAML comments may be
-removed or moved in v0.4.0.
+removed or moved.
 
 `diagrampilot render <path> --out <artifact.svg>`
 : Renders a valid DiagramPilot source file to SVG. `--out` is required and SVG is the default render format.

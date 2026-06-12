@@ -4,7 +4,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-import { assertMatchesAll } from "./assertion-helpers.mjs";
 import {
   assertProcessSuccess,
   runProcess,
@@ -94,36 +93,4 @@ test("repository entrypoints separate the MIT Code License from the Brand Use Po
   assert.match(brandUsePolicy, /release identity/);
   assert.match(readme, /\[MIT Code License\]\(LICENSE\)/);
   assert.match(readme, /\[Brand Use Policy\]\(BRAND_USE_POLICY\.md\)/);
-});
-
-test("public alpha package publishing ADR captures license brand package set and dist-tag decisions", async () => {
-  const adr = await readFile(
-    path.join(
-      repoRoot,
-      "docs",
-      "adr",
-      "0008-public-alpha-release-and-package-publishing.md",
-    ),
-    "utf8",
-  );
-
-  assertMatchesAll(adr, [
-    /^# Public Alpha Release And Package Publishing$/m,
-    /MIT Code License/,
-    /Brand Use Policy/,
-    /Public Package Set/,
-    /`diagrampilot`/,
-    /`@diagrampilot\/core`/,
-    /`@diagrampilot\/icons`/,
-    /`@diagrampilot\/export-mermaid`/,
-    /`@diagrampilot\/export-d2`/,
-    /`@diagrampilot\/export-dot`/,
-    /`@diagrampilot\/mcp`/,
-    /`@diagrampilot\/render-svg`/,
-    /prealpha/,
-    /v0\.2\.0/,
-    /latest/,
-    /root workspace and `website` workspace remain private/,
-    /npm pack --dry-run/,
-  ]);
 });

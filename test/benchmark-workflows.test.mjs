@@ -77,12 +77,12 @@ test("workflow benchmark emits comparable JSON for CLI and MCP scenarios", async
   }
 });
 
-test("workflow benchmark command baseline and docs stay reviewable", async () => {
+test("workflow benchmark command and baseline stay reviewable", async () => {
   const packageJson = JSON.parse(
     await readFile(path.join(repoRoot, "package.json"), "utf8"),
   );
-  const maintainabilityDocs = await readFile(
-    path.join(repoRoot, "docs", "development", "maintainability.md"),
+  const benchmarkScript = await readFile(
+    path.join(repoRoot, "scripts", "benchmark-workflows.mjs"),
     "utf8",
   );
   const baseline = JSON.parse(
@@ -98,17 +98,17 @@ test("workflow benchmark command baseline and docs stay reviewable", async () =>
   );
 
   for (const expectedText of [
-    "npm run benchmark",
+    "Usage: node scripts/benchmark-workflows.mjs",
     "benchmarks/workflow-baseline.json",
-    "relative median",
-    "validate",
-    "check",
-    "generate",
+    "relative-median",
+    "CLI validate DiagramPilot Source File",
+    "CLI check configured Repo Workflow",
+    "CLI generate configured Derived Artifacts",
     "SVG",
     "PNG",
     "MCP",
   ]) {
-    assert.match(maintainabilityDocs, new RegExp(expectedText, "i"));
+    assert.match(benchmarkScript, new RegExp(expectedText, "i"));
   }
 
   assert.equal(baseline.unit, "relative-median");

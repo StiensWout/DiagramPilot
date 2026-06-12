@@ -8,10 +8,10 @@ DiagramPilot uses DiagramSpec as its source model. A DiagramPilot source file is
 the editable artifact. Rendered SVG or PNG and exported Mermaid, D2, or DOT
 text are derived outputs.
 
-Current public release: v0.4.0 Alpha Capability Release. The release-aligned
-surface includes JSON Source Removal for source workflows, Source Creation,
-Repo Workflow Inspect, Source Formatting, Watch Authoring Loop, fixed Output
-Profiles, and Manual Milestone Release notes with npm package links.
+DiagramPilot Source Files are YAML-only. The public surface includes Source
+Creation, Repo Workflow Inspect, Source Formatting, Watch Authoring Loop, fixed
+Output Profiles, SVG/PNG rendering, Mermaid/D2/DOT export, and MCP launch
+support for local agent clients.
 
 `*.dp.json` is not a DiagramPilot Source File path. Source files are
 `*.dp.yaml` only, repo discovery ignores JSON source files, and DiagramPilot
@@ -32,7 +32,7 @@ Normal `diagrampilot init` does not create Repo Workflow Configuration.
 
 - [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md): Canonical beginner workflow for repo checks, source repair, SVG and PNG rendering, exports, and copying the source/render pattern into another repository.
 - [Installation and removal](https://diagrampilot.com/docs/agents/installation.md): Canonical package install paths, uninstall commands, and repository cleanup guidance.
-- [MCP guide](https://diagrampilot.com/docs/agents/mcp.md): Alpha Model Context Protocol server launch and client configuration guidance.
+- [MCP guide](https://diagrampilot.com/docs/agents/mcp.md): Model Context Protocol server launch and client configuration guidance.
 - [DiagramSpec](https://diagrampilot.com/docs/agents/spec.md): Structured source model for diagrams.
 - [Error repair](https://diagrampilot.com/docs/agents/error-repair.md): How agents should interpret and fix validation errors.
 - [Examples](https://diagrampilot.com/docs/agents/examples.md): Canonical diagram examples.

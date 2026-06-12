@@ -1,7 +1,7 @@
 # DiagramPilot MCP
 
-MCP support is alpha. The DiagramPilot MCP server exposes DiagramPilot context
-and explicit local operations to Model Context Protocol clients.
+The DiagramPilot MCP server exposes DiagramPilot context and explicit local
+operations to Model Context Protocol clients.
 
 Launch it through the main CLI:
 
