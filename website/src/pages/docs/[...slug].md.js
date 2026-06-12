@@ -1,12 +1,13 @@
-import type { Dirent } from "node:fs";
-import { readFile, readdir } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
+
+import { toWebsiteLinkContext } from "../../../scripts/link-context.mjs";
 
 export const prerender = true;
 
 const publicDocsRoot = path.resolve(process.cwd(), "..", "docs-public");
 
-async function listMarkdownFiles(root: string, current = root): Promise<string[]> {
+async function listMarkdownFiles(root, current = root) {
   const entries = await readdir(current, { withFileTypes: true });
   const files = await Promise.all(
     entries.map((entry) => listMarkdownEntryFiles(root, current, entry)),
@@ -15,37 +16,34 @@ async function listMarkdownFiles(root: string, current = root): Promise<string[]
   return files.flat().sort();
 }
 
-async function listMarkdownEntryFiles(
-  root: string,
-  current: string,
-  entry: Dirent<string>,
-): Promise<string[]> {
+async function listMarkdownEntryFiles(root, current, entry) {
   const absolutePath = path.join(current, entry.name);
 
   if (entry.isDirectory()) {
     return listMarkdownFiles(root, absolutePath);
   }
 
-  return isMarkdownFileEntry(entry)
-    ? [path.relative(root, absolutePath)]
-    : [];
+  return isMarkdownFileEntry(entry) ? [path.relative(root, absolutePath)] : [];
 }
 
-function isMarkdownFileEntry(entry: Dirent<string>): boolean {
+function isMarkdownFileEntry(entry) {
   return entry.isFile() && entry.name.endsWith(".md");
 }
 
 export async function getStaticPaths() {
   return (await listMarkdownFiles(publicDocsRoot)).map((relativePath) => ({
     params: { slug: relativePath.slice(0, -".md".length) },
-    props: { sourcePath: path.join(publicDocsRoot, relativePath) },
+    props: {
+      relativePath,
+      sourcePath: path.join(publicDocsRoot, relativePath),
+    },
   }));
 }
 
-export async function GET({ props }: { props: { sourcePath: string } }) {
+export async function GET({ props }) {
   const markdown = await readFile(props.sourcePath, "utf8");
 
-  return new Response(markdown, {
+  return new Response(toWebsiteLinkContext(markdown, props.relativePath), {
     headers: {
       "Content-Type": "text/markdown; charset=utf-8",
     },

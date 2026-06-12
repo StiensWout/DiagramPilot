@@ -54,6 +54,26 @@ ignored by Git and not canonical. Generated website public copies of
 `llms.txt`, schema files, and demo artifacts are also ignored and not
 canonical.
 
+## Link Context Rules
+
+Public documentation links are context-dependent. GitHub-rendered docs should
+prefer repo-relative links for same-repository content so readers stay in the
+reviewable source tree. Root `README.md` links to canonical Public
+Documentation with paths such as `docs-public/agents/quickstart.md` and links
+the schema helper as `schema/diagramspec-v1.schema.json`.
+
+Website-rendered docs should use hosted public URLs for public documentation
+routes. The website sync and Markdown route rendering rewrite same-docs
+Markdown links from canonical `docs-public/` paths into URLs such as
+`https://diagrampilot.com/docs/agents/quickstart.md`. This lets canonical
+Public Documentation stay GitHub-friendly while the published website remains
+site-oriented.
+
+Package README files are npm-facing package documentation and should keep
+`https://diagrampilot.com/...` links so they work from npm and installed
+package views. `llms.txt` is a site-oriented public agent entrypoint and should
+also keep hosted `https://diagrampilot.com/...` links.
+
 ## Public Route Inventory
 
 The current public website route inventory is:
@@ -119,9 +139,9 @@ The drift checks should verify these public contract points:
 - Claimed public routes are served by `npm --workspace website run build`.
 - Public docs do not publish `CONTEXT.md`, `docs/development/*`,
   `docs/adr/*`, or `docs/agents/*`.
-- `README.md`, `llms.txt`, Public Documentation, Internal Documentation, demo
-  docs, and website routes agree on current commands and canonical public
-  links.
+- `README.md`, `llms.txt`, Package README files, Public Documentation,
+  Internal Documentation, demo docs, and website routes agree on current
+  commands and their link-context rules.
 - `diagrampilot init` does not create Local Agent Documentation or Repo
   Workflow Configuration by default; `diagrampilot init --docs` is the
   explicit managed-docs path and `diagrampilot init --config` is the explicit
