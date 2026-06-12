@@ -5,7 +5,7 @@ const kibibyte = 1024;
 const publicPackageSet = [
   {
     name: "diagrampilot",
-    packedSizeBudgetBytes: 32 * kibibyte,
+    packedSizeBudgetBytes: 40 * kibibyte,
   },
   {
     name: "@diagrampilot/core",

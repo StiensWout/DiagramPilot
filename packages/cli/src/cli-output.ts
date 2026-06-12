@@ -37,6 +37,8 @@ export function helpText(version: string): string {
     "  generate [path] [--json]",
     "  watch [path]",
     "  mcp",
+    "  icons list",
+    "  icons search <query>",
     "  render <path> --out <path>",
     "  render <path> --format svg --out <path>",
     "  render <path> --format png --out <path>",
@@ -56,6 +58,14 @@ export function inspectUsageText(): string {
 
 export function generateUsageText(): string {
   return "Usage: diagrampilot generate [path] [--json]";
+}
+
+export function iconsUsageText(): string {
+  return [
+    "Usage:",
+    "  diagrampilot icons list",
+    "  diagrampilot icons search <query>",
+  ].join("\n");
 }
 
 export function createUsageText(): string {

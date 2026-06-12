@@ -16,6 +16,10 @@ import { exportDiagramSpecToD2 } from "@diagrampilot/export-d2";
 import { exportDiagramSpecToDot } from "@diagrampilot/export-dot";
 import { exportDiagramSpecToMermaid } from "@diagrampilot/export-mermaid";
 import {
+  listPackagedLucideIconNames,
+  LUCIDE_ICON_NAMESPACE,
+} from "@diagrampilot/icons";
+import {
   createSvgRendererProvenance,
   rasterizeSvgToPng,
   renderDiagramSpecToSvg,
@@ -30,6 +34,7 @@ import {
   exportUsageText,
   formatUsageText,
   generateUsageText,
+  iconsUsageText,
   inspectUsageText,
   renderUsageText,
   textLine,
@@ -68,6 +73,7 @@ const defaultCommandPlanningDependencies: CommandPlanningDependencies = {
   renderDiagramSpecToSvg,
   rasterizeSvgToPng,
   createSvgRendererProvenance,
+  listPackagedLucideIconNames,
   getDiagramPilotVersion,
   pathExists: existsSync,
 };
@@ -152,12 +158,105 @@ async function planInspect(
   return inspectResultPlan(inspectResult, argsResult.options.json);
 }
 
+function iconReferencesText(iconNames: readonly string[]): string {
+  if (iconNames.length === 0) return "";
+
+  return iconNames
+    .map((name) => `${LUCIDE_ICON_NAMESPACE}:${name}`)
+    .join("\n")
+    .concat("\n");
+}
+
+function planIconsList(
+  dependencies: CommandPlanningDependencies,
+): CommandPlan {
+  return {
+    exitCode: 0,
+    stdout: iconReferencesText(dependencies.listPackagedLucideIconNames()),
+    stderr: "",
+    writes: [],
+  };
+}
+
+function planIconsSearch(
+  query: string,
+  dependencies: CommandPlanningDependencies,
+): CommandPlan {
+  const normalizedQuery = query.toLowerCase();
+  const matches = dependencies
+    .listPackagedLucideIconNames()
+    .filter((name) => name.toLowerCase().includes(normalizedQuery));
+
+  if (matches.length === 0) {
+    return {
+      exitCode: 1,
+      stdout: "",
+      stderr: textLine(`No packaged Lucide icons match "${query}".`),
+      writes: [],
+    };
+  }
+
+  return {
+    exitCode: 0,
+    stdout: iconReferencesText(matches),
+    stderr: "",
+    writes: [],
+  };
+}
+
+function iconsUsageFailure(message: string): CommandPlan {
+  return usageFailurePlan(message, iconsUsageText());
+}
+
+type IconsSubcommandHandler = (
+  args: readonly string[],
+  dependencies: CommandPlanningDependencies,
+) => CommandPlan;
+
+const iconSubcommandHandlers: Readonly<
+  Record<string, IconsSubcommandHandler>
+> = {
+  list: ([unexpectedArg], dependencies) =>
+    unexpectedArg === undefined
+      ? planIconsList(dependencies)
+      : iconsUsageFailure(`Unexpected icons argument: ${unexpectedArg}`),
+  search: ([query, unexpectedArg], dependencies) => {
+    if (query === undefined) {
+      return iconsUsageFailure("Missing icon search query.");
+    }
+
+    if (unexpectedArg !== undefined) {
+      return iconsUsageFailure(`Unexpected icons argument: ${unexpectedArg}`);
+    }
+
+    return planIconsSearch(query, dependencies);
+  },
+};
+
+function planIcons(
+  args: readonly string[],
+  dependencies: CommandPlanningDependencies,
+): CommandPlan {
+  const [subcommand, ...subcommandArgs] = args;
+
+  if (subcommand === undefined) {
+    return iconsUsageFailure("Missing icons subcommand.");
+  }
+
+  const handler = iconSubcommandHandlers[subcommand];
+
+  return handler === undefined
+    ? iconsUsageFailure(`Unknown icons subcommand: ${subcommand}`)
+    : handler(subcommandArgs, dependencies);
+}
+
 const commandHandlers: Readonly<Record<string, CommandHandler>> = {
   check: planCheck,
   create: planCreate,
   export: planExport,
   format: planFormat,
   generate: planGenerate,
+  icons: planIcons,
   inspect: planInspect,
   render: planRender,
   validate: planValidate,
@@ -169,6 +268,7 @@ const commandHelpText: Readonly<Record<string, () => string>> = {
   export: exportUsageText,
   format: formatUsageText,
   generate: generateUsageText,
+  icons: iconsUsageText,
   inspect: inspectUsageText,
   render: renderUsageText,
 };

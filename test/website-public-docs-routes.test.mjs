@@ -10,6 +10,7 @@ import {
   repoRoot,
   websiteBuild,
 } from "./website-test-helpers.mjs";
+import { toWebsiteLinkContext } from "../website/scripts/link-context.mjs";
 
 test("public docs sync can run concurrently without deleting current generated docs", async () => {
   await Promise.all(Array.from({ length: 8 }, () => publicDocsSync()));
@@ -210,7 +211,10 @@ test("website publishes public docs as human HTML and agent Markdown routes", as
   );
   assert.doesNotMatch(websiteIndexMarkdown, /\]\(agents\//);
   assert.equal(markdown, sourceMarkdown);
-  assert.equal(agentWorkflowMarkdown, agentWorkflowSourceMarkdown);
+  assert.equal(
+    agentWorkflowMarkdown,
+    toWebsiteLinkContext(agentWorkflowSourceMarkdown, "agents/agent-workflow.md"),
+  );
   assert.equal(comparisonsMarkdown, comparisonsSourceMarkdown);
   assert.equal(integrationsMarkdown, integrationsSourceMarkdown);
   assert.equal(

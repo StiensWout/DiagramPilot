@@ -1,19 +1,16 @@
 # diagrampilot
 
-DiagramPilot command line interface for repo-native DiagramSpec workflows.
+CLI for repo-native DiagramSpec workflows.
 
-Use this package when you want the `diagrampilot` executable for checking,
-inspecting, creating, validating, formatting, generating, watching, rendering,
-and exporting DiagramPilot Source Files in a repository.
+`diagrampilot` checks, inspects, creates, validates, formats, generates,
+watches, renders, exports, lists packaged icons, and launches MCP for
+DiagramPilot Source Files.
 
-The CLI supports YAML-only source files, `diagrampilot inspect` for read-only
-source inventory and topology, `diagrampilot create <path> --template
-architecture|flow|package-map|system-context|service-map` for maintained
-starter source files, `diagrampilot generate` for configured Derived Artifacts
-and Markdown embed files, `diagrampilot format` for canonical YAML cleanup,
-`diagrampilot watch` for local authoring loops, `diagrampilot export --format
-dot`, `diagrampilot render --format png`, and `diagrampilot mcp` for the MCP
-server.
+Templates: `architecture`, `flow`, `package-map`, `system-context`,
+`service-map`.
+
+Supports YAML Source Files, Derived Artifacts, Markdown embeds, SVG/PNG,
+Mermaid/D2/DOT, local `lucide:*` icon discovery, and repo checks.
 
 Public documentation:
 

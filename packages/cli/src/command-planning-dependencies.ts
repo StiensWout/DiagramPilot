@@ -49,6 +49,7 @@ export interface CommandPlanningDependencies {
   createSvgRendererProvenance(
     options: CreateSvgRendererProvenanceOptions,
   ): SvgRendererProvenance;
+  listPackagedLucideIconNames(): readonly string[];
   getDiagramPilotVersion(): string;
   pathExists?(path: string): boolean;
 }

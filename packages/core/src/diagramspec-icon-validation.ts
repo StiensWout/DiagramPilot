@@ -18,6 +18,9 @@ interface IconReference {
   name: string;
 }
 
+const iconDiscoverySuggestion =
+  "Run `diagrampilot icons search <query>` or see https://diagrampilot.com/docs/agents/icons.md.";
+
 function parseIconReference(value: string): IconReference | undefined {
   const separatorIndex = value.indexOf(":");
 
@@ -72,7 +75,7 @@ function unknownLucideIconError(
     message: `${path} references unknown Lucide icon "${reference.name}".`,
     badValue: value,
     expected: "Known Lucide icon name.",
-    suggestion: `Choose a packaged Lucide icon, such as ${LUCIDE_ICON_NAMESPACE}:database.`,
+    suggestion: `Choose a packaged Lucide icon, such as ${LUCIDE_ICON_NAMESPACE}:database. ${iconDiscoverySuggestion}`,
   };
 }
 

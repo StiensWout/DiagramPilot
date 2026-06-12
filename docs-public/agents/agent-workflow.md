@@ -46,6 +46,9 @@ the machine-readable diagnostic and inventory interface for agents: it exposes
 discovered sources, Diagram Object counts, Stable IDs, topology, expected
 artifacts, and practical stale or missing artifact summaries.
 
+Use `diagrampilot icons search <query>` and the [Icon reference](icons.md) when
+validation reports an unknown `lucide:*` icon.
+
 `render` requires `--out` and defaults to SVG. Use `check` after rendering to
 verify Artifact Freshness without rewriting files.
 

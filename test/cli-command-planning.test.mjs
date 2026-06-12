@@ -426,6 +426,15 @@ test("plans subcommand help output", async () => {
     ],
     ["format", "Usage: diagrampilot format <path>\n"],
     ["generate", "Usage: diagrampilot generate [path] [--json]\n"],
+    [
+      "icons",
+      [
+        "Usage:",
+        "  diagrampilot icons list",
+        "  diagrampilot icons search <query>",
+        "",
+      ].join("\n"),
+    ],
     ["inspect", "Usage: diagrampilot inspect [path] [--json]\n"],
     [
       "render",

@@ -58,6 +58,7 @@
     "@diagrampilot/export-d2": "0.4.0",
     "@diagrampilot/export-dot": "0.4.0",
     "@diagrampilot/export-mermaid": "0.4.0",
+    "@diagrampilot/icons": "0.4.0",
     "@diagrampilot/mcp": "0.4.0",
     "@diagrampilot/render-svg": "0.4.0"
   }

@@ -23,6 +23,7 @@ Core public references:
 - [Installation and removal guide](agents/installation.md)
 - [MCP guide](agents/mcp.md)
 - [DiagramSpec guide](agents/spec.md)
+- [Icon reference](agents/icons.md)
 - [Error repair guide](agents/error-repair.md)
 - [Agent examples](agents/examples.md)
 - [Agent prompting guide](agents/prompting.md)
@@ -46,6 +47,8 @@ diagrampilot inspect
 diagrampilot generate
 diagrampilot watch docs
 diagrampilot mcp
+diagrampilot icons list
+diagrampilot icons search database
 diagrampilot check docs --json
 diagrampilot inspect docs --json
 diagrampilot validate docs/architecture.dp.yaml
@@ -72,3 +75,5 @@ may be removed
 or moved. `watch [path]` watches `*.dp.yaml` and `diagrampilot.config.yaml`,
 debounces changes, checks first, and generates only when source/config state is
 valid. `mcp` launches the MCP stdio server for local MCP clients.
+Use `icons list` and `icons search <query>` to discover packaged `lucide:*`
+icon references locally.

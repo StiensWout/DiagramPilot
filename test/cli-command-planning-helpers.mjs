@@ -283,6 +283,7 @@ export function createPlanningDependencies(overrides = {}) {
       diagramPilotVersion: "0.1.0",
       renderer: testRenderer,
     }),
+    listPackagedLucideIconNames: () => ["database", "server"],
     getDiagramPilotVersion: () => "0.1.0",
     ...overrides,
   };
