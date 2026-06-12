@@ -12,7 +12,7 @@ diagrampilot-mcp
 MCP support is alpha. The server exposes read-only DiagramPilot resources,
 tools, and prompts for AI coding agents working in local repositories.
 
-In the v0.3.0 Alpha Capability Release, MCP covers validation, repo workflow
+In the v0.4.0 Alpha Capability Release, MCP covers validation, repo workflow
 checks, export, render, repo output generation, Source Creation, and Source
 Mutation. Source Creation and Source Mutation use Stable IDs and Structured Diagram Operations rather than raw YAML replacement as the supported agent workflow.
 

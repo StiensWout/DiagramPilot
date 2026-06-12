@@ -52,11 +52,12 @@ sources. Package-local README files are also public package documentation for
 npm consumers. They must stay aligned with root and website documentation for
 the Public Package Set, including CLI, renderer, exporter, and MCP packages.
 
-For the v0.3.0 Alpha Capability Release, public and package docs must describe
-the release-aligned behavior: YAML-only DiagramPilot Source Files, DOT export,
-PNG rendering, optional Repo Workflow Configuration, `diagrampilot generate`,
-generated Markdown embed files, MCP as a shipped alpha integration, and concise
-0.2 -> 0.3 upgrade guidance.
+For the v0.4.0 Alpha Capability Release, public and package docs must describe
+the release-aligned behavior: complete JSON Source Removal for DiagramPilot
+Source File workflows, `diagrampilot create`, `diagrampilot inspect`,
+`diagrampilot format`, `diagrampilot watch`, fixed Output Profiles for
+configured outputs, the current Manual Milestone Release workflow, MCP as a
+shipped alpha integration, and concise 0.3 -> 0.4 upgrade guidance.
 
 ## Website Consumer
 
@@ -137,9 +138,11 @@ The current implemented CLI shape used by public and internal docs is:
 diagrampilot init
 diagrampilot init --docs
 diagrampilot init --config
+diagrampilot create docs/architecture.dp.yaml --template architecture
 diagrampilot check
 diagrampilot inspect
 diagrampilot generate
+diagrampilot watch docs
 diagrampilot mcp
 diagrampilot check docs --json
 diagrampilot inspect docs --json
@@ -174,8 +177,19 @@ The drift checks should verify these public contract points:
 - `diagrampilot check` remains the read-only repo review/CI command.
 - `diagrampilot inspect` remains the read-only source inventory and topology
   command.
+- `diagrampilot create` remains the maintained Template-Based Source Creation
+  command for starter `*.dp.yaml` sources.
+- `diagrampilot format` remains the Source Formatting command and does not
+  promise YAML comment preservation in v0.4.0.
+- `diagrampilot watch` remains the local Watch Authoring Loop for explicit
+  scopes.
 - `diagrampilot mcp` launches the alpha MCP stdio server for local MCP
   clients.
+- `*.dp.json` is not documented as a current DiagramPilot Source File path;
+  public upgrade notes explain complete JSON Source Removal while preserving
+  JSON tooling surfaces.
+- Configured outputs document fixed Output Profiles as repo workflow output
+  settings, not DiagramSpec styling fields.
 - `diagrampilot check --json` includes the config path when optional
   `diagrampilot.config.yaml` is discovered.
 - `diagrampilot render <path> --out <artifact.svg>` requires `--out` and

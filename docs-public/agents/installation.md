@@ -18,9 +18,37 @@ project. Do not copy DiagramPilot public docs into a consuming repository as par
 
 ## Release Status
 
-DiagramPilot v0.3.0 Alpha Capability Release is the current release-aligned public shape.
+DiagramPilot v0.4.0 Alpha Capability Release is the current release-aligned public shape.
 The install commands below use the current npm `latest` release
 unless a consuming repository pins a specific package version.
+
+## 0.3 -> 0.4 Upgrade Guide
+
+Existing v0.3 repositories should review these changes before updating:
+
+- JSON Source Removal is complete for DiagramPilot Source File workflows.
+  `*.dp.json` is not a DiagramPilot Source File path, repo discovery ignores
+  JSON source files, explicit source-file commands reject non-YAML paths, and
+  DiagramPilot does not provide a JSON-to-YAML migration command. JSON remains
+  valid for `--json` CLI output, the DiagramSpec JSON Schema, SVG provenance
+  metadata, package manifests, and other non-source tooling surfaces.
+- `diagrampilot create <path> --template architecture|flow|package-map` writes
+  maintained starter `*.dp.yaml` source files and refuses to overwrite an
+  existing file.
+- `diagrampilot inspect [path] [--json]` reports read-only source inventory,
+  topology, Stable IDs, and artifact expectations before editing.
+- `diagrampilot format <path>` rewrites a valid DiagramPilot Source File into
+  canonical YAML key order. It preserves DiagramSpec data, unknown metadata,
+  and object/array order, but YAML comments may be removed or moved.
+- `diagrampilot watch [path]` watches `*.dp.yaml` and
+  `diagrampilot.config.yaml`, debounces changes, checks first, and generates
+  only when the source/config state is valid.
+- Configured outputs can use fixed Output Profiles with `profile: clean`,
+  `profile: compact`, or `profile: presentation`. Profiles live in
+  `diagrampilot.config.yaml`, not in DiagramSpec styling fields.
+- Release publishing now uses nightly prereleases for feature branches and one
+  Manual Milestone Release for stable npm `latest` publication. Final release
+  notes use milestone sections and npm package links, not issue-release notes.
 
 ## 0.2 -> 0.3 Upgrade Guide
 

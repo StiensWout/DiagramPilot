@@ -10,13 +10,13 @@ agents. It validates structured DiagramSpec source files, renders review-stable
 SVG or PNG artifacts, and exports Mermaid, D2, or DOT text from the same source
 of truth.
 
-The v0.3.0 Alpha Capability Release is the release-aligned public shape:
-DiagramPilot Source Files are YAML-only, DOT export and PNG rendering are
-available, Repo Workflow Configuration can define expected artifacts,
-`diagrampilot generate` refreshes configured Derived Artifacts and generated
-Markdown embed files, and MCP is a shipped alpha integration. Existing users
-should review the
-[0.2 -> 0.3 upgrade guide](docs-public/agents/installation.md#02---03-upgrade-guide).
+The v0.4.0 Alpha Capability Release is the release-aligned public shape:
+DiagramPilot Source Files are YAML-only after complete JSON Source Removal,
+`create`, `inspect`, `format`, and `watch` are available for local agent
+authoring loops, configured outputs can use fixed Output Profiles, and stable
+publishing uses a Manual Milestone Release with npm package links. Existing
+users should review the
+[0.3 -> 0.4 upgrade guide](docs-public/agents/installation.md#03---04-upgrade-guide).
 
 Public documentation is hosted at `https://diagrampilot.com`.
 
@@ -144,7 +144,7 @@ scope, validated before source processing, reported in `--json` output, and can
 use `sources.ignore` for source discovery plus `artifacts` mappings for
 configured SVG, PNG, Mermaid, D2, DOT, and Markdown expectations. Configured
 Mermaid, D2, and DOT use content freshness; configured PNG is presence-only in
-v0.3.0.
+v0.4.0.
 
 Configured outputs can opt into fixed output profiles with `profile: clean`,
 `profile: compact`, or `profile: presentation`. Profiles live only in

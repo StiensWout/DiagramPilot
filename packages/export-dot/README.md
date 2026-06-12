@@ -8,7 +8,7 @@ Most users should call the CLI:
 diagrampilot export <path> --format dot
 ```
 
-DOT export is part of the v0.3.0 Alpha Capability Release. The CLI prints DOT
+DOT export is part of the v0.4.0 Alpha Capability Release. The CLI prints DOT
 text to stdout by default and writes only when `--out` is provided.
 
 Public documentation:

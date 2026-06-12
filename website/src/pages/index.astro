@@ -22,6 +22,10 @@ const proofPoints = [
     text: "Repairable errors name the broken field so an AI coding agent can update the DiagramSpec file, validate again, and commit the repaired source plus rendered output.",
   },
   {
+    title: "Author with local tools.",
+    text: "`diagrampilot create`, `diagrampilot inspect`, `diagrampilot format`, and `diagrampilot watch` cover starter sources, read-only inventory, canonical YAML, and checked generation loops.",
+  },
+  {
     title: "MCP agent integration.",
     text: "Run `diagrampilot mcp` to expose read-only schema, docs, examples, validation, check, export, render, and prompt helpers to local MCP clients.",
   },
@@ -40,6 +44,8 @@ const structuredData = JSON.stringify({
   featureList: [
     "Validate .dp.yaml DiagramPilot Source Files locally",
     "Generate review-stable SVG artifacts",
+    "Use fixed Output Profiles for configured artifacts",
+    "Publish stable releases through Manual Milestone Release notes with npm package links",
     "Expose agent-ready MCP helpers",
     "Keep diagram source and rendered output in the repository",
   ],
@@ -179,6 +185,8 @@ const structuredData = JSON.stringify({
         <p>
           Install the CLI, try the checkout demo, inspect the npm package, or
           open the repository before adding DiagramPilot to your agent workflow.
+          Current release docs cover Output Profiles and Manual Milestone Release
+          notes with npm package links.
         </p>
         <div class="hero-actions">
           <a class="action action-primary" href="/docs/agents/installation/">

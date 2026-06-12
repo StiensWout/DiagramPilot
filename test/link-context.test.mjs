@@ -10,7 +10,7 @@ test("GitHub-rendered README links same-repo public docs relatively", async () =
 
   assert.match(
     readme,
-    /\[0\.2 -> 0\.3 upgrade guide]\(docs-public\/agents\/installation\.md#02---03-upgrade-guide\)/,
+    /\[0\.3 -> 0\.4 upgrade guide]\(docs-public\/agents\/installation\.md#03---04-upgrade-guide\)/,
   );
   assert.match(
     readme,
