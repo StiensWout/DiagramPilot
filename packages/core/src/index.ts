@@ -33,6 +33,10 @@ export { validateDiagramSpec } from "./diagramspec-validation.js";
 export { selectFocusedDiagramSpec } from "./diagramspec-focus.js";
 export { selectDiagramSpecView } from "./diagramspec-views.js";
 export {
+  createDiagramSpecDiffDiagram,
+  diffDiagramSpecs,
+} from "./diagramspec-diff.js";
+export {
   DIAGRAM_SPEC_LINT_THRESHOLDS,
   lintDiagramSpec,
 } from "./diagramspec-lint.js";
@@ -105,6 +109,14 @@ export type {
   DiagramSpecViewProjectionCounts,
   DiagramSpecViewProjectionResult,
 } from "./diagramspec-views.js";
+export type {
+  DiagramSpecDiffChangedObject,
+  DiagramSpecDiffCollection,
+  DiagramSpecDiffObjectChange,
+  DiagramSpecDiffResult,
+  DiagramSpecDiffSummary,
+  DiagramSpecDiffSummaryCounts,
+} from "./diagramspec-diff.js";
 export type {
   DiagramPilotSourceFile,
   DiagramPilotSourceFormat,

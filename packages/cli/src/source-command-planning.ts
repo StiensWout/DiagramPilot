@@ -76,7 +76,7 @@ export function usageFailurePlan(
   };
 }
 
-function repairableDiagnosticFailurePlan(
+export function repairableDiagnosticFailurePlan(
   failure: FailedValidatedDiagramSpecLoadResult["failure"],
 ): CommandPlan {
   const report = createRepairableDiagnosticReport(failure);

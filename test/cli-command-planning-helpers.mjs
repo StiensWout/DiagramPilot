@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 
+import { diffDiagramSpecs } from "../packages/core/dist/index.js";
+
 export function validLoadResult(sourcePath = "docs/architecture.dp.yaml") {
   return {
     ok: true,
@@ -278,6 +280,7 @@ export function createPlanningDependencies(overrides = {}) {
       },
     }),
     exportDiagramSpecToMermaid: () => "flowchart LR\n",
+    diffDiagramSpecs,
     lintDiagramSpec: () => ({
       ok: true,
       summary: {
