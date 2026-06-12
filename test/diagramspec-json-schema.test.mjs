@@ -226,6 +226,10 @@ test("DiagramSpec v1 JSON Schema describes source object shapes without closing 
   assert.equal(schema.$defs.edge.properties.from.$ref, "#/$defs/stableId");
   assert.equal(schema.$defs.edge.properties.to.$ref, "#/$defs/stableId");
   assert.equal(schema.$defs.edge.properties.kind.$ref, "#/$defs/stableId");
+  assert.match(
+    schema.$defs.edge.properties.kind.description,
+    /Open semantic tag/,
+  );
   assert.equal(schema.$defs.edge.properties.directed.type, "boolean");
 
   assert.deepEqual(schema.$defs.group.required, ["id", "label", "contains"]);

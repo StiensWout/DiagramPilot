@@ -306,7 +306,9 @@ The checkout demo source demonstrates the current DiagramSpec shape:
 - Nodes for browser, API, service, database, event stream, and worker concepts.
 - Groups for customer experience, runtime, and fulfillment boundaries.
 - `lucide:*` icons.
-- Labeled directed edges.
+- Labeled directed edges with recommended `kind` values such as `request`,
+  `event`, `data_flow`, `dependency`, `command`, `query`, `write`, `identity`,
+  `authorization`, `observability`, `deployment`, or `incident`.
 - `metadata.source` references to local repository paths.
 
 Use these local references when updating a diagram so reviewers can connect a

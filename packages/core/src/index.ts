@@ -40,6 +40,10 @@ export {
   DIAGRAM_SPEC_LINT_THRESHOLDS,
   lintDiagramSpec,
 } from "./diagramspec-lint.js";
+export {
+  diagramSpecKnownEdgeKinds,
+  getDiagramSpecKnownEdgeKind,
+} from "./diagramspec-edge-semantics.js";
 export { serializeDiagramPilotSourceFile } from "./source-serialization.js";
 export { planDiagramPilotSourceFix } from "./source-fixing.js";
 export {
@@ -175,6 +179,7 @@ export type {
   DiagramSpecLintSeverity,
   DiagramSpecLintWarning,
 } from "./diagramspec-lint.js";
+export type { DiagramSpecKnownEdgeKind } from "./diagramspec-edge-semantics.js";
 export type {
   DiagramPilotSourceTemplateName,
   DiagramPilotSourceTemplateResult,

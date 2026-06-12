@@ -93,3 +93,35 @@ test("exports D2 output profiles with compatible clean output and target-native 
   assert.match(presentation, /direction: right/);
   assert.notEqual(presentation, clean);
 });
+
+test("exports known edge semantics as renderer-native D2 edge styles without rejecting custom kinds", () => {
+  const d2 = exportDiagramSpecToD2({
+    title: "Semantic Edges",
+    nodes: [
+      { id: "web_app", label: "Web App" },
+      { id: "api_gateway", label: "API Gateway" },
+      { id: "audit_log", label: "Audit Log" },
+    ],
+    edges: [
+      {
+        id: "web_to_api",
+        from: "web_app",
+        to: "api_gateway",
+        label: "HTTPS",
+        kind: "request",
+      },
+      {
+        id: "api_to_audit",
+        from: "api_gateway",
+        to: "audit_log",
+        label: "records",
+        kind: "custom_audit_signal",
+      },
+    ],
+  });
+
+  assert.match(d2, /web_app -> api_gateway: "HTTPS" \{/);
+  assert.match(d2, /style\.stroke: "#2563eb"/);
+  assert.match(d2, /api_gateway -> audit_log: "records"/);
+  assert.doesNotMatch(d2, /custom_audit_signal/);
+});
