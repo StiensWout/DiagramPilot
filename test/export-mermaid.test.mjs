@@ -48,3 +48,12 @@ test("exports Mermaid output profiles with compatible clean output and compact w
   assert.match(presentation, /flowchart LR/);
   assert.notEqual(presentation, clean);
 });
+
+test("exports Mermaid overview profile without edge labels", () => {
+  const overview = exportDiagramSpecToMermaid(checkoutSpec, {
+    profile: "overview",
+  });
+
+  assert.match(overview, /web_app --> api_gateway/);
+  assert.doesNotMatch(overview, /HTTPS/);
+});

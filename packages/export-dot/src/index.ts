@@ -103,10 +103,13 @@ function groupDefinition(group: DiagramSpecGroup): string {
   return `subgraph ${quoted(`cluster_${group.id}`)} {`;
 }
 
-function edgeDefinition(edge: DiagramSpecEdge): string {
+function edgeDefinition(
+  edge: DiagramSpecEdge,
+  profile: RepoWorkflowOutputProfile,
+): string {
   const connection = `${quoted(edge.from)} -> ${quoted(edge.to)}`;
   const attributes =
-    edge.label === undefined
+    edge.label === undefined || profile === "overview"
       ? metadataAttributes(edge.metadata)
       : labelAttributes(edge.label, edge.metadata);
 
@@ -175,7 +178,7 @@ export function exportDiagramSpecToDot(
   lines.push(
     ...(spec.edges ?? []).map(
       (edge) =>
-        `${indent(profileDepth(profile), profile)}${edgeDefinition(edge)}`,
+        `${indent(profileDepth(profile), profile)}${edgeDefinition(edge, profile)}`,
     ),
   );
 

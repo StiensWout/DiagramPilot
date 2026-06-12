@@ -48,13 +48,16 @@ function d2NodePath(
 function edgeConnectionLine(
   edge: DiagramSpecEdge,
   topology: DiagramSpecTopology,
+  profile: RepoWorkflowOutputProfile,
 ): string {
   const connector = edge.directed === false ? "--" : "->";
   const from = d2NodePath(topology, edge.from);
   const to = d2NodePath(topology, edge.to);
   const connection = `${from} ${connector} ${to}`;
 
-  return edge.label === undefined ? connection : `${connection}: ${quoted(edge.label)}`;
+  return edge.label === undefined || profile === "overview"
+    ? connection
+    : `${connection}: ${quoted(edge.label)}`;
 }
 
 function edgeKindStyleLines(kind: DiagramSpecKnownEdgeKind): string[] {
@@ -81,8 +84,9 @@ function styledEdgeLine(
 function edgeDefinition(
   edge: DiagramSpecEdge,
   topology: DiagramSpecTopology,
+  profile: RepoWorkflowOutputProfile,
 ): string {
-  const line = edgeConnectionLine(edge, topology);
+  const line = edgeConnectionLine(edge, topology, profile);
   const knownKind = getDiagramSpecKnownEdgeKind(edge.kind);
 
   if (knownKind === undefined) return line;
@@ -157,7 +161,7 @@ function edgeSectionLines(
     return [];
   }
 
-  const lines = edges.map((edge) => edgeDefinition(edge, topology));
+  const lines = edges.map((edge) => edgeDefinition(edge, topology, profile));
 
   return profile === "compact" ? lines : ["", ...lines];
 }

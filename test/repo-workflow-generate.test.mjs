@@ -296,6 +296,42 @@ test("generateDiagramPilotRepoWorkflowWithDependencies passes configured output 
   });
 });
 
+test("generateDiagramPilotRepoWorkflowWithDependencies passes overview output profiles to SVG generation", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const receivedProfiles = [];
+    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
+    const source = validSourceContext(sourcePath);
+
+    const result = await generateDiagramPilotRepoWorkflowWithDependencies(
+      {
+        ...generateOptions(tempRoot),
+        renderSvgArtifact: async ({ profile }) => {
+          receivedProfiles.push(profile);
+          return `<svg data-profile="${profile}"></svg>`;
+        },
+      },
+      {
+        ...validGenerateDependencies({
+          tempRoot,
+          sourcePath,
+          source,
+          configResult: profileConfig(tempRoot, [
+            {
+              format: "svg",
+              path: "generated/{stem}.svg",
+              profile: "overview",
+            },
+          ]),
+        }),
+      },
+    );
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(receivedProfiles, ["overview"]);
+    assert.equal(result.written[0].content, '<svg data-profile="overview"></svg>');
+  });
+});
+
 test("generateDiagramPilotRepoWorkflow refuses configured writes outside the config tree", async () => {
   await withTempRepo(async (tempRoot) => {
     await writeFile(

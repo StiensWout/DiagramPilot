@@ -60,10 +60,13 @@ function groupDefinition(group: DiagramSpecGroup): string {
   return `subgraph ${group.id}["${escapeMermaidQuotedText(group.label)}"]`;
 }
 
-function edgeDefinition(edge: DiagramSpecEdge): string {
+function edgeDefinition(
+  edge: DiagramSpecEdge,
+  profile: RepoWorkflowOutputProfile,
+): string {
   const connector = edge.directed === false ? "---" : "-->";
 
-  if (edge.label === undefined) {
+  if (edge.label === undefined || profile === "overview") {
     return `${edge.from} ${connector} ${edge.to}`;
   }
 
@@ -123,7 +126,7 @@ export function exportDiagramSpecToMermaid(
     const line = `${mermaidIndent(
       profile,
       mermaidProfileDepth(profile),
-    )}${edgeDefinition(edge)}`;
+    )}${edgeDefinition(edge, profile)}`;
     lines.push(line);
   }
 

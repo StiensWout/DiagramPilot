@@ -13,6 +13,10 @@ diagrampilot render <path> --format png --out <artifact.png>
 SVG remains the default render format. PNG rendering rasterizes the SVG render
 path so SVG and PNG stay visually aligned.
 
+Configured SVG outputs support fixed profiles from repo workflow configuration.
+Use `profile: overview` for dense review artifacts that should preserve
+topology while suppressing edge labels.
+
 Public documentation:
 
 - https://diagrampilot.com/docs/agents/quickstart.md

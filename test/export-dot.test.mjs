@@ -100,6 +100,31 @@ test("exports undirected DiagramSpec edges with dir none", () => {
   assert.match(dot, /"web_app" -> "worker" \[dir=none\];/);
 });
 
+test("exports DOT overview profile without edge labels", () => {
+  const dot = exportDiagramSpecToDot(
+    {
+      version: 1,
+      title: "Checkout Architecture",
+      nodes: [
+        { id: "web_app", label: "Web App" },
+        { id: "api_gateway", label: "API Gateway" },
+      ],
+      edges: [
+        {
+          id: "web_app_to_api_gateway",
+          from: "web_app",
+          to: "api_gateway",
+          label: "HTTPS",
+        },
+      ],
+    },
+    { profile: "overview" },
+  );
+
+  assert.match(dot, /"web_app" -> "api_gateway";/);
+  assert.doesNotMatch(dot, /HTTPS/);
+});
+
 test("exports DiagramSpec groups as Graphviz clusters", () => {
   const dot = exportDiagramSpecToDot({
     version: 1,

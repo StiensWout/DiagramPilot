@@ -22,9 +22,10 @@ const artifactOutputFieldList = "format, path, profile";
 const artifactOutputProfiles = new Set<RepoWorkflowOutputProfile>([
   "clean",
   "compact",
+  "overview",
   "presentation",
 ]);
-const artifactOutputProfileList = "clean, compact, presentation";
+const artifactOutputProfileList = "clean, compact, overview, presentation";
 const artifactOutputTemplateVariables = new Set([
   "stem",
   "sourceDir",

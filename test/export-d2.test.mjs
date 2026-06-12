@@ -125,3 +125,29 @@ test("exports known edge semantics as renderer-native D2 edge styles without rej
   assert.match(d2, /api_gateway -> audit_log: "records"/);
   assert.doesNotMatch(d2, /custom_audit_signal/);
 });
+
+test("exports D2 overview profile with topology and semantic edge styles but no edge labels", () => {
+  const overview = exportDiagramSpecToD2(
+    {
+      title: "Dense Architecture",
+      nodes: [
+        { id: "web_app", label: "Web App" },
+        { id: "api_gateway", label: "API Gateway" },
+      ],
+      edges: [
+        {
+          id: "web_to_api",
+          from: "web_app",
+          to: "api_gateway",
+          label: "HTTPS",
+          kind: "request",
+        },
+      ],
+    },
+    { profile: "overview" },
+  );
+
+  assert.match(overview, /web_app -> api_gateway \{/);
+  assert.match(overview, /style\.stroke: "#2563eb"/);
+  assert.doesNotMatch(overview, /HTTPS/);
+});

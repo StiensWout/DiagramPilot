@@ -12,6 +12,10 @@ freshness, fixed Output Profiles, first-class DiagramSpec view projections, and
 deterministic source-fix planning, plus `generate` support for configured
 Derived Artifacts and generated Markdown embed files.
 
+Configured artifact profiles are `clean`, `compact`, `overview`, and
+`presentation`. `overview` keeps topology while reducing edge-label noise for
+dense generated review artifacts.
+
 Public documentation:
 
 - https://diagrampilot.com/docs/agents/spec.md

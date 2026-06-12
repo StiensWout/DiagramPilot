@@ -164,6 +164,9 @@ artifacts:
       - format: mermaid
         path: docs/architecture.mmd
         profile: compact
+      - format: d2
+        path: docs/architecture-overview.d2
+        profile: overview
       - format: png
         path: docs/architecture.png
       - format: markdown
@@ -175,9 +178,11 @@ artifacts:
 ```
 
 Configured output formats are limited to `svg`, `png`, `mermaid`, `d2`, `dot`,
-and `markdown`. Output path templates support only `{stem}`, `{sourceDir}`,
-`{sourcePath}`, and `{format}`. Markdown outputs are standalone generated
-embed files. They reference the other configured artifacts in the same mapping
+and `markdown`. Fixed profiles are `clean`, `compact`, `overview`, and
+`presentation`; use `overview` for dense review artifacts where edge labels add
+visual noise. Output path templates support only `{stem}`, `{sourceDir}`,
+`{sourcePath}`, and `{format}`. Markdown outputs are standalone generated embed
+files. They reference the other configured artifacts in the same mapping
 with paths relative to the embed file. `check` marks a Markdown embed stale
 when its generated content differs or when a referenced artifact is missing or
 stale.
@@ -449,8 +454,8 @@ while excluding unrelated diagram objects.
 group context for included nodes.
 
 `diagrampilot render <path> --hide-edge-labels --out <artifact.svg>`
-: Renders an overview artifact without edge labels and without changing the
-source file.
+: Renders a one-off overview artifact without edge labels and without changing
+the source file. Use `profile: overview` for configured generated artifacts.
 
 `diagrampilot render <path> --format svg|png --out <path>`
 : Renders SVG explicitly or renders PNG by rasterizing the SVG output from the local render path.
