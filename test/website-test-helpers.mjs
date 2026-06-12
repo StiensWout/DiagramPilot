@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+  npmCommand,
   runSuccessfulProcess,
   sanitizedTestEnv,
 } from "./process-helpers.mjs";
@@ -16,10 +17,10 @@ let websiteBuildPromise;
 
 export async function websiteBuild() {
   websiteBuildPromise ??= runSuccessfulProcess(
-    "npm",
-    ["--workspace", "website", "run", "build"],
+    npmCommand,
+    ["run", "build"],
     {
-      cwd: repoRoot,
+      cwd: path.join(repoRoot, "website"),
       env: sanitizedTestEnv({ CI: "true" }),
       label: "Website build",
     },

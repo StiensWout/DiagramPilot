@@ -39,8 +39,6 @@
     "audit:fallow:health": "fallow health --format compact --quiet --complexity --min-severity moderate",
     "audit:fallow:changed": "fallow audit --format compact --quiet --fail-on-issues --dead-code-baseline fallow-baselines/dead-code.json",
     "check:release-version": "node scripts/check-release-version.mjs",
-    "check:issue-release-version": "node scripts/check-issue-release-version.mjs",
-    "sync:issue-release-version": "node scripts/sync-issue-release-version.mjs",
     "clean": "tsc -b --clean",
     "generate:schema": "npm run build && node scripts/generate-diagramspec-v1-schema.mjs",
     "check:package-readiness": "node scripts/check-package-readiness.mjs",

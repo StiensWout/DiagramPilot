@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import {
+  access,
   mkdir,
   mkdtemp,
   readFile,
@@ -59,26 +60,6 @@ async function writeFixtureJson(fixtureRoot, repoPath, data) {
   await writeFile(
     path.join(fixtureRoot, repoPath),
     `${JSON.stringify(data, null, 2)}\n`,
-    "utf8",
-  );
-}
-
-async function writeFixtureIssue(fixtureRoot, repoPath, { status, version }) {
-  const issuePath = path.join(fixtureRoot, repoPath);
-  await mkdir(path.dirname(issuePath), { recursive: true });
-  await writeFile(
-    issuePath,
-    [
-      `Status: ${status}`,
-      `Issue Version: ${version}`,
-      "",
-      "# Fixture issue",
-      "",
-      "## What to build",
-      "",
-      "Fixture release issue.",
-      "",
-    ].join("\n"),
     "utf8",
   );
 }
@@ -273,6 +254,25 @@ test("release version bump is idempotent for an already-applied version", async 
   });
 });
 
+test("release tooling no longer exposes local issue-version workflow scripts", async () => {
+  const rootPackage = await readJson("package.json");
+
+  assert.equal(rootPackage.scripts["check:issue-release-version"], undefined);
+  assert.equal(rootPackage.scripts["sync:issue-release-version"], undefined);
+
+  for (const removedScript of [
+    "scripts/check-issue-release-version.mjs",
+    "scripts/release-issue-utils.mjs",
+    "scripts/sync-issue-release-version.mjs",
+  ]) {
+    await assert.rejects(
+      access(path.join(repoRoot, removedScript)),
+      { code: "ENOENT" },
+      `${removedScript} should be removed`,
+    );
+  }
+});
+
 test("release version bump supports nightly prerelease publish metadata", async () => {
   await withReleaseMetadataFixture(async (fixtureRoot) => {
     const bumpedVersion = "1.2.3-nightly.4.5.abcdef0";
@@ -306,167 +306,40 @@ test("release version bump supports nightly prerelease publish metadata", async 
   });
 });
 
-test("issue release version check matches the latest completed issue", async () => {
-  await withReleaseMetadataFixture(async (fixtureRoot) => {
-    const issuePath =
-      ".scratch/release-fixture/issues/100-current-completed.md";
-    const currentVersion = "1.2.3";
-
-    await writeFixtureIssue(
-      fixtureRoot,
-      ".scratch/release-fixture/issues/99-previous-completed.md",
-      { status: "completed", version: "1.2.2" },
-    );
-    await writeFixtureIssue(fixtureRoot, issuePath, {
-      status: "completed",
-      version: currentVersion,
-    });
-    await writeFixtureIssue(
-      fixtureRoot,
-      ".scratch/release-fixture/issues/101-future-pending.md",
-      { status: "pending", version: "9.9.9" },
-    );
-
-    await runReleaseScript("bump-release-version.mjs", [currentVersion], {
-      cwd: fixtureRoot,
-    });
-
-    const result = await runReleaseScript("check-issue-release-version.mjs", [], {
-      cwd: fixtureRoot,
-    });
-
-    assertScriptSuccess(result);
-    assert.equal(
-      result.stdout,
-      `DiagramPilot issue release version matches ${issuePath} at ${currentVersion}.\n`,
-    );
-  });
-});
-
-test("issue release version check fails when metadata trails the issue", async () => {
-  await withReleaseMetadataFixture(async (fixtureRoot) => {
-    const issuePath =
-      ".scratch/release-fixture/issues/100-current-completed.md";
-
-    await writeFixtureIssue(fixtureRoot, issuePath, {
-      status: "completed",
-      version: "1.2.3",
-    });
-
-    const result = await runReleaseScript("check-issue-release-version.mjs", [], {
-      cwd: fixtureRoot,
-    });
-
-    assertScriptFailure(result);
-    assert.match(result.stderr, /Shared release version metadata is/u);
-    assert.match(result.stderr, /expected 1\.2\.3 from/u);
-    assert.match(result.stderr, /npm run sync:issue-release-version/u);
-  });
-});
-
-test("issue release version sync reads an issue and updates metadata", async () => {
-  await withReleaseMetadataFixture(async (fixtureRoot) => {
-    const issuePath =
-      ".scratch/release-fixture/issues/100-current-completed.md";
-    const bumpedVersion = "2.3.4";
-
-    await writeFixtureIssue(fixtureRoot, issuePath, {
-      status: "completed",
-      version: bumpedVersion,
-    });
-
-    const result = await runReleaseScript(
-      "sync-issue-release-version.mjs",
-      ["--issue", issuePath, "--skip-build", "--skip-artifact-refresh"],
-      { cwd: fixtureRoot },
-    );
-    const rootPackage = await readFixtureJson(fixtureRoot, "package.json");
-
-    assertScriptSuccess(result);
-    assert.match(
-      result.stdout,
-      new RegExp(`Updated DiagramPilot release version metadata to ${bumpedVersion}`, "u"),
-    );
-    assert.match(
-      result.stdout,
-      new RegExp(`DiagramPilot release version metadata is consistent at ${bumpedVersion}`, "u"),
-    );
-    assert.match(
-      result.stdout,
-      new RegExp(`Synced DiagramPilot release metadata to Issue Version ${bumpedVersion}`, "u"),
-    );
-    assert.equal(rootPackage.version, bumpedVersion);
-  });
-});
-
-test("release version workflow documents current channels and milestone closeout", async () => {
+test("release workflow uses current channels and milestone closeout", async () => {
   const workflow = await readFile(
-    path.join(repoRoot, "docs/development/release-version-workflow.md"),
+    path.join(repoRoot, ".github", "workflows", "release.yml"),
+    "utf8",
+  );
+  const releasePlanner = await readFile(
+    path.join(repoRoot, "scripts", "plan-release-publish.mjs"),
     "utf8",
   );
 
   assertMatchesAll(workflow, [
-    /Feature nightly/u,
-    /Trusted push to `feature\/\*\*`/u,
-    /`nightly`/u,
-    /Prerelease/u,
-    /Main validation/u,
-    /No, validation only/u,
-    /Manual dry-run/u,
-    /`release_kind=dry-run`/u,
-    /Milestone release/u,
-    /`release_kind=milestone`/u,
-    /Do not create one stable release per issue/u,
-  ]);
-  assertMatchesAll(workflow, [
-    /npm run check:release-version/u,
-    /node scripts\/bump-release-version\.mjs <version>/u,
-    /release\.config\.json/u,
-    /"nextVersion": "0\.4\.0"/u,
-    /0\.4\.0-nightly/u,
-    /`npm run check:issue-release-version` and\s+`npm run sync:issue-release-version` are legacy compatibility helpers/u,
-    /scripts\/plan-release-publish\.mjs/u,
-    /DIAGRAMPILOT_NPM_PUBLISH_ENABLED/u,
-    /npm trusted publishing through GitHub OIDC/u,
-    /Reading GitHub Checks/u,
-    /Code quality audit \(pull requests only\)/u,
+    /push:\n\s+branches:\n\s+- "feature\/\*\*"/u,
+    /release_kind:/u,
+    /- dry-run/u,
+    /- milestone/u,
     /Release checks \(nightly or manual final\)/u,
     /Publish npm packages \(nightly or final\)/u,
     /Create nightly GitHub prerelease/u,
     /Prepare final GitHub Release draft/u,
     /Publish final GitHub Release after approval/u,
-    /<base-version>-nightly\.<run-number>\.<run-attempt>\.<short-sha>/u,
-    /github-release-publication/u,
-    /Linear closeout issue/u,
-  ]);
-  assertMatchesAll(workflow, [
+    /npm run check:release-version/u,
+    /node scripts\/bump-release-version\.mjs "\$RELEASE_PUBLISH_VERSION"/u,
     /node scripts\/generate-release-notes\.mjs \\\s+--kind final/u,
-    /Highlights/u,
-    /What's Changed/u,
-    /Breaking Changes/u,
-    /Upgrade Notes/u,
-    /Packages/u,
-    /Full Changelog/u,
+    /--prs-json "\$RUNNER_TEMP\/release-prs\.json"/u,
     /scripts\/validate-github-release-draft\.mjs/u,
     /node scripts\/generate-release-notes\.mjs \\\s+--kind nightly/u,
-  ]);
-  assertMatchesAll(workflow, [
     /npm run check:package-readiness/u,
     /npm run check:package-size-budgets/u,
-    /diagrampilot: 32 KiB/u,
-    /@diagrampilot\/core: 80 KiB/u,
-    /@diagrampilot\/mcp: 32 KiB/u,
-    /npm run check:package-publish-state -- --expect available/u,
-    /npm run check:package-publish-state -- --expect latest/u,
-    /npm run audit:fallow/u,
-    /npm run audit:fallow:changed/u,
   ]);
   assertMatchesNone(workflow, [
-    /55\s*\|\s*`0\.1\.1`/u,
-    /Issue 62 is `0\.2\.0`/u,
-    /Each implementation issue that merges to `main` should produce/u,
-    /npm run sync:issue-release-version -- --issue <issue-file>/u,
-    /render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/u,
-    /## Validation Results/u,
+    /check:issue-release-version/u,
+    /sync:issue-release-version/u,
+    /\.scratch/u,
   ]);
+  assert.match(releasePlanner, /manual milestone release publishes npm latest/u);
+  assert.doesNotMatch(releasePlanner, /issue release/u);
 });

@@ -4,7 +4,7 @@ DiagramPilot is a repo-native diagram compiler. Favor local files, review-stable
 
 ## Work Rules
 
-- Plan from Linear. GitHub Issues are public intake only and sync into Linear.
+- Plan from the active Linear issue. GitHub Issues are public intake only and sync into Linear.
 - Before edits, create the Linear branch from `origin/main`, for example `git
   switch --create feature/dp-20-title --no-track origin/main`; never implement
   or push on `main`/`origin/main`.
@@ -14,16 +14,15 @@ DiagramPilot is a repo-native diagram compiler. Favor local files, review-stable
 - Do not hand-edit generated artifacts unless explicitly asked.
 - Before closeout, run `npm run audit:fallow`; for PR-specific review also run
   `npm run audit:fallow:changed`.
+- Fix Fallow findings in code instead of hiding them behind new baselines.
 - Update Linear with status, implementation notes, acceptance criteria, and validation plan.
 
-## Context
+## Public Surface
 
 - Public: `LICENSE`, `BRAND_USE_POLICY.md`, `llms.txt`, `docs-public/index.md`,
   `docs-public/agents/quickstart.md`,
   `docs-public/agents/installation.md`, `docs-public/agents/spec.md`,
   `docs-public/agents/error-repair.md`, `docs-public/agents/examples.md`,
   `docs-public/agents/prompting.md`.
-- Private maintainer workflow lives in Linear. Use the active issue and the
-  `DP-19 Internal Maintainer Workflow Migration Map` for tracker rules, triage
-  states, domain context, release workflow, closeout notes, and migration state.
-  Keep skill configuration intact until its replacement is live.
+- Private maintainer workflow lives in Linear. Start with the project resource
+  `Agent Resource Index` when private context is needed.

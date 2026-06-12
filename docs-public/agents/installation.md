@@ -16,64 +16,16 @@ Use `diagrampilot init --docs` only when the repository intentionally wants
 managed local agent docs. Use `diagrampilot init --config` only when the repository intentionally wants Repo Workflow Configuration checked into the
 project. Do not copy DiagramPilot public docs into a consuming repository as part of installation. Keep repository docs for project-owned guidance.
 
-## Release Status
+## Package Versioning
 
-DiagramPilot v0.4.0 Alpha Capability Release is the current release-aligned public shape.
-The install commands below use the current npm `latest` release
-unless a consuming repository pins a specific package version.
+The install commands below use the current npm `latest` release unless a
+consuming repository pins a specific package version.
 
-## 0.3 -> 0.4 Upgrade Guide
-
-Existing v0.3 repositories should review these changes before updating:
-
-- JSON Source Removal is complete for DiagramPilot Source File workflows.
-  `*.dp.json` is not a DiagramPilot Source File path, repo discovery ignores
-  JSON source files, explicit source-file commands reject non-YAML paths, and
-  DiagramPilot does not provide a JSON-to-YAML migration command. JSON remains
-  valid for `--json` CLI output, the DiagramSpec JSON Schema, SVG provenance
-  metadata, package manifests, and other non-source tooling surfaces.
-- `diagrampilot create <path> --template architecture|flow|package-map` writes
-  maintained starter `*.dp.yaml` source files and refuses to overwrite an
-  existing file.
-- `diagrampilot inspect [path] [--json]` reports read-only source inventory,
-  topology, Stable IDs, and artifact expectations before editing.
-- `diagrampilot format <path>` rewrites a valid DiagramPilot Source File into
-  canonical YAML key order. It preserves DiagramSpec data, unknown metadata,
-  and object/array order, but YAML comments may be removed or moved.
-- `diagrampilot watch [path]` watches `*.dp.yaml` and
-  `diagrampilot.config.yaml`, debounces changes, checks first, and generates
-  only when the source/config state is valid.
-- Configured outputs can use fixed Output Profiles with `profile: clean`,
-  `profile: compact`, or `profile: presentation`. Profiles live in
-  `diagrampilot.config.yaml`, not in DiagramSpec styling fields.
-- Release publishing now uses nightly prereleases for feature branches and one
-  Manual Milestone Release for stable npm `latest` publication. Final release
-  notes use milestone sections and npm package links, not issue-release notes.
-
-## 0.2 -> 0.3 Upgrade Guide
-
-Existing v0.2 repositories should review these changes before updating:
-
-- DiagramPilot Source Files are YAML-only. Use `*.dp.yaml`; `*.dp.json` is not
-  a DiagramPilot Source File path, repo discovery ignores JSON source files, and
-  DiagramPilot does not provide a migration command. JSON remains valid for
-  `--json` CLI output, the DiagramSpec JSON Schema, SVG provenance metadata,
-  package manifests, and other non-source tooling surfaces.
-- DOT export is available with `diagrampilot export --format dot`.
-- PNG rendering is available with `diagrampilot render --format png --out
-  <artifact.png>` and rasterizes the SVG render path.
-- Repo Workflow Configuration is optional. Use `diagrampilot init --config`
-  only when the repository wants checked-in `diagrampilot.config.yaml` artifact
-  mappings and source ignore rules.
-- `diagrampilot generate [path]` rewrites configured Derived Artifacts and
-  generated Markdown embed files for explicit scopes.
-- `diagrampilot watch [path]` runs a local authoring loop that watches
-  `*.dp.yaml` and `diagrampilot.config.yaml`, debounces changes, checks first,
-  and generates only when source/config state is valid.
-- Generated Markdown embed files are standalone generated files. DiagramPilot
-  does not edit arbitrary prose documents in place.
-- MCP is a shipped alpha integration. Use `diagrampilot mcp` or
-  `diagrampilot-mcp` for local MCP clients.
+DiagramPilot Source Files use `*.dp.yaml`. `*.dp.json` is not a DiagramPilot
+Source File path; repo discovery ignores JSON source files, and explicit
+source-file commands reject non-YAML paths. JSON remains valid for `--json`
+CLI output, the DiagramSpec JSON Schema, SVG provenance metadata, package
+manifests, and other non-source tooling surfaces.
 
 ## One-Off Use
 
@@ -89,7 +41,7 @@ npx diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 npx diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
 ```
 
-Verified package-manager equivalents:
+Other package-manager equivalents:
 
 ```bash
 pnpm dlx diagrampilot check
@@ -151,8 +103,8 @@ Prefer a repository dev dependency for CI and other repeatable workflows.
 
 ## MCP Client Configuration
 
-MCP support is alpha. DiagramPilot includes a local Model Context Protocol
-server for MCP clients that can launch stdio commands.
+DiagramPilot includes a local Model Context Protocol server for MCP clients
+that can launch stdio commands.
 
 Use the main CLI command when the client can run project binaries:
 

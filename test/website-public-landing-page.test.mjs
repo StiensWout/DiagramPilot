@@ -79,7 +79,7 @@ test("public landing page offers starting points including npm", async () => {
   assert.doesNotMatch(html, /Start with the checkout demo\./);
 });
 
-test("public landing page reflects the shipped v0.4 authoring surface", async () => {
+test("public landing page reflects the shipped authoring surface", async () => {
   const html = await readBuiltLandingPage();
 
   assertMatchesAll(html, [
@@ -88,8 +88,10 @@ test("public landing page reflects the shipped v0.4 authoring surface", async ()
     /diagrampilot format/,
     /diagrampilot watch/,
     /Output Profiles/,
-    /Manual Milestone Release/,
+    /DiagramSpec/,
+    /MCP usage/,
   ]);
+  assert.doesNotMatch(html, /Manual Milestone Release|v0\.4/i);
 });
 
 test("public landing page publishes search and social metadata for developer discovery", async () => {

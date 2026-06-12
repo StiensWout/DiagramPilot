@@ -216,38 +216,3 @@ test("release workflow gates CD side effects behind CI and validates reviewed Gi
     "reviewed draft validation must run before GitHub Release publication",
   );
 });
-
-test("release workflow docs explain npm trusted publisher setup", async () => {
-  const workflow = await readFile(
-    path.join(repoRoot, "docs", "development", "release-version-workflow.md"),
-    "utf8",
-  );
-
-  assertMatchesAll(workflow, [
-    /\.github\/workflows\/release\.yml/u,
-    /trusted publisher/u,
-    /OIDC/u,
-    /`nightly`/u,
-    /`latest`/u,
-    /Trusted pushes to `feature\/\*\*` branches/u,
-    /Pull requests run CI validation only/u,
-    /Trusted pushes to `main`\s+validate release candidates without publishing/u,
-    /Manual milestone dispatches\s+publish npm `latest`/u,
-    /Keep npm trusted publishers configured to this filename/u,
-    /does not listen to pull request\s+events/u,
-    /Milestone Release/u,
-    /GitHub prerelease/u,
-    /GitHub Release draft/u,
-    /scripts\/generate-release-notes\.mjs/u,
-    /scripts\/validate-github-release-draft\.mjs/u,
-    /npm `latest` publish succeeds/u,
-    /transparency-log duplicate-entry failure/u,
-    /NPM_CONFIG_PROVENANCE=false/u,
-    /limited to `nightly`/u,
-    /Nightly .*create GitHub prereleases/u,
-  ]);
-
-  for (const packageName of publicPackageSet) {
-    assert.match(workflow, new RegExp(packageName.replace("/", "\\/"), "u"));
-  }
-});

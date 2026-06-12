@@ -1,5 +1,6 @@
 /dist/
 /.astro/
+/visual-quality-report/
 /src/content/docs/**
 !/src/content/docs/
 /public/llms.txt

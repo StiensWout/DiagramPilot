@@ -53,14 +53,20 @@ test("committed Fallow baselines contain no parked debt", async () => {
 });
 
 test("maintainability policy tells agents to fix Fallow findings instead of baselining them", async () => {
-  const maintainabilityDoc = await readFile(
-    path.join(repoRoot, "docs", "development", "maintainability.md"),
-    "utf8",
-  );
+  const agentGuide = await readFile(path.join(repoRoot, "AGENTS.md"), "utf8");
+  const packageJson = await readWorkspacePackageJson();
 
-  assert.match(maintainabilityDoc, /Fallow baselines should stay empty/u);
-  assert.match(maintainabilityDoc, /future Fallow\s+findings should be fixed/u);
-  assert.match(maintainabilityDoc, /Narrow documented static-analysis limitations/u);
-  assert.doesNotMatch(maintainabilityDoc, /captures existing duplication debt/u);
-  assert.doesNotMatch(maintainabilityDoc, /captures existing complexity debt/u);
+  assert.match(agentGuide, /run `npm run audit:fallow`/u);
+  assert.match(agentGuide, /`npm run audit:fallow:changed`/u);
+  assert.match(agentGuide, /Fix Fallow findings in code/u);
+  assert.doesNotMatch(agentGuide, /new baselines?\s+for findings/u);
+
+  assert.match(packageJson.scripts["audit:fallow"], /audit:fallow:dead-code/u);
+  assert.match(packageJson.scripts["audit:fallow"], /audit:fallow:dupes/u);
+  assert.match(packageJson.scripts["audit:fallow"], /audit:fallow:health/u);
+  assert.match(packageJson.scripts["audit:fallow:dead-code"], /--fail-on-issues/u);
+  assert.match(packageJson.scripts["audit:fallow:dupes"], /--fail-on-issues/u);
+  assert.match(packageJson.scripts["audit:fallow:changed"], /--fail-on-issues/u);
+  assert.doesNotMatch(packageJson.scripts["audit:fallow:dupes"], /--baseline/u);
+  assert.doesNotMatch(packageJson.scripts["audit:fallow:health"], /--baseline/u);
 });

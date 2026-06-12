@@ -17,15 +17,15 @@ export const publicAgentDocs = [
   "prompting.md",
 ];
 
-export const internalDocs = [
-  "docs/agents/issue-tracker.md",
-  "docs/agents/triage-labels.md",
-  "docs/agents/domain.md",
-  "docs/development/roadmap.md",
-  "docs/development/architecture.md",
-  "docs/development/release-version-workflow.md",
-  "docs/development/public-website-deployment.md",
-  "docs/adr/0006-public-docs-live-under-docs-public.md",
+export const removedInternalPlanningPaths = [
+  ".scratch",
+  "CONTEXT.md",
+  "docs/adr",
+  "docs/agents",
+  "docs/development",
+  "scripts/check-issue-release-version.mjs",
+  "scripts/release-issue-utils.mjs",
+  "scripts/sync-issue-release-version.mjs",
 ];
 
 export async function exists(repoPath) {

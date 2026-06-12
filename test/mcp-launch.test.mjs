@@ -31,7 +31,7 @@ function assertMcpHelp(result, commandName) {
   assertProcessSuccess(result);
   assert.match(result.stdout, /DiagramPilot MCP server/);
   assert.match(result.stdout, new RegExp(`Usage: ${commandName}`));
-  assert.match(result.stdout, /alpha DiagramPilot MCP server over stdio/);
+  assert.match(result.stdout, /DiagramPilot MCP server over stdio/);
 }
 
 test("diagrampilot mcp --help documents the stdio MCP launch path", async () => {

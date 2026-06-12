@@ -60,6 +60,10 @@ test("website is a static Astro Starlight shell", async () => {
     path.join(repoRoot, "website", ".gitignore"),
     "utf8",
   );
+  const visualQualityScript = await readFile(
+    path.join(repoRoot, "website", "scripts", "check-visual-quality.mjs"),
+    "utf8",
+  );
 
   assert.equal(websitePackage.name, "@diagrampilot/website");
   assert.equal(websitePackage.private, true);
@@ -98,6 +102,9 @@ test("website is a static Astro Starlight shell", async () => {
   assert.match(localRepositoryPath, /data-path-step/);
 
   assert.match(websiteGitignore, /^\/dist\/$/m);
+  assert.match(websiteGitignore, /^\/visual-quality-report\/$/m);
+  assert.match(visualQualityScript, /path\.join\(websiteRoot, "visual-quality-report"\)/);
+  assert.doesNotMatch(visualQualityScript, /\.scratch|productization-and-maintainability/);
 
   for (const forbiddenDependency of [
     "@astrojs/cloudflare",

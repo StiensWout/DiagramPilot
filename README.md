@@ -10,13 +10,10 @@ agents. It validates structured DiagramSpec source files, renders review-stable
 SVG or PNG artifacts, and exports Mermaid, D2, or DOT text from the same source
 of truth.
 
-The v0.4.0 Alpha Capability Release is the release-aligned public shape:
-DiagramPilot Source Files are YAML-only after complete JSON Source Removal,
-`create`, `inspect`, `format`, and `watch` are available for local agent
-authoring loops, configured outputs can use fixed Output Profiles, and stable
-publishing uses a Manual Milestone Release with npm package links. Existing
-users should review the
-[0.3 -> 0.4 upgrade guide](docs-public/agents/installation.md#03---04-upgrade-guide).
+DiagramPilot Source Files are YAML-only. The CLI supports local agent authoring
+loops with `create`, `inspect`, `format`, `watch`, configured outputs, fixed
+Output Profiles, SVG/PNG rendering, Mermaid/D2/DOT export, and an MCP server
+for local agent clients.
 
 Public documentation is hosted at `https://diagrampilot.com`.
 
@@ -77,7 +74,7 @@ metadata, package manifests, and other tooling surfaces.
 
 `diagrampilot format <path>` parses and validates one `*.dp.yaml` source before
 rewriting it in canonical YAML key order. Formatting preserves DiagramSpec data,
-unknown metadata, and object/array order. In v0.4.0 it does not promise comment
+unknown metadata, and object/array order. It does not promise comment
 preservation; YAML comments may be removed or moved during formatting.
 
 ## License And Brand
@@ -143,8 +140,8 @@ Optional `diagrampilot.config.yaml` is discovered upward from the command
 scope, validated before source processing, reported in `--json` output, and can
 use `sources.ignore` for source discovery plus `artifacts` mappings for
 configured SVG, PNG, Mermaid, D2, DOT, and Markdown expectations. Configured
-Mermaid, D2, and DOT use content freshness; configured PNG is presence-only in
-v0.4.0.
+Mermaid, D2, and DOT use content freshness; configured PNG freshness is
+presence-only.
 
 Configured outputs can opt into fixed output profiles with `profile: clean`,
 `profile: compact`, or `profile: presentation`. Profiles live only in
@@ -163,8 +160,8 @@ It watches `*.dp.yaml` and `diagrampilot.config.yaml`, debounces changes, runs
 repo workflow checks first, and generates only when the source/config state is
 valid.
 
-`mcp` launches the alpha Model Context Protocol stdio server for local MCP
-clients. It exposes read-only DiagramPilot resources, validation, repo check,
+`mcp` launches the Model Context Protocol stdio server for local MCP clients.
+It exposes read-only DiagramPilot resources, validation, repo check,
 export, render, and prompt helpers. See the
 [MCP guide](docs-public/agents/mcp.md).
 
