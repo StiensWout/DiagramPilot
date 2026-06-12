@@ -21,14 +21,96 @@ diagrampilot validate docs/architecture.dp.yaml --json
 
 Validation exits with a nonzero status when any file is invalid.
 
+## Repairable Validation Errors
+
+Repairable Validation Errors are part of DiagramPilot's agent-safe compiler
+workflow. It does not mean DiagramPilot edits the source automatically. It means
+validation reports the exact DiagramSpec path, the problem, and a concrete
+repair step so an agent can update the DiagramPilot Source File deliberately.
+
+Broken DiagramPilot Source File:
+
+```yaml
+version: 1
+title: Checkout Repair Example
+direction: right
+nodes:
+  - id: web_app
+    label: Web App
+  - id: api_gateway
+    label: API Gateway
+edges:
+  - id: web_app_to_api_gateway
+    from: storefront
+    to: api_gateway
+    label: HTTPS
+```
+
+Text validation output:
+
+```bash
+diagrampilot validate docs/checkout.dp.yaml
+```
+
+```text
+DiagramSpec validation error in docs/checkout.dp.yaml: edges[0].from references unknown node "storefront".
+  Path: edges[0].from
+  Problem: edges[0].from references unknown node "storefront".
+  Bad value: "storefront"
+  Expected: One of: web_app, api_gateway.
+  Suggestion: Add a node with id "storefront" or change edges[0].from to an existing node ID.
+```
+
+JSON validation output:
+
+```bash
+diagrampilot validate docs/checkout.dp.yaml --json
+```
+
+```json
+{
+  "file": "docs/checkout.dp.yaml",
+  "ok": false,
+  "errors": [
+    {
+      "path": "edges[0].from",
+      "message": "edges[0].from references unknown node \"storefront\".",
+      "badValue": "storefront",
+      "expected": "One of: web_app, api_gateway.",
+      "suggestion": "Add a node with id \"storefront\" or change edges[0].from to an existing node ID."
+    }
+  ]
+}
+```
+
+Corrected source:
+
+```yaml
+version: 1
+title: Checkout Repair Example
+direction: right
+nodes:
+  - id: web_app
+    label: Web App
+  - id: api_gateway
+    label: API Gateway
+edges:
+  - id: web_app_to_api_gateway
+    from: web_app
+    to: api_gateway
+    label: HTTPS
+```
+
 ## Error Shape
 
 Every structured validation error should include:
 
-- `path`: exact spec path.
-- `message`: concise explanation.
-- `badValue`: the invalid value when available.
-- `expected`: allowed shape or value.
+- `path`: exact DiagramSpec path to inspect or edit.
+- `message`: concise explanation of the problem. Text mode repeats this as
+  `Problem`.
+- `badValue`: the invalid value when available. Missing values may omit this
+  field or render as `<missing>` in text output.
+- `expected`: allowed shape or expected value.
 - `suggestion`: concrete repair step.
 
 Example:
