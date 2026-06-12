@@ -63,13 +63,15 @@ one yet:
 
 ```bash
 diagrampilot create docs/architecture.dp.yaml --template architecture
+diagrampilot create docs/system-context.dp.yaml --template system-context
+diagrampilot create docs/service-map.dp.yaml --template service-map
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 ```
 
-Maintained Source Creation templates are `architecture`, `flow`, and
-`package-map`. `create` writes `*.dp.yaml` source files only and refuses to
-overwrite an existing file.
+Maintained Source Creation templates are `architecture`, `flow`, `package-map`,
+`system-context`, and `service-map`. `create` writes `*.dp.yaml` source files
+only and refuses to overwrite an existing file.
 
 `*.dp.json` is not a DiagramPilot Source File path. Source files are
 `*.dp.yaml` only, repo discovery ignores JSON source files, and DiagramPilot

@@ -1,0 +1,69 @@
+version: 1
+title: System Context Diagram Example
+description: Context diagram showing DiagramPilot in a local repository workflow.
+direction: right
+metadata:
+  source: .
+nodes:
+  - id: ai_coding_agent
+    label: AI Coding Agent
+    kind: actor
+    description: Edits DiagramPilot Source Files during a code change.
+    icon: lucide:bot
+  - id: local_repository
+    label: Local Repository
+    kind: system
+    description: Stores source code, DiagramPilot Source Files, and Derived Artifacts.
+    icon: lucide:folder-git-2
+    metadata:
+      source: .
+  - id: diagrampilot_cli
+    label: DiagramPilot CLI
+    kind: tool
+    description: Validates, renders, exports, inspects, and checks the repo workflow.
+    icon: lucide:terminal
+    metadata:
+      source: packages/cli
+  - id: public_docs_site
+    label: Public Docs Site
+    kind: website
+    description: Hosts public DiagramPilot docs for users and agents.
+    icon: lucide:globe
+    metadata:
+      external_url: https://diagrampilot.com/docs/agents/quickstart.md
+  - id: pull_request
+    label: Pull Request
+    kind: review
+    description: Reviews DiagramPilot Source Files and generated artifacts together.
+    icon: lucide:git-pull-request
+groups:
+  - id: repo_native_workflow
+    label: Repo-Native Workflow
+    contains:
+      - ai_coding_agent
+      - local_repository
+      - diagrampilot_cli
+      - pull_request
+    kind: workflow
+    icon: lucide:workflow
+edges:
+  - id: ai_coding_agent_to_local_repository
+    from: ai_coding_agent
+    to: local_repository
+    label: edits source files
+    kind: source_mutation
+  - id: local_repository_to_diagrampilot_cli
+    from: local_repository
+    to: diagrampilot_cli
+    label: local commands
+    kind: command
+  - id: diagrampilot_cli_to_public_docs_site
+    from: diagrampilot_cli
+    to: public_docs_site
+    label: documented workflow
+    kind: documentation_reference
+  - id: diagrampilot_cli_to_pull_request
+    from: diagrampilot_cli
+    to: pull_request
+    label: renders and checks artifacts
+    kind: review_signal

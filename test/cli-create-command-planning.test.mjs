@@ -4,6 +4,11 @@ import test from "node:test";
 import { planCommand } from "../packages/cli/dist/index.js";
 import { createPlanningDependencies } from "./cli-command-planning-helpers.mjs";
 
+const maintainedTemplateUsage =
+  "architecture|flow|package-map|system-context|service-map";
+const maintainedTemplateList =
+  "architecture, flow, package-map, system-context, service-map";
+
 async function planCreate(args, overrides = {}) {
   return await planCommand(
     ["create", ...args],
@@ -82,6 +87,42 @@ test("plans create package-map template as a DiagramPilot Source File write", as
   });
 });
 
+test("plans create system-context template as a DiagramPilot Source File write", async () => {
+  const plan = await planCreate([
+    "docs/system-context.dp.yaml",
+    "--template",
+    "system-context",
+  ]);
+
+  assertCreateTemplatePlan(plan, {
+    path: "docs/system-context.dp.yaml",
+    createdPattern: /Created docs\/system-context\.dp\.yaml from system-context template\./,
+    validatePattern: /diagrampilot validate docs\/system-context\.dp\.yaml/,
+    renderPattern:
+      /diagrampilot render docs\/system-context\.dp\.yaml --out docs\/system-context\.svg/,
+    titlePattern: /title: Starter System Context/,
+    idPattern: /id: local_repository/,
+  });
+});
+
+test("plans create service-map template as a DiagramPilot Source File write", async () => {
+  const plan = await planCreate([
+    "docs/service-map.dp.yaml",
+    "--template",
+    "service-map",
+  ]);
+
+  assertCreateTemplatePlan(plan, {
+    path: "docs/service-map.dp.yaml",
+    createdPattern: /Created docs\/service-map\.dp\.yaml from service-map template\./,
+    validatePattern: /diagrampilot validate docs\/service-map\.dp\.yaml/,
+    renderPattern:
+      /diagrampilot render docs\/service-map\.dp\.yaml --out docs\/service-map\.svg/,
+    titlePattern: /title: Starter Service Boundary Map/,
+    idPattern: /id: edge_gateway/,
+  });
+});
+
 test("plans create non-source path as usage failure without writes", async () => {
   const plan = await planCreate([
     "docs/architecture.yaml",
@@ -93,7 +134,7 @@ test("plans create non-source path as usage failure without writes", async () =>
     exitCode: 1,
     stdout: "",
     stderr:
-      "Create path must end with .dp.yaml.\nUsage: diagrampilot create <path> --template architecture|flow|package-map\n",
+      `Create path must end with .dp.yaml.\nUsage: diagrampilot create <path> --template ${maintainedTemplateUsage}\n`,
     writes: [],
   });
 });
@@ -127,8 +168,8 @@ test("plans unsupported create template as usage failure with maintained templat
     exitCode: 1,
     stdout: "",
     stderr: [
-      "Unsupported source template: sequence. Available templates: architecture, flow, package-map.",
-      "Usage: diagrampilot create <path> --template architecture|flow|package-map",
+      `Unsupported source template: sequence. Available templates: ${maintainedTemplateList}.`,
+      `Usage: diagrampilot create <path> --template ${maintainedTemplateUsage}`,
       "",
     ].join("\n"),
     writes: [],

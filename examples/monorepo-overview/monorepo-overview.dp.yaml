@@ -1,0 +1,171 @@
+version: 1
+title: Monorepo Overview Example
+description: Medium-complexity workspace view showing packages, public docs, exports, and artifact workflow.
+direction: right
+metadata:
+  source: .
+nodes:
+  - id: public_docs
+    label: docs-public
+    kind: documentation
+    description: Canonical public documentation source.
+    icon: lucide:book-open
+    metadata:
+      source: docs-public
+  - id: website_app
+    label: website
+    kind: app
+    description: Static website that publishes public docs.
+    icon: lucide:globe
+    metadata:
+      source: website
+  - id: cli_package
+    label: packages/cli
+    kind: package
+    description: Local Agent Authoring Loop commands.
+    icon: lucide:terminal
+    metadata:
+      source: packages/cli
+  - id: core_package
+    label: packages/core
+    kind: package
+    description: DiagramSpec validation, source loading, and repo workflow checks.
+    icon: lucide:box
+    metadata:
+      source: packages/core
+  - id: render_svg_package
+    label: packages/render-svg
+    kind: package
+    description: SVG Derived Artifact renderer with provenance.
+    icon: lucide:file-image
+    metadata:
+      source: packages/render-svg
+  - id: export_mermaid_package
+    label: packages/export-mermaid
+    kind: package
+    description: Mermaid export workflow.
+    icon: lucide:file-code
+    metadata:
+      source: packages/export-mermaid
+  - id: export_d2_package
+    label: packages/export-d2
+    kind: package
+    description: D2 export workflow.
+    icon: lucide:file-code
+    metadata:
+      source: packages/export-d2
+  - id: export_dot_package
+    label: packages/export-dot
+    kind: package
+    description: DOT export workflow.
+    icon: lucide:file-code
+    metadata:
+      source: packages/export-dot
+  - id: mcp_package
+    label: packages/mcp
+    kind: package
+    description: Local MCP server resources and tools.
+    icon: lucide:plug
+    metadata:
+      source: packages/mcp
+  - id: icons_package
+    label: packages/icons
+    kind: package
+    description: Packaged Lucide icon registry.
+    icon: lucide:shapes
+    metadata:
+      source: packages/icons
+groups:
+  - id: public_surface
+    label: Public Surface
+    contains:
+      - public_docs
+      - website_app
+    kind: boundary
+    description: Public Repository Surface that users and agents read first.
+    icon: lucide:layout-template
+    metadata:
+      source: docs-public
+  - id: package_workspace
+    label: Package Workspace
+    contains:
+      - cli_package
+      - core_package
+      - render_svg_package
+      - export_workspace
+      - mcp_package
+      - icons_package
+    kind: workspace
+    description: Public Package Set and local workflow packages.
+    icon: lucide:boxes
+    metadata:
+      source: packages
+  - id: export_workspace
+    label: Export Packages
+    contains:
+      - export_mermaid_package
+      - export_d2_package
+      - export_dot_package
+    kind: workspace
+    description: Text export packages used by the CLI.
+    icon: lucide:file-code
+    metadata:
+      source: packages/export-*
+edges:
+  - id: public_docs_to_website_app
+    from: public_docs
+    to: website_app
+    label: synced to site routes
+    kind: documentation_flow
+    metadata:
+      source: website/scripts/sync-public-docs.mjs
+  - id: cli_package_to_core_package
+    from: cli_package
+    to: core_package
+    label: validates and checks sources
+    kind: imports
+    metadata:
+      source: packages/cli/src/command-planning.ts
+  - id: cli_package_to_render_svg_package
+    from: cli_package
+    to: render_svg_package
+    label: renders provenance SVG
+    kind: imports
+    metadata:
+      source: packages/cli/src/source-command-planning.ts
+  - id: cli_package_to_export_mermaid_package
+    from: cli_package
+    to: export_mermaid_package
+    label: exports Mermaid
+    kind: imports
+    metadata:
+      source: packages/cli/src/source-command-planning.ts
+  - id: cli_package_to_export_d2_package
+    from: cli_package
+    to: export_d2_package
+    label: exports D2
+    kind: imports
+    metadata:
+      source: packages/cli/src/source-command-planning.ts
+  - id: cli_package_to_export_dot_package
+    from: cli_package
+    to: export_dot_package
+    label: exports DOT
+    kind: imports
+    metadata:
+      source: packages/cli/src/source-command-planning.ts
+  - id: core_package_to_icons_package
+    from: core_package
+    to: icons_package
+    label: validates packaged icons
+    kind: imports
+    metadata:
+      source: packages/core/src/diagramspec-icon-validation.ts
+  - id: mcp_package_to_core_package
+    from: mcp_package
+    to: core_package
+    label: validates source tools
+    kind: imports
+    metadata:
+      source: packages/mcp/src/tool-helpers.ts
+

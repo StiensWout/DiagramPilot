@@ -55,6 +55,8 @@ directory:
 ```bash
 diagrampilot inspect
 diagrampilot create docs/architecture.dp.yaml --template architecture
+diagrampilot create docs/system-context.dp.yaml --template system-context
+diagrampilot create docs/service-map.dp.yaml --template service-map
 diagrampilot format docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot inspect docs --json
@@ -76,7 +78,12 @@ Current Source Creation path:
 
 ```bash
 diagrampilot create docs/architecture.dp.yaml --template architecture
+diagrampilot create docs/system-context.dp.yaml --template system-context
+diagrampilot create docs/service-map.dp.yaml --template service-map
 ```
+
+Maintained Source Creation templates are `architecture`, `flow`, `package-map`,
+`system-context`, and `service-map`.
 
 Mermaid is a diagram syntax. DiagramPilot is an agent-safe compiler and
 workflow that keeps DiagramSpec source validated, reviewable, and able to

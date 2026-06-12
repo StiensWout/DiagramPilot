@@ -1,0 +1,69 @@
+version: 1
+title: Dependency Map Example
+description: Package dependency map for a DiagramPilot-style workspace.
+direction: right
+metadata:
+  source: packages
+nodes:
+  - id: cli_package
+    label: packages/cli
+    kind: package
+    description: Command-line workflow surface.
+    icon: lucide:terminal
+    metadata:
+      source: packages/cli
+  - id: core_package
+    label: packages/core
+    kind: package
+    description: DiagramSpec validation and repo workflow logic.
+    icon: lucide:box
+    metadata:
+      source: packages/core
+  - id: render_svg_package
+    label: packages/render-svg
+    kind: package
+    description: SVG renderer integration.
+    icon: lucide:file-image
+    metadata:
+      source: packages/render-svg
+  - id: export_mermaid_package
+    label: packages/export-mermaid
+    kind: package
+    description: Mermaid text exporter.
+    icon: lucide:file-code
+    metadata:
+      source: packages/export-mermaid
+  - id: icons_package
+    label: packages/icons
+    kind: package
+    description: Packaged Lucide icon metadata.
+    icon: lucide:shapes
+    metadata:
+      source: packages/icons
+edges:
+  - id: cli_package_to_core_package
+    from: cli_package
+    to: core_package
+    label: validates and checks
+    kind: imports
+  - id: cli_package_to_render_svg_package
+    from: cli_package
+    to: render_svg_package
+    label: renders SVG
+    kind: imports
+  - id: cli_package_to_export_mermaid_package
+    from: cli_package
+    to: export_mermaid_package
+    label: exports Mermaid
+    kind: imports
+  - id: core_package_to_icons_package
+    from: core_package
+    to: icons_package
+    label: validates icons
+    kind: imports
+  - id: render_svg_package_to_core_package
+    from: render_svg_package
+    to: core_package
+    label: reads source metadata
+    kind: imports
+

@@ -1,0 +1,80 @@
+version: 1
+title: Pull Request Architecture Review Example
+description: Review-focused diagram for a pull request that changes a checkout path.
+direction: right
+metadata:
+  source: pull-request
+nodes:
+  - id: changed_source_files
+    label: Changed Source Files
+    kind: code
+    icon: lucide:file-code
+    metadata:
+      source: src/**/*.ts
+  - id: diagram_source
+    label: DiagramPilot Source File
+    kind: source_file
+    icon: lucide:file-text
+    metadata:
+      source: docs/architecture.dp.yaml
+  - id: svg_artifact
+    label: Review SVG
+    kind: derived_artifact
+    icon: lucide:file-image
+    metadata:
+      source: docs/architecture.svg
+  - id: mermaid_export
+    label: Mermaid Export
+    kind: derived_artifact
+    icon: lucide:file-code
+    metadata:
+      source: docs/architecture.mmd
+  - id: repo_workflow_check
+    label: Repo Workflow Check
+    kind: check
+    icon: lucide:check-check
+    metadata:
+      source: .github/workflows/ci.yml
+  - id: reviewer
+    label: Pull Request Reviewer
+    kind: person
+    icon: lucide:user-check
+groups:
+  - id: pull_request_review
+    label: Pull Request Review
+    contains:
+      - changed_source_files
+      - diagram_source
+      - svg_artifact
+      - mermaid_export
+      - repo_workflow_check
+      - reviewer
+    kind: workflow
+    icon: lucide:git-pull-request
+edges:
+  - id: changed_source_files_to_diagram_source
+    from: changed_source_files
+    to: diagram_source
+    label: architecture update
+    kind: source_update
+  - id: diagram_source_to_svg_artifact
+    from: diagram_source
+    to: svg_artifact
+    label: render --out
+    kind: render
+  - id: diagram_source_to_mermaid_export
+    from: diagram_source
+    to: mermaid_export
+    label: export --format mermaid
+    kind: export
+  - id: svg_artifact_to_repo_workflow_check
+    from: svg_artifact
+    to: repo_workflow_check
+    label: provenance checked
+    kind: artifact_check
+  - id: repo_workflow_check_to_reviewer
+    from: repo_workflow_check
+    to: reviewer
+    label: reviewable status
+    kind: review_signal
+
