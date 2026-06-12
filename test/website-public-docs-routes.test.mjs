@@ -34,8 +34,16 @@ test("public docs sync can run concurrently without deleting current generated d
 test("website publishes public docs as human HTML and agent Markdown routes", async () => {
   await websiteBuild();
 
+  const publicDocsIndex = await readFile(
+    path.join(repoRoot, "docs-public", "index.md"),
+    "utf8",
+  );
   const sourceMarkdown = await readFile(
     path.join(repoRoot, "docs-public", "agents", "quickstart.md"),
+    "utf8",
+  );
+  const syncedIndexMarkdown = await readFile(
+    path.join(repoRoot, "website", "src", "content", "docs", "docs", "index.md"),
     "utf8",
   );
   const html = await readFile(
@@ -61,9 +69,26 @@ test("website publishes public docs as human HTML and agent Markdown routes", as
     ),
     "utf8",
   );
+  const websiteIndexMarkdown = await readFile(
+    path.join(repoRoot, "website", "dist", "docs", "index.md"),
+    "utf8",
+  );
 
   assert.match(html, /Try DiagramPilot With The Checkout Demo Project/);
   assert.match(html, /diagrampilot check/);
+  assert.match(
+    publicDocsIndex,
+    /\[Checkout demo quickstart]\(agents\/quickstart\.md\)/,
+  );
+  assert.match(
+    syncedIndexMarkdown,
+    /\[Checkout demo quickstart]\(https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md\)/,
+  );
+  assert.match(
+    websiteIndexMarkdown,
+    /\[Checkout demo quickstart]\(https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md\)/,
+  );
+  assert.doesNotMatch(websiteIndexMarkdown, /\]\(agents\//);
   assert.equal(markdown, sourceMarkdown);
   assert.equal(
     await exists("website/src/content/docs/docs/agents/quickstart.md"),

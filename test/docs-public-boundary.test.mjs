@@ -260,11 +260,11 @@ test("README describes current behavior and public docs only", async () => {
 
   assert.match(
     readme,
-    /https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md/,
+    /docs-public\/agents\/quickstart\.md/,
   );
   assert.match(
     readme,
-    /https:\/\/diagrampilot\.com\/schema\/diagramspec-v1\.schema\.json/,
+    /schema\/diagramspec-v1\.schema\.json/,
   );
 
   assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/development\//);
@@ -274,7 +274,7 @@ test("README describes current behavior and public docs only", async () => {
   assert.doesNotMatch(readme, /docs\/development\//);
   assert.doesNotMatch(readme, /docs\/adr\//);
   assert.doesNotMatch(readme, /\.scratch\//);
-  assert.match(readme, /https:\/\/diagrampilot\.com\/docs\/agents\/mcp\.md/);
+  assert.match(readme, /docs-public\/agents\/mcp\.md/);
   assert.match(readme, /diagrampilot mcp/);
   assert.match(readme, /alpha Model Context Protocol stdio server/);
   assert.doesNotMatch(readme, /planned|deferred|future|not implemented|source mutation/i);
@@ -324,7 +324,7 @@ test("public quickstart and README route users through the checkout demo workflo
     /another repository/i,
   ]);
   assertMatchesAll(readme, [
-    /https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md/,
+    /docs-public\/agents\/quickstart\.md/,
     /diagrampilot validate docs\/architecture\.dp\.yaml/,
     /diagrampilot render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/,
   ]);
@@ -344,7 +344,7 @@ test("public quickstart and README route users through the checkout demo workflo
   );
 });
 
-test("landing page, README, and llms.txt share the canonical quickstart route", async () => {
+test("landing page, README, and llms.txt use context-appropriate quickstart routes", async () => {
   const landingPage = await readFile(
     path.join(repoRoot, "website", "src", "pages", "index.astro"),
     "utf8",
@@ -355,7 +355,7 @@ test("landing page, README, and llms.txt share the canonical quickstart route", 
   assert.match(landingPage, /href="\/docs\/agents\/quickstart\/"/);
   assert.match(
     readme,
-    /https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md/,
+    /docs-public\/agents\/quickstart\.md/,
   );
   assert.match(
     llmsText,

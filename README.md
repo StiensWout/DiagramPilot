@@ -16,7 +16,7 @@ available, Repo Workflow Configuration can define expected artifacts,
 `diagrampilot generate` refreshes configured Derived Artifacts and generated
 Markdown embed files, and MCP is a shipped alpha integration. Existing users
 should review the
-[0.2 -> 0.3 upgrade guide](https://diagrampilot.com/docs/agents/installation.md#02---03-upgrade-guide).
+[0.2 -> 0.3 upgrade guide](docs-public/agents/installation.md#02---03-upgrade-guide).
 
 Public documentation is hosted at `https://diagrampilot.com`.
 
@@ -24,11 +24,11 @@ Public documentation is hosted at `https://diagrampilot.com`.
 
 Install, run, or remove the package:
 
-- [Installation and removal guide](https://diagrampilot.com/docs/agents/installation.md)
+- [Installation and removal guide](docs-public/agents/installation.md)
 
 Start with the Checkout Demo Project:
 
-- [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md)
+- [Checkout demo quickstart](docs-public/agents/quickstart.md)
 - Demo source file: `demo-projects/checkout/docs/architecture.dp.yaml`
 - Demo SVG artifact: `demo-projects/checkout/docs/architecture.svg`
 
@@ -166,15 +166,15 @@ valid.
 `mcp` launches the alpha Model Context Protocol stdio server for local MCP
 clients. It exposes read-only DiagramPilot resources, validation, repo check,
 export, render, and prompt helpers. See the
-[MCP guide](https://diagrampilot.com/docs/agents/mcp.md).
+[MCP guide](docs-public/agents/mcp.md).
 
 ## Public References
 
-- [Public documentation](https://diagrampilot.com/docs/index.md)
-- [Installation and removal guide](https://diagrampilot.com/docs/agents/installation.md)
-- [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md)
-- [MCP guide](https://diagrampilot.com/docs/agents/mcp.md)
-- [DiagramSpec v1 JSON Schema](https://diagrampilot.com/schema/diagramspec-v1.schema.json)
+- [Public documentation](docs-public/index.md)
+- [Installation and removal guide](docs-public/agents/installation.md)
+- [Checkout demo quickstart](docs-public/agents/quickstart.md)
+- [MCP guide](docs-public/agents/mcp.md)
+- [DiagramSpec v1 JSON Schema](schema/diagramspec-v1.schema.json)
 
 npm packages:
 

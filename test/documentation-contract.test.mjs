@@ -66,6 +66,12 @@ const canonicalPublicLinks = [
   "https://diagrampilot.com/docs/agents/mcp.md",
   "https://diagrampilot.com/schema/diagramspec-v1.schema.json",
 ];
+const readmePublicLinks = [
+  "docs-public/agents/quickstart.md",
+  "docs-public/agents/installation.md",
+  "docs-public/agents/mcp.md",
+  "schema/diagramspec-v1.schema.json",
+];
 
 async function readContract() {
   return readFile(contractPath, "utf8");
@@ -113,6 +119,24 @@ test("internal Documentation Contract names canonical and generated documentatio
     /website\/src\/content\/docs\/docs\/.*generated synced Starlight/s,
     /ignored/,
     /not canonical/,
+  ]);
+});
+
+test("Documentation Contract defines public link contexts", async () => {
+  const contract = await readContract();
+
+  assertMatchesAll(contract, [
+    /## Link Context Rules/,
+    /GitHub-rendered docs/,
+    /repo-relative links/,
+    /README\.md/,
+    /docs-public\/agents\/quickstart\.md/,
+    /Website-rendered docs/,
+    /https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md/,
+    /Package README/i,
+    /npm/i,
+    /llms\.txt/,
+    /site-oriented public agent entrypoint/i,
   ]);
 });
 
@@ -239,8 +263,9 @@ test("Documentation Contract drift checks align commands and canonical public li
     assertIncludesAll(source, demoWorkflowCommands, label);
   }
 
-  assertIncludesAll(readme, canonicalPublicLinks, "README.md");
+  assertIncludesAll(readme, readmePublicLinks, "README.md");
   assertIncludesAll(llmsText, canonicalPublicLinks, "llms.txt");
+  assertIncludesAll(builtPublicDocsIndex, canonicalPublicLinks, "website/dist/docs/index.md");
   assert.match(publicDocsIndex, /\[Checkout demo quickstart]\(agents\/quickstart\.md\)/);
   assert.match(publicDocsIndex, /\[MCP guide]\(agents\/mcp\.md\)/);
   assert.match(
@@ -253,7 +278,8 @@ test("Documentation Contract drift checks align commands and canonical public li
   assert.match(websiteLanding, /href="\/docs\/agents\/quickstart\/"/);
   assert.match(websiteLanding, /\/landing\/hero-workflow\.png/);
   assert.doesNotMatch(websiteLanding, /\/landing\/agent-flow(?:-v2)?\.png/);
-  assert.equal(builtPublicDocsIndex, publicDocsIndex);
+  assert.notEqual(builtPublicDocsIndex, publicDocsIndex);
+  assert.doesNotMatch(builtPublicDocsIndex, /\]\(agents\//);
 });
 
 test("canonical public install and removal guidance is complete and linked", async () => {
@@ -327,17 +353,17 @@ test("canonical public install and removal guidance is complete and linked", asy
   assert.doesNotMatch(installationGuide, /npm run build|packages\/cli\/dist/);
   assert.doesNotMatch(installationGuide, /prealpha|preparing `0\.2\.0`/i);
 
-  for (const [label, source] of [
-    ["README.md", readme],
-    ["llms.txt", llmsText],
-    ["docs/development/documentation-contract.md", contract],
-  ]) {
-    assertIncludesAll(
-      source,
-      ["https://diagrampilot.com/docs/agents/installation.md"],
-      label,
-    );
-  }
+  assertIncludesAll(readme, ["docs-public/agents/installation.md"], "README.md");
+  assertIncludesAll(
+    llmsText,
+    ["https://diagrampilot.com/docs/agents/installation.md"],
+    "llms.txt",
+  );
+  assertIncludesAll(
+    contract,
+    ["https://diagrampilot.com/docs/agents/installation.md"],
+    "docs/development/documentation-contract.md",
+  );
 
   assert.match(
     publicDocsIndex,
