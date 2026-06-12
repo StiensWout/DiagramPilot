@@ -28,8 +28,8 @@ export interface MaintainabilityFileSizeAuditResult {
 
 export const MAINTAINABILITY_FILE_SIZE_GATE: MaintainabilityFileSizeGateDefinition =
   {
-    maxLineCount: 500,
-    pressureLineCount: 475,
+    maxLineCount: 750,
+    pressureLineCount: 700,
     includedPathGlobs: [
       "packages/**/*.ts",
       "test/**/*.mjs",

@@ -5,13 +5,6 @@ interface ExportOptions {
   viewId?: string;
 }
 
-interface RenderCommandOptions {
-  format: "svg" | "png";
-  outPath: string;
-  sourcePath: string;
-  viewId?: string;
-}
-
 interface CheckCommandOptions {
   json: boolean;
   scopePath?: string;
@@ -38,13 +31,11 @@ type ArgsResult<TOptions> =
     };
 
 type ExportArgsResult = ArgsResult<ExportOptions>;
-type RenderArgsResult = ArgsResult<RenderCommandOptions>;
 type CheckArgsResult = ArgsResult<CheckCommandOptions>;
 type InspectArgsResult = ArgsResult<InspectCommandOptions>;
 type GenerateArgsResult = ArgsResult<GenerateCommandOptions>;
 
 const exportFormats = ["mermaid", "d2", "dot"] as const;
-const renderFormats = ["svg", "png"] as const;
 
 interface OutputCommandArgsConfig<TFormat extends string> {
   commandName: "export" | "render";
@@ -404,6 +395,7 @@ export {
   parseLintArgs,
   parseValidateArgs,
 } from "./validate-argument-parsing.js";
+export { parseRenderArgs } from "./render-argument-parsing.js";
 
 export function parseExportArgs(args: readonly string[]): ExportArgsResult {
   return parseOutputCommandArgs(args, {
@@ -413,38 +405,6 @@ export function parseExportArgs(args: readonly string[]): ExportArgsResult {
     missingOutPathMessage: "Missing export output path.",
     requireOutPath: false,
   });
-}
-
-export function parseRenderArgs(args: readonly string[]): RenderArgsResult {
-  const result = parseOutputCommandArgs(args, {
-    commandName: "render",
-    defaultFormat: "svg",
-    formats: renderFormats,
-    missingFormatMessage: "Missing render format.",
-    missingOutPathMessage: "Missing render output path.",
-    requireOutPath: true,
-  });
-
-  if (!result.ok) {
-    return result;
-  }
-
-  if (result.options.outPath === undefined) {
-    return {
-      ok: false,
-      message: "Missing render output path.",
-    };
-  }
-
-  return {
-    ok: true,
-    options: {
-      format: result.options.format,
-      outPath: result.options.outPath,
-      sourcePath: result.options.sourcePath,
-      viewId: result.options.viewId,
-    },
-  };
 }
 
 export function parseCheckArgs(args: readonly string[]): CheckArgsResult {

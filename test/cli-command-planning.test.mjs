@@ -11,6 +11,23 @@ import {
   validLoadResult,
   validationFailure,
 } from "./cli-command-planning-helpers.mjs";
+
+const renderUsageText = [
+  "Usage:",
+  "  diagrampilot render <path> --out <path>",
+  "  diagrampilot render <path> --view <view-id> --out <path>",
+  "  diagrampilot render <path> --group <group-id> --out <path>",
+  "  diagrampilot render <path> --around <node-id> --depth <n> --out <path>",
+  "  diagrampilot render <path> --hide-edge-labels --out <path>",
+  "  diagrampilot render <path> --format svg --out <path>",
+  "  diagrampilot render <path> --format png --out <path>",
+  "",
+].join("\n");
+
+function renderUsageFailureText(message) {
+  return `${message}\n${renderUsageText}`;
+}
+
 function assertSingleWritePlan(plan, write) {
   assert.deepEqual(plan, {
     exitCode: 0,
@@ -305,15 +322,7 @@ test("plans render missing output path as usage on stderr", async () => {
   assert.deepEqual(plan, {
     exitCode: 1,
     stdout: "",
-    stderr: [
-      "Missing render output path.",
-      "Usage:",
-      "  diagrampilot render <path> --out <path>",
-      "  diagrampilot render <path> --view <view-id> --out <path>",
-      "  diagrampilot render <path> --format svg --out <path>",
-      "  diagrampilot render <path> --format png --out <path>",
-      "",
-    ].join("\n"),
+    stderr: renderUsageFailureText("Missing render output path."),
     writes: [],
   });
 });
@@ -338,15 +347,7 @@ test("plans unsupported render format as repairable usage without loading the so
   assert.deepEqual(plan, {
     exitCode: 1,
     stdout: "",
-    stderr: [
-      "Unsupported render format: pdf",
-      "Usage:",
-      "  diagrampilot render <path> --out <path>",
-      "  diagrampilot render <path> --view <view-id> --out <path>",
-      "  diagrampilot render <path> --format svg --out <path>",
-      "  diagrampilot render <path> --format png --out <path>",
-      "",
-    ].join("\n"),
+    stderr: renderUsageFailureText("Unsupported render format: pdf"),
     writes: [],
   });
 });
@@ -439,17 +440,7 @@ test("plans subcommand help output", async () => {
     ],
     ["inspect", "Usage: diagrampilot inspect [path] [--json]\n"],
     ["lint", "Usage: diagrampilot lint <path> [--json]\n"],
-    [
-      "render",
-      [
-        "Usage:",
-        "  diagrampilot render <path> --out <path>",
-        "  diagrampilot render <path> --view <view-id> --out <path>",
-        "  diagrampilot render <path> --format svg --out <path>",
-        "  diagrampilot render <path> --format png --out <path>",
-        "",
-      ].join("\n"),
-    ],
+    ["render", renderUsageText],
     [
       "export",
       [

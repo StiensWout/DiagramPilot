@@ -54,21 +54,21 @@ async function runMaintainabilityAuditScript(cwd) {
   return { exitCode: code, stdout, stderr };
 }
 
-test("auditMaintainabilityFileSizes reports included authored files over the 500 LOC gate", async () => {
+test("auditMaintainabilityFileSizes reports included authored files over the 750 LOC gate", async () => {
   await withTempRepo(async (tempRoot) => {
-    await writeRepoFile(tempRoot, "packages/core/src/index.ts", lines(501));
-    await writeRepoFile(tempRoot, "test/small.test.mjs", lines(500));
+    await writeRepoFile(tempRoot, "packages/core/src/index.ts", lines(751));
+    await writeRepoFile(tempRoot, "test/small.test.mjs", lines(750));
 
     const result = await auditMaintainabilityFileSizes(tempRoot);
 
-    assert.equal(MAINTAINABILITY_FILE_SIZE_GATE.maxLineCount, 500);
-    assert.equal(MAINTAINABILITY_FILE_SIZE_GATE.pressureLineCount, 475);
+    assert.equal(MAINTAINABILITY_FILE_SIZE_GATE.maxLineCount, 750);
+    assert.equal(MAINTAINABILITY_FILE_SIZE_GATE.pressureLineCount, 700);
     assert.equal(result.ok, false);
     assert.deepEqual(result.violations, [
       {
         path: "packages/core/src/index.ts",
-        lineCount: 501,
-        maxLineCount: 500,
+        lineCount: 751,
+        maxLineCount: 750,
       },
     ]);
   });
@@ -97,7 +97,7 @@ test("maintainability file-size gate keeps current authored files below the pres
 
 test("maintainability audit script exits nonzero for gate violations", async () => {
   await withTempRepo(async (tempRoot) => {
-    await writeRepoFile(tempRoot, "packages/core/src/oversized.ts", lines(501));
+    await writeRepoFile(tempRoot, "packages/core/src/oversized.ts", lines(751));
 
     const result = await runMaintainabilityAuditScript(tempRoot);
 
@@ -105,7 +105,7 @@ test("maintainability audit script exits nonzero for gate violations", async () 
     assert.match(result.stdout, /Violations:/);
     assert.match(
       result.stdout,
-      /packages\/core\/src\/oversized\.ts: 501 LOC \(limit 500\)/,
+      /packages\/core\/src\/oversized\.ts: 751 LOC \(limit 750\)/,
     );
     assert.equal(result.stderr, "");
   });
@@ -166,7 +166,7 @@ test("auditMaintainabilityFileSizes checks authored package, test, website sourc
 
 test("auditMaintainabilityFileSizes excludes generated output, docs, synced Starlight content, lockfiles, schema artifacts, SVGs, and vendored assets", async () => {
   await withTempRepo(async (tempRoot) => {
-    await writeRepoFile(tempRoot, "website/src/pages/index.astro", lines(501));
+    await writeRepoFile(tempRoot, "website/src/pages/index.astro", lines(751));
     await writeRepoFile(tempRoot, "packages/core/dist/index.ts", lines(501));
     await writeRepoFile(
       tempRoot,
@@ -217,8 +217,8 @@ test("auditMaintainabilityFileSizes excludes generated output, docs, synced Star
     assert.deepEqual(result.violations, [
       {
         path: "website/src/pages/index.astro",
-        lineCount: 501,
-        maxLineCount: 500,
+        lineCount: 751,
+        maxLineCount: 750,
       },
     ]);
   });

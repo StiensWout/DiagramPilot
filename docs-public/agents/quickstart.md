@@ -233,6 +233,29 @@ diagrampilot render docs/architecture.dp.yaml --view runtime --out docs/architec
 Views are declared in the DiagramSpec `views` collection. They filter the
 validated source before render/export and do not mutate the source file.
 
+Render one group from the same source when reviewers need a bounded subsystem:
+
+```bash
+diagrampilot render docs/architecture.dp.yaml --group checkout_runtime --out docs/architecture-checkout-runtime.svg
+```
+
+Render a selected node neighborhood when a review starts from one Stable ID:
+
+```bash
+diagrampilot render docs/architecture.dp.yaml --around orders_service --depth 1 --out docs/architecture-orders-service.svg
+```
+
+Render an overview artifact without edge labels when labels make a large
+diagram harder to scan:
+
+```bash
+diagrampilot render docs/architecture.dp.yaml --hide-edge-labels --out docs/architecture-overview.svg
+```
+
+Focused render filters apply after `--view` when both are provided. They write
+only the requested Derived Artifact and never mutate the DiagramPilot Source
+File.
+
 Render PNG from the same local render path when a raster artifact is needed:
 
 ```bash
@@ -330,6 +353,9 @@ diagrampilot lint docs/architecture.dp.yaml --json
 diagrampilot format docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --view runtime --out docs/architecture-runtime.svg
+diagrampilot render docs/architecture.dp.yaml --group checkout_runtime --out docs/architecture-checkout-runtime.svg
+diagrampilot render docs/architecture.dp.yaml --around orders_service --depth 1 --out docs/architecture-orders-service.svg
+diagrampilot render docs/architecture.dp.yaml --hide-edge-labels --out docs/architecture-overview.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --view runtime --format mermaid --out docs/architecture-runtime.mmd
@@ -402,6 +428,18 @@ removed or moved.
 
 `diagrampilot render <path> --view <view-id> --out <artifact.svg>`
 : Renders a declared DiagramSpec view projection to SVG without changing the
+source file.
+
+`diagrampilot render <path> --group <group-id> --out <artifact.svg>`
+: Renders one group with its contained nodes, nested groups, and local edges
+while excluding unrelated diagram objects.
+
+`diagrampilot render <path> --around <node-id> --depth <n> --out <artifact.svg>`
+: Renders a node neighborhood to the requested connection depth, preserving
+group context for included nodes.
+
+`diagrampilot render <path> --hide-edge-labels --out <artifact.svg>`
+: Renders an overview artifact without edge labels and without changing the
 source file.
 
 `diagrampilot render <path> --format svg|png --out <path>`
