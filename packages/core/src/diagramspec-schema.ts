@@ -160,6 +160,8 @@ export function createDiagramSpecV1JsonSchema(): JsonSchemaDocument {
             $ref: "#/$defs/plainText",
           },
           kind: {
+            description:
+              "Open semantic tag for edge meaning. DiagramPilot has recommended known kinds, but custom stable-id-shaped kinds remain valid.",
             $ref: "#/$defs/stableId",
           },
           description: {

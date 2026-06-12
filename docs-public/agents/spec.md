@@ -269,6 +269,28 @@ Optional edge fields:
 `from` and `to` must reference existing node IDs. Edges are directed by default.
 Use `directed: false` for an undirected connection.
 
+`kind` is an open semantic tag, not a strict enum. Custom stable-ID-shaped edge
+kinds remain valid, but DiagramPilot gives known behavior to these recommended
+edge kinds:
+
+- `request` for synchronous requests and responses.
+- `event` for asynchronous event publication or consumption.
+- `data_flow` for data movement, replication, or transformation.
+- `dependency` for build-time, runtime, or operational dependencies.
+- `command` for state-changing commands or instructions.
+- `query` for read-only lookups or retrieval.
+- `write` for persistent state writes.
+- `identity` for authentication or identity assertion flows.
+- `authorization` for permission, policy, or access-control decisions.
+- `observability` for logs, metrics, traces, or alerts.
+- `deployment` for release, provisioning, or infrastructure deployment flows.
+- `incident` for incident response, escalation, or remediation flows.
+
+SVG rendering styles these known edge kinds with fixed renderer-neutral colors
+and dash patterns and adds a generated edge-kind legend when known edge kinds
+are present. Unknown edge kinds validate and render as normal edges, but they do
+not receive built-in styling or a generated legend entry.
+
 Edge IDs are stable identities. Endpoint-derived IDs are recommended for new
 edges, but an existing edge ID should not be automatically regenerated when an
 edge is rerouted.
@@ -490,6 +512,7 @@ dropped as meaning the target output does not carry that DiagramSpec field.
 | Groups | Approximated as Mermaid subgraphs. | Preserved as nested containers; edge endpoints use container paths. | Approximated as Graphviz clusters. |
 | Edge labels | Preserved with Mermaid edge labels. | Preserved after the connection. | Preserved as edge `label` attributes. |
 | Edge direction | Preserved with arrow or undirected connectors. | Preserved with directed or undirected connectors. | Preserved with directed edges and `dir=none` for undirected edges. |
+| Edge kind semantics | Dropped; Mermaid output keeps topology and labels only. | Known kinds are approximated as fixed D2 edge styles for SVG rendering; unknown kinds are dropped. | Dropped; DOT output keeps topology and labels only. |
 | Icons | Dropped. | Dropped. | Dropped. |
 | Kinds | Dropped. | Dropped. | Dropped. |
 | Metadata | Dropped. | Dropped. | Partly preserved: `source` becomes `tooltip`, and `external_url` becomes `URL`; other metadata is dropped. |

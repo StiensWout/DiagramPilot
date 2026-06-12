@@ -113,7 +113,7 @@ test("lintDiagramSpec warns about missing edge kinds", () => {
       severity: "warning",
       message: 'Edge "web_app_to_api_gateway" does not have a kind.',
       suggestion:
-        "Add an edge kind such as request, event, data_flow, dependency, or observability.",
+        "Add an edge kind such as request, event, data_flow, dependency, command, query, write, identity, authorization, observability, deployment, or incident.",
     },
   ]);
 });

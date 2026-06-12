@@ -1,11 +1,13 @@
 import {
   createDiagramSpecTopology,
   formatDiagramSpecTopologyLines,
+  getDiagramSpecKnownEdgeKind,
 } from "@diagrampilot/core";
 import type {
   DiagramSpec,
   DiagramSpecEdge,
   DiagramSpecGroup,
+  DiagramSpecKnownEdgeKind,
   DiagramSpecNode,
   DiagramSpecTopology,
   RepoWorkflowOutputProfile,
@@ -43,7 +45,7 @@ function d2NodePath(
   return topology.nodePathsById.get(nodeId)?.join(".") ?? nodeId;
 }
 
-function edgeDefinition(
+function edgeConnectionLine(
   edge: DiagramSpecEdge,
   topology: DiagramSpecTopology,
 ): string {
@@ -52,11 +54,40 @@ function edgeDefinition(
   const to = d2NodePath(topology, edge.to);
   const connection = `${from} ${connector} ${to}`;
 
-  if (edge.label === undefined) {
-    return connection;
+  return edge.label === undefined ? connection : `${connection}: ${quoted(edge.label)}`;
+}
+
+function edgeKindStyleLines(kind: DiagramSpecKnownEdgeKind): string[] {
+  const lines = [`style.stroke: ${quoted(kind.stroke)}`];
+
+  if (kind.dash !== undefined) {
+    lines.push(`style.stroke-dash: ${quoted(kind.dash)}`);
   }
 
-  return `${connection}: ${quoted(edge.label)}`;
+  return lines;
+}
+
+function styledEdgeLine(
+  line: string,
+  kind: DiagramSpecKnownEdgeKind,
+): string {
+  return [
+    `${line} {`,
+    ...edgeKindStyleLines(kind).map((style) => `${indent(1)}${style}`),
+    "}",
+  ].join("\n");
+}
+
+function edgeDefinition(
+  edge: DiagramSpecEdge,
+  topology: DiagramSpecTopology,
+): string {
+  const line = edgeConnectionLine(edge, topology);
+  const knownKind = getDiagramSpecKnownEdgeKind(edge.kind);
+
+  if (knownKind === undefined) return line;
+
+  return styledEdgeLine(line, knownKind);
 }
 
 function effectiveProfile(

@@ -8,6 +8,7 @@ import {
 } from "@diagrampilot/core";
 import {
   addSvgProvenanceMetadata,
+  addSvgEdgeKindLegend,
   createSvgRendererProvenance,
   renderDiagramSpecToSvg,
 } from "@diagrampilot/render-svg";
@@ -105,4 +106,39 @@ test("renderDiagramSpecToSvg applies output profiles to rendered SVG output", as
   assert.match(clean, /<svg\b/);
   assert.match(presentation, /<svg\b/);
   assert.notEqual(presentation, clean);
+});
+
+test("SVG rendering adds a visible legend for known edge semantics", () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg"><g></g></svg>';
+  const spec = {
+    version: 1,
+    title: "Semantic Edges",
+    nodes: [
+      { id: "web_app", label: "Web App" },
+      { id: "api_gateway", label: "API Gateway" },
+    ],
+    edges: [
+      {
+        id: "web_to_api",
+        from: "web_app",
+        to: "api_gateway",
+        label: "HTTPS",
+        kind: "request",
+      },
+      {
+        id: "custom_signal",
+        from: "api_gateway",
+        to: "web_app",
+        kind: "custom_signal",
+      },
+    ],
+  };
+
+  const withLegend = addSvgEdgeKindLegend(svg, spec);
+
+  assert.match(withLegend, /id="diagrampilot-edge-kind-legend"/);
+  assert.match(withLegend, />Edge kinds</);
+  assert.match(withLegend, />Request</);
+  assert.doesNotMatch(withLegend, /custom_signal/);
+  assert.match(withLegend, /<\/g><\/svg>$/);
 });

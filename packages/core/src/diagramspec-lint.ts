@@ -99,7 +99,7 @@ function missingEdgeKindWarnings(spec: DiagramSpec): DiagramSpecLintWarning[] {
             severity: "warning",
             message: `Edge "${edge.id}" does not have a kind.`,
             suggestion:
-              "Add an edge kind such as request, event, data_flow, dependency, or observability.",
+              "Add an edge kind such as request, event, data_flow, dependency, command, query, write, identity, authorization, observability, deployment, or incident.",
           },
         ],
   );

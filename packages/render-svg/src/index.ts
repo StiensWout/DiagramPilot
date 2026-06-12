@@ -1,6 +1,9 @@
 import {
   createSvgArtifactProvenance,
+  diagramSpecKnownEdgeKinds,
+  getDiagramSpecKnownEdgeKind,
   type DiagramSpec,
+  type DiagramSpecKnownEdgeKind,
   type RepoWorkflowOutputProfile,
   type SvgArtifactProvenance,
 } from "@diagrampilot/core";
@@ -75,6 +78,67 @@ export function addSvgProvenanceMetadata(
   )}`;
 }
 
+function escapeSvgText(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function semanticEdgeKindsForSpec(
+  spec: DiagramSpec,
+): readonly DiagramSpecKnownEdgeKind[] {
+  const usedKnownKinds = new Set(
+    (spec.edges ?? [])
+      .map((edge) => getDiagramSpecKnownEdgeKind(edge.kind)?.id)
+      .filter((kind): kind is string => kind !== undefined),
+  );
+
+  return diagramSpecKnownEdgeKinds.filter((kind) => usedKnownKinds.has(kind.id));
+}
+
+function edgeKindLegendRows(kinds: readonly DiagramSpecKnownEdgeKind[]): string {
+  return kinds
+    .map((kind, index) => {
+      const y = 56 + index * 24;
+      const dash =
+        kind.dash === undefined ? "" : ` stroke-dasharray="${escapeSvgText(kind.dash)}"`;
+
+      return [
+        `<line x1="32" y1="${y}" x2="74" y2="${y}" stroke="${escapeSvgText(
+          kind.stroke,
+        )}" stroke-width="3"${dash} />`,
+        `<text x="84" y="${y + 5}" fill="#334155" font-family="Inter, Arial, sans-serif" font-size="13">${escapeSvgText(
+          kind.label,
+        )}</text>`,
+      ].join("");
+    })
+    .join("");
+}
+
+export function addSvgEdgeKindLegend(svg: string, spec: DiagramSpec): string {
+  const semanticKinds = semanticEdgeKindsForSpec(spec);
+  const closingSvgTagIndex = svg.toLowerCase().lastIndexOf("</svg>");
+
+  if (semanticKinds.length === 0 || closingSvgTagIndex === -1) {
+    return svg;
+  }
+
+  const legendHeight = 40 + semanticKinds.length * 24;
+  const legend = [
+    `<g id="diagrampilot-edge-kind-legend" role="img" aria-label="DiagramPilot edge kind legend">`,
+    `<rect x="20" y="20" width="210" height="${legendHeight}" rx="8" fill="#ffffff" stroke="#cbd5e1" />`,
+    `<text x="32" y="43" fill="#0f172a" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700">Edge kinds</text>`,
+    edgeKindLegendRows(semanticKinds),
+    "</g>",
+  ].join("");
+
+  return `${svg.slice(0, closingSvgTagIndex)}${legend}${svg.slice(
+    closingSvgTagIndex,
+  )}`;
+}
+
 function d2CompileOptions(
   profile: RepoWorkflowOutputProfile | undefined,
 ): CompileOptions | undefined {
@@ -112,7 +176,10 @@ export async function renderDiagramSpecToSvg(
             inputPath: "index",
             options: compileOptions,
           });
-    const renderedSvg = await d2.render(result.diagram, result.renderOptions);
+    const renderedSvg = addSvgEdgeKindLegend(
+      await d2.render(result.diagram, result.renderOptions),
+      spec,
+    );
 
     if (options.provenance === undefined) {
       return renderedSvg;
