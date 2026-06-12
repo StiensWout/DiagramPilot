@@ -1,0 +1,432 @@
+.workflow-proof {
+  width: min(82rem, 96vw);
+  margin: clamp(2.25rem, 5vw, 3.5rem) auto 0;
+  text-align: left;
+}
+
+.workflow-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 0.75fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: end;
+  margin-bottom: 1rem;
+}
+
+.workflow-heading h2 {
+  color: var(--text);
+  font-size: clamp(1.65rem, 3vw, 3.6rem);
+  line-height: 1;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.workflow-heading p:last-child {
+  color: var(--muted);
+  font-size: clamp(0.98rem, 1.2vw, 1.16rem);
+  line-height: 1.6;
+}
+
+.demo-stage {
+  overflow: hidden;
+  border: 1px solid rgb(148 163 184 / 0.28);
+  border-radius: 0.5rem;
+  background:
+    linear-gradient(180deg, rgb(15 23 42 / 0.92), rgb(2 6 23 / 0.96)),
+    var(--surface);
+  box-shadow:
+    0 2rem 5rem rgb(0 0 0 / 0.3),
+    inset 0 1px 0 rgb(255 255 255 / 0.04);
+}
+
+.demo-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border-bottom: 1px solid rgb(148 163 184 / 0.22);
+  list-style: none;
+}
+
+.demo-step {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 4.25rem;
+  border: 0;
+  border-right: 1px solid rgb(148 163 184 / 0.18);
+  padding: 0.85rem 1rem;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 180ms ease-out,
+    color 180ms ease-out;
+}
+
+.demo-steps li:last-child .demo-step {
+  border-right: 0;
+}
+
+.demo-step:hover,
+.demo-step[aria-pressed="true"] {
+  background: rgb(52 211 153 / 0.1);
+  color: var(--text);
+}
+
+.demo-step-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  min-width: 2rem;
+  height: 2rem;
+  margin-right: 0.75rem;
+  border: 1px solid rgb(52 211 153 / 0.36);
+  border-radius: 999px;
+  color: var(--accent);
+  font-family:
+    "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.demo-step strong,
+.demo-step code {
+  display: block;
+}
+
+.demo-step strong {
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.demo-step code {
+  margin-top: 0.18rem;
+  color: var(--soft);
+  font-family:
+    "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.demo-status {
+  min-height: 3.25rem;
+  padding: 1rem clamp(1rem, 2vw, 1.5rem);
+  border-bottom: 1px solid rgb(148 163 184 / 0.16);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.demo-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+  gap: 1rem;
+  padding: clamp(1rem, 2vw, 1.25rem);
+}
+
+.demo-pane {
+  overflow: hidden;
+  min-width: 0;
+  border: 1px solid rgb(148 163 184 / 0.22);
+  border-radius: 0.5rem;
+  background: rgb(2 6 23 / 0.74);
+  transition:
+    border-color 220ms ease-out,
+    box-shadow 220ms ease-out,
+    opacity 220ms ease-out;
+}
+
+.demo-source {
+  grid-row: span 2;
+}
+
+.demo-pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 2.75rem;
+  padding: 0.75rem 0.95rem;
+  border-bottom: 1px solid rgb(148 163 184 / 0.18);
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.demo-pane-header span:last-child {
+  color: var(--soft);
+  font-family:
+    "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.demo-pane pre {
+  min-height: 14rem;
+  margin: 0;
+  padding: 1rem;
+  overflow: auto;
+  color: var(--muted);
+  font-family:
+    "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: clamp(0.76rem, 1vw, 0.92rem);
+  line-height: 1.58;
+  white-space: pre-wrap;
+}
+
+.demo-terminal pre {
+  min-height: 10rem;
+}
+
+.demo-terminal span[data-demo-highlight] {
+  display: block;
+  border-left: 2px solid transparent;
+  padding-left: 0.75rem;
+}
+
+.demo-stage [data-demo-highlight] {
+  opacity: 0.52;
+}
+
+.demo-stage[data-active-step="source"] [data-demo-highlight="source"],
+.demo-stage[data-active-step="check"] [data-demo-highlight="check"],
+.demo-stage[data-active-step="generate"] [data-demo-highlight="generate"],
+.demo-stage[data-active-step="svg"] [data-demo-highlight="svg"] {
+  opacity: 1;
+}
+
+.demo-stage[data-active-step="source"] .demo-source,
+.demo-stage[data-active-step="svg"] .demo-output {
+  border-color: rgb(52 211 153 / 0.54);
+  box-shadow: 0 0 0 1px rgb(52 211 153 / 0.16);
+}
+
+.demo-stage[data-active-step="check"] [data-demo-highlight="check"],
+.demo-stage[data-active-step="generate"] [data-demo-highlight="generate"] {
+  border-left-color: var(--accent);
+  color: var(--text);
+}
+
+.demo-output {
+  display: flex;
+  flex-direction: column;
+}
+
+.demo-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 18rem;
+  padding: 0.8rem;
+}
+
+.artifact-canvas {
+  fill: #020617;
+  stroke: rgb(148 163 184 / 0.28);
+}
+
+.artifact-group rect {
+  fill: rgb(15 23 42 / 0.32);
+  stroke: rgb(148 163 184 / 0.26);
+  stroke-dasharray: 6 8;
+}
+
+.artifact-group text,
+.artifact-label,
+.artifact-caption {
+  fill: #94a3b8;
+}
+
+.artifact-node rect {
+  fill: #0f172a;
+  stroke-width: 2;
+}
+
+.artifact-node-source rect,
+.artifact-node-service rect,
+.artifact-node-queue rect {
+  stroke: rgb(52 211 153 / 0.58);
+}
+
+.artifact-node-external rect,
+.artifact-node-data rect,
+.artifact-node-worker rect {
+  stroke: rgb(103 232 249 / 0.58);
+}
+
+.demo-svg text {
+  fill: #e2e8f0;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-size: 15px;
+  font-weight: 760;
+}
+
+.demo-svg .artifact-label,
+.demo-svg .artifact-caption,
+.demo-svg .artifact-group text {
+  fill: #94a3b8;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.artifact-edge {
+  fill: none;
+  marker-end: url("#artifact-arrow");
+  stroke: var(--accent-2);
+  stroke-linecap: round;
+  stroke-width: 3;
+}
+
+.artifact-edge-primary {
+  stroke: var(--accent);
+}
+
+.artifact-arrow-head {
+  fill: currentColor;
+  color: var(--accent);
+}
+
+@media (max-width: 66rem) {
+  .workflow-heading,
+  .demo-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .demo-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .demo-steps li:nth-child(2) .demo-step {
+    border-right: 0;
+  }
+
+  .demo-steps li:nth-child(-n + 2) .demo-step {
+    border-bottom: 1px solid rgb(148 163 184 / 0.18);
+  }
+
+  .demo-source {
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 38rem) {
+  .workflow-proof {
+    width: min(100%, 42rem);
+    margin-top: 1.65rem;
+  }
+
+  .workflow-heading {
+    margin-bottom: 0.75rem;
+    text-align: center;
+  }
+
+  .workflow-heading h2 {
+    font-size: clamp(1.45rem, 8vw, 2.15rem);
+    line-height: 1.04;
+  }
+
+  .workflow-heading p:last-child {
+    width: min(20rem, 100%);
+    margin-inline: auto;
+    font-size: 0.95rem;
+  }
+
+  .demo-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .demo-step,
+  .demo-steps li:nth-child(2) .demo-step {
+    min-height: 3.4rem;
+    border-right: 1px solid rgb(148 163 184 / 0.18);
+    border-bottom: 1px solid rgb(148 163 184 / 0.18);
+    padding: 0.68rem 0.75rem;
+  }
+
+  .demo-steps li:nth-child(2n) .demo-step {
+    border-right: 0;
+  }
+
+  .demo-steps li:nth-child(n + 3) .demo-step {
+    border-bottom: 0;
+  }
+
+  .demo-step-index {
+    width: 1.7rem;
+    min-width: 1.7rem;
+    height: 1.7rem;
+    margin-right: 0.55rem;
+    font-size: 0.68rem;
+  }
+
+  .demo-step code {
+    display: none;
+  }
+
+  .demo-status {
+    min-height: auto;
+    padding: 0.85rem 0.95rem;
+    font-size: 0.92rem;
+  }
+
+  .demo-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .demo-output {
+    order: 1;
+  }
+
+  .demo-terminal {
+    order: 2;
+  }
+
+  .demo-source {
+    order: 3;
+  }
+
+  .demo-pane-header {
+    min-height: 2.45rem;
+    padding: 0.62rem 0.75rem;
+  }
+
+  .demo-pane pre {
+    min-height: 0;
+    max-height: 9.5rem;
+    padding: 0.78rem;
+    font-size: 0.76rem;
+    line-height: 1.5;
+  }
+
+  .demo-terminal pre {
+    min-height: 0;
+  }
+
+  .demo-svg {
+    min-height: 0;
+    padding: 0.55rem;
+  }
+
+  .demo-svg text {
+    font-size: 17px;
+  }
+
+  .demo-svg .artifact-label,
+  .demo-svg .artifact-caption,
+  .demo-svg .artifact-group text {
+    font-size: 14px;
+  }
+}

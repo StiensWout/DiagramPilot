@@ -1,0 +1,81 @@
+@media (max-width: 38rem) {
+  .hero-zone {
+    min-height: auto;
+    padding: 2.5rem 0.85rem 3rem;
+  }
+
+  .hero-wordmark {
+    width: min(22rem, 92vw);
+  }
+
+  .hero-eyebrow {
+    width: min(19rem, 100%);
+    margin-inline: auto;
+    font-size: 0.78rem;
+  }
+
+  .promise {
+    margin-top: 0.8rem;
+    font-size: clamp(1.12rem, 6vw, 1.55rem);
+    line-height: 1.24;
+  }
+
+  .hero-actions {
+    align-items: stretch;
+    width: 100%;
+    margin-top: 1.15rem;
+  }
+
+  .action {
+    width: 100%;
+    min-height: 3.25rem;
+    padding-inline: 0.95rem;
+  }
+
+  .quick-command {
+    display: flex;
+    width: 100%;
+    margin-top: 0.75rem;
+  }
+
+  .quick-command code {
+    flex: 1;
+    font-size: 0.84rem;
+  }
+
+  .intro-copy,
+  .image-band,
+  .final-cta {
+    width: min(100% - 1.5rem, 78rem);
+  }
+
+  .intro-copy {
+    padding: 1.5rem 0 3rem;
+    font-size: 1rem;
+    text-align: left;
+  }
+
+  .proof-strip {
+    width: min(100% - 1.5rem, 78rem);
+    padding-bottom: 3rem;
+  }
+
+  .image-band,
+  .final-cta {
+    padding: 3.25rem 0;
+  }
+
+  .section-copy h2,
+  .final-cta h2 {
+    font-size: clamp(2.15rem, 12vw, 3.25rem);
+  }
+
+  .final-cta .hero-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .final-cta .action-primary {
+    grid-column: 1 / -1;
+  }
+}

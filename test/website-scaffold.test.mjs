@@ -48,6 +48,14 @@ test("website is a static Astro Starlight shell", async () => {
     path.join(repoRoot, "website", "src", "pages", "index.astro"),
     "utf8",
   );
+  const workflowDemo = await readFile(
+    path.join(repoRoot, "website", "src", "components", "WorkflowDemo.astro"),
+    "utf8",
+  );
+  const localRepositoryPath = await readFile(
+    path.join(repoRoot, "website", "src", "components", "LocalRepositoryPath.astro"),
+    "utf8",
+  );
   const websiteGitignore = await readFile(
     path.join(repoRoot, "website", ".gitignore"),
     "utf8",
@@ -77,8 +85,17 @@ test("website is a static Astro Starlight shell", async () => {
   assert.match(landingPage, /src="\/brand\/diagrampilot-logo-light\.svg"/);
   assert.match(
     landingPage,
-    /Diagrams are repository files an AI coding agent can safely change,\s+validate, and commit\./,
+    /Commit diagrams like code: `\.dp\.yaml` source in the repo,\s+local\s+checks before review, and SVG artifacts maintainers can inspect\./,
   );
+  assert.match(landingPage, /import WorkflowDemo/);
+  assert.match(landingPage, /import LocalRepositoryPath/);
+  assert.match(landingPage, /<WorkflowDemo \/>/);
+  assert.match(landingPage, /<LocalRepositoryPath \/>/);
+  assert.match(workflowDemo, /id="workflow-proof"/);
+  assert.match(workflowDemo, /data-demo-control={step\.id}/);
+  assert.match(workflowDemo, /artifact-node-service/);
+  assert.match(localRepositoryPath, /repo-path-animation/);
+  assert.match(localRepositoryPath, /data-path-step/);
 
   assert.match(websiteGitignore, /^\/dist\/$/m);
 
