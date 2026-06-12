@@ -28,6 +28,8 @@ Create or update the source first:
 
 ```bash
 diagrampilot create docs/architecture.dp.yaml --template architecture
+diagrampilot create docs/system-context.dp.yaml --template system-context
+diagrampilot create docs/service-map.dp.yaml --template service-map
 diagrampilot format docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot inspect docs --json

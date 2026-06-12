@@ -34,12 +34,17 @@ Run DiagramPilot without adding it to the repository:
 ```bash
 npx diagrampilot check
 npx diagrampilot create docs/architecture.dp.yaml --template architecture
+npx diagrampilot create docs/system-context.dp.yaml --template system-context
+npx diagrampilot create docs/service-map.dp.yaml --template service-map
 npx diagrampilot inspect
 npx diagrampilot validate docs/architecture.dp.yaml
 npx diagrampilot format docs/architecture.dp.yaml
 npx diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 npx diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
 ```
+
+Maintained Source Creation templates are `architecture`, `flow`, `package-map`,
+`system-context`, and `service-map`.
 
 Other package-manager equivalents:
 

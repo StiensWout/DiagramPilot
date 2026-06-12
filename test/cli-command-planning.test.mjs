@@ -422,7 +422,7 @@ test("plans subcommand help output", async () => {
     ["check", "Usage: diagrampilot check [path] [--json]\n"],
     [
       "create",
-      "Usage: diagrampilot create <path> --template architecture|flow|package-map\n",
+      "Usage: diagrampilot create <path> --template architecture|flow|package-map|system-context|service-map\n",
     ],
     ["format", "Usage: diagrampilot format <path>\n"],
     ["generate", "Usage: diagrampilot generate [path] [--json]\n"],

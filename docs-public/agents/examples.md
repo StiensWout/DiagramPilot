@@ -1,115 +1,154 @@
 # Examples
 
-These examples show the intended DiagramSpec style. They are deliberately small
-so agents can copy and adapt them. Use the quickstart for the full Checkout
-Demo Project workflow.
+These examples show current DiagramPilot Source File patterns for common
+software architecture diagrams. Use committed examples when you want a richer
+reference, and use Source Creation templates when you want a small maintained
+starting point.
 
-Create a starter DiagramPilot Source File instead of copying an example when
-you want a maintained template:
+## Maintained Templates
 
 ```bash
 diagrampilot create docs/architecture.dp.yaml --template architecture
 diagrampilot create docs/login-flow.dp.yaml --template flow
 diagrampilot create docs/packages.dp.yaml --template package-map
+diagrampilot create docs/system-context.dp.yaml --template system-context
+diagrampilot create docs/service-map.dp.yaml --template service-map
 ```
 
 Each command writes a valid `*.dp.yaml` file, refuses to overwrite an existing
 file, and prints the next `validate` and `render` commands.
 
-## Architecture Diagram
+## Committed Example Sources
+
+### Codebase Architecture
+
+Path: `examples/codebase-architecture/codebase-architecture.dp.yaml`
+
+```bash
+diagrampilot validate examples/codebase-architecture/codebase-architecture.dp.yaml
+diagrampilot render examples/codebase-architecture/codebase-architecture.dp.yaml --out examples/codebase-architecture/codebase-architecture.svg
+diagrampilot export examples/codebase-architecture/codebase-architecture.dp.yaml --format mermaid
+diagrampilot check examples/codebase-architecture
+```
+
+Use this when a repository needs a compact architecture view with Stable IDs,
+Groups, local source metadata, and labeled request/write/event edges.
+
+### Dependency Map
+
+Path: `examples/dependency-map/dependency-map.dp.yaml`
+
+```bash
+diagrampilot validate examples/dependency-map/dependency-map.dp.yaml
+diagrampilot render examples/dependency-map/dependency-map.dp.yaml --out examples/dependency-map/dependency-map.svg
+diagrampilot export examples/dependency-map/dependency-map.dp.yaml --format mermaid
+diagrampilot check examples/dependency-map
+```
+
+Use this for package dependency diagrams such as `packages/cli`,
+`packages/core`, `packages/render-svg`, `packages/export-mermaid`,
+`packages/export-d2`, `packages/export-dot`, and `packages/icons`.
+
+### Service Boundary Map
+
+Path: `examples/service-boundary-map/service-boundary-map.dp.yaml`
+
+```bash
+diagrampilot validate examples/service-boundary-map/service-boundary-map.dp.yaml
+diagrampilot render examples/service-boundary-map/service-boundary-map.dp.yaml --out examples/service-boundary-map/service-boundary-map.svg
+diagrampilot export examples/service-boundary-map/service-boundary-map.dp.yaml --format mermaid
+diagrampilot check examples/service-boundary-map
+```
+
+Use this to review public, platform, and data boundaries without adding
+per-object styling fields to DiagramSpec.
+
+### Monorepo Overview
+
+Path: `examples/monorepo-overview/monorepo-overview.dp.yaml`
+
+```bash
+diagrampilot validate examples/monorepo-overview/monorepo-overview.dp.yaml
+diagrampilot render examples/monorepo-overview/monorepo-overview.dp.yaml --out examples/monorepo-overview/monorepo-overview.svg
+diagrampilot export examples/monorepo-overview/monorepo-overview.dp.yaml --format mermaid
+diagrampilot export examples/monorepo-overview/monorepo-overview.dp.yaml --format d2 --out examples/monorepo-overview/monorepo-overview.d2
+diagrampilot export examples/monorepo-overview/monorepo-overview.dp.yaml --format dot --out examples/monorepo-overview/monorepo-overview.dot
+diagrampilot check examples/monorepo-overview
+```
+
+This is the medium-complexity example. It demonstrates Stable IDs, Groups,
+edge labels and edge kinds, local source references, export workflow commands,
+and SVG Artifact Freshness. Run `render --out` before `check`; generated SVG
+artifacts include deterministic DiagramPilot provenance with source path,
+source hash, DiagramPilot version, and renderer identity.
+
+### Pull Request Architecture Review
+
+Path: `examples/pull-request-architecture-review/pull-request-architecture-review.dp.yaml`
+
+```bash
+diagrampilot validate examples/pull-request-architecture-review/pull-request-architecture-review.dp.yaml
+diagrampilot render examples/pull-request-architecture-review/pull-request-architecture-review.dp.yaml --out examples/pull-request-architecture-review/pull-request-architecture-review.svg
+diagrampilot export examples/pull-request-architecture-review/pull-request-architecture-review.dp.yaml --format mermaid
+diagrampilot check examples/pull-request-architecture-review
+```
+
+Use this to show how a pull request can review changed source files,
+DiagramPilot Source Files, Derived Artifacts, and repo workflow checks together.
+
+### System Context Diagram
+
+Path: `examples/system-context/system-context.dp.yaml`
+
+```bash
+diagrampilot validate examples/system-context/system-context.dp.yaml
+diagrampilot render examples/system-context/system-context.dp.yaml --out examples/system-context/system-context.svg
+diagrampilot export examples/system-context/system-context.dp.yaml --format mermaid
+diagrampilot check examples/system-context
+```
+
+Use this for a C4-style context view of an AI coding agent, local repository,
+DiagramPilot CLI, public docs, and pull request review.
+
+## Intentionally Broken Repair Example
+
+This broken source is for repair practice. Do not commit it as a passing
+fixture. Save it temporarily as `docs/broken-architecture.dp.yaml`, then run:
+
+```bash
+diagrampilot validate docs/broken-architecture.dp.yaml
+```
 
 ```yaml
 version: 1
-title: Checkout Architecture
-direction: right
+title: Broken Architecture
 nodes:
   - id: web_app
     label: Web App
-    kind: frontend
-    icon: lucide:globe
   - id: api_gateway
     label: API Gateway
-    kind: service
-    icon: lucide:server
-  - id: checkout_service
-    label: Checkout Service
-    kind: service
-    icon: lucide:server
-  - id: orders_db
-    label: Orders DB
-    kind: database
-    icon: lucide:database
-groups:
-  - id: backend
-    label: Backend
-    contains:
-      - api_gateway
-      - checkout_service
-      - orders_db
 edges:
-  - id: web_app_to_api_gateway
+  - id: web_app_to_missing_service
     from: web_app
-    to: api_gateway
+    to: missing_service
     label: HTTPS
-  - id: api_gateway_to_checkout_service
-    from: api_gateway
-    to: checkout_service
-    label: forwards request
-  - id: checkout_service_to_orders_db
-    from: checkout_service
-    to: orders_db
-    label: stores order
 ```
 
-## Flowchart
+Expected diagnostic shape:
+
+```text
+edges[0].to references unknown node "missing_service".
+Suggestion: Add a node with id "missing_service" or change edges[0].to to an existing node ID.
+```
+
+Repair by changing `edges[0].to` from `missing_service` to `api_gateway`, then
+rerun `diagrampilot validate docs/broken-architecture.dp.yaml`.
+
+## Small Inline Style Reference
 
 ```yaml
 version: 1
-title: Login Flow
-direction: down
-nodes:
-  - id: start
-    label: User submits credentials
-    kind: start
-    icon: lucide:circle-play
-  - id: validate_credentials
-    label: Validate credentials
-    kind: process
-    icon: lucide:shield-check
-  - id: valid_credentials
-    label: Credentials valid?
-    kind: decision
-    icon: lucide:diamond
-  - id: create_session
-    label: Create session
-    kind: process
-    icon: lucide:key-round
-  - id: reject_login
-    label: Reject login
-    kind: end
-    icon: lucide:circle-x
-edges:
-  - id: start_to_validate_credentials
-    from: start
-    to: validate_credentials
-  - id: validate_credentials_to_valid_credentials
-    from: validate_credentials
-    to: valid_credentials
-  - id: valid_credentials_to_create_session
-    from: valid_credentials
-    to: create_session
-    label: yes
-  - id: valid_credentials_to_reject_login
-    from: valid_credentials
-    to: reject_login
-    label: no
-```
-
-## Dependency Graph
-
-```yaml
-version: 1
-title: Package Dependencies
+title: Minimal Package Dependency
 direction: right
 nodes:
   - id: cli
@@ -120,103 +159,10 @@ nodes:
     label: packages/core
     kind: package
     icon: lucide:box
-  - id: render_svg
-    label: packages/render-svg
-    kind: package
-    icon: lucide:file-image
-  - id: export_mermaid
-    label: packages/export-mermaid
-    kind: package
-    icon: lucide:file-code
-  - id: export_d2
-    label: packages/export-d2
-    kind: package
-    icon: lucide:file-code
-  - id: export_dot
-    label: packages/export-dot
-    kind: package
-    icon: lucide:file-code
-  - id: icons
-    label: packages/icons
-    kind: package
-    icon: lucide:shapes
 edges:
   - id: cli_to_core
     from: cli
     to: core
-  - id: cli_to_render_svg
-    from: cli
-    to: render_svg
-  - id: cli_to_export_mermaid
-    from: cli
-    to: export_mermaid
-  - id: cli_to_export_d2
-    from: cli
-    to: export_d2
-  - id: cli_to_export_dot
-    from: cli
-    to: export_dot
-  - id: render_svg_to_export_d2
-    from: render_svg
-    to: export_d2
-  - id: render_svg_to_core
-    from: render_svg
-    to: core
-  - id: export_mermaid_to_core
-    from: export_mermaid
-    to: core
-  - id: export_d2_to_core
-    from: export_d2
-    to: core
-  - id: export_dot_to_core
-    from: export_dot
-    to: core
-  - id: core_to_icons
-    from: core
-    to: icons
-```
-
-## Nested Groups
-
-```yaml
-version: 1
-title: Platform Overview
-direction: right
-nodes:
-  - id: web_app
-    label: Web App
-    kind: frontend
-  - id: api_gateway
-    label: API Gateway
-    kind: service
-  - id: worker
-    label: Worker
-    kind: service
-  - id: jobs_queue
-    label: Jobs Queue
-    kind: queue
-groups:
-  - id: services
-    label: Services
-    contains:
-      - api_gateway
-      - worker
-  - id: backend
-    label: Backend
-    contains:
-      - services
-      - jobs_queue
-edges:
-  - id: web_app_to_api_gateway
-    from: web_app
-    to: api_gateway
-    label: HTTPS
-  - id: api_gateway_to_jobs_queue
-    from: api_gateway
-    to: jobs_queue
-    label: enqueues job
-  - id: jobs_queue_to_worker
-    from: jobs_queue
-    to: worker
-    label: consumed by
+    label: validates source
+    kind: imports
 ```

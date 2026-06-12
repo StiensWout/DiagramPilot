@@ -6,6 +6,8 @@ export const diagramPilotSourceTemplateNames = [
   "architecture",
   "flow",
   "package-map",
+  "system-context",
+  "service-map",
 ] as const;
 
 export type DiagramPilotSourceTemplateName =
@@ -220,6 +222,159 @@ const sourceTemplates: Readonly<Record<DiagramPilotSourceTemplateName, DiagramSp
         from: "cli_package",
         to: "export_package",
         label: "exports",
+      },
+    ],
+  },
+  "system-context": {
+    version: 1,
+    title: "Starter System Context",
+    description: "A starter system context DiagramPilot Source File.",
+    direction: "right",
+    nodes: [
+      {
+        id: "ai_coding_agent",
+        label: "AI Coding Agent",
+        kind: "actor",
+        icon: "lucide:bot",
+      },
+      {
+        id: "local_repository",
+        label: "Local Repository",
+        kind: "system",
+        icon: "lucide:folder-git-2",
+      },
+      {
+        id: "diagrampilot_cli",
+        label: "DiagramPilot CLI",
+        kind: "tool",
+        icon: "lucide:terminal",
+      },
+      {
+        id: "pull_request",
+        label: "Pull Request",
+        kind: "review",
+        icon: "lucide:git-pull-request",
+      },
+    ],
+    groups: [
+      {
+        id: "repo_native_workflow",
+        label: "Repo-Native Workflow",
+        contains: [
+          "ai_coding_agent",
+          "local_repository",
+          "diagrampilot_cli",
+          "pull_request",
+        ],
+        kind: "workflow",
+        icon: "lucide:workflow",
+      },
+    ],
+    edges: [
+      {
+        id: "ai_coding_agent_to_local_repository",
+        from: "ai_coding_agent",
+        to: "local_repository",
+        label: "edits source files",
+        kind: "source_update",
+      },
+      {
+        id: "local_repository_to_diagrampilot_cli",
+        from: "local_repository",
+        to: "diagrampilot_cli",
+        label: "runs local commands",
+        kind: "command",
+      },
+      {
+        id: "diagrampilot_cli_to_pull_request",
+        from: "diagrampilot_cli",
+        to: "pull_request",
+        label: "renders and checks artifacts",
+        kind: "review_signal",
+      },
+    ],
+  },
+  "service-map": {
+    version: 1,
+    title: "Starter Service Boundary Map",
+    description: "A starter service boundary DiagramPilot Source File.",
+    direction: "right",
+    nodes: [
+      {
+        id: "customer_app",
+        label: "Customer App",
+        kind: "frontend",
+        icon: "lucide:smartphone",
+      },
+      {
+        id: "edge_gateway",
+        label: "Edge Gateway",
+        kind: "gateway",
+        icon: "lucide:router",
+      },
+      {
+        id: "identity_service",
+        label: "Identity Service",
+        kind: "service",
+        icon: "lucide:badge-check",
+      },
+      {
+        id: "billing_service",
+        label: "Billing Service",
+        kind: "service",
+        icon: "lucide:credit-card",
+      },
+      {
+        id: "billing_db",
+        label: "Billing DB",
+        kind: "database",
+        icon: "lucide:database",
+      },
+    ],
+    groups: [
+      {
+        id: "public_boundary",
+        label: "Public Boundary",
+        contains: ["customer_app", "edge_gateway"],
+        kind: "boundary",
+        icon: "lucide:globe",
+      },
+      {
+        id: "service_boundary",
+        label: "Service Boundary",
+        contains: ["identity_service", "billing_service", "billing_db"],
+        kind: "boundary",
+        icon: "lucide:boxes",
+      },
+    ],
+    edges: [
+      {
+        id: "customer_app_to_edge_gateway",
+        from: "customer_app",
+        to: "edge_gateway",
+        label: "HTTPS API calls",
+        kind: "request",
+      },
+      {
+        id: "edge_gateway_to_identity_service",
+        from: "edge_gateway",
+        to: "identity_service",
+        label: "verifies token",
+        kind: "request",
+      },
+      {
+        id: "edge_gateway_to_billing_service",
+        from: "edge_gateway",
+        to: "billing_service",
+        label: "forwards billing command",
+        kind: "command",
+      },
+      {
+        id: "billing_service_to_billing_db",
+        from: "billing_service",
+        to: "billing_db",
+        label: "writes invoice state",
+        kind: "write",
       },
     ],
   },

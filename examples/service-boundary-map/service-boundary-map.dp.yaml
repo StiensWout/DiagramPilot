@@ -1,0 +1,92 @@
+version: 1
+title: Service Boundary Map Example
+description: Boundary-oriented service map for ownership and integration review.
+direction: right
+metadata:
+  source: services
+nodes:
+  - id: customer_app
+    label: Customer App
+    kind: frontend
+    icon: lucide:smartphone
+    metadata:
+      source: apps/customer
+  - id: edge_gateway
+    label: Edge Gateway
+    kind: gateway
+    icon: lucide:router
+    metadata:
+      source: services/edge-gateway
+  - id: identity_service
+    label: Identity Service
+    kind: service
+    icon: lucide:badge-check
+    metadata:
+      source: services/identity
+  - id: billing_service
+    label: Billing Service
+    kind: service
+    icon: lucide:credit-card
+    metadata:
+      source: services/billing
+  - id: audit_log
+    label: Audit Log
+    kind: event_stream
+    icon: lucide:scroll-text
+    metadata:
+      source: services/audit
+  - id: billing_db
+    label: Billing DB
+    kind: database
+    icon: lucide:database
+    metadata:
+      source: services/billing/data
+groups:
+  - id: public_boundary
+    label: Public Boundary
+    contains:
+      - customer_app
+      - edge_gateway
+    kind: boundary
+    icon: lucide:globe
+  - id: platform_services
+    label: Platform Services
+    contains:
+      - identity_service
+      - billing_service
+      - audit_log
+    kind: boundary
+    icon: lucide:boxes
+  - id: data_boundary
+    label: Data Boundary
+    contains:
+      - billing_db
+    kind: boundary
+    icon: lucide:database
+edges:
+  - id: customer_app_to_edge_gateway
+    from: customer_app
+    to: edge_gateway
+    label: HTTPS API calls
+    kind: request
+  - id: edge_gateway_to_identity_service
+    from: edge_gateway
+    to: identity_service
+    label: verifies token
+    kind: request
+  - id: edge_gateway_to_billing_service
+    from: edge_gateway
+    to: billing_service
+    label: forwards billing command
+    kind: command
+  - id: billing_service_to_billing_db
+    from: billing_service
+    to: billing_db
+    label: writes invoice state
+    kind: write
+  - id: billing_service_to_audit_log
+    from: billing_service
+    to: audit_log
+    label: emits audit event
+    kind: event
+

@@ -1,0 +1,92 @@
+version: 1
+title: Codebase Architecture Example
+description: Repository architecture view for a web checkout service.
+direction: right
+metadata:
+  source: src
+nodes:
+  - id: web_client
+    label: Web Client
+    kind: frontend
+    description: Browser application that starts checkout.
+    icon: lucide:monitor
+    metadata:
+      source: src/web
+  - id: api_gateway
+    label: API Gateway
+    kind: service
+    description: HTTP boundary for checkout requests.
+    icon: lucide:server
+    metadata:
+      source: src/api
+  - id: checkout_service
+    label: Checkout Service
+    kind: service
+    description: Coordinates order creation and payment.
+    icon: lucide:shopping-cart
+    metadata:
+      source: src/services/checkout
+  - id: orders_db
+    label: Orders DB
+    kind: database
+    description: Stores order state.
+    icon: lucide:database
+    metadata:
+      source: src/data/orders
+  - id: order_worker
+    label: Order Worker
+    kind: worker
+    description: Processes asynchronous order updates.
+    icon: lucide:package-check
+    metadata:
+      source: src/workers/order-worker.ts
+groups:
+  - id: frontend_boundary
+    label: Frontend Boundary
+    contains:
+      - web_client
+    kind: boundary
+    icon: lucide:panel-top
+    metadata:
+      source: src/web
+  - id: backend_boundary
+    label: Backend Boundary
+    contains:
+      - api_gateway
+      - checkout_service
+      - orders_db
+      - order_worker
+    kind: boundary
+    icon: lucide:server-cog
+    metadata:
+      source: src
+edges:
+  - id: web_client_to_api_gateway
+    from: web_client
+    to: api_gateway
+    label: HTTPS checkout request
+    kind: request
+    metadata:
+      source: src/web/checkout-page.tsx
+  - id: api_gateway_to_checkout_service
+    from: api_gateway
+    to: checkout_service
+    label: dispatches command
+    kind: command
+    metadata:
+      source: src/api/checkout-routes.ts
+  - id: checkout_service_to_orders_db
+    from: checkout_service
+    to: orders_db
+    label: persists order
+    kind: write
+    metadata:
+      source: src/services/checkout/create-order.ts
+  - id: checkout_service_to_order_worker
+    from: checkout_service
+    to: order_worker
+    label: schedules fulfillment
+    kind: event
+    metadata:
+      source: src/services/checkout/events.ts
+
