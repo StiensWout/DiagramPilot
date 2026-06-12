@@ -96,25 +96,41 @@ async function assertMalformedArtifact({
   assert.match(result.message, messagePattern);
 }
 
+async function assertFreshProvenanceFixture(tempRoot, provenance) {
+  const { sourcePath, artifactPath } = await writeProvenanceFixture(
+    tempRoot,
+    provenance,
+  );
+
+  const result = await checkExpectedFreshnessForSource(sourcePath);
+
+  assert.deepEqual(result, {
+    sourcePath,
+    artifactPath,
+    status: "fresh",
+    provenance,
+  });
+}
+
 test("checkExpectedSvgArtifactFreshness returns fresh for a next-to-source SVG with matching provenance", async () => {
   await withTempRepo(async (tempRoot) => {
     const provenance = createSvgRendererProvenance({
       sourcePath: provenanceSourcePath,
       sourceContent: validSourceContent,
     });
-    const { sourcePath, artifactPath } = await writeProvenanceFixture(
-      tempRoot,
-      provenance,
-    );
 
-    const result = await checkExpectedFreshnessForSource(sourcePath);
+    await assertFreshProvenanceFixture(tempRoot, provenance);
+  });
+});
 
-    assert.deepEqual(result, {
-      sourcePath,
-      artifactPath,
-      status: "fresh",
-      provenance,
+test("checkExpectedSvgArtifactFreshness treats separator-equivalent provenance source paths as fresh", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const provenance = createSvgRendererProvenance({
+      sourcePath: String.raw`docs\architecture.dp.yaml`,
+      sourceContent: validSourceContent,
     });
+
+    await assertFreshProvenanceFixture(tempRoot, provenance);
   });
 });
 

@@ -27,6 +27,7 @@ export {
   checkExpectedSvgArtifactFreshnessForValidatedSource,
   createSvgArtifactProvenance,
   deriveExpectedSvgArtifactPath,
+  normalizeSvgArtifactProvenanceSourcePath,
 } from "./svg-artifact-freshness.js";
 export { validateDiagramSpec } from "./diagramspec-validation.js";
 export { serializeDiagramPilotSourceFile } from "./source-serialization.js";
