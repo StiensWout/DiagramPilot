@@ -211,7 +211,7 @@ test("public docs present YAML-only source support and JSON tooling compatibilit
   assert.doesNotMatch(readme, /as YAML or JSON/i);
 });
 
-test("repository guidance separates public docs from internal maintainer docs", async () => {
+test("repository guidance separates public docs from private maintainer workflow", async () => {
   const agentGuide = await readFile(path.join(repoRoot, "AGENTS.md"), "utf8");
 
   assert.match(agentGuide, /docs-public\/agents\/quickstart\.md/);
@@ -223,13 +223,15 @@ test("repository guidance separates public docs from internal maintainer docs", 
   assert.doesNotMatch(agentGuide, /docs\/agents\/spec\.md/);
   assert.doesNotMatch(agentGuide, /docs\/agents\/error-repair\.md/);
 
-  assert.match(agentGuide, /docs\/agents\/issue-tracker\.md/);
-  assert.match(agentGuide, /docs\/agents\/triage-labels\.md/);
-  assert.match(agentGuide, /docs\/agents\/domain\.md/);
-  assert.match(agentGuide, /docs\/development\/public-website-deployment\.md/);
-  assert.match(agentGuide, /docs\/development\/roadmap\.md/);
-  assert.match(agentGuide, /docs\/adr\/0006-public-docs-live-under-docs-public\.md/);
-  assert.match(agentGuide, /docs\/adr\/0009-package-install-does-not-install-local-agent-docs\.md/);
+  assert.match(agentGuide, /Private maintainer workflow lives in Linear/i);
+  assert.match(agentGuide, /DP-19 Internal Maintainer Workflow Migration Map/);
+  assert.doesNotMatch(agentGuide, /docs\/agents\/issue-tracker\.md/);
+  assert.doesNotMatch(agentGuide, /docs\/agents\/triage-labels\.md/);
+  assert.doesNotMatch(agentGuide, /docs\/agents\/domain\.md/);
+  assert.doesNotMatch(agentGuide, /docs\/development\/public-website-deployment\.md/);
+  assert.doesNotMatch(agentGuide, /docs\/development\/roadmap\.md/);
+  assert.doesNotMatch(agentGuide, /docs\/adr\/0006-public-docs-live-under-docs-public\.md/);
+  assert.doesNotMatch(agentGuide, /docs\/adr\/0009-package-install-does-not-install-local-agent-docs\.md/);
 });
 
 test("internal maintainer docs treat repo workflow check as shipped", async () => {
