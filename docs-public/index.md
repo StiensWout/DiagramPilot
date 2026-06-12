@@ -8,12 +8,12 @@
 DiagramPilot Public Documentation is for developers and AI coding agents using
 DiagramPilot in their own repositories.
 
-The v0.3.0 Alpha Capability Release is the current release-aligned public
-shape: DiagramPilot Source Files are YAML-only, DOT export and PNG rendering are
-available, Repo Workflow Configuration can define expected artifacts,
-`diagrampilot generate` rewrites configured Derived Artifacts and generated
-Markdown embed files, and MCP is a shipped alpha integration. Existing users
-should read the [0.2 -> 0.3 upgrade guide](agents/installation.md#02---03-upgrade-guide).
+The v0.4.0 Alpha Capability Release is the current release-aligned public
+shape: DiagramPilot Source Files are YAML-only after complete JSON Source
+Removal, `create`, `inspect`, `format`, and `watch` support local agent
+authoring loops, configured outputs can use fixed Output Profiles, and stable
+publishing uses a Manual Milestone Release with npm package links. Existing
+users should read the [0.3 -> 0.4 upgrade guide](agents/installation.md#03---04-upgrade-guide).
 
 Start with the Checkout Demo Project quickstart:
 

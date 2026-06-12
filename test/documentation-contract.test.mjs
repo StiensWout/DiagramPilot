@@ -11,17 +11,16 @@ import {
   websiteBuild,
 } from "./website-test-helpers.mjs";
 
-const contractPath = path.join(
-  repoRoot,
-  "docs",
-  "development",
-  "documentation-contract.md",
-);
+const contractPath = path.join(repoRoot, "docs/development/documentation-contract.md");
 const implementedCliCommands = [
   "diagrampilot init",
   "diagrampilot init --docs",
+  "diagrampilot init --config",
+  "diagrampilot create docs/architecture.dp.yaml --template architecture",
   "diagrampilot check",
   "diagrampilot inspect",
+  "diagrampilot generate",
+  "diagrampilot watch docs",
   "diagrampilot mcp",
   "diagrampilot check docs --json",
   "diagrampilot inspect docs --json",
@@ -37,8 +36,12 @@ const implementedCliCommands = [
 const quickstartCliCommands = [
   "diagrampilot init",
   "diagrampilot init --docs",
+  "diagrampilot init --config",
+  "diagrampilot create docs/architecture.dp.yaml --template architecture",
   "diagrampilot check",
   "diagrampilot inspect",
+  "diagrampilot generate",
+  "diagrampilot watch docs",
   "diagrampilot check demo-projects/checkout --json",
   "diagrampilot inspect demo-projects/checkout --json",
   "diagrampilot validate docs/architecture.dp.yaml",
@@ -322,7 +325,9 @@ test("canonical public install and removal guidance is complete and linked", asy
       "npx diagrampilot check",
       "npm install --save-dev diagrampilot",
       "npm install --global diagrampilot",
-      "DiagramPilot v0.3.0 Alpha Capability Release is the current release-aligned public shape.",
+      "DiagramPilot v0.4.0 Alpha Capability Release is the current release-aligned public shape.",
+      "0.3 -> 0.4 Upgrade Guide",
+      "JSON Source Removal",
       "0.2 -> 0.3 Upgrade Guide",
       "npm `latest` release",
       "pnpm dlx diagrampilot check",
@@ -415,7 +420,7 @@ test("maintainer docs cover MCP package readiness and smoke validation", async (
   assert.match(contract, /https:\/\/diagrampilot\.com\/docs\/agents\/mcp\.md/);
 });
 
-test("release-aligned docs expose the v0.3.0 upgrade and package contract", async () => {
+test("release-aligned docs expose the v0.4.0 upgrade and package contract", async () => {
   const readme = await readRepoFile("README.md");
   const publicDocsIndex = await readRepoFile("docs-public/index.md");
   const installationGuide = await readRepoFile("docs-public/agents/installation.md");
@@ -431,15 +436,15 @@ test("release-aligned docs expose the v0.3.0 upgrade and package contract", asyn
     assertMatchesAll(
       source,
       [
-        /v0\.3\.0 Alpha Capability Release/,
-        /0\.2\s*->\s*0\.3 upgrade/i,
-        /YAML-only/i,
-        /DOT/i,
-        /PNG/i,
-        /Repo Workflow Configuration/i,
-        /diagrampilot generate/i,
-        /Markdown embed/i,
-        /MCP/i,
+        /v0\.4\.0 Alpha Capability Release/,
+        /0\.3\s*->\s*0\.4 upgrade/i,
+        /JSON Source\s+Removal/i,
+        /diagrampilot create/i,
+        /diagrampilot inspect/i,
+        /diagrampilot format/i,
+        /diagrampilot watch/i,
+        /Output\s+Profiles/i,
+        /Manual\s+Milestone\s+Release/i,
       ],
       label,
     );
@@ -450,24 +455,16 @@ test("release-aligned docs expose the v0.3.0 upgrade and package contract", asyn
     [/diagrampilot generate/i, /--format dot/i, /--format png/i, /MCP/i],
     "packages/cli/README.md",
   );
-  assertMatchesAll(
-    mcpReadme,
-    [
-      /v0\.3\.0 Alpha Capability Release/,
-      /Source Creation/i,
-      /Source Mutation/i,
-      /Stable IDs/i,
-      /Structured Diagram Operations/i,
-    ],
-    "packages/mcp/README.md",
-  );
+  assertMatchesAll(mcpReadme, [
+    /v0\.4\.0 Alpha Capability Release/,
+    /Source Creation/i,
+    /Source Mutation/i,
+    /Stable IDs/i,
+    /Structured Diagram Operations/i,
+  ], "packages/mcp/README.md");
   assertMatchesAll(
     contract,
-    [
-      /v0\.3\.0 Alpha Capability Release/,
-      /package-local README/i,
-      /0\.2\s*->\s*0\.3 upgrade/i,
-    ],
+    [/v0\.4\.0 Alpha Capability Release/, /package-local README/i, /0\.3\s*->\s*0\.4 upgrade/i],
     "docs/development/documentation-contract.md",
   );
 });

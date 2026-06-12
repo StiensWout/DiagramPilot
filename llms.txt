@@ -8,6 +8,11 @@ DiagramPilot uses DiagramSpec as its source model. A DiagramPilot source file is
 the editable artifact. Rendered SVG or PNG and exported Mermaid, D2, or DOT
 text are derived outputs.
 
+Current public release: v0.4.0 Alpha Capability Release. The release-aligned
+surface includes JSON Source Removal for source workflows, Source Creation,
+Repo Workflow Inspect, Source Formatting, Watch Authoring Loop, fixed Output
+Profiles, and Manual Milestone Release notes with npm package links.
+
 `*.dp.json` is not a DiagramPilot Source File path. Source files are
 `*.dp.yaml` only, repo discovery ignores JSON source files, and DiagramPilot
 does not provide a migration command. JSON remains valid for `--json` CLI

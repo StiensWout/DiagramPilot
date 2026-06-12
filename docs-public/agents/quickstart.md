@@ -109,7 +109,7 @@ artifact is `docs/architecture.svg`.
 SVG freshness is provenance-based. `check` reads DiagramPilot provenance
 metadata from the expected SVG artifact; it does not render to compare output.
 Configured Mermaid, D2, and DOT artifacts use content comparison against the
-current export output. Configured PNG freshness is presence-only in v0.3.0:
+current export output. Configured PNG freshness is presence-only in v0.4.0:
 `check` verifies the configured PNG file exists and defers PNG byte comparison
 until readable PNG provenance is available.
 

@@ -6,8 +6,8 @@ Use this package when you want the `diagrampilot` executable for checking,
 inspecting, creating, validating, formatting, generating, watching, rendering,
 and exporting DiagramPilot Source Files in a repository.
 
-The CLI supports YAML-only source files, `diagrampilot inspect` for read-only
-source inventory and topology, `diagrampilot create <path> --template
+The v0.4.0 CLI supports YAML-only source files, `diagrampilot inspect` for
+read-only source inventory and topology, `diagrampilot create <path> --template
 architecture|flow|package-map` for maintained starter source files,
 `diagrampilot generate` for configured Derived Artifacts and Markdown embed
 files, `diagrampilot format` for canonical YAML cleanup, `diagrampilot watch`

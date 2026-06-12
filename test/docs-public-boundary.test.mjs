@@ -20,7 +20,7 @@ function assertQuickstartArtifactWorkflow(quickstart) {
     /next-to-source same-stem Expected SVG Artifact/i,
     /SVG freshness is provenance-based/i,
     /Configured Mermaid, D2, and DOT artifacts use content comparison/i,
-    /Configured PNG freshness is presence-only in v0\.3\.0/i,
+    /Configured PNG freshness is presence-only in v0\.4\.0/i,
     /diagrampilot\.config\.yaml/,
     /sources\.ignore/,
     /artifacts/,
