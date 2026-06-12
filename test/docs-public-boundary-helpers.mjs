@@ -16,6 +16,8 @@ export const publicAgentDocs = [
   "error-repair.md",
   "examples.md",
   "prompting.md",
+  "comparisons.md",
+  "integrations.md",
 ];
 
 export const removedInternalPlanningPaths = [
