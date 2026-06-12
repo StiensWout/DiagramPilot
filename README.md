@@ -226,9 +226,11 @@ Mermaid, D2, and DOT use content freshness; configured PNG freshness is
 presence-only.
 
 Configured outputs can opt into fixed output profiles with `profile: clean`,
-`profile: compact`, or `profile: presentation`. Profiles live only in
-`diagrampilot.config.yaml`; DiagramSpec source files should not carry styling
-fields, CSS, custom themes, or per-object presentation choices.
+`profile: compact`, `profile: overview`, or `profile: presentation`.
+`overview` keeps topology while suppressing edge labels for dense review
+artifacts. Profiles live only in `diagrampilot.config.yaml`; DiagramSpec source
+files should not carry styling fields, CSS, custom themes, or per-object
+presentation choices.
 
 Configured Markdown outputs are standalone generated embed files. They link to
 configured artifacts in the same mapping with paths relative to the embed file,

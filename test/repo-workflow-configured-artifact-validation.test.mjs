@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import path from "node:path";
 import test from "node:test";
 
 import { checkDiagramPilotRepoWorkflow } from "../packages/core/dist/index.js";
@@ -7,6 +8,7 @@ import {
   repoWorkflowCheckOptions,
   withTempRepo,
   writeArtifactConfig,
+  writeValidDiagramSource,
 } from "./repo-workflow-configured-artifacts-helpers.mjs";
 
 async function checkConfigWithArtifactMapping(tempRoot, artifactMapping) {
@@ -87,7 +89,28 @@ test("checkDiagramPilotRepoWorkflow rejects unsupported configured artifact outp
       errorPath: "artifacts[0].outputs[0].profile",
     });
     assert.match(result.failure.message, /Unsupported artifact output profile/);
-    assert.match(result.failure.message, /clean, compact, presentation/);
+    assert.match(result.failure.message, /clean, compact, overview, presentation/);
+  });
+});
+
+test("checkDiagramPilotRepoWorkflow accepts overview configured artifact output profiles", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const sourcePath = path.join(tempRoot, "docs", "architecture.dp.yaml");
+
+    await writeValidDiagramSource(sourcePath);
+    await checkConfigWithArtifactMapping(tempRoot, [
+      "  - source: docs/architecture.dp.yaml",
+      "    outputs:",
+      "      - format: svg",
+      "        path: docs/architecture.svg",
+      "        profile: overview",
+    ]);
+
+    const result = await checkDiagramPilotRepoWorkflow(
+      repoWorkflowCheckOptions(tempRoot),
+    );
+
+    assert.equal(result.failure?.kind, undefined);
   });
 });
 

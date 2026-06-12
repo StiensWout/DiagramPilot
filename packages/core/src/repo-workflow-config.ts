@@ -20,7 +20,7 @@ export type RepoWorkflowArtifactOutputFormat =
   | "svg" | "png" | "mermaid" | "d2" | "dot" | "markdown";
 
 export type RepoWorkflowOutputProfile =
-  | "clean" | "compact" | "presentation";
+  | "clean" | "compact" | "overview" | "presentation";
 
 export interface RepoWorkflowArtifactOutput {
   format: RepoWorkflowArtifactOutputFormat;

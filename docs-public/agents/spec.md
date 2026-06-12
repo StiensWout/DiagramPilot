@@ -384,8 +384,13 @@ diagrampilot render docs/architecture.dp.yaml --hide-edge-labels --out docs/arch
 ```
 
 Use `--group` for one containment boundary, `--around` with `--depth` for a
-node neighborhood, and `--hide-edge-labels` for overview artifacts. These
-filters compose after `--view` when a view is also provided.
+node neighborhood, and `--hide-edge-labels` for one-off overview artifacts.
+These filters compose after `--view` when a view is also provided.
+
+Configured outputs can use `profile: clean`, `profile: compact`,
+`profile: overview`, or `profile: presentation`. Use `profile: overview` for
+generated dense review artifacts that should preserve topology while reducing
+edge-label noise before reaching for a smaller view or focused render.
 
 ## Metadata
 

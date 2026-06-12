@@ -82,9 +82,12 @@ correctness and `check` artifact freshness. `render` requires `--out`, defaults
 to SVG, supports `--format svg|png`, accepts `--view <view-id>` for focused
 projections declared in the source file, renders one group with `--group`,
 renders node neighborhoods with `--around` and `--depth`, and can hide edge
-labels for overview artifacts with `--hide-edge-labels`. `export` prints to stdout by
-default, writes a file only when `--out` is provided, and accepts `--view
-<view-id>` for Mermaid, D2, and DOT projections. `format <path>` validates one
+labels for one-off overview artifacts with `--hide-edge-labels`. Configured
+outputs can use `profile: clean`, `profile: compact`, `profile: overview`, or
+`profile: presentation`; use `overview` when dense review artifacts need less
+edge-label noise. `export` prints to stdout by default, writes a file only when
+`--out` is provided, and accepts `--view <view-id>` for Mermaid, D2, and DOT
+projections. `format <path>` validates one
 `*.dp.yaml` source and rewrites it in canonical YAML key order; YAML comments
 may be removed
 or moved. `fix <path> --json` plans deterministic source-only repairs without

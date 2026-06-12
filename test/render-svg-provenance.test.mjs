@@ -108,6 +108,32 @@ test("renderDiagramSpecToSvg applies output profiles to rendered SVG output", as
   assert.notEqual(presentation, clean);
 });
 
+test("renderDiagramSpecToSvg applies overview output profile without edge labels", async () => {
+  const spec = {
+    version: 1,
+    title: "Architecture",
+    nodes: [
+      { id: "web_app", label: "Web App" },
+      { id: "api_gateway", label: "API Gateway" },
+    ],
+    edges: [
+      {
+        id: "web_to_api",
+        from: "web_app",
+        to: "api_gateway",
+        label: "HTTPS",
+      },
+    ],
+  };
+
+  const overview = await renderDiagramSpecToSvg(spec, {
+    profile: "overview",
+  });
+
+  assert.match(overview, /<svg\b/);
+  assert.doesNotMatch(overview, /HTTPS/);
+});
+
 test("SVG rendering adds a visible legend for known edge semantics", () => {
   const svg = '<svg xmlns="http://www.w3.org/2000/svg"><g></g></svg>';
   const spec = {

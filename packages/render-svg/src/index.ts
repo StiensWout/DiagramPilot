@@ -141,9 +141,13 @@ export function addSvgEdgeKindLegend(svg: string, spec: DiagramSpec): string {
 
 function d2CompileOptions(
   profile: RepoWorkflowOutputProfile | undefined,
-): CompileOptions | undefined {
+): CompileOptions {
   if (profile === "compact") {
-    return { pad: 40 };
+    return { pad: 32 };
+  }
+
+  if (profile === "overview") {
+    return { pad: 96 };
   }
 
   if (profile === "presentation") {
@@ -154,7 +158,7 @@ function d2CompileOptions(
     };
   }
 
-  return undefined;
+  return { pad: 72 };
 }
 
 export async function renderDiagramSpecToSvg(
@@ -168,14 +172,11 @@ export async function renderDiagramSpecToSvg(
       profile: options.profile,
     });
     const compileOptions = d2CompileOptions(options.profile);
-    const result =
-      compileOptions === undefined
-        ? await d2.compile(d2Text)
-        : await d2.compile({
-            fs: { index: d2Text },
-            inputPath: "index",
-            options: compileOptions,
-          });
+    const result = await d2.compile({
+      fs: { index: d2Text },
+      inputPath: "index",
+      options: compileOptions,
+    });
     const renderedSvg = addSvgEdgeKindLegend(
       await d2.render(result.diagram, result.renderOptions),
       spec,
