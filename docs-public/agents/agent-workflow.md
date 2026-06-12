@@ -32,6 +32,7 @@ diagrampilot create docs/system-context.dp.yaml --template system-context
 diagrampilot create docs/service-map.dp.yaml --template service-map
 diagrampilot format docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml
+diagrampilot fix docs/architecture.dp.yaml --json
 diagrampilot lint docs/architecture.dp.yaml
 diagrampilot inspect docs --json
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
@@ -42,7 +43,9 @@ Use `create` only when the source file does not exist yet. For an existing
 diagram, inspect first, edit the `*.dp.yaml` file, then continue with
 `format`, `validate`, `lint`, `inspect --json`, `render --out`, and `check`.
 
-`validate` reports repairable DiagramSpec source errors. `lint` validates and
+`validate` reports repairable DiagramSpec source errors. `fix --json` is the
+reviewable planning mode for deterministic source-only repairs; apply
+`diagrampilot fix <path>` only after reviewing the plan. `lint` validates and
 then reports DiagramSpec readability warnings for one source file without
 writing files. `inspect --json` is the machine-readable diagnostic and
 inventory interface for agents: it exposes discovered sources, Diagram Object

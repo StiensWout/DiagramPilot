@@ -9,6 +9,8 @@ import type {
   RepoWorkflowInspectOptions,
   RepoWorkflowInspectResult,
   ValidatedDiagramSpecLoadResult,
+  DiagramPilotSourceFixOptions,
+  DiagramPilotSourceFixResult,
 } from "@diagrampilot/core";
 import type {
   CreateSvgRendererProvenanceOptions,
@@ -25,6 +27,10 @@ export interface CommandPlanningDependencies {
   generateDiagramPilotRepoWorkflow(
     options: RepoWorkflowGenerateOptions,
   ): Promise<RepoWorkflowGenerateResult>;
+  planDiagramPilotSourceFix(
+    sourcePath: string,
+    options: DiagramPilotSourceFixOptions,
+  ): DiagramPilotSourceFixResult;
   loadValidatedDiagramSpec(path: string): ValidatedDiagramSpecLoadResult;
   lintDiagramSpec(spec: DiagramSpec): DiagramSpecLintResult;
   exportDiagramSpecToMermaid(

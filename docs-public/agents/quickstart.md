@@ -410,6 +410,14 @@ when source/config state is valid.
 `diagrampilot validate <path> --json`
 : Emits structured repairable validation errors for agents and scripts.
 
+`diagrampilot fix <path> --json`
+: Plans deterministic source-only repairs without writing files.
+
+`diagrampilot fix <path> --fallback-icon lucide:database`
+: Applies deterministic repairs and writes only the DiagramPilot Source File
+after validation succeeds. Unknown Lucide icons are replaced only when a
+packaged fallback icon is configured.
+
 `diagrampilot lint <path>`
 : Validates one DiagramPilot Source File, then reports readability warnings
 without writing files. Warnings include `path`, `ruleId`, `severity`,

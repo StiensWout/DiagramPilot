@@ -101,6 +101,74 @@ edges:
     label: HTTPS
 ```
 
+## Safe Fix Command
+
+`diagrampilot fix <path>` is a constrained Source Mutation command for
+deterministic repairs. It writes only the DiagramPilot Source File, never
+Derived Artifacts, and validates again after applying listed repairs. When the
+post-fix source is still invalid, it refuses to write and reports the remaining
+repairable diagnostics.
+
+Use JSON planning mode before mutation when an agent needs to inspect the exact
+repair plan:
+
+```bash
+diagrampilot fix docs/icons.dp.yaml --fallback-icon lucide:database --json
+```
+
+Example broken source with a configured deterministic fallback:
+
+```yaml
+version: 1
+title: Icon Repair Example
+nodes:
+  - id: database
+    label: Database
+    icon: lucide:databse
+```
+
+Example JSON plan:
+
+```json
+{
+  "file": "docs/icons.dp.yaml",
+  "ok": true,
+  "changed": true,
+  "repairs": [
+    {
+      "kind": "replace-icon",
+      "path": "nodes[0].icon",
+      "message": "Replace invalid icon with configured fallback lucide:database.",
+      "before": "lucide:databse",
+      "after": "lucide:database"
+    }
+  ],
+  "validation": {
+    "ok": true,
+    "errors": []
+  }
+}
+```
+
+Apply the deterministic repair only after reviewing the plan:
+
+```bash
+diagrampilot fix docs/icons.dp.yaml --fallback-icon lucide:database
+```
+
+The first supported repair set is intentionally narrow:
+
+- canonical source formatting for valid DiagramPilot Source Files;
+- replacement of unknown `lucide:*` icons only when `--fallback-icon` names a
+  packaged Lucide icon.
+
+Manual agent judgment is still required for ambiguous repairs. `fix` does not
+choose unique duplicate IDs, invent missing nodes for broken edge references,
+choose between multiple valid edge endpoints, repair YAML parse errors, or
+refresh stale Derived Artifacts. Use `validate` for source diagnostics, then
+edit the source deliberately. Use `render`, `export`, or `generate` to refresh
+Derived Artifacts after the source is valid.
+
 ## Error Shape
 
 Every structured validation error should include:
