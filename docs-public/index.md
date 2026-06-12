@@ -58,6 +58,9 @@ diagrampilot lint docs/architecture.dp.yaml --json
 diagrampilot format docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --view runtime --out docs/architecture-runtime.svg
+diagrampilot render docs/architecture.dp.yaml --group checkout_runtime --out docs/architecture-checkout-runtime.svg
+diagrampilot render docs/architecture.dp.yaml --around orders_service --depth 1 --out docs/architecture-orders-service.svg
+diagrampilot render docs/architecture.dp.yaml --hide-edge-labels --out docs/architecture-overview.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --view runtime --format mermaid --out docs/architecture-runtime.mmd
@@ -74,8 +77,10 @@ Use `inspect` for read-only source inventory, topology, Stable IDs, and
 artifact expectations before editing. Use `lint <path>` for read-only
 readability warnings on one valid source; it differs from `validate` source
 correctness and `check` artifact freshness. `render` requires `--out`, defaults
-to SVG, supports `--format svg|png`, and accepts `--view <view-id>` for
-focused projections declared in the source file. `export` prints to stdout by
+to SVG, supports `--format svg|png`, accepts `--view <view-id>` for focused
+projections declared in the source file, renders one group with `--group`,
+renders node neighborhoods with `--around` and `--depth`, and can hide edge
+labels for overview artifacts with `--hide-edge-labels`. `export` prints to stdout by
 default, writes a file only when `--out` is provided, and accepts `--view
 <view-id>` for Mermaid, D2, and DOT projections. `format <path>` validates one
 `*.dp.yaml` source and rewrites it in canonical YAML key order; YAML comments

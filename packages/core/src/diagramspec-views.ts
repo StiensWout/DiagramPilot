@@ -2,11 +2,14 @@ import {
   createDiagramSpecTopology,
   type DiagramSpec,
   type DiagramSpecEdge,
-  type DiagramSpecGroup,
   type DiagramSpecNode,
   type DiagramSpecTopology,
   type DiagramSpecView,
 } from "./diagramspec-topology.js";
+import {
+  createUnknownDiagramSpecReferenceDiagnostic,
+  selectedDiagramSpecGroups,
+} from "./diagramspec-projection.js";
 import type { RepairableDiagnostic } from "./diagramspec-validation.js";
 
 export interface DiagramSpecViewProjectionCounts {
@@ -243,20 +246,6 @@ function addEdgesForView(
   addEdgesBetweenSelectedNodes(spec, selection);
 }
 
-function selectedGroups(
-  spec: DiagramSpec,
-  selection: ViewSelection,
-): DiagramSpecGroup[] {
-  return (spec.groups ?? [])
-    .filter((group) => selection.groupIds.has(group.id))
-    .map((group) => ({
-      ...group,
-      contains: group.contains.filter(
-        (id) => selection.nodeIds.has(id) || selection.groupIds.has(id),
-      ),
-    }));
-}
-
 function selectedNodes(
   spec: DiagramSpec,
   selection: ViewSelection,
@@ -290,18 +279,12 @@ function unknownViewError(
   spec: DiagramSpec,
   viewId: string,
 ): RepairableDiagnostic {
-  const viewIds = (spec.views ?? []).map((view) => view.id);
-
-  return {
+  return createUnknownDiagramSpecReferenceDiagnostic({
     path: "views",
-    message: `Unknown DiagramSpec view "${viewId}".`,
-    badValue: viewId,
-    expected:
-      viewIds.length === 0
-        ? "A declared DiagramSpec view ID."
-        : `One of: ${viewIds.join(", ")}.`,
-    suggestion: "Choose a view ID declared in the DiagramSpec views collection.",
-  };
+    id: viewId,
+    ids: (spec.views ?? []).map((view) => view.id),
+    objectLabel: "view",
+  });
 }
 
 function projectionSpec(
@@ -309,7 +292,7 @@ function projectionSpec(
   selection: ViewSelection,
 ): DiagramSpec {
   const nodes = selectedNodes(spec, selection);
-  const groups = selectedGroups(spec, selection);
+  const groups = selectedDiagramSpecGroups(spec, selection);
   const edges = selectedEdges(spec, selection);
 
   return {

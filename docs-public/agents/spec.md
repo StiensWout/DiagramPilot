@@ -352,6 +352,19 @@ diagrampilot render docs/architecture.dp.yaml --view runtime --out docs/architec
 diagrampilot export docs/architecture.dp.yaml --view runtime --format mermaid --out docs/architecture-runtime.mmd
 ```
 
+Focused render filters can also create smaller SVG review artifacts from the
+same validated source without adding more DiagramSpec fields:
+
+```bash
+diagrampilot render docs/architecture.dp.yaml --group checkout_runtime --out docs/architecture-checkout-runtime.svg
+diagrampilot render docs/architecture.dp.yaml --around orders_service --depth 1 --out docs/architecture-orders-service.svg
+diagrampilot render docs/architecture.dp.yaml --hide-edge-labels --out docs/architecture-overview.svg
+```
+
+Use `--group` for one containment boundary, `--around` with `--depth` for a
+node neighborhood, and `--hide-edge-labels` for overview artifacts. These
+filters compose after `--view` when a view is also provided.
+
 ## Metadata
 
 `metadata` is a free-form object. DiagramPilot may define well-known keys while

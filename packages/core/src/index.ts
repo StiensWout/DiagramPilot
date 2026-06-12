@@ -30,6 +30,7 @@ export {
   normalizeSvgArtifactProvenanceSourcePath,
 } from "./svg-artifact-freshness.js";
 export { validateDiagramSpec } from "./diagramspec-validation.js";
+export { selectFocusedDiagramSpec } from "./diagramspec-focus.js";
 export { selectDiagramSpecView } from "./diagramspec-views.js";
 export {
   DIAGRAM_SPEC_LINT_THRESHOLDS,
@@ -94,6 +95,11 @@ export type {
   DiagramSpecTopologyWalkHandlers,
   DiagramSpecView,
 } from "./diagramspec-topology.js";
+export type {
+  DiagramSpecFocusCounts,
+  DiagramSpecFocusOptions,
+  DiagramSpecFocusResult,
+} from "./diagramspec-focus.js";
 export type {
   DiagramSpecViewProjectionCounts,
   DiagramSpecViewProjectionResult,

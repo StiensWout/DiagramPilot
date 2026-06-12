@@ -1,6 +1,7 @@
 import {
-  selectDiagramSpecView,
+  selectFocusedDiagramSpec,
   type DiagramSpec,
+  type DiagramSpecFocusOptions,
   type ValidatedDiagramSpecLoadResult,
 } from "@diagrampilot/core";
 
@@ -12,27 +13,36 @@ type SuccessfulValidatedDiagramSpecLoadResult = Extract<
   { ok: true }
 >;
 
-export type ViewSelectionResult =
+export type FocusSelectionResult =
   | { ok: true; spec: DiagramSpec }
   | { ok: false; plan: CommandPlan };
 
-export function selectOptionalViewOrPlanFailure(
+function hasFocusOptions(options: DiagramSpecFocusOptions): boolean {
+  return (
+    options.aroundNodeId !== undefined ||
+    options.groupId !== undefined ||
+    options.hideEdgeLabels === true
+  );
+}
+
+export function selectOptionalFocusOrPlanFailure(
   result: SuccessfulValidatedDiagramSpecLoadResult,
-  viewId: string | undefined,
-): ViewSelectionResult {
-  if (viewId === undefined) {
+  spec: DiagramSpec,
+  options: DiagramSpecFocusOptions,
+): FocusSelectionResult {
+  if (!hasFocusOptions(options)) {
     return {
       ok: true,
-      spec: result.spec,
+      spec,
     };
   }
 
-  const selected = selectDiagramSpecView(result.spec, viewId);
+  const selected = selectFocusedDiagramSpec(spec, options);
 
   if (!selected.ok) {
     return {
       ok: false,
-      plan: selectionFailurePlan("view", result.source.path, selected.error),
+      plan: selectionFailurePlan("focus", result.source.path, selected.error),
     };
   }
 

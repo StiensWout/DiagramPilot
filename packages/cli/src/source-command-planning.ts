@@ -12,6 +12,7 @@ import {
   parseRenderArgs,
   parseValidateArgs,
 } from "./argument-parsing.js";
+import { selectOptionalFocusOrPlanFailure } from "./focus-command-planning.js";
 import {
   exportUsageText,
   formatUsageText,
@@ -33,8 +34,19 @@ type FailedValidatedDiagramSpecLoadResult = Extract<
 >;
 type TextExportFormat = "d2" | "dot" | "mermaid";
 type RenderFormat = "svg" | "png";
+type RenderCommandOptions = Extract<
+  ReturnType<typeof parseRenderArgs>,
+  { ok: true }
+>["options"];
 type RepairableDiagnosticReport = ReturnType<typeof createRepairableDiagnosticReport>;
 type LoadedViewSelectionResult =
+  | {
+      ok: true;
+      result: SuccessfulValidatedDiagramSpecLoadResult;
+      spec: DiagramSpec;
+    }
+  | { ok: false; plan: CommandPlan };
+type RenderSpecSelectionResult =
   | {
       ok: true;
       result: SuccessfulValidatedDiagramSpecLoadResult;
@@ -398,6 +410,62 @@ function renderFailurePlan(sourcePath: string, error: unknown): CommandPlan {
   };
 }
 
+function selectRenderSpecOrPlanFailure(
+  dependencies: CommandPlanningDependencies,
+  options: RenderCommandOptions,
+): RenderSpecSelectionResult {
+  const selected = loadSelectedDiagramSpecOrPlanFailure(
+    dependencies,
+    options.sourcePath,
+    options.viewId,
+  );
+
+  if (!selected.ok) return selected;
+
+  const focused = selectOptionalFocusOrPlanFailure(
+    selected.result,
+    selected.spec,
+    {
+      aroundNodeId: options.aroundNodeId,
+      depth: options.depth,
+      groupId: options.groupId,
+      hideEdgeLabels: options.hideEdgeLabels,
+    },
+  );
+
+  if (!focused.ok) return focused;
+
+  return {
+    ok: true,
+    result: selected.result,
+    spec: focused.spec,
+  };
+}
+
+async function renderSelectedDiagramSpec(
+  dependencies: CommandPlanningDependencies,
+  result: SuccessfulValidatedDiagramSpecLoadResult,
+  spec: DiagramSpec,
+  options: RenderCommandOptions,
+): Promise<CommandPlan> {
+  try {
+    const renderedSvg = await renderValidatedDiagramSpecToSvg(
+      dependencies,
+      result,
+      spec,
+    );
+    const renderedContent = renderContentForFormat(
+      dependencies,
+      options.format,
+      renderedSvg,
+    );
+
+    return renderWritePlan(options.outPath, renderedContent);
+  } catch (error) {
+    return renderFailurePlan(result.source.path, error);
+  }
+}
+
 export async function planRender(
   args: readonly string[],
   dependencies: CommandPlanningDependencies,
@@ -408,30 +476,19 @@ export async function planRender(
     return renderUsagePlan(argsResult.message);
   }
 
-  const selected = loadSelectedDiagramSpecOrPlanFailure(
+  const selected = selectRenderSpecOrPlanFailure(
     dependencies,
-    argsResult.options.sourcePath,
-    argsResult.options.viewId,
+    argsResult.options,
   );
 
   if (!selected.ok) {
     return selected.plan;
   }
 
-  try {
-    const renderedSvg = await renderValidatedDiagramSpecToSvg(
-      dependencies,
-      selected.result,
-      selected.spec,
-    );
-    const renderedContent = renderContentForFormat(
-      dependencies,
-      argsResult.options.format,
-      renderedSvg,
-    );
-
-    return renderWritePlan(argsResult.options.outPath, renderedContent);
-  } catch (error) {
-    return renderFailurePlan(selected.result.source.path, error);
-  }
+  return renderSelectedDiagramSpec(
+    dependencies,
+    selected.result,
+    selected.spec,
+    argsResult.options,
+  );
 }
