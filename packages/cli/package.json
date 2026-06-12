@@ -18,7 +18,15 @@
     "diagramspec",
     "diagram",
     "architecture",
-    "cli"
+    "cli",
+    "software-architecture",
+    "codebase-diagrams",
+    "dependency-diagrams",
+    "diagram-as-code",
+    "architecture-as-code",
+    "ai-agents",
+    "git",
+    "ci"
   ],
   "bin": {
     "diagrampilot": "dist/index.js"

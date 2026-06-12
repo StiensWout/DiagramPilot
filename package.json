@@ -18,7 +18,15 @@
     "diagramspec",
     "diagram",
     "architecture",
-    "agents"
+    "agents",
+    "software-architecture",
+    "codebase-diagrams",
+    "dependency-diagrams",
+    "diagram-as-code",
+    "architecture-as-code",
+    "ai-agents",
+    "git",
+    "ci"
   ],
   "packageManager": "npm@11.16.0",
   "engines": {

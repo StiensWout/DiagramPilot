@@ -18,7 +18,15 @@
     "diagramspec",
     "diagram",
     "architecture",
-    "validation"
+    "validation",
+    "software-architecture",
+    "codebase-diagrams",
+    "dependency-diagrams",
+    "diagram-as-code",
+    "architecture-as-code",
+    "ai-agents",
+    "git",
+    "ci"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
