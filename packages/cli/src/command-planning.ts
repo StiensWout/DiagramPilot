@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 
 import {
   checkDiagramPilotRepoWorkflow,
+  diffDiagramSpecs,
   generateDiagramPilotRepoWorkflow,
   getDiagramPilotVersion,
   inspectDiagramPilotRepoWorkflow,
@@ -33,6 +34,7 @@ import { parseCheckArgs, parseInspectArgs } from "./argument-parsing.js";
 import {
   checkUsageText,
   createUsageText,
+  diffUsageText,
   exportUsageText,
   fixUsageText,
   formatUsageText,
@@ -47,6 +49,7 @@ import { checkResultPlan } from "./check-command-planning.js";
 import type { CommandPlanningDependencies } from "./command-planning-dependencies.js";
 import { planCreate } from "./create-command-planning.js";
 import { planFix } from "./fix-command-planning.js";
+import { planDiff } from "./diff-command-planning.js";
 import { planGenerate } from "./generate-command-planning.js";
 import { inspectResultPlan } from "./inspect-command-planning.js";
 import {
@@ -74,6 +77,7 @@ const defaultCommandPlanningDependencies: CommandPlanningDependencies = {
   planDiagramPilotSourceFix,
   loadValidatedDiagramSpec,
   lintDiagramSpec,
+  diffDiagramSpecs,
   exportDiagramSpecToMermaid,
   exportDiagramSpecToD2,
   exportDiagramSpecToDot,
@@ -261,6 +265,7 @@ function planIcons(
 const commandHandlers: Readonly<Record<string, CommandHandler>> = {
   check: planCheck,
   create: planCreate,
+  diff: planDiff,
   export: planExport,
   fix: planFix,
   format: planFormat,
@@ -275,6 +280,7 @@ const commandHandlers: Readonly<Record<string, CommandHandler>> = {
 const commandHelpText: Readonly<Record<string, () => string>> = {
   check: checkUsageText,
   create: createUsageText,
+  diff: diffUsageText,
   export: exportUsageText,
   fix: fixUsageText,
   format: formatUsageText,

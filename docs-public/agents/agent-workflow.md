@@ -58,6 +58,26 @@ validation reports an unknown `lucide:*` icon.
 `render` requires `--out` and defaults to SVG. Use `check` after rendering to
 verify Artifact Freshness without rewriting files.
 
+## Pull Request Review
+
+Use `diff` during a pull request review workflow when reviewers need to see
+what changed between two DiagramPilot Source Files before looking at rendered
+artifacts:
+
+```bash
+diagrampilot diff main.dp.yaml branch.dp.yaml --json
+diagrampilot diff main.dp.yaml branch.dp.yaml --out review/architecture-diff.svg
+diagrampilot inspect docs --json
+diagrampilot check
+```
+
+`diff` compares two DiagramPilot Source Files by Stable ID. It reports added,
+removed, and changed nodes, edges, and groups, including practical field
+changes such as labels, containment, endpoints, direction, kinds, icons, and
+metadata. JSON output is intended for agents and CI. SVG output renders a
+generated diff diagram through DiagramPilot instead of requiring hand-edited
+SVG.
+
 ## Readability Lint
 
 Use `diagrampilot lint <path>` before rendering large or review-sensitive

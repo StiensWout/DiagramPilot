@@ -37,6 +37,8 @@ export function helpText(version: string): string {
     `  create <path> --template ${diagramPilotSourceTemplateNames.join("|")}`,
     "  validate <path> [--json]",
     "  lint <path> [--json]",
+    "  diff <before> <after> [--json]",
+    "  diff <before> <after> --out <artifact.svg>",
     "  format <path>",
     "  fix <path> [--json] [--fallback-icon lucide:<icon-name>]",
     "  check [path] [--json]",
@@ -66,6 +68,14 @@ export function checkUsageText(): string {
 
 export function lintUsageText(): string {
   return "Usage: diagrampilot lint <path> [--json]";
+}
+
+export function diffUsageText(): string {
+  return [
+    "Usage:",
+    "  diagrampilot diff <before> <after> [--json]",
+    "  diagrampilot diff <before> <after> --out <artifact.svg>",
+  ].join("\n");
 }
 
 export function inspectUsageText(): string {

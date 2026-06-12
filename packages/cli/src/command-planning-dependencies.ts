@@ -1,5 +1,6 @@
 import type {
   DiagramSpec,
+  DiagramSpecDiffResult,
   DiagramSpecLintResult,
   RepoWorkflowOutputProfile,
   RepoWorkflowCheckOptions,
@@ -33,6 +34,7 @@ export interface CommandPlanningDependencies {
   ): DiagramPilotSourceFixResult;
   loadValidatedDiagramSpec(path: string): ValidatedDiagramSpecLoadResult;
   lintDiagramSpec(spec: DiagramSpec): DiagramSpecLintResult;
+  diffDiagramSpecs(before: DiagramSpec, after: DiagramSpec): DiagramSpecDiffResult;
   exportDiagramSpecToMermaid(
     spec: DiagramSpec,
     options?: { profile?: RepoWorkflowOutputProfile },
