@@ -1,6 +1,6 @@
 {
   "name": "diagrampilot",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "DiagramPilot command line interface.",
   "type": "module",
   "license": "MIT",
@@ -46,11 +46,11 @@
     "build": "tsc -b && node scripts/make-bin-executable.mjs"
   },
   "dependencies": {
-    "@diagrampilot/core": "0.3.1",
-    "@diagrampilot/export-d2": "0.3.1",
-    "@diagrampilot/export-dot": "0.3.1",
-    "@diagrampilot/export-mermaid": "0.3.1",
-    "@diagrampilot/mcp": "0.3.1",
-    "@diagrampilot/render-svg": "0.3.1"
+    "@diagrampilot/core": "0.4.0",
+    "@diagrampilot/export-d2": "0.4.0",
+    "@diagrampilot/export-dot": "0.4.0",
+    "@diagrampilot/export-mermaid": "0.4.0",
+    "@diagrampilot/mcp": "0.4.0",
+    "@diagrampilot/render-svg": "0.4.0"
   }
 }
