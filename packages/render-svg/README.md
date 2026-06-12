@@ -6,6 +6,7 @@ Most users should call the CLI:
 
 ```bash
 diagrampilot render <path> --out <artifact.svg>
+diagrampilot render <path> --view <view-id> --out <artifact.svg>
 diagrampilot render <path> --format png --out <artifact.png>
 ```
 

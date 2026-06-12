@@ -79,6 +79,7 @@ direction: right
 nodes: []
 edges: []
 groups: []
+views: []
 metadata: {}
 ```
 
@@ -96,6 +97,7 @@ Optional top-level fields:
 - `direction`
 - `edges`
 - `groups`
+- `views`
 - `metadata`
 
 ## Field Contract
@@ -121,6 +123,10 @@ Defaults to `right`.
 
 `groups`
 : Optional. Logical containers for nodes or other groups.
+
+`views`
+: Optional. Named projections that filter the same DiagramSpec source for
+focused render or export output.
 
 `metadata`
 : Optional. Free-form object for project, source, owner, or generation details.
@@ -297,6 +303,54 @@ validation rejects group cycles and duplicate containment. Each contained node
 or group has at most one parent group in DiagramSpec v1.
 
 Groups are not valid edge endpoints in DiagramSpec v1.
+
+## Views
+
+Views are named projections from one DiagramPilot Source File. They are not
+separate source files, and they do not replace the canonical full DiagramSpec.
+Use them when a large diagram needs smaller review artifacts for audiences such
+as runtime, data-flow, security, or executive overviews.
+
+```yaml
+views:
+  - id: runtime
+    label: Runtime
+    groups:
+      - backend
+    nodeKinds:
+      - service
+    edgeKinds:
+      - request
+      - data_flow
+```
+
+Required view fields:
+
+- `id`
+
+Optional view fields:
+
+- `label`
+- `description`
+- `groups`
+- `nodes`
+- `edges`
+- `nodeKinds`
+- `edgeKinds`
+- `metadata`
+
+View IDs use the stable ID shape. `groups`, `nodes`, and `edges` reference
+existing object IDs. `nodeKinds` and `edgeKinds` match existing `kind` values.
+Validation reports repairable diagnostics for duplicate view IDs, unknown
+referenced objects, and filters that match nothing.
+
+Render or export a projection without mutating the source file:
+
+```bash
+diagrampilot inspect docs --json
+diagrampilot render docs/architecture.dp.yaml --view runtime --out docs/architecture-runtime.svg
+diagrampilot export docs/architecture.dp.yaml --view runtime --format mermaid --out docs/architecture-runtime.mmd
+```
 
 ## Metadata
 

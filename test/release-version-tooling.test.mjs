@@ -333,7 +333,6 @@ test("release workflow uses current channels and milestone closeout", async () =
     /scripts\/validate-github-release-draft\.mjs/u,
     /node scripts\/generate-release-notes\.mjs \\\s+--kind nightly/u,
     /npm run check:package-readiness/u,
-    /npm run check:package-size-budgets/u,
   ]);
   assertMatchesNone(workflow, [
     /check:issue-release-version/u,

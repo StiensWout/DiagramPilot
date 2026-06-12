@@ -64,8 +64,10 @@ diagrampilot validate docs/architecture.dp.yaml
 diagrampilot lint docs/architecture.dp.yaml
 diagrampilot format docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
+diagrampilot render docs/architecture.dp.yaml --view runtime --out docs/architecture-runtime.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
 diagrampilot export docs/architecture.dp.yaml --format mermaid
+diagrampilot export docs/architecture.dp.yaml --view runtime --format mermaid --out docs/architecture-runtime.mmd
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
 diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot
 ```
@@ -79,8 +81,10 @@ when you need explicit source repair output. Use `lint` when you need
 readability warnings for one valid source before rendering or review. Use
 `format` to rewrite a valid DiagramPilot Source File into canonical YAML before
 review. `render` requires `--out`, defaults to SVG, and supports
-`--format svg|png`; PNG rendering rasterizes the SVG render path. `export`
-prints to stdout by default and writes only when `--out` is provided.
+`--format svg|png`; PNG rendering rasterizes the SVG render path. Add
+`--view <view-id>` to render or export a declared projection from the same
+DiagramPilot Source File. `export` prints to stdout by default and writes only
+when `--out` is provided.
 Use `icons list` and `icons search <query>` to discover packaged `lucide:*`
 icon references for nodes and groups.
 
@@ -167,8 +171,10 @@ diagrampilot lint docs/architecture.dp.yaml
 diagrampilot lint docs/architecture.dp.yaml --json
 diagrampilot format docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
+diagrampilot render docs/architecture.dp.yaml --view runtime --out docs/architecture-runtime.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
 diagrampilot export docs/architecture.dp.yaml --format mermaid
+diagrampilot export docs/architecture.dp.yaml --view runtime --format mermaid --out docs/architecture-runtime.mmd
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
 diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot
 ```

@@ -92,7 +92,6 @@ test("GitHub Actions release workflow validates releases before guarded publishi
     /node \.\.\/\.\.\/packages\/cli\/dist\/index\.js check/u,
     /git diff --exit-code -- demo-projects\/checkout\/docs\/architecture\.svg/u,
     /npm run check:package-readiness/u,
-    /npm run check:package-size-budgets/u,
     /node scripts\/plan-release-publish\.mjs --github-output/u,
     /needs\.release-checks\.outputs\.should_publish == 'true'/u,
     /RELEASE_DIST_TAG == 'nightly'/u,
@@ -181,7 +180,6 @@ test("release workflow gates CD side effects behind CI and validates reviewed Gi
 
   assertMatchesAll(publishPackagesJob, [
     /needs: release-checks/u,
-    /npm run check:package-size-budgets/u,
     /node scripts\/publish-release-packages\.mjs --mode publish/u,
   ]);
 

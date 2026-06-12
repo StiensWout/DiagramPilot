@@ -11,7 +11,8 @@ Templates: `architecture`, `flow`, `package-map`, `system-context`,
 
 Supports YAML Source Files, readability lint warnings, Derived Artifacts,
 Markdown embeds, SVG/PNG, Mermaid/D2/DOT, local `lucide:*` icon discovery, and
-repo checks.
+repo checks. Use `--view <view-id>` with `render` or `export` to produce a
+declared DiagramSpec projection from one source file.
 
 Public documentation:
 

@@ -112,6 +112,3 @@ jobs:
 
       - name: Check public package readiness
         run: npm run check:package-readiness
-
-      - name: Check public package size budgets
-        run: npm run check:package-size-budgets

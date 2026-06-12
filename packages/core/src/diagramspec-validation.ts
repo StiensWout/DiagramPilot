@@ -1,8 +1,6 @@
 import {
   allowedDirectionList,
   allowedDirections,
-  stableIdExpected,
-  stableIdPattern,
 } from "./diagramspec-constants.js";
 import { validateDiagramObjectIcons } from "./diagramspec-icon-validation.js";
 import { validateWellKnownMetadataReferences } from "./diagramspec-metadata-validation.js";
@@ -13,11 +11,17 @@ import {
   validateGroupContainmentCycles,
   validateGroupContainmentReferences,
 } from "./diagramspec-topology-validation.js";
+import type { DiagramSpecDirection } from "./diagramspec-topology.js";
+import {
+  validateDiagramSpecViewReferencesAndMatches,
+  validateDiagramSpecViewShapeAndFilters,
+} from "./diagramspec-view-validation.js";
 import {
   diagramObjectCollectionNames,
   forEachCollectionItem,
   forEachCollectionRecord,
   isRecord,
+  validateStableIdShape,
 } from "./diagramspec-validation-helpers.js";
 
 export interface RepairableDiagnostic {
@@ -59,6 +63,11 @@ function validateTopLevelCollectionShapes(
       message: "groups must be an array of group objects when present.",
       expected: "Array of group objects.",
       suggestion: "Change groups to a list of group objects or omit groups.",
+    },
+    views: {
+      message: "views must be an array of view objects when present.",
+      expected: "Array of view objects.",
+      suggestion: "Change views to a list of view objects or omit views.",
     },
   };
 
@@ -106,32 +115,8 @@ function validateDiagramObjectShapes(
   );
 }
 
-function isAllowedDirection(value: unknown): boolean {
+function isAllowedDirection(value: unknown): value is DiagramSpecDirection {
   return allowedDirections.some((direction) => direction === value);
-}
-
-function isStableId(value: unknown): value is string {
-  return typeof value === "string" && stableIdPattern.test(value);
-}
-
-function validateStableIdShape(
-  path: string,
-  value: unknown,
-  errors: DiagramSpecValidationError[],
-): value is string {
-  if (isStableId(value)) {
-    return true;
-  }
-
-  errors.push({
-    path,
-    message: `${path} must match the stable ID pattern.`,
-    badValue: value,
-    expected: stableIdExpected,
-    suggestion: `Change ${path} to lowercase snake case, such as api_gateway.`,
-  });
-
-  return false;
 }
 
 function validateGlobalStableIdUniqueness(
@@ -325,6 +310,7 @@ function validateDiagramSpecObject(
   validateDiagramObjectShapes(value, errors);
   validateDiagramObjectIds(value, errors);
   validateDiagramObjectKinds(value, errors);
+  validateDiagramSpecViewShapeAndFilters(value, errors);
   validateDiagramObjectIcons(value, errors);
   validateWellKnownMetadataReferences(value, errors);
   validateRequiredPlainTextLabels(value, errors);
@@ -336,6 +322,7 @@ function validateDiagramSpecObject(
   validateGroupContainmentCycles(value, topology, errors);
   validateEdgeEndpoints(value, topology, errors);
   validateEdgeDirectedValues(value, errors);
+  validateDiagramSpecViewReferencesAndMatches(value, errors);
 }
 
 export function validateDiagramSpec(

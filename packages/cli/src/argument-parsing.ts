@@ -2,12 +2,14 @@ interface ExportOptions {
   format: "d2" | "dot" | "mermaid";
   outPath?: string;
   sourcePath: string;
+  viewId?: string;
 }
 
 interface RenderCommandOptions {
   format: "svg" | "png";
   outPath: string;
   sourcePath: string;
+  viewId?: string;
 }
 
 interface CheckCommandOptions {
@@ -57,6 +59,7 @@ interface OutputCommandArgs<TFormat extends string> {
   format: TFormat;
   outPath?: string;
   sourcePath: string;
+  viewId?: string;
 }
 
 interface ScopedJsonParseState {
@@ -68,6 +71,7 @@ interface OutputCommandParseState {
   format?: string;
   outPath?: string;
   sourcePath?: string;
+  viewId?: string;
 }
 
 interface OutputCommandParseProgress {
@@ -79,6 +83,7 @@ interface RequiredOutputCommandValues {
   format: string;
   outPath?: string;
   sourcePath: string;
+  viewId?: string;
 }
 
 function isSupportedFormat<TFormat extends string>(
@@ -162,7 +167,7 @@ function parseOutputValueArg(
   args: readonly string[],
   index: number,
   state: OutputCommandParseState,
-  property: "format" | "outPath",
+  property: "format" | "outPath" | "viewId",
   missingMessage: string,
 ): ArgsResult<OutputCommandParseProgress> {
   const nextArg = args[index + 1];
@@ -243,6 +248,16 @@ function parseOutputCommandArg<TFormat extends string>(
       state,
       "outPath",
       config.missingOutPathMessage,
+    );
+  }
+
+  if (arg === "--view") {
+    return parseOutputValueArg(
+      args,
+      index,
+      state,
+      "viewId",
+      "Missing view ID.",
     );
   }
 
@@ -330,6 +345,7 @@ function collectRequiredOutputCommandValues<TFormat extends string>(
       format: format.options.value,
       outPath: outPath.options.outPath,
       sourcePath: sourcePath.options.value,
+      viewId: state.viewId,
     },
   };
 }
@@ -351,6 +367,7 @@ function outputCommandArgsFromValues<TFormat extends string>(
       format: values.format,
       outPath: values.outPath,
       sourcePath: values.sourcePath,
+      viewId: values.viewId,
     },
   };
 }
@@ -425,6 +442,7 @@ export function parseRenderArgs(args: readonly string[]): RenderArgsResult {
       format: result.options.format,
       outPath: result.options.outPath,
       sourcePath: result.options.sourcePath,
+      viewId: result.options.viewId,
     },
   };
 }
