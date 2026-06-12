@@ -116,6 +116,10 @@ export function deriveExpectedSvgArtifactPath(sourcePath: string): string {
   return sourcePath.replace(/\.dp\.yaml$/iu, ".svg");
 }
 
+export function normalizeSvgArtifactProvenanceSourcePath(sourcePath: string): string {
+  return sourcePath.replace(/\\/gu, "/");
+}
+
 export function createSvgArtifactProvenance(
   options: CreateSvgArtifactProvenanceOptions,
 ): SvgArtifactProvenance {
@@ -125,7 +129,7 @@ export function createSvgArtifactProvenance(
       : { outputProfile: options.outputProfile };
 
   return {
-    sourcePath: options.sourcePath,
+    sourcePath: normalizeSvgArtifactProvenanceSourcePath(options.sourcePath),
     sourceSha256: createHash("sha256")
       .update(options.sourceContent)
       .digest("hex"),
@@ -246,7 +250,11 @@ const svgArtifactProvenanceComparisons: readonly {
   reason: SvgArtifactStaleReason;
   value: (provenance: SvgArtifactProvenance) => string | undefined;
 }[] = [
-  { reason: "source-path-mismatch", value: (provenance) => provenance.sourcePath },
+  {
+    reason: "source-path-mismatch",
+    value: (provenance) =>
+      normalizeSvgArtifactProvenanceSourcePath(provenance.sourcePath),
+  },
   {
     reason: "source-sha256-mismatch",
     value: (provenance) => provenance.sourceSha256,

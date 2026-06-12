@@ -10,58 +10,62 @@ function assertStderrMatches(plan, patterns) {
   }
 }
 
-test("plans check text artifact evidence failures with render repair commands", async () => {
-  const plan = await planCommand(
+async function planCheckWithSources(sources) {
+  return planCommand(
     ["check"],
     createPlanningDependencies({
       checkDiagramPilotRepoWorkflow: async () => ({
         ok: true,
         scope: { kind: "directory", path: "/repo" },
         summary: {
-          checkedSourceCount: 3,
+          checkedSourceCount: sources.length,
           freshSourceCount: 0,
-          issueCount: 3,
+          issueCount: sources.length,
         },
-        sources: [
-          {
-            sourcePath: "docs/missing_provenance.dp.yaml",
-            validation: {
-              ok: true,
-              errors: [],
-            },
-            artifact: {
-              status: "missing-provenance",
-              path: "docs/missing_provenance.svg",
-            },
-          },
-          {
-            sourcePath: "docs/unreadable.dp.yaml",
-            validation: {
-              ok: true,
-              errors: [],
-            },
-            artifact: {
-              status: "unreadable-artifact",
-              path: "docs/unreadable.svg",
-              message: "EACCES",
-            },
-          },
-          {
-            sourcePath: "docs/malformed.dp.yaml",
-            validation: {
-              ok: true,
-              errors: [],
-            },
-            artifact: {
-              status: "malformed-artifact",
-              path: "docs/malformed.svg",
-              message: "Malformed DiagramPilot provenance",
-            },
-          },
-        ],
+        sources,
       }),
     }),
   );
+}
+
+test("plans check text artifact evidence failures with render repair commands", async () => {
+  const plan = await planCheckWithSources([
+    {
+      sourcePath: "docs/missing_provenance.dp.yaml",
+      validation: {
+        ok: true,
+        errors: [],
+      },
+      artifact: {
+        status: "missing-provenance",
+        path: "docs/missing_provenance.svg",
+      },
+    },
+    {
+      sourcePath: "docs/unreadable.dp.yaml",
+      validation: {
+        ok: true,
+        errors: [],
+      },
+      artifact: {
+        status: "unreadable-artifact",
+        path: "docs/unreadable.svg",
+        message: "EACCES",
+      },
+    },
+    {
+      sourcePath: "docs/malformed.dp.yaml",
+      validation: {
+        ok: true,
+        errors: [],
+      },
+      artifact: {
+        status: "malformed-artifact",
+        path: "docs/malformed.svg",
+        message: "Malformed DiagramPilot provenance",
+      },
+    },
+  ]);
 
   assert.equal(plan.exitCode, 1);
   assert.equal(plan.stdout, "");
@@ -71,6 +75,48 @@ test("plans check text artifact evidence failures with render repair commands", 
     /Malformed SVG artifact: docs\/malformed\.svg for docs\/malformed\.dp\.yaml\. Run `diagrampilot render docs\/malformed\.dp\.yaml --out docs\/malformed\.svg`\./,
   ]);
   assert.doesNotMatch(plan.stderr, /EACCES|Malformed DiagramPilot provenance/);
+});
+
+test("plans check text source path mismatch failures with a Windows path hint", async () => {
+  const plan = await planCheckWithSources([
+    {
+      sourcePath: "docs/architecture.dp.yaml",
+      validation: {
+        ok: true,
+        errors: [],
+      },
+      artifact: {
+        status: "stale",
+        path: "docs/architecture.svg",
+        reasons: ["source-path-mismatch"],
+        expected: {
+          sourcePath: "docs/architecture.dp.yaml",
+          sourceSha256: "hash",
+          diagramPilotVersion: "0.4.0",
+          renderer: {
+            name: "@terrastruct/d2",
+            version: "0.1.33",
+          },
+        },
+        actual: {
+          sourcePath: String.raw`docs\architecture.dp.yaml`,
+          sourceSha256: "hash",
+          diagramPilotVersion: "0.4.0",
+          renderer: {
+            name: "@terrastruct/d2",
+            version: "0.1.33",
+          },
+        },
+      },
+    },
+  ]);
+
+  assert.equal(plan.exitCode, 1);
+  assert.equal(plan.stdout, "");
+  assert.match(
+    plan.stderr,
+    /Stale SVG artifact: docs\/architecture\.svg for docs\/architecture\.dp\.yaml \(source-path-mismatch\)\. Path differs only by separator style; rerun render with forward-slash paths\. Run `diagrampilot render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg`\./,
+  );
 });
 
 test("plans check text configured artifact failures with format-specific repair commands", async () => {

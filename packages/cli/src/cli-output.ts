@@ -3,7 +3,10 @@ import type {
   RepoWorkflowInspectResult,
   RepoWorkflowInspectSourceResult,
 } from "@diagrampilot/core";
-import { diagramPilotSourceTemplateNames } from "@diagrampilot/core";
+import {
+  diagramPilotSourceTemplateNames,
+  normalizeSvgArtifactProvenanceSourcePath,
+} from "@diagrampilot/core";
 
 import type { Writable } from "./types.js";
 
@@ -285,6 +288,49 @@ function repairSentence(
   return command === undefined ? "" : ` Run \`${command}\`.`;
 }
 
+type StaleArtifactWithProvenance = Extract<
+  CheckArtifact,
+  { status: "stale"; expected: unknown; actual: unknown }
+>;
+
+function hasStaleProvenance(
+  artifact: Exclude<CheckArtifact, { status: "fresh" }>,
+): artifact is StaleArtifactWithProvenance {
+  return (
+    artifact.status === "stale" &&
+    "expected" in artifact &&
+    "actual" in artifact
+  );
+}
+
+function hasEquivalentProvenanceSourcePaths(
+  artifact: StaleArtifactWithProvenance,
+): boolean {
+  const expected = normalizeSvgArtifactProvenanceSourcePath(
+    artifact.expected.sourcePath,
+  );
+  const actual = normalizeSvgArtifactProvenanceSourcePath(
+    artifact.actual.sourcePath,
+  );
+
+  return expected === actual;
+}
+
+function sourcePathMismatchHint(
+  artifact: Exclude<CheckArtifact, { status: "fresh" }>,
+): string {
+  if (!hasStaleProvenance(artifact)) {
+    return "";
+  }
+
+  const isSourcePathMismatch =
+    artifact.reasons.includes("source-path-mismatch");
+
+  return isSourcePathMismatch && hasEquivalentProvenanceSourcePaths(artifact)
+    ? " Path differs only by separator style; rerun render with forward-slash paths."
+    : "";
+}
+
 function freshCheckText(sourceResults: readonly RepoWorkflowCheckSourceResult[]): string {
   const artifactDescription = sourceResults.some(
     (source) => source.artifacts !== undefined,
@@ -322,7 +368,7 @@ function artifactIssueLine(
   const reason =
     artifact.status === "stale" ? ` (${artifact.reasons.join(", ")})` : "";
 
-  return `${artifactIssuePrefix(artifact)}: ${artifact.path} for ${source.sourcePath}${reason}.${repairSentence(artifact, source.sourcePath)}`;
+  return `${artifactIssuePrefix(artifact)}: ${artifact.path} for ${source.sourcePath}${reason}.${sourcePathMismatchHint(artifact)}${repairSentence(artifact, source.sourcePath)}`;
 }
 
 function issueLinesForSource(source: RepoWorkflowCheckSourceResult): string[] {

@@ -61,6 +61,17 @@ test("SVG provenance construction records deterministic source and renderer meta
   );
 });
 
+test("SVG provenance construction stores repo-style source paths", () => {
+  const sourceContent = "version: 1\n";
+
+  const provenance = createSvgRendererProvenance({
+    sourcePath: String.raw`docs\architecture.dp.yaml`,
+    sourceContent,
+  });
+
+  assert.equal(provenance.sourcePath, "docs/architecture.dp.yaml");
+});
+
 test("SVG provenance insertion writes metadata after the opening svg tag without rendering through D2", () => {
   const sourceContent = "version: 1\n";
   const provenance = createSvgRendererProvenance({
