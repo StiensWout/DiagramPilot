@@ -94,6 +94,8 @@ complement text renderers such as Mermaid, D2, and DOT.
 - [Error repair](https://diagrampilot.com/docs/agents/error-repair.md): How agents should interpret and fix validation errors.
 - [Examples](https://diagrampilot.com/docs/agents/examples.md): Canonical diagram examples.
 - [Prompting guide](https://diagrampilot.com/docs/agents/prompting.md): Recommended instructions for agents using DiagramPilot.
+- [Comparisons and adjacent tools](https://diagrampilot.com/docs/agents/comparisons.md): When to use DiagramPilot with or instead of Mermaid, D2, Graphviz/DOT, dependency-cruiser, and React Flow.
+- [Integrations and agent recipes](https://diagrampilot.com/docs/agents/integrations.md): GitHub Actions validation and coding-agent inspect, repair, render, and check workflows.
 
 ### Public Artifacts
 

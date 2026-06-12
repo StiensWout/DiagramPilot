@@ -51,6 +51,14 @@ test("website publishes public docs as human HTML and agent Markdown routes", as
     path.join(repoRoot, "docs-public", "agents", "agent-workflow.md"),
     "utf8",
   );
+  const comparisonsSourceMarkdown = await readFile(
+    path.join(repoRoot, "docs-public", "agents", "comparisons.md"),
+    "utf8",
+  );
+  const integrationsSourceMarkdown = await readFile(
+    path.join(repoRoot, "docs-public", "agents", "integrations.md"),
+    "utf8",
+  );
   const syncedIndexMarkdown = await readFile(
     path.join(repoRoot, "website", "src", "content", "docs", "docs", "index.md"),
     "utf8",
@@ -101,6 +109,52 @@ test("website publishes public docs as human HTML and agent Markdown routes", as
     ),
     "utf8",
   );
+  const comparisonsHtml = await readFile(
+    path.join(
+      repoRoot,
+      "website",
+      "dist",
+      "docs",
+      "agents",
+      "comparisons",
+      "index.html",
+    ),
+    "utf8",
+  );
+  const comparisonsMarkdown = await readFile(
+    path.join(
+      repoRoot,
+      "website",
+      "dist",
+      "docs",
+      "agents",
+      "comparisons.md",
+    ),
+    "utf8",
+  );
+  const integrationsHtml = await readFile(
+    path.join(
+      repoRoot,
+      "website",
+      "dist",
+      "docs",
+      "agents",
+      "integrations",
+      "index.html",
+    ),
+    "utf8",
+  );
+  const integrationsMarkdown = await readFile(
+    path.join(
+      repoRoot,
+      "website",
+      "dist",
+      "docs",
+      "agents",
+      "integrations.md",
+    ),
+    "utf8",
+  );
   const websiteIndexMarkdown = await readFile(
     path.join(repoRoot, "website", "dist", "docs", "index.md"),
     "utf8",
@@ -110,6 +164,10 @@ test("website publishes public docs as human HTML and agent Markdown routes", as
   assert.match(html, /diagrampilot check/);
   assert.match(agentWorkflowHtml, /Agent Workflow/);
   assert.match(agentWorkflowHtml, /diagrampilot inspect docs --json/);
+  assert.match(comparisonsHtml, /Comparisons And Adjacent Tools/);
+  assert.match(comparisonsHtml, /Graphviz\/DOT/);
+  assert.match(integrationsHtml, /Integrations And Agent Recipes/);
+  assert.match(integrationsHtml, /GitHub Actions/);
   assert.match(
     publicDocsIndex,
     /\[Checkout demo quickstart]\(agents\/quickstart\.md\)/,
@@ -119,16 +177,42 @@ test("website publishes public docs as human HTML and agent Markdown routes", as
     /\[Agent workflow guide]\(agents\/agent-workflow\.md\)/,
   );
   assert.match(
+    publicDocsIndex,
+    /\[Comparisons and adjacent tools]\(agents\/comparisons\.md\)/,
+  );
+  assert.match(
+    publicDocsIndex,
+    /\[Integrations and agent recipes]\(agents\/integrations\.md\)/,
+  );
+  assert.match(
     syncedIndexMarkdown,
     /\[Checkout demo quickstart]\(https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md\)/,
+  );
+  assert.match(
+    syncedIndexMarkdown,
+    /\[Comparisons and adjacent tools]\(https:\/\/diagrampilot\.com\/docs\/agents\/comparisons\.md\)/,
+  );
+  assert.match(
+    syncedIndexMarkdown,
+    /\[Integrations and agent recipes]\(https:\/\/diagrampilot\.com\/docs\/agents\/integrations\.md\)/,
   );
   assert.match(
     websiteIndexMarkdown,
     /\[Checkout demo quickstart]\(https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md\)/,
   );
+  assert.match(
+    websiteIndexMarkdown,
+    /\[Comparisons and adjacent tools]\(https:\/\/diagrampilot\.com\/docs\/agents\/comparisons\.md\)/,
+  );
+  assert.match(
+    websiteIndexMarkdown,
+    /\[Integrations and agent recipes]\(https:\/\/diagrampilot\.com\/docs\/agents\/integrations\.md\)/,
+  );
   assert.doesNotMatch(websiteIndexMarkdown, /\]\(agents\//);
   assert.equal(markdown, sourceMarkdown);
   assert.equal(agentWorkflowMarkdown, agentWorkflowSourceMarkdown);
+  assert.equal(comparisonsMarkdown, comparisonsSourceMarkdown);
+  assert.equal(integrationsMarkdown, integrationsSourceMarkdown);
   assert.equal(
     await exists("website/src/content/docs/docs/agents/quickstart.md"),
     true,
@@ -138,6 +222,16 @@ test("website publishes public docs as human HTML and agent Markdown routes", as
     await exists("website/src/content/docs/docs/agents/agent-workflow.md"),
     true,
     "Starlight should receive synced agent workflow Markdown during the build",
+  );
+  assert.equal(
+    await exists("website/src/content/docs/docs/agents/comparisons.md"),
+    true,
+    "Starlight should receive synced comparisons Markdown during the build",
+  );
+  assert.equal(
+    await exists("website/src/content/docs/docs/agents/integrations.md"),
+    true,
+    "Starlight should receive synced integrations Markdown during the build",
   );
   assert.equal(
     await exists("website/dist/docs/agents/installation/index.html"),

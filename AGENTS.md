@@ -24,6 +24,6 @@ DiagramPilot is a repo-native diagram compiler. Favor local files, review-stable
   `docs-public/agents/quickstart.md`,
   `docs-public/agents/installation.md`, `docs-public/agents/spec.md`,
   `docs-public/agents/error-repair.md`, `docs-public/agents/examples.md`,
-  `docs-public/agents/prompting.md`.
+  `docs-public/agents/prompting.md`, `docs-public/agents/comparisons.md`, `docs-public/agents/integrations.md`.
 - Private maintainer workflow lives in Linear. Start with the project resource
   `Agent Resource Index` when private context is needed.

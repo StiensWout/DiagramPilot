@@ -44,6 +44,11 @@ Start with the Checkout Demo Project:
 - Demo source file: `demo-projects/checkout/docs/architecture.dp.yaml`
 - Demo SVG artifact: `demo-projects/checkout/docs/architecture.svg`
 
+Compare DiagramPilot with adjacent tools and wire it into automation:
+
+- [Comparisons and adjacent tools](docs-public/agents/comparisons.md)
+- [Integrations and agent recipes](docs-public/agents/integrations.md)
+
 Run the primary workflow from the repository root:
 
 ```bash
@@ -210,6 +215,8 @@ export, render, and prompt helpers. See the
 - [Installation and removal guide](docs-public/agents/installation.md)
 - [Checkout demo quickstart](docs-public/agents/quickstart.md)
 - [MCP guide](docs-public/agents/mcp.md)
+- [Comparisons and adjacent tools](docs-public/agents/comparisons.md)
+- [Integrations and agent recipes](docs-public/agents/integrations.md)
 - [DiagramSpec v1 JSON Schema](schema/diagramspec-v1.schema.json)
 
 npm packages:

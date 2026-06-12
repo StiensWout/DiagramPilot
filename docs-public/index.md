@@ -26,6 +26,8 @@ Core public references:
 - [Error repair guide](agents/error-repair.md)
 - [Agent examples](agents/examples.md)
 - [Agent prompting guide](agents/prompting.md)
+- [Comparisons and adjacent tools](agents/comparisons.md)
+- [Integrations and agent recipes](agents/integrations.md)
 - [DiagramSpec v1 JSON Schema](https://diagrampilot.com/schema/diagramspec-v1.schema.json)
 - [MIT Code License](https://github.com/StiensWout/DiagramPilot/blob/main/LICENSE)
 - [Brand Use Policy](https://github.com/StiensWout/DiagramPilot/blob/main/BRAND_USE_POLICY.md)
