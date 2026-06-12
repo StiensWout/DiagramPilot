@@ -86,6 +86,7 @@ complement text renderers such as Mermaid, D2, and DOT.
 
 ### Public Documentation
 
+- [Agent workflow](https://diagrampilot.com/docs/agents/agent-workflow.md): Canonical Agent Authoring Loop for DiagramPilot Source Files, Stable IDs, `inspect --json`, SVG rendering, Artifact Freshness checks, nightly testing, and Windows forward-slash paths.
 - [Checkout demo quickstart](https://diagrampilot.com/docs/agents/quickstart.md): Canonical beginner workflow for repo checks, source repair, SVG and PNG rendering, exports, and copying the source/render pattern into another repository.
 - [Installation and removal](https://diagrampilot.com/docs/agents/installation.md): Canonical package install paths, uninstall commands, and repository cleanup guidance.
 - [MCP guide](https://diagrampilot.com/docs/agents/mcp.md): Model Context Protocol server launch and client configuration guidance.

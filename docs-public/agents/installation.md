@@ -88,6 +88,23 @@ bun add -D diagrampilot
 Keep the package manager lockfile committed for repeatable repository
 workflows.
 
+## Nightly Build Testing
+
+Use the normal `diagrampilot` install path for routine repository workflows.
+The stable package docs describe the `latest` package.
+
+Use a Nightly Build only when a maintainer, issue, or testing branch asks for a
+build that is not on the normal install path. Pin the package exactly so local
+and CI runs use the same nightly:
+
+```bash
+npm install --save-dev --save-exact diagrampilot@nightly
+```
+
+Nightly Builds can change between publishes. Keep nightly installs scoped to
+explicit testing work and return routine repository workflows to the normal
+`diagrampilot` dependency when testing is complete.
+
 ## Global Local Use
 
 Install globally only when you want `diagrampilot` available as a local shell

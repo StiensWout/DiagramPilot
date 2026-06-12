@@ -25,6 +25,11 @@ test("public docs sync can run concurrently without deleting current generated d
     "synced quickstart should remain present",
   );
   assert.equal(
+    await exists("website/src/content/docs/docs/agents/agent-workflow.md"),
+    true,
+    "synced agent workflow guide should remain present",
+  );
+  assert.equal(
     await exists("website/src/content/docs/docs/agents/installation.md"),
     true,
     "synced installation guide should remain present",
@@ -40,6 +45,10 @@ test("website publishes public docs as human HTML and agent Markdown routes", as
   );
   const sourceMarkdown = await readFile(
     path.join(repoRoot, "docs-public", "agents", "quickstart.md"),
+    "utf8",
+  );
+  const agentWorkflowSourceMarkdown = await readFile(
+    path.join(repoRoot, "docs-public", "agents", "agent-workflow.md"),
     "utf8",
   );
   const syncedIndexMarkdown = await readFile(
@@ -69,6 +78,29 @@ test("website publishes public docs as human HTML and agent Markdown routes", as
     ),
     "utf8",
   );
+  const agentWorkflowHtml = await readFile(
+    path.join(
+      repoRoot,
+      "website",
+      "dist",
+      "docs",
+      "agents",
+      "agent-workflow",
+      "index.html",
+    ),
+    "utf8",
+  );
+  const agentWorkflowMarkdown = await readFile(
+    path.join(
+      repoRoot,
+      "website",
+      "dist",
+      "docs",
+      "agents",
+      "agent-workflow.md",
+    ),
+    "utf8",
+  );
   const websiteIndexMarkdown = await readFile(
     path.join(repoRoot, "website", "dist", "docs", "index.md"),
     "utf8",
@@ -76,9 +108,15 @@ test("website publishes public docs as human HTML and agent Markdown routes", as
 
   assert.match(html, /Try DiagramPilot With The Checkout Demo Project/);
   assert.match(html, /diagrampilot check/);
+  assert.match(agentWorkflowHtml, /Agent Workflow/);
+  assert.match(agentWorkflowHtml, /diagrampilot inspect docs --json/);
   assert.match(
     publicDocsIndex,
     /\[Checkout demo quickstart]\(agents\/quickstart\.md\)/,
+  );
+  assert.match(
+    publicDocsIndex,
+    /\[Agent workflow guide]\(agents\/agent-workflow\.md\)/,
   );
   assert.match(
     syncedIndexMarkdown,
@@ -90,10 +128,16 @@ test("website publishes public docs as human HTML and agent Markdown routes", as
   );
   assert.doesNotMatch(websiteIndexMarkdown, /\]\(agents\//);
   assert.equal(markdown, sourceMarkdown);
+  assert.equal(agentWorkflowMarkdown, agentWorkflowSourceMarkdown);
   assert.equal(
     await exists("website/src/content/docs/docs/agents/quickstart.md"),
     true,
     "Starlight should receive synced public Markdown during the build",
+  );
+  assert.equal(
+    await exists("website/src/content/docs/docs/agents/agent-workflow.md"),
+    true,
+    "Starlight should receive synced agent workflow Markdown during the build",
   );
   assert.equal(
     await exists("website/dist/docs/agents/installation/index.html"),
