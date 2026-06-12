@@ -1,4 +1,6 @@
 import type {
+  DiagramSpecLintResult,
+  DiagramSpecLintWarning,
   RepoWorkflowCheckSourceResult,
   RepoWorkflowInspectResult,
   RepoWorkflowInspectSourceResult,
@@ -34,6 +36,7 @@ export function helpText(version: string): string {
     "  init [--docs] [--config]",
     `  create <path> --template ${diagramPilotSourceTemplateNames.join("|")}`,
     "  validate <path> [--json]",
+    "  lint <path> [--json]",
     "  format <path>",
     "  check [path] [--json]",
     "  inspect [path] [--json]",
@@ -53,6 +56,10 @@ export function helpText(version: string): string {
 
 export function checkUsageText(): string {
   return "Usage: diagrampilot check [path] [--json]";
+}
+
+export function lintUsageText(): string {
+  return "Usage: diagrampilot lint <path> [--json]";
 }
 
 export function inspectUsageText(): string {
@@ -107,6 +114,24 @@ function formatSourceCount(count: number): string {
 
 function plural(count: number, singular: string, pluralLabel = `${singular}s`): string {
   return `${count} ${count === 1 ? singular : pluralLabel}`;
+}
+
+function formatLintWarning(warning: DiagramSpecLintWarning): string {
+  return `${warning.path} ${warning.ruleId} ${warning.severity}: ${warning.message} Suggestion: ${warning.suggestion}`;
+}
+
+export function formatLintTextReport(
+  sourcePath: string,
+  lintResult: DiagramSpecLintResult,
+): string {
+  if (lintResult.warnings.length === 0) {
+    return `No lint warnings in ${sourcePath}.`;
+  }
+
+  return [
+    `Lint found ${plural(lintResult.summary.warningCount, "warning")} in ${sourcePath}.`,
+    ...lintResult.warnings.map(formatLintWarning),
+  ].join("\n");
 }
 
 function formatValueList(values: readonly string[]): string {

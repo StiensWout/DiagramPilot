@@ -304,6 +304,34 @@ test("diagrampilot validate rejects a non-YAML source path generically", async (
   });
 });
 
+test("diagrampilot lint reports readability warnings without writing files", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const { sourcePath, sourceText } =
+      await writeCheckoutArchitectureSource(tempRoot);
+
+    const result = await runBuiltCli(
+      ["lint", "docs/architecture.dp.yaml", "--json"],
+      tempRoot,
+    );
+
+    assert.equal(result.signal, null);
+    assert.equal(result.code, 1);
+    assert.equal(result.stderr, "");
+
+    const payload = JSON.parse(result.stdout);
+
+    assert.equal(payload.file, "docs/architecture.dp.yaml");
+    assert.equal(payload.ok, false);
+    assert.deepEqual(payload.errors, []);
+    assert.equal(payload.summary.warningCount, 1);
+    assert.equal(payload.warnings[0].ruleId, "missing-edge-kind");
+    assert.equal(await readFile(sourcePath, "utf8"), sourceText);
+    assert.deepEqual(await readdir(path.join(tempRoot, "docs")), [
+      "architecture.dp.yaml",
+    ]);
+  });
+});
+
 test("diagrampilot export prints Mermaid for a valid DiagramSpec", async () => {
   await withTempRepo(async (tempRoot) => {
     const { sourcePath, sourceText } =

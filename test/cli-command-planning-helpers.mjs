@@ -260,6 +260,13 @@ export function createPlanningDependencies(overrides = {}) {
       };
     },
     exportDiagramSpecToMermaid: () => "flowchart LR\n",
+    lintDiagramSpec: () => ({
+      ok: true,
+      summary: {
+        warningCount: 0,
+      },
+      warnings: [],
+    }),
     inspectDiagramPilotRepoWorkflow: async () => ({
       ok: true,
       scope: { kind: "directory", path: "/repo" },

@@ -9,8 +9,8 @@ project install or through `npx`.
 GitHub Actions workflows live in `.github/workflows` and run jobs when events
 such as pull requests or pushes occur. A DiagramPilot check should stay local
 and deterministic: install dependencies, validate the source file, refresh the
-expected artifact when the workflow is intended to verify rendering, then run
-the repo workflow check.
+expected artifact when the workflow is intended to verify rendering, lint the
+source for readability, then run the repo workflow check.
 
 ```yaml
 name: DiagramPilot
@@ -32,6 +32,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx diagrampilot validate docs/architecture.dp.yaml
+      - run: npx diagrampilot lint docs/architecture.dp.yaml
       - run: npx diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
       - run: npx diagrampilot check
 ```
@@ -49,6 +50,7 @@ run:
 
 ```bash
 diagrampilot check
+diagrampilot lint docs/architecture.dp.yaml --json
 diagrampilot check docs --json
 ```
 
@@ -66,8 +68,9 @@ Use this workflow:
 2. Edit only docs/architecture.dp.yaml.
 3. Run diagrampilot format docs/architecture.dp.yaml.
 4. Run diagrampilot validate docs/architecture.dp.yaml --json.
-5. Run diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg.
-6. Run diagrampilot check docs --json.
+5. Run diagrampilot lint docs/architecture.dp.yaml --json.
+6. Run diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg.
+7. Run diagrampilot check docs --json.
 
 Do not hand-edit generated SVG, PNG, Mermaid, D2, DOT, or Markdown outputs.
 ```
@@ -76,6 +79,7 @@ For a read-only agent review, use an inspect/check recipe:
 
 ```bash
 diagrampilot inspect docs --json
+diagrampilot lint docs/architecture.dp.yaml --json
 diagrampilot check docs --json
 ```
 

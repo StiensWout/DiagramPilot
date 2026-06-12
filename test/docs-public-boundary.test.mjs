@@ -94,6 +94,7 @@ function assertQuickstartCheckoutCommands(quickstart) {
 function assertArchitectureExampleCommands(documentText) {
   assertMatchesAll(documentText, [
     /diagrampilot validate docs\/architecture\.dp\.yaml/,
+    /diagrampilot lint docs\/architecture\.dp\.yaml/,
     /diagrampilot render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/,
   ]);
 }
@@ -308,6 +309,8 @@ test("public quickstart and README route users through the checkout demo workflo
   assertArchitectureExampleCommands(quickstart);
   assertMatchesAll(quickstart, [
     /diagrampilot check/,
+    /diagrampilot lint docs\/architecture\.dp\.yaml/,
+    /Use `validate` for source correctness,\s+`lint` for readability,\s+and `check` for expected artifact freshness/i,
     /diagrampilot export docs\/architecture\.dp\.yaml --format mermaid/,
     /diagrampilot export docs\/architecture\.dp\.yaml --format d2 --out docs\/architecture\.d2/,
     /diagrampilot export docs\/architecture\.dp\.yaml --format dot --out docs\/architecture\.dot/,
@@ -317,6 +320,7 @@ test("public quickstart and README route users through the checkout demo workflo
   assertMatchesAll(readme, [
     /docs-public\/agents\/quickstart\.md/,
     /diagrampilot validate docs\/architecture\.dp\.yaml/,
+    /diagrampilot lint docs\/architecture\.dp\.yaml/,
     /diagrampilot render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/,
   ]);
   assertMatchesAll(llmsText, [

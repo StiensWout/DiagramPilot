@@ -30,6 +30,10 @@ export {
   normalizeSvgArtifactProvenanceSourcePath,
 } from "./svg-artifact-freshness.js";
 export { validateDiagramSpec } from "./diagramspec-validation.js";
+export {
+  DIAGRAM_SPEC_LINT_THRESHOLDS,
+  lintDiagramSpec,
+} from "./diagramspec-lint.js";
 export { serializeDiagramPilotSourceFile } from "./source-serialization.js";
 export {
   createDiagramPilotSourceTemplate,
@@ -132,6 +136,12 @@ export type {
   DiagramSpecValidationResult,
   RepairableDiagnostic,
 } from "./diagramspec-validation.js";
+export type {
+  DiagramSpecLintResult,
+  DiagramSpecLintRuleId,
+  DiagramSpecLintSeverity,
+  DiagramSpecLintWarning,
+} from "./diagramspec-lint.js";
 export type {
   DiagramPilotSourceTemplateName,
   DiagramPilotSourceTemplateResult,

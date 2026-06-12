@@ -383,7 +383,10 @@ function parseOutputCommandArgs<TFormat extends string>(
   return outputCommandArgsFromValues(values.options, config);
 }
 
-export { parseValidateArgs } from "./validate-argument-parsing.js";
+export {
+  parseLintArgs,
+  parseValidateArgs,
+} from "./validate-argument-parsing.js";
 
 export function parseExportArgs(args: readonly string[]): ExportArgsResult {
   return parseOutputCommandArgs(args, {

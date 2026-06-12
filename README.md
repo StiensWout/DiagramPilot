@@ -13,9 +13,9 @@ Agents use DiagramPilot to create, update, validate, and render software
 architecture diagrams directly inside a repository.
 
 DiagramPilot Source Files are YAML-only. The CLI supports local agent authoring
-loops with `create`, `inspect`, `format`, `watch`, configured outputs, fixed
-Output Profiles, SVG/PNG rendering, Mermaid/D2/DOT export, and an MCP server
-for local agent clients.
+loops with `create`, `inspect`, `format`, `lint`, `watch`, configured outputs,
+fixed Output Profiles, SVG/PNG rendering, Mermaid/D2/DOT export, and an MCP
+server for local agent clients.
 
 Public documentation is hosted at `https://diagrampilot.com`.
 
@@ -61,6 +61,7 @@ diagrampilot create docs/new-architecture.dp.yaml --template architecture
 diagrampilot create docs/system-context.dp.yaml --template system-context
 diagrampilot create docs/service-map.dp.yaml --template service-map
 diagrampilot validate docs/architecture.dp.yaml
+diagrampilot lint docs/architecture.dp.yaml
 diagrampilot format docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
@@ -74,11 +75,12 @@ agent needs a read-only inventory of DiagramPilot Source Files, topology,
 Stable IDs, and artifact expectations before editing. Use `create` when a repo
 needs a starter `*.dp.yaml` source from the maintained `architecture`, `flow`,
 `package-map`, `system-context`, or `service-map` templates. Use `validate`
-when you need explicit source repair output. Use `format` to rewrite a valid
-DiagramPilot Source File into canonical YAML before review. `render` requires
-`--out`, defaults to SVG, and supports `--format svg|png`; PNG rendering
-rasterizes the SVG render path. `export` prints to stdout by default and writes
-only when `--out` is provided.
+when you need explicit source repair output. Use `lint` when you need
+readability warnings for one valid source before rendering or review. Use
+`format` to rewrite a valid DiagramPilot Source File into canonical YAML before
+review. `render` requires `--out`, defaults to SVG, and supports
+`--format svg|png`; PNG rendering rasterizes the SVG render path. `export`
+prints to stdout by default and writes only when `--out` is provided.
 Use `icons list` and `icons search <query>` to discover packaged `lucide:*`
 icon references for nodes and groups.
 
@@ -92,6 +94,7 @@ icon references for nodes and groups.
 - Edit only `*.dp.yaml` DiagramPilot Source Files.
 - Preserve Stable IDs when labels, descriptions, or grouping change.
 - Run `diagrampilot format` and `diagrampilot validate` before rendering.
+- Run `diagrampilot lint` for review readability warnings on larger diagrams.
 - Run `diagrampilot render` or `diagrampilot generate` to refresh Derived
   Artifacts.
 - Run `diagrampilot check` before committing diagram changes.
@@ -160,6 +163,8 @@ diagrampilot check docs --json
 diagrampilot inspect docs --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
+diagrampilot lint docs/architecture.dp.yaml
+diagrampilot lint docs/architecture.dp.yaml --json
 diagrampilot format docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
@@ -189,6 +194,15 @@ Diagram Object counts, Stable IDs by object type, topology roots/depth, and
 artifact expectations. `inspect --json` emits the same read-only inventory for
 agents, including invalid-source diagnostics and stale or missing artifact
 summaries when practical.
+
+`lint <path>` validates one DiagramPilot Source File and reports readability
+warnings without writing files. `lint` differs from `validate`, which reports
+source correctness errors, and `check`, which verifies expected Derived
+Artifact freshness. Initial warnings cover orphan nodes, unlabeled edges,
+missing edge kinds, duplicate node or group labels, groups with more than 12
+direct objects, nodes with more than 6 incoming or outgoing edges, diagrams
+with more than 50 objects, and diagrams over 1.5 edges per node once they have
+at least 20 nodes.
 
 Optional `diagrampilot.config.yaml` is discovered upward from the command
 scope, validated before source processing, reported in `--json` output, and can

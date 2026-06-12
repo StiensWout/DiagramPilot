@@ -7,9 +7,10 @@ source snippets, a DiagramPilot source file, and a committed SVG artifact.
 ## Goal
 
 Run the repo review workflow with `diagrampilot check`, repair DiagramSpec
-source problems with `validate`, refresh the committed SVG with `render --out`,
-render PNG when a raster artifact is needed, inspect SVG provenance, and export
-when another diagram-as-code format is needed.
+source problems with `validate`, review readability warnings with `lint`,
+refresh the committed SVG with `render --out`, render PNG when a raster
+artifact is needed, inspect SVG provenance, and export when another
+diagram-as-code format is needed.
 
 ## Local Invocation
 
@@ -87,6 +88,7 @@ Run the workflow from the demo project directory:
 cd demo-projects/checkout
 diagrampilot check
 diagrampilot inspect
+diagrampilot lint docs/architecture.dp.yaml
 ```
 
 Expected check result:
@@ -103,6 +105,13 @@ artifacts without rendering, fixing, or writing files.
 discovered DiagramPilot Source Files, title/direction, Diagram Object counts,
 Stable IDs, topology roots/depth, and expected artifact status before an agent
 edits a source.
+
+`diagrampilot lint <path>` is a read-only readability command for one
+DiagramPilot Source File. It validates the source first, then reports warnings
+such as orphan nodes, unlabeled edges, missing edge kinds, oversized groups,
+high fan-in or fan-out nodes, duplicate node or group labels, and diagrams that
+are too large or dense for review. Use `validate` for source correctness,
+`lint` for readability, and `check` for expected artifact freshness.
 
 Without Repo Workflow Configuration, `check` uses the next-to-source same-stem
 Expected SVG Artifact. For `docs/architecture.dp.yaml`, the expected SVG
@@ -249,6 +258,7 @@ checking the Git diff.
 ```bash
 diagrampilot check
 diagrampilot inspect
+diagrampilot lint docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
@@ -304,6 +314,8 @@ diagrampilot check demo-projects/checkout --json
 diagrampilot inspect demo-projects/checkout --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
+diagrampilot lint docs/architecture.dp.yaml
+diagrampilot lint docs/architecture.dp.yaml --json
 diagrampilot format docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
@@ -358,6 +370,14 @@ when source/config state is valid.
 
 `diagrampilot validate <path> --json`
 : Emits structured repairable validation errors for agents and scripts.
+
+`diagrampilot lint <path>`
+: Validates one DiagramPilot Source File, then reports readability warnings
+without writing files. Warnings include `path`, `ruleId`, `severity`,
+`message`, and `suggestion`.
+
+`diagrampilot lint <path> --json`
+: Emits stable machine-readable lint output for agents and CI scripts.
 
 `diagrampilot format <path>`
 : Validates and rewrites one `*.dp.yaml` source into canonical YAML. Formatting

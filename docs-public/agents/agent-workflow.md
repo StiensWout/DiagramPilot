@@ -2,8 +2,8 @@
 
 Use this Agent Authoring Loop when an AI coding agent needs to add or update a
 DiagramPilot diagram inside a repository. The loop keeps DiagramSpec source
-reviewable, refreshes Derived Artifacts from source, and leaves `check` as the
-read-only command before review or CI.
+reviewable, refreshes Derived Artifacts from source, and leaves `lint` and
+`check` as read-only commands before review or CI.
 
 ## Source And Artifacts
 
@@ -32,6 +32,7 @@ diagrampilot create docs/system-context.dp.yaml --template system-context
 diagrampilot create docs/service-map.dp.yaml --template service-map
 diagrampilot format docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml
+diagrampilot lint docs/architecture.dp.yaml
 diagrampilot inspect docs --json
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot check
@@ -39,18 +40,47 @@ diagrampilot check
 
 Use `create` only when the source file does not exist yet. For an existing
 diagram, inspect first, edit the `*.dp.yaml` file, then continue with
-`format`, `validate`, `inspect --json`, `render --out`, and `check`.
+`format`, `validate`, `lint`, `inspect --json`, `render --out`, and `check`.
 
-`validate` reports repairable DiagramSpec source errors. `inspect --json` is
-the machine-readable diagnostic and inventory interface for agents: it exposes
-discovered sources, Diagram Object counts, Stable IDs, topology, expected
-artifacts, and practical stale or missing artifact summaries.
+`validate` reports repairable DiagramSpec source errors. `lint` validates and
+then reports DiagramSpec readability warnings for one source file without
+writing files. `inspect --json` is the machine-readable diagnostic and
+inventory interface for agents: it exposes discovered sources, Diagram Object
+counts, Stable IDs, topology, expected artifacts, and practical stale or
+missing artifact summaries.
 
 Use `diagrampilot icons search <query>` and the [Icon reference](icons.md) when
 validation reports an unknown `lucide:*` icon.
 
 `render` requires `--out` and defaults to SVG. Use `check` after rendering to
 verify Artifact Freshness without rewriting files.
+
+## Readability Lint
+
+Use `diagrampilot lint <path>` before rendering large or review-sensitive
+diagrams:
+
+```bash
+diagrampilot lint docs/architecture.dp.yaml
+diagrampilot lint docs/architecture.dp.yaml --json
+```
+
+`validate` answers whether the DiagramPilot Source File is structurally valid.
+`lint` answers whether a valid DiagramSpec is likely to be readable in review.
+`check` answers whether expected Derived Artifacts are fresh. `lint` is
+read-only and does not replace either command.
+
+Lint warnings include `path`, `ruleId`, `severity`, `message`, and
+`suggestion`. The first readability thresholds are:
+
+- group contains more than 12 direct objects;
+- node has more than 6 incoming edges;
+- node has more than 6 outgoing edges;
+- diagram has more than 50 total nodes, edges, and groups;
+- diagram has more than 1.5 edges per node once it has at least 20 nodes.
+
+Lint also reports orphan nodes, unlabeled edges, missing edge kinds, and
+duplicate node or group labels.
 
 ## Stable IDs
 

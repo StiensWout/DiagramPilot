@@ -1,9 +1,9 @@
 # DiagramPilot
 
 > DiagramPilot is a local-first, repo-native diagram compiler for AI coding
-> agents. It helps agents create, update, check, validate, repair, render, and
-> export software architecture diagrams from structured `*.dp.yaml` source
-> files inside a repository.
+> agents. It helps agents create, update, check, lint, validate, repair,
+> render, and export software architecture diagrams from structured
+> `*.dp.yaml` source files inside a repository.
 
 DiagramPilot uses DiagramSpec as its source model. A DiagramPilot Source File is
 the editable artifact. Rendered SVG or PNG and exported Mermaid, D2, or DOT
@@ -34,6 +34,8 @@ Normal `diagrampilot init` does not create Repo Workflow Configuration.
 - Preserve Stable IDs when labels, descriptions, groups, or edges change.
 - Use `diagrampilot format` to keep source YAML canonical.
 - Use `diagrampilot validate` for repairable validation diagnostics.
+- Use `diagrampilot lint` for read-only readability warnings on one valid
+  DiagramPilot Source File.
 - Use `diagrampilot render`, `diagrampilot export`, or `diagrampilot generate`
   to regenerate Derived Artifacts from source.
 - Use `diagrampilot check` as the read-only repo review/CI command before
@@ -59,6 +61,7 @@ diagrampilot create docs/system-context.dp.yaml --template system-context
 diagrampilot create docs/service-map.dp.yaml --template service-map
 diagrampilot format docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml
+diagrampilot lint docs/architecture.dp.yaml
 diagrampilot icons search database
 diagrampilot inspect docs --json
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
