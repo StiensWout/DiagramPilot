@@ -37,6 +37,7 @@ export {
   lintDiagramSpec,
 } from "./diagramspec-lint.js";
 export { serializeDiagramPilotSourceFile } from "./source-serialization.js";
+export { planDiagramPilotSourceFix } from "./source-fixing.js";
 export {
   createDiagramPilotSourceTemplate,
   diagramPilotSourceTemplateNames,
@@ -149,6 +150,13 @@ export type {
   DiagramSpecValidationResult,
   RepairableDiagnostic,
 } from "./diagramspec-validation.js";
+export type {
+  DiagramPilotSourceFixOptions,
+  DiagramPilotSourceFixRepair,
+  DiagramPilotSourceFixRepairKind,
+  DiagramPilotSourceFixResult,
+  DiagramPilotSourceFixValidation,
+} from "./source-fixing.js";
 export type {
   DiagramSpecLintResult,
   DiagramSpecLintRuleId,

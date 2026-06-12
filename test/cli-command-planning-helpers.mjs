@@ -259,6 +259,24 @@ export function createPlanningDependencies(overrides = {}) {
         failures: [],
       };
     },
+    planDiagramPilotSourceFix: (sourcePath) => ({
+      ok: true,
+      sourcePath,
+      changed: false,
+      repairs: [],
+      content: [
+        "version: 1",
+        "title: Checkout Architecture",
+        "nodes:",
+        "  - id: web_app",
+        "    label: Web App",
+        "",
+      ].join("\n"),
+      validation: {
+        ok: true,
+        errors: [],
+      },
+    }),
     exportDiagramSpecToMermaid: () => "flowchart LR\n",
     lintDiagramSpec: () => ({
       ok: true,

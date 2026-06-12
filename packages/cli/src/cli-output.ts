@@ -38,6 +38,7 @@ export function helpText(version: string): string {
     "  validate <path> [--json]",
     "  lint <path> [--json]",
     "  format <path>",
+    "  fix <path> [--json] [--fallback-icon lucide:<icon-name>]",
     "  check [path] [--json]",
     "  inspect [path] [--json]",
     "  generate [path] [--json]",
@@ -93,6 +94,14 @@ export function watchUsageText(): string {
 
 export function formatUsageText(): string {
   return "Usage: diagrampilot format <path>";
+}
+
+export function fixUsageText(): string {
+  return [
+    "Usage:",
+    "  diagrampilot fix <path> [--json]",
+    "  diagrampilot fix <path> [--fallback-icon lucide:<icon-name>]",
+  ].join("\n");
 }
 
 export function exportUsageText(): string {

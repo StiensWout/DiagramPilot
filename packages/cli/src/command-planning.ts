@@ -7,6 +7,7 @@ import {
   inspectDiagramPilotRepoWorkflow,
   lintDiagramSpec,
   loadValidatedDiagramSpec,
+  planDiagramPilotSourceFix,
 } from "@diagrampilot/core";
 import type {
   ConfiguredTextArtifactFormat,
@@ -33,6 +34,7 @@ import {
   checkUsageText,
   createUsageText,
   exportUsageText,
+  fixUsageText,
   formatUsageText,
   generateUsageText,
   iconsUsageText,
@@ -44,6 +46,7 @@ import {
 import { checkResultPlan } from "./check-command-planning.js";
 import type { CommandPlanningDependencies } from "./command-planning-dependencies.js";
 import { planCreate } from "./create-command-planning.js";
+import { planFix } from "./fix-command-planning.js";
 import { planGenerate } from "./generate-command-planning.js";
 import { inspectResultPlan } from "./inspect-command-planning.js";
 import {
@@ -68,6 +71,7 @@ const defaultCommandPlanningDependencies: CommandPlanningDependencies = {
   checkDiagramPilotRepoWorkflow,
   inspectDiagramPilotRepoWorkflow,
   generateDiagramPilotRepoWorkflow,
+  planDiagramPilotSourceFix,
   loadValidatedDiagramSpec,
   lintDiagramSpec,
   exportDiagramSpecToMermaid,
@@ -258,6 +262,7 @@ const commandHandlers: Readonly<Record<string, CommandHandler>> = {
   check: planCheck,
   create: planCreate,
   export: planExport,
+  fix: planFix,
   format: planFormat,
   generate: planGenerate,
   icons: planIcons,
@@ -271,6 +276,7 @@ const commandHelpText: Readonly<Record<string, () => string>> = {
   check: checkUsageText,
   create: createUsageText,
   export: exportUsageText,
+  fix: fixUsageText,
   format: formatUsageText,
   generate: generateUsageText,
   icons: iconsUsageText,

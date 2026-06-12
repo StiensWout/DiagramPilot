@@ -9,8 +9,8 @@ building tooling that needs DiagramPilot core behavior directly.
 The core package supports YAML-only DiagramPilot Source Files, read-only repo
 workflow checks and inspects, DiagramSpec lint warnings, configured artifact
 freshness, fixed Output Profiles, first-class DiagramSpec view projections, and
-`generate` support for configured Derived Artifacts and generated Markdown
-embed files.
+deterministic source-fix planning, plus `generate` support for configured
+Derived Artifacts and generated Markdown embed files.
 
 Public documentation:
 

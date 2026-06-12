@@ -53,6 +53,8 @@ diagrampilot check docs --json
 diagrampilot inspect docs --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
+diagrampilot fix docs/architecture.dp.yaml --json
+diagrampilot fix docs/architecture.dp.yaml --fallback-icon lucide:database
 diagrampilot lint docs/architecture.dp.yaml
 diagrampilot lint docs/architecture.dp.yaml --json
 diagrampilot format docs/architecture.dp.yaml
@@ -85,8 +87,11 @@ default, writes a file only when `--out` is provided, and accepts `--view
 <view-id>` for Mermaid, D2, and DOT projections. `format <path>` validates one
 `*.dp.yaml` source and rewrites it in canonical YAML key order; YAML comments
 may be removed
-or moved. `watch [path]` watches `*.dp.yaml` and `diagrampilot.config.yaml`,
-debounces changes, checks first, and generates only when source/config state is
-valid. `mcp` launches the MCP stdio server for local MCP clients.
+or moved. `fix <path> --json` plans deterministic source-only repairs without
+writing, and `fix <path>` writes only the DiagramPilot Source File after
+post-fix validation succeeds. `watch [path]` watches `*.dp.yaml` and
+`diagrampilot.config.yaml`, debounces changes, checks first, and generates only
+when source/config state is valid. `mcp` launches the MCP stdio server for
+local MCP clients.
 Use `icons list` and `icons search <query>` to discover packaged `lucide:*`
 icon references locally.

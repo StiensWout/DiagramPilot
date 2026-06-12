@@ -167,6 +167,8 @@ diagrampilot check docs --json
 diagrampilot inspect docs --json
 diagrampilot validate docs/architecture.dp.yaml
 diagrampilot validate docs/architecture.dp.yaml --json
+diagrampilot fix docs/architecture.dp.yaml --json
+diagrampilot fix docs/architecture.dp.yaml --fallback-icon lucide:database
 diagrampilot lint docs/architecture.dp.yaml
 diagrampilot lint docs/architecture.dp.yaml --json
 diagrampilot format docs/architecture.dp.yaml
@@ -209,6 +211,12 @@ missing edge kinds, duplicate node or group labels, groups with more than 12
 direct objects, nodes with more than 6 incoming or outgoing edges, diagrams
 with more than 50 objects, and diagrams over 1.5 edges per node once they have
 at least 20 nodes.
+
+`fix <path>` plans and applies only deterministic source repairs. Use
+`fix <path> --json` as the no-write planning mode. Mutation mode writes only
+the DiagramPilot Source File after post-fix validation succeeds. The first
+repair set covers canonical formatting and unknown Lucide icon replacement
+only when a packaged fallback is supplied with `--fallback-icon lucide:<name>`.
 
 Optional `diagrampilot.config.yaml` is discovered upward from the command
 scope, validated before source processing, reported in `--json` output, and can

@@ -33,6 +33,12 @@ test("public docs document repairable validation and export fidelity workflows",
     /expected[\s\S]*(allowed|expected)/i,
     /suggestion[\s\S]*repair step/i,
     /does not mean DiagramPilot edits the source automatically/i,
+    /diagrampilot fix docs\/icons\.dp\.yaml --fallback-icon lucide:database --json/,
+    /diagrampilot fix docs\/icons\.dp\.yaml --fallback-icon lucide:database/,
+    /JSON planning mode/i,
+    /writes only the DiagramPilot Source File/i,
+    /manual agent judgment/i,
+    /does not\s+choose unique duplicate IDs/i,
   ]);
 
   assertMatchesAll(specGuide, [
