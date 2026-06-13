@@ -328,6 +328,7 @@ test("release workflow uses current channels and milestone closeout", async () =
     /Prepare final GitHub Release draft/u,
     /Publish final GitHub Release after approval/u,
     /npm run check:release-version/u,
+    /npm run test:root:ci/u,
     /node scripts\/bump-release-version\.mjs "\$RELEASE_PUBLISH_VERSION"/u,
     /node scripts\/generate-release-notes\.mjs \\\s+--kind final/u,
     /--prs-json "\$RUNNER_TEMP\/release-prs\.json"/u,

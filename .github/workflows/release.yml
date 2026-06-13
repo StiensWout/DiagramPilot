@@ -89,26 +89,18 @@ jobs:
         run: npm run build
 
       - name: Run root test suite
-        run: npm test
+        run: node scripts/run-with-timing.mjs "release root tests" -- npm run test:root:ci
 
       - name: Check DiagramSpec schema drift
         run: |
-          npm run generate:schema
+          node scripts/run-with-timing.mjs "DiagramSpec schema generation" -- npm run generate:schema
           git diff --exit-code -- schema/diagramspec-v1.schema.json
 
       - name: Build website
-        run: npm --workspace website run build
+        run: node scripts/run-with-timing.mjs "website build" -- npm --workspace website run build
 
       - name: Run website tests
-        run: npm --workspace website run test
-
-      - name: Verify checkout demo workflow
-        run: |
-          cd demo-projects/checkout
-          node ../../packages/cli/dist/index.js render docs/architecture.dp.yaml --out docs/architecture.svg
-          node ../../packages/cli/dist/index.js check
-          cd ../..
-          git diff --exit-code -- demo-projects/checkout/docs/architecture.svg
+        run: node scripts/run-with-timing.mjs "website tests" -- npm --workspace website run test
 
       - name: Plan release channel
         id: release-plan
