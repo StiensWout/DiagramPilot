@@ -17,6 +17,11 @@ const releasePackagePublisherPath = path.join(
   "scripts",
   "publish-release-packages.mjs",
 );
+const publicPackageSetPath = path.join(
+  repoRoot,
+  "scripts",
+  "public-package-set.mjs",
+);
 
 const publicPackageSet = [
   "diagrampilot",
@@ -30,30 +35,22 @@ const publicPackageSet = [
 ];
 
 function extractReleasePublisherPackageSet(script) {
-  const match = script.match(
-    /const publicPackages = \[\n(?<body>[\s\S]*?)\n\];/u,
-  );
-
-  assert.notEqual(match, null);
-
-  return [...match.groups.body.matchAll(/"(?<packageName>[^"]+)"/gu)].map(
-    (packageMatch) => packageMatch.groups.packageName,
+  return [...script.matchAll(/name: "(?<packageName>[^"]+)"/gu)].map(
+    (match) => match.groups.packageName,
   );
 }
 
 test("GitHub Actions release workflow validates releases before guarded publishing", async () => {
   const workflow = await readFile(releaseWorkflowPath, "utf8");
-  const releasePackagePublisher = await readFile(
-    releasePackagePublisherPath,
-    "utf8",
-  );
-  const packageSet = extractReleasePublisherPackageSet(releasePackagePublisher);
+  const releasePackagePublisher = await readFile(releasePackagePublisherPath, "utf8");
+  const publicPackageSetSource = await readFile(publicPackageSetPath, "utf8");
+  const packageSet = extractReleasePublisherPackageSet(publicPackageSetSource);
 
   assert.deepEqual(packageSet, publicPackageSet);
 
   assertMatchesAll(workflow, [
     /^name: Release$/m,
-    /name: Release checks \(nightly or manual final\)/u,
+    /name: Validate release and verify publish artifacts/u,
     /name: Publish npm packages \(nightly or final\)/u,
     /name: Create nightly GitHub prerelease/u,
     /name: Prepare final GitHub Release draft/u,
@@ -92,11 +89,17 @@ test("GitHub Actions release workflow validates releases before guarded publishi
     /node \.\.\/\.\.\/packages\/cli\/dist\/index\.js check/u,
     /git diff --exit-code -- demo-projects\/checkout\/docs\/architecture\.svg/u,
     /npm run check:package-readiness/u,
+    /npm run check:package-size-budgets/u,
     /node scripts\/plan-release-publish\.mjs --github-output/u,
     /needs\.release-checks\.outputs\.should_publish == 'true'/u,
     /RELEASE_DIST_TAG == 'nightly'/u,
     /node scripts\/bump-release-version\.mjs "\$RELEASE_PUBLISH_VERSION"/u,
     /node scripts\/publish-release-packages\.mjs --mode dry-run/u,
+    /uses: actions\/upload-artifact@v4/u,
+    /uses: actions\/download-artifact@v4/u,
+    /diagrampilot-publish-artifacts/u,
+    /tar --create --gzip/u,
+    /tar --extract --gzip/u,
     /node scripts\/publish-release-packages\.mjs --mode publish/u,
     /Create nightly GitHub prerelease/u,
     /--prerelease/u,
@@ -115,9 +118,14 @@ test("GitHub Actions release workflow validates releases before guarded publishi
     /check:visual|playwright install/u,
   ]);
 
+  assert.match(
+    releasePackagePublisher,
+    /import \{ PUBLIC_PACKAGE_NAMES \} from "\.\/public-package-set\.mjs";/u,
+  );
+
   for (const packageName of publicPackageSet) {
     assert.match(
-      releasePackagePublisher,
+      publicPackageSetSource,
       new RegExp(packageName.replace("/", "\\/"), "u"),
     );
   }
@@ -125,6 +133,7 @@ test("GitHub Actions release workflow validates releases before guarded publishi
 
 test("release workflow gates CD side effects behind CI and validates reviewed GitHub Release drafts", async () => {
   const workflow = await readFile(releaseWorkflowPath, "utf8");
+  const releaseChecksStart = workflow.indexOf("  release-checks:");
   const publishPackagesStart = workflow.indexOf("  publish-packages:");
   const publishGithubPrereleaseStart = workflow.indexOf(
     "  create-github-prerelease:",
@@ -133,6 +142,7 @@ test("release workflow gates CD side effects behind CI and validates reviewed Gi
     "  prepare-github-release-draft:",
   );
   const publishGithubReleaseStart = workflow.indexOf("  publish-github-release:");
+  const releaseChecksJob = workflow.slice(releaseChecksStart, publishPackagesStart);
   const publishPackagesJob = workflow.slice(
     publishPackagesStart,
     publishGithubPrereleaseStart,
@@ -182,8 +192,47 @@ test("release workflow gates CD side effects behind CI and validates reviewed Gi
 
   assertMatchesAll(publishPackagesJob, [
     /needs: release-checks/u,
+    /uses: actions\/download-artifact@v4/u,
+    /tar --extract --gzip/u,
+    /npm run check:release-version -- "\$RELEASE_PUBLISH_VERSION"/u,
     /node scripts\/publish-release-packages\.mjs --mode publish/u,
   ]);
+  assertMatchesNone(publishPackagesJob, [
+    /npm ci/u,
+    /npm test/u,
+    /npm run build/u,
+    /npm run generate:schema/u,
+    /npm --workspace website run build/u,
+    /npm --workspace website run test/u,
+    /node \.\.\/\.\.\/packages\/cli\/dist\/index\.js render/u,
+    /npm run check:package-readiness/u,
+    /npm run check:package-size-budgets/u,
+  ]);
+
+  const packageReadiness = releaseChecksJob.indexOf("npm run check:package-readiness");
+  const packageSizeBudget = releaseChecksJob.indexOf("npm run check:package-size-budgets");
+  const publishDryRun = releaseChecksJob.indexOf(
+    "node scripts/publish-release-packages.mjs --mode dry-run",
+  );
+  const publishArtifact = releaseChecksJob.indexOf(
+    "diagrampilot-publish-artifacts.tgz",
+  );
+  assert.notEqual(packageReadiness, -1);
+  assert.notEqual(packageSizeBudget, -1);
+  assert.notEqual(publishDryRun, -1);
+  assert.notEqual(publishArtifact, -1);
+  assert.ok(
+    packageReadiness < packageSizeBudget,
+    "package readiness should run before package size budgets",
+  );
+  assert.ok(
+    packageSizeBudget < publishDryRun,
+    "package size budgets must pass before the publish dry-run",
+  );
+  assert.ok(
+    publishDryRun < publishArtifact,
+    "only dry-run-verified publish artifacts should be uploaded",
+  );
 
   const tagCreation = prepareGithubReleaseJob.indexOf('git tag "$RELEASE_TAG" "$GITHUB_SHA"');
   const draftCreation = prepareGithubReleaseJob.indexOf('gh release create "$RELEASE_TAG"');

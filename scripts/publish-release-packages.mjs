@@ -2,16 +2,7 @@
 
 import { spawnSync } from "node:child_process";
 
-const publicPackages = [
-  "diagrampilot",
-  "@diagrampilot/core",
-  "@diagrampilot/icons",
-  "@diagrampilot/export-mermaid",
-  "@diagrampilot/export-d2",
-  "@diagrampilot/export-dot",
-  "@diagrampilot/mcp",
-  "@diagrampilot/render-svg",
-];
+import { PUBLIC_PACKAGE_NAMES } from "./public-package-set.mjs";
 
 function requiredEnv(name) {
   const value = process.env[name];
@@ -225,7 +216,7 @@ function latestPackageSetHandled({ version, distTag, mode }) {
 }
 
 function publishPackages({ mode, version, distTag }) {
-  for (const packageName of publicPackages) {
+  for (const packageName of PUBLIC_PACKAGE_NAMES) {
     publishPackage(packageName, version, distTag, mode);
   }
 }

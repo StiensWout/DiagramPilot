@@ -322,7 +322,7 @@ test("release workflow uses current channels and milestone closeout", async () =
     /- dry-run/u,
     /- milestone/u,
     /default: "0\.4\.2"/u,
-    /Release checks \(nightly or manual final\)/u,
+    /Validate release and verify publish artifacts/u,
     /Publish npm packages \(nightly or final\)/u,
     /Create nightly GitHub prerelease/u,
     /Prepare final GitHub Release draft/u,
@@ -334,6 +334,9 @@ test("release workflow uses current channels and milestone closeout", async () =
     /scripts\/validate-github-release-draft\.mjs/u,
     /node scripts\/generate-release-notes\.mjs \\\s+--kind nightly/u,
     /npm run check:package-readiness/u,
+    /npm run check:package-size-budgets/u,
+    /actions\/upload-artifact@v4/u,
+    /actions\/download-artifact@v4/u,
   ]);
   assertMatchesNone(workflow, [
     /check:issue-release-version/u,

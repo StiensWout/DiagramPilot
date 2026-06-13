@@ -50,6 +50,7 @@
     "clean": "tsc -b --clean",
     "generate:schema": "npm run build && node scripts/generate-diagramspec-v1-schema.mjs",
     "check:package-readiness": "node scripts/check-package-readiness.mjs",
+    "check:package-size-budgets": "node scripts/check-package-size-budgets.mjs",
     "check:package-publish-state": "node scripts/check-package-publish-state.mjs",
     "release:bump": "node scripts/bump-release-version.mjs",
     "test": "npm run build && node --test --test-concurrency=1 test/*.test.mjs"
