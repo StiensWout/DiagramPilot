@@ -138,6 +138,7 @@ jobs:
           tar --create --gzip --file "$RUNNER_TEMP/diagrampilot-publish-artifacts.tgz" \
             package.json \
             package-lock.json \
+            website/package.json \
             packages/*/package.json \
             packages/*/README.md \
             packages/*/LICENSE \
