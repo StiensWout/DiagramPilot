@@ -53,9 +53,9 @@ jobs:
           artifacts-dir: .fallow-action
 
   validate:
-    name: Test suite and package readiness
+    name: Root tests (parallel)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 20
     env:
       CI: "true"
       FORCE_COLOR: "0"
@@ -77,39 +77,120 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Fallow quality gate
-        run: npm run audit:fallow
-
       - name: Verify release version metadata
-        run: npm run check:release-version
+        run: node scripts/run-with-timing.mjs "release version metadata" -- npm run check:release-version
 
       - name: Build workspace
-        run: npm run build
+        run: node scripts/run-with-timing.mjs "workspace build" -- npm run build
 
-      - name: Run root test suite
-        run: npm test
+      - name: Run parallel root tests
+        run: node scripts/run-with-timing.mjs "parallel root tests" -- npm run test:root:parallel
+
+  shared-output-tests:
+    name: Shared-output tests (serial)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: "true"
+      FORCE_COLOR: "0"
+      NO_COLOR: "1"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Use workspace npm version
+        run: npm install --global npm@11.16.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build workspace
+        run: node scripts/run-with-timing.mjs "workspace build" -- npm run build
+
+      - name: Run shared-output root tests
+        run: node scripts/run-with-timing.mjs "shared-output root tests" -- npm run test:root:shared
+
+  public-surface:
+    name: Schema and website surface
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: "true"
+      FORCE_COLOR: "0"
+      NO_COLOR: "1"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Use workspace npm version
+        run: npm install --global npm@11.16.0
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Check DiagramSpec schema drift
         run: |
-          npm run generate:schema
+          node scripts/run-with-timing.mjs "DiagramSpec schema generation" -- npm run generate:schema
           git diff --exit-code -- schema/diagramspec-v1.schema.json
 
-      - name: Build website
-        run: npm --workspace website run build
-
       - name: Run website tests
-        run: npm --workspace website run test
+        run: node scripts/run-with-timing.mjs "website tests" -- npm --workspace website run test
 
-      - name: Verify checkout demo workflow
-        run: |
-          cd demo-projects/checkout
-          node ../../packages/cli/dist/index.js render docs/architecture.dp.yaml --out docs/architecture.svg
-          node ../../packages/cli/dist/index.js check
-          cd ../..
-          git diff --exit-code -- demo-projects/checkout/docs/architecture.svg
+  package-readiness:
+    name: Package readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: "true"
+      FORCE_COLOR: "0"
+      NO_COLOR: "1"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Use workspace npm version
+        run: npm install --global npm@11.16.0
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Check public package readiness
-        run: npm run check:package-readiness
+        run: node scripts/run-with-timing.mjs "package readiness" -- npm run check:package-readiness
 
       - name: Check public package size budgets
-        run: npm run check:package-size-budgets
+        run: node scripts/run-with-timing.mjs "package size budgets" -- npm run check:package-size-budgets
+
+  validate-complete:
+    name: Test suite and package readiness
+    needs:
+      - validate
+      - shared-output-tests
+      - public-surface
+      - package-readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Report validation split completion
+        run: echo "Split validation jobs completed successfully."

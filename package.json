@@ -53,7 +53,12 @@
     "check:package-size-budgets": "node scripts/check-package-size-budgets.mjs",
     "check:package-publish-state": "node scripts/check-package-publish-state.mjs",
     "release:bump": "node scripts/bump-release-version.mjs",
-    "test": "npm run build && node --test --test-concurrency=1 test/*.test.mjs"
+    "test": "npm run build && npm run test:root",
+    "test:root": "node scripts/run-root-tests.mjs --group all",
+    "test:root:ci": "node scripts/run-root-tests.mjs --group ci",
+    "test:root:parallel": "node scripts/run-root-tests.mjs --group parallel",
+    "test:root:shared": "node scripts/run-root-tests.mjs --group shared",
+    "test:root:website": "node scripts/run-root-tests.mjs --group website"
   },
   "devDependencies": {
     "@diagrampilot/core": "0.4.1",

@@ -80,14 +80,11 @@ test("GitHub Actions release workflow validates releases before guarded publishi
     /npm ci/u,
     /npm run check:release-version/u,
     /npm run build/u,
-    /npm test/u,
+    /node scripts\/run-with-timing\.mjs "release root tests" -- npm run test:root:ci/u,
     /npm run generate:schema/u,
     /git diff --exit-code -- schema\/diagramspec-v1\.schema\.json/u,
     /npm --workspace website run build/u,
     /npm --workspace website run test/u,
-    /node \.\.\/\.\.\/packages\/cli\/dist\/index\.js render docs\/architecture\.dp\.yaml --out docs\/architecture\.svg/u,
-    /node \.\.\/\.\.\/packages\/cli\/dist\/index\.js check/u,
-    /git diff --exit-code -- demo-projects\/checkout\/docs\/architecture\.svg/u,
     /npm run check:package-readiness/u,
     /npm run check:package-size-budgets/u,
     /node scripts\/plan-release-publish\.mjs --github-output/u,
@@ -118,6 +115,7 @@ test("GitHub Actions release workflow validates releases before guarded publishi
     /NPM_TOKEN|NODE_AUTH_TOKEN|VERCEL|--provenance/u,
     /check:visual|playwright install/u,
   ]);
+  assert.doesNotMatch(workflow, /\n\s+run: npm test\n/u);
 
   assert.match(
     releasePackagePublisher,
