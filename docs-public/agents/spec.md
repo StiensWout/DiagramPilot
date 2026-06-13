@@ -80,6 +80,8 @@ nodes: []
 edges: []
 groups: []
 views: []
+layout:
+  hints: []
 metadata: {}
 ```
 
@@ -98,6 +100,7 @@ Optional top-level fields:
 - `edges`
 - `groups`
 - `views`
+- `layout`
 - `metadata`
 
 ## Field Contract
@@ -127,6 +130,9 @@ Defaults to `right`.
 `views`
 : Optional. Named projections that filter the same DiagramSpec source for
 focused render or export output.
+
+`layout`
+: Optional. Soft renderer-neutral layout intent for review ergonomics.
 
 `metadata`
 : Optional. Free-form object for project, source, owner, or generation details.
@@ -392,6 +398,52 @@ Configured outputs can use `profile: clean`, `profile: compact`,
 generated dense review artifacts that should preserve topology while reducing
 edge-label noise before reaching for a smaller view or focused render.
 
+## Layout Hints
+
+Layout hints express soft renderer-neutral intent. They are not hard layout guarantees,
+and they must not be treated as D2, Mermaid, DOT, or SVG-specific
+instructions. Renderers and exporters may ignore layout hints when the target
+cannot represent them cleanly.
+
+```yaml
+layout:
+  hints:
+    - id: checkout_flow
+      kind: primary_flow
+      nodes:
+        - web_app
+        - api_gateway
+        - orders_service
+    - id: runtime_peers
+      kind: same_layer
+      nodes:
+        - orders_service
+        - payments_service
+```
+
+Required layout hint fields:
+
+- `id`
+- `kind`
+- `nodes`
+
+Optional layout hint fields:
+
+- `metadata`
+
+Supported `kind` values:
+
+- `primary_flow` marks the main ordered path reviewers should scan first.
+- `same_layer` marks peer nodes that should stay visually aligned when possible.
+
+`nodes` references existing node IDs. Validation reports repairable diagnostics
+for duplicate layout hint IDs, unsupported hint kinds, missing node lists, invalid
+node ID shapes, and unknown node references.
+
+Prefer views or focused render filters when the goal is to reduce scope, produce
+audience-specific artifacts, or make a large diagram smaller. Use layout hints
+only when the same diagram scope needs soft visual intent.
+
 ## Metadata
 
 `metadata` is a free-form object. DiagramPilot may define well-known keys while
@@ -411,7 +463,9 @@ repo content.
 DiagramSpec v1 has no arbitrary per-object styling. Use `kind` and `icon` for
 semantic rendering hints.
 
-MVP layout configuration is limited to top-level `direction`.
+Layout configuration is limited to top-level `direction` and soft
+renderer-neutral `layout.hints`. Layout hints are advisory; generated artifacts
+remain valid even when a renderer or exporter ignores them.
 
 ## Interop
 
@@ -522,4 +576,4 @@ dropped as meaning the target output does not carry that DiagramSpec field.
 | Kinds | Dropped. | Dropped. | Dropped. |
 | Metadata | Dropped. | Dropped. | Partly preserved: `source` becomes `tooltip`, and `external_url` becomes `URL`; other metadata is dropped. |
 | Provenance | Dropped; SVG provenance is only in generated SVG artifacts. | Dropped; SVG provenance is only in generated SVG artifacts. | Dropped; SVG provenance is only in generated SVG artifacts. |
-| Views and layout hints | Dropped because these fields are outside the current DiagramSpec v1 source contract. | Dropped because these fields are outside the current DiagramSpec v1 source contract. | Dropped because these fields are outside the current DiagramSpec v1 source contract. |
+| Views and layout hints | Dropped because layout hints are soft DiagramSpec intent and Mermaid export keeps only the selected topology. | Dropped because layout hints are soft DiagramSpec intent and D2 export keeps only the selected topology and supported edge styling. | Dropped because layout hints are soft DiagramSpec intent and DOT export keeps only the selected topology and supported metadata attributes. |

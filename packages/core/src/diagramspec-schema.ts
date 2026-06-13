@@ -75,6 +75,9 @@ export function createDiagramSpecV1JsonSchema(): JsonSchemaDocument {
         },
         default: [],
       },
+      layout: {
+        $ref: "#/$defs/layout",
+      },
       metadata: {
         $ref: "#/$defs/metadata",
       },
@@ -206,6 +209,53 @@ export function createDiagramSpecV1JsonSchema(): JsonSchemaDocument {
           },
           icon: {
             $ref: "#/$defs/iconReference",
+          },
+          metadata: {
+            $ref: "#/$defs/metadata",
+          },
+        },
+      },
+      layout: {
+        description:
+          "Soft renderer-neutral layout intent. Hints are portability guidance, not hard rendering guarantees.",
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          hints: {
+            description:
+              "Renderer-neutral layout hints for review ergonomics.",
+            type: "array",
+            items: {
+              $ref: "#/$defs/layoutHint",
+            },
+            default: [],
+          },
+        },
+      },
+      layoutHint: {
+        description:
+          "Soft layout intent for a set of nodes. Renderers may ignore hints they cannot represent cleanly.",
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "kind", "nodes"],
+        properties: {
+          id: {
+            $ref: "#/$defs/stableId",
+          },
+          kind: {
+            description:
+              "Renderer-neutral layout intent. primary_flow marks the main ordered path; same_layer marks peers that should stay visually aligned when possible.",
+            type: "string",
+            enum: ["primary_flow", "same_layer"],
+          },
+          nodes: {
+            description:
+              "Node IDs participating in this layout hint. Core validation checks references.",
+            type: "array",
+            minItems: 1,
+            items: {
+              $ref: "#/$defs/stableId",
+            },
           },
           metadata: {
             $ref: "#/$defs/metadata",

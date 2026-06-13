@@ -125,6 +125,29 @@ test("exports DOT overview profile without edge labels", () => {
   assert.doesNotMatch(dot, /HTTPS/);
 });
 
+test("exports DOT without renderer-specific layout hint syntax", () => {
+  const dot = exportDiagramSpecToDot({
+    version: 1,
+    title: "Layout Hints",
+    nodes: [
+      { id: "web_app", label: "Web App" },
+      { id: "api_gateway", label: "API Gateway" },
+    ],
+    layout: {
+      hints: [
+        {
+          id: "checkout_flow",
+          kind: "primary_flow",
+          nodes: ["web_app", "api_gateway"],
+        },
+      ],
+    },
+  });
+
+  assert.match(dot, /"web_app" \[label="Web App"\];/);
+  assert.doesNotMatch(dot, /checkout_flow|primary_flow|same_layer/);
+});
+
 test("exports DiagramSpec groups as Graphviz clusters", () => {
   const dot = exportDiagramSpecToDot({
     version: 1,

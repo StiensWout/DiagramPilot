@@ -48,6 +48,19 @@ export interface DiagramSpecView {
   metadata?: DiagramSpecMetadata;
 }
 
+export type DiagramSpecLayoutHintKind = "primary_flow" | "same_layer";
+
+export interface DiagramSpecLayoutHint {
+  id: string;
+  kind: DiagramSpecLayoutHintKind;
+  nodes: string[];
+  metadata?: DiagramSpecMetadata;
+}
+
+export interface DiagramSpecLayout {
+  hints?: DiagramSpecLayoutHint[];
+}
+
 export interface DiagramSpec {
   version: number;
   title: string;
@@ -57,6 +70,7 @@ export interface DiagramSpec {
   edges?: DiagramSpecEdge[];
   groups?: DiagramSpecGroup[];
   views?: DiagramSpecView[];
+  layout?: DiagramSpecLayout;
   metadata?: DiagramSpecMetadata;
 }
 

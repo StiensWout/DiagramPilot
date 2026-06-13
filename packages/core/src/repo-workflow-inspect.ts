@@ -2,6 +2,7 @@ import { createDiagramSpecTopology } from "./diagramspec-topology.js";
 import type {
   DiagramSpec,
   DiagramSpecDirection,
+  DiagramSpecLayoutHint,
   DiagramSpecView,
 } from "./diagramspec-topology.js";
 import { selectDiagramSpecView } from "./diagramspec-views.js";
@@ -92,6 +93,13 @@ export interface RepoWorkflowInspectDiagramSummary {
     containmentReferenceCount: number;
   };
   views: RepoWorkflowInspectViewSummary[];
+  layoutHints: RepoWorkflowInspectLayoutHintSummary[];
+}
+
+export interface RepoWorkflowInspectLayoutHintSummary {
+  id: string;
+  kind: DiagramSpecLayoutHint["kind"];
+  nodes: string[];
 }
 
 export interface RepoWorkflowInspectViewSummary {
@@ -233,7 +241,18 @@ function inspectDiagram(spec: DiagramSpec): RepoWorkflowInspectDiagramSummary {
       containmentReferenceCount: topology.containmentReferences.length,
     },
     views: inspectViews(spec),
+    layoutHints: inspectLayoutHints(spec),
   };
+}
+
+function inspectLayoutHints(
+  spec: DiagramSpec,
+): RepoWorkflowInspectLayoutHintSummary[] {
+  return (spec.layout?.hints ?? []).map((hint) => ({
+    id: hint.id,
+    kind: hint.kind,
+    nodes: [...hint.nodes],
+  }));
 }
 
 function viewFilterValues(

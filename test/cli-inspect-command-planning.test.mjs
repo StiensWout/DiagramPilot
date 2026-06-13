@@ -69,6 +69,18 @@ function inspectResult(options = {}) {
               },
             },
           ],
+          layoutHints: [
+            {
+              id: "checkout_flow",
+              kind: "primary_flow",
+              nodes: ["web_app", "api_gateway"],
+            },
+            {
+              id: "runtime_peers",
+              kind: "same_layer",
+              nodes: ["web_app", "api_gateway"],
+            },
+          ],
         },
         artifacts: [
           {
@@ -152,6 +164,7 @@ test("plans inspect by delegating Repo Workflow Inspect to the command adapter",
       "  Stable IDs: nodes=web_app, api_gateway; edges=web_app_to_api_gateway; groups=frontend",
       "  topology: root nodes=api_gateway; root groups=frontend; max depth=1; contains=1",
       "  views: frontend_only (1 node, 0 edges, 1 group)",
+      "  layout hints: checkout_flow primary_flow (2 nodes); runtime_peers same_layer (2 nodes)",
       "  artifacts: svg docs/architecture.svg missing-artifact",
       "",
     ].join("\n"),
@@ -224,6 +237,18 @@ test("plans inspect json as stable inventory for agents", async () => {
     edges: 0,
     groups: 1,
   });
+  assert.deepEqual(payload.sources[0].diagram.layoutHints, [
+    {
+      id: "checkout_flow",
+      kind: "primary_flow",
+      nodes: ["web_app", "api_gateway"],
+    },
+    {
+      id: "runtime_peers",
+      kind: "same_layer",
+      nodes: ["web_app", "api_gateway"],
+    },
+  ]);
   assert.deepEqual(payload.sources[0].artifacts, [
     {
       format: "svg",
