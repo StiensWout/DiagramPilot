@@ -246,6 +246,18 @@ test("DiagramSpec v1 JSON Schema describes source object shapes without closing 
   assert.equal(schema.$defs.view.properties.edgeKinds.items.$ref, "#/$defs/stableId");
   assert.equal(schema.$defs.view.properties.metadata.$ref, "#/$defs/metadata");
 
+  assert.equal(schema.properties.layout.$ref, "#/$defs/layout");
+  assert.equal(schema.$defs.layout.properties.hints.items.$ref, "#/$defs/layoutHint");
+  assert.deepEqual(schema.$defs.layoutHint.required, ["id", "kind", "nodes"]);
+  assert.equal(schema.$defs.layoutHint.properties.id.$ref, "#/$defs/stableId");
+  assert.deepEqual(schema.$defs.layoutHint.properties.kind.enum, [
+    "primary_flow",
+    "same_layer",
+  ]);
+  assert.equal(schema.$defs.layoutHint.properties.nodes.minItems, 1);
+  assert.equal(schema.$defs.layoutHint.properties.nodes.items.$ref, "#/$defs/stableId");
+  assert.equal(schema.$defs.layoutHint.properties.metadata.$ref, "#/$defs/metadata");
+
   assert.equal(schema.$defs.metadata.type, "object");
   assert.equal(schema.$defs.metadata.additionalProperties, true);
   assert.equal(schema.$defs.metadata.properties.source.type, "string");
@@ -334,6 +346,18 @@ test("DiagramSpec v1 JSON Schema validates representative source fixtures", asyn
         },
       },
     ],
+    layout: {
+      hints: [
+        {
+          id: "checkout_flow",
+          kind: "primary_flow",
+          nodes: ["web_app", "api_gateway"],
+          metadata: {
+            rationale: "Main user-visible request path.",
+          },
+        },
+      ],
+    },
   };
 
   assert.deepEqual(validateWithSchema(schema, validSpec), []);

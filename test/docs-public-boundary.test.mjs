@@ -179,6 +179,25 @@ test("public DiagramSpec guide presents JSON Schema as a tooling helper", async 
   assert.match(specGuide, /core validation remains authoritative/);
 });
 
+test("public DiagramSpec guide documents renderer-neutral layout hints", async () => {
+  const specGuide = await readFile(
+    path.join(repoRoot, "docs-public", "agents", "spec.md"),
+    "utf8",
+  );
+
+  assertMatchesAll(specGuide, [
+    /layout:/,
+    /hints:/,
+    /primary_flow/,
+    /same_layer/,
+    /soft renderer-neutral intent/i,
+    /not hard layout guarantees/i,
+    /Renderers and exporters may ignore layout hints/i,
+    /Prefer views or focused render filters/i,
+    /Views and layout hints \| Dropped because layout hints are soft DiagramSpec intent/i,
+  ]);
+});
+
 test("public docs present YAML-only source support and JSON tooling compatibility", async () => {
   const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
   const llmsText = await readFile(path.join(repoRoot, "llms.txt"), "utf8");

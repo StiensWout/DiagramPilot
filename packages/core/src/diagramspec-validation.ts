@@ -11,6 +11,11 @@ import {
   validateGroupContainmentCycles,
   validateGroupContainmentReferences,
 } from "./diagramspec-topology-validation.js";
+import {
+  validateDiagramSpecLayoutHints,
+  validateDiagramSpecLayoutReferences,
+  validateDiagramSpecLayoutShape,
+} from "./diagramspec-layout-validation.js";
 import type { DiagramSpecDirection } from "./diagramspec-topology.js";
 import {
   validateDiagramSpecViewReferencesAndMatches,
@@ -310,6 +315,8 @@ function validateDiagramSpecObject(
   validateDiagramObjectShapes(value, errors);
   validateDiagramObjectIds(value, errors);
   validateDiagramObjectKinds(value, errors);
+  validateDiagramSpecLayoutShape(value, errors);
+  validateDiagramSpecLayoutHints(value, errors);
   validateDiagramSpecViewShapeAndFilters(value, errors);
   validateDiagramObjectIcons(value, errors);
   validateWellKnownMetadataReferences(value, errors);
@@ -322,6 +329,7 @@ function validateDiagramSpecObject(
   validateGroupContainmentCycles(value, topology, errors);
   validateEdgeEndpoints(value, topology, errors);
   validateEdgeDirectedValues(value, errors);
+  validateDiagramSpecLayoutReferences(value, errors);
   validateDiagramSpecViewReferencesAndMatches(value, errors);
 }
 

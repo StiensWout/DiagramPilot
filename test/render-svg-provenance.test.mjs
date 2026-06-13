@@ -134,6 +134,29 @@ test("renderDiagramSpecToSvg applies overview output profile without edge labels
   assert.doesNotMatch(overview, /HTTPS/);
 });
 
+test("renderDiagramSpecToSvg does not expose layout hints as renderer-specific SVG text", async () => {
+  const svg = await renderDiagramSpecToSvg({
+    version: 1,
+    title: "Layout Hints",
+    nodes: [
+      { id: "web_app", label: "Web App" },
+      { id: "api_gateway", label: "API Gateway" },
+    ],
+    layout: {
+      hints: [
+        {
+          id: "checkout_flow",
+          kind: "primary_flow",
+          nodes: ["web_app", "api_gateway"],
+        },
+      ],
+    },
+  });
+
+  assert.match(svg, /<svg\b/);
+  assert.doesNotMatch(svg, /checkout_flow|primary_flow|same_layer/);
+});
+
 test("SVG rendering adds a visible legend for known edge semantics", () => {
   const svg = '<svg xmlns="http://www.w3.org/2000/svg"><g></g></svg>';
   const spec = {

@@ -68,6 +68,23 @@ test("serializes DiagramPilot Source Files without dropping DiagramSpec data", (
         },
       },
     ],
+    layout: {
+      hints: [
+        {
+          id: "checkout_flow",
+          kind: "primary_flow",
+          nodes: ["web_app", "api"],
+          metadata: {
+            rationale: "Main request path.",
+          },
+        },
+        {
+          id: "runtime_peers",
+          kind: "same_layer",
+          nodes: ["web_app", "api"],
+        },
+      ],
+    },
     metadata: {
       unknown_key: {
         nested: true,
@@ -129,6 +146,20 @@ test("serializes DiagramPilot Source Files without dropping DiagramSpec data", (
       "      - request",
       "    metadata:",
       "      audience: reviewers",
+      "layout:",
+      "  hints:",
+      "    - id: checkout_flow",
+      "      kind: primary_flow",
+      "      nodes:",
+      "        - web_app",
+      "        - api",
+      "      metadata:",
+      "        rationale: Main request path.",
+      "    - id: runtime_peers",
+      "      kind: same_layer",
+      "      nodes:",
+      "        - web_app",
+      "        - api",
       "metadata:",
       "  unknown_key:",
       "    nested: true",

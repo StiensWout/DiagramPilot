@@ -151,3 +151,25 @@ test("exports D2 overview profile with topology and semantic edge styles but no 
   assert.match(overview, /style\.stroke: "#2563eb"/);
   assert.doesNotMatch(overview, /HTTPS/);
 });
+
+test("exports D2 without renderer-specific layout hint syntax", () => {
+  const d2 = exportDiagramSpecToD2({
+    title: "Layout Hints",
+    nodes: [
+      { id: "web_app", label: "Web App" },
+      { id: "api_gateway", label: "API Gateway" },
+    ],
+    layout: {
+      hints: [
+        {
+          id: "checkout_flow",
+          kind: "primary_flow",
+          nodes: ["web_app", "api_gateway"],
+        },
+      ],
+    },
+  });
+
+  assert.match(d2, /web_app: "Web App"/);
+  assert.doesNotMatch(d2, /checkout_flow|primary_flow|same_layer/);
+});

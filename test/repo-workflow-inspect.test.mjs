@@ -30,6 +30,18 @@ const groupedSourceContent = [
   "    label: Frontend Only",
   "    groups:",
   "      - frontend",
+  "layout:",
+  "  hints:",
+  "    - id: checkout_flow",
+  "      kind: primary_flow",
+  "      nodes:",
+  "        - web_app",
+  "        - api_gateway",
+  "    - id: runtime_peers",
+  "      kind: same_layer",
+  "      nodes:",
+  "        - web_app",
+  "        - api_gateway",
   "edges:",
   "  - id: web_app_to_api_gateway",
   "    from: web_app",
@@ -120,6 +132,18 @@ test("inspectDiagramPilotRepoWorkflow reports source inventory, topology, Stable
           edges: 0,
           groups: 1,
         },
+      },
+    ]);
+    assert.deepEqual(source.diagram.layoutHints, [
+      {
+        id: "checkout_flow",
+        kind: "primary_flow",
+        nodes: ["web_app", "api_gateway"],
+      },
+      {
+        id: "runtime_peers",
+        kind: "same_layer",
+        nodes: ["web_app", "api_gateway"],
       },
     ]);
     assert.deepEqual(source.artifacts, [

@@ -4,6 +4,8 @@ import type {
   DiagramSpec,
   DiagramSpecEdge,
   DiagramSpecGroup,
+  DiagramSpecLayout,
+  DiagramSpecLayoutHint,
   DiagramSpecNode,
   DiagramSpecView,
 } from "./diagramspec-topology.js";
@@ -70,6 +72,24 @@ function orderedView(view: DiagramSpecView): Record<string, unknown> {
   return ordered;
 }
 
+function orderedLayoutHint(
+  hint: DiagramSpecLayoutHint,
+): Record<string, unknown> {
+  const ordered: Record<string, unknown> = {
+    id: hint.id,
+    kind: hint.kind,
+    nodes: hint.nodes,
+  };
+  setIfDefined(ordered, "metadata", hint.metadata);
+  return ordered;
+}
+
+function orderedLayout(layout: DiagramSpecLayout): Record<string, unknown> {
+  const ordered: Record<string, unknown> = {};
+  setIfDefined(ordered, "hints", layout.hints?.map(orderedLayoutHint));
+  return ordered;
+}
+
 export function serializeDiagramPilotSourceFile(spec: DiagramSpec): string {
   const ordered: Record<string, unknown> = {
     version: spec.version,
@@ -81,6 +101,7 @@ export function serializeDiagramPilotSourceFile(spec: DiagramSpec): string {
   setIfDefined(ordered, "groups", spec.groups?.map(orderedGroup));
   setIfDefined(ordered, "edges", spec.edges?.map(orderedEdge));
   setIfDefined(ordered, "views", spec.views?.map(orderedView));
+  setIfDefined(ordered, "layout", spec.layout ? orderedLayout(spec.layout) : undefined);
   setIfDefined(ordered, "metadata", spec.metadata);
 
   return stringify(ordered, { lineWidth: 0 });

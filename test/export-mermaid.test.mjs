@@ -57,3 +57,21 @@ test("exports Mermaid overview profile without edge labels", () => {
   assert.match(overview, /web_app --> api_gateway/);
   assert.doesNotMatch(overview, /HTTPS/);
 });
+
+test("exports Mermaid without renderer-specific layout hint syntax", () => {
+  const mermaid = exportDiagramSpecToMermaid({
+    ...checkoutSpec,
+    layout: {
+      hints: [
+        {
+          id: "checkout_flow",
+          kind: "primary_flow",
+          nodes: ["web_app", "api_gateway"],
+        },
+      ],
+    },
+  });
+
+  assert.match(mermaid, /flowchart LR/);
+  assert.doesNotMatch(mermaid, /checkout_flow|primary_flow|same_layer/);
+});

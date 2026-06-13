@@ -216,6 +216,20 @@ function formatInspectViews(
     .join("; ")}`;
 }
 
+function formatInspectLayoutHints(
+  diagram: NonNullable<RepoWorkflowInspectSourceResult["diagram"]>,
+): string | undefined {
+  const hints = diagram.layoutHints ?? [];
+
+  if (hints.length === 0) {
+    return undefined;
+  }
+
+  return `layout hints: ${hints
+    .map((hint) => `${hint.id} ${hint.kind} (${plural(hint.nodes.length, "node")})`)
+    .join("; ")}`;
+}
+
 function formatInspectStableIds(
   diagram: NonNullable<RepoWorkflowInspectSourceResult["diagram"]>,
 ): string {
@@ -258,23 +272,29 @@ function formatInvalidInspectSource(source: RepoWorkflowInspectSourceResult): st
   ];
 }
 
+function appendOptionalInspectLine(lines: string[], line: string | undefined): void {
+  if (line !== undefined) lines.push(`  ${line}`);
+}
+
 function formatValidInspectSource(source: RepoWorkflowInspectSourceResult): string[] {
   if (source.diagram === undefined) {
     return [source.sourcePath, "  diagram: unavailable"];
   }
 
-  return [
+  const lines = [
     source.sourcePath,
     `  title: ${source.diagram.title}`,
     `  direction: ${source.diagram.direction ?? "unspecified"}`,
     `  objects: ${formatInspectObjectCounts(source.diagram)}`,
     `  Stable IDs: ${formatInspectStableIds(source.diagram)}`,
     `  topology: ${formatInspectTopology(source.diagram)}`,
-    ...(formatInspectViews(source.diagram) === undefined
-      ? []
-      : [`  ${formatInspectViews(source.diagram)}`]),
-    `  artifacts: ${formatInspectArtifacts(source)}`,
   ];
+
+  appendOptionalInspectLine(lines, formatInspectViews(source.diagram));
+  appendOptionalInspectLine(lines, formatInspectLayoutHints(source.diagram));
+  lines.push(`  artifacts: ${formatInspectArtifacts(source)}`);
+
+  return lines;
 }
 
 function formatInspectSource(source: RepoWorkflowInspectSourceResult): string[] {

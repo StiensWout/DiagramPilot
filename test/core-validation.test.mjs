@@ -271,3 +271,103 @@ test("validateDiagramSpec reports repairable view filter failures", () => {
     ],
   );
 });
+
+test("validateDiagramSpec accepts layout hints and reports repairable hint failures", () => {
+  const validSpec = {
+    version: 1,
+    title: "Layout Hint Architecture",
+    nodes: [
+      { id: "web_app", label: "Web App" },
+      { id: "api_gateway", label: "API Gateway" },
+      { id: "orders_service", label: "Orders Service" },
+    ],
+    layout: {
+      hints: [
+        {
+          id: "checkout_flow",
+          kind: "primary_flow",
+          nodes: ["web_app", "api_gateway", "orders_service"],
+        },
+        {
+          id: "runtime_peers",
+          kind: "same_layer",
+          nodes: ["api_gateway", "orders_service"],
+        },
+      ],
+    },
+  };
+
+  assert.equal(validateDiagramSpecWithoutMutation(validSpec).ok, true);
+
+  const brokenSpec = {
+    ...validSpec,
+    layout: {
+      hints: [
+        {
+          id: "checkout_flow",
+          kind: "primary_flow",
+          nodes: ["web_app", "missing_service"],
+        },
+        {
+          id: "checkout_flow",
+          kind: "left_of",
+          nodes: [],
+        },
+        {
+          id: "bad_shape",
+          kind: "same_layer",
+          nodes: ["Orders Service"],
+        },
+      ],
+    },
+  };
+  const validation = validateDiagramSpecWithoutMutation(brokenSpec);
+
+  assert.equal(validation.ok, false);
+  assert.deepEqual(
+    validationErrorFacts(validation.errors),
+    [
+      {
+        path: "layout.hints[1].id",
+        message:
+          'layout.hints[1].id duplicates layout.hints[0].id "checkout_flow".',
+        badValue: "checkout_flow",
+        expected: "One unique stable ID per DiagramSpec layout hint.",
+        suggestion: "Assign a unique stable ID to this layout hint.",
+      },
+      {
+        path: "layout.hints[1].kind",
+        message: "layout.hints[1].kind must be one of: primary_flow, same_layer.",
+        badValue: "left_of",
+        expected: "One of: primary_flow, same_layer.",
+        suggestion:
+          "Change layout.hints[1].kind to primary_flow or same_layer.",
+      },
+      {
+        path: "layout.hints[1].nodes",
+        message: "layout.hints[1].nodes must contain at least one node ID.",
+        badValue: [],
+        expected: "Array of one or more DiagramSpec node IDs.",
+        suggestion:
+          "Add node IDs to layout.hints[1].nodes or remove this layout hint.",
+      },
+      {
+        path: "layout.hints[2].nodes[0]",
+        message: "layout.hints[2].nodes[0] must match the stable ID pattern.",
+        badValue: "Orders Service",
+        expected: "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
+        suggestion:
+          "Change layout.hints[2].nodes[0] to lowercase snake case, such as api_gateway.",
+      },
+      {
+        path: "layout.hints[0].nodes[1]",
+        message:
+          'layout.hints[0].nodes[1] references unknown node "missing_service".',
+        badValue: "missing_service",
+        expected: "One of: web_app, api_gateway, orders_service.",
+        suggestion:
+          'Add a node with id "missing_service" or change layout.hints[0].nodes[1] to an existing node ID.',
+      },
+    ],
+  );
+});
