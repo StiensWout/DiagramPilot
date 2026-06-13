@@ -95,8 +95,8 @@ test("GitHub Actions release workflow validates releases before guarded publishi
     /RELEASE_DIST_TAG == 'nightly'/u,
     /node scripts\/bump-release-version\.mjs "\$RELEASE_PUBLISH_VERSION"/u,
     /node scripts\/publish-release-packages\.mjs --mode dry-run/u,
-    /uses: actions\/upload-artifact@v4/u,
-    /uses: actions\/download-artifact@v4/u,
+    /uses: actions\/upload-artifact@v7/u,
+    /uses: actions\/download-artifact@v8/u,
     /diagrampilot-publish-artifacts/u,
     /website\/package\.json/u,
     /tar --create --gzip/u,
@@ -193,7 +193,7 @@ test("release workflow gates CD side effects behind CI and validates reviewed Gi
 
   assertMatchesAll(publishPackagesJob, [
     /needs: release-checks/u,
-    /uses: actions\/download-artifact@v4/u,
+    /uses: actions\/download-artifact@v8/u,
     /tar --extract --gzip/u,
     /npm run check:release-version -- "\$RELEASE_PUBLISH_VERSION"/u,
     /node scripts\/publish-release-packages\.mjs --mode publish/u,
