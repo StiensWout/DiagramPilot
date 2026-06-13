@@ -99,7 +99,7 @@ test("release-note generator derives final milestone notes from PR and Linear is
     );
     await writeFile(highlightsPath, "- Linear-backed release train is ready.\n", "utf8");
     await writeFile(breakingPath, "- Legacy JSON source handling is removed.\n", "utf8");
-    await writeFile(upgradePath, "- Use `feature/dp-*-title` branches for nightlies.\n", "utf8");
+    await writeFile(upgradePath, "- Use `nightly` as the integration branch for prereleases.\n", "utf8");
 
     const result = await runReleaseNotes([
       "--kind",
@@ -233,6 +233,7 @@ test("release-note generator derives compact nightly prerelease notes", async ()
     /^Dist Tag: nightly$/m,
     /^Branch: feature\/dp-7-release-workflow$/m,
     /^Commit: abcdef0$/m,
+    /^Install: `npm install --save-dev --save-exact diagrampilot@nightly`$/m,
     /^## Packages$/m,
     /^## Validation$/m,
   ]);

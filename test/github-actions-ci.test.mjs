@@ -63,6 +63,9 @@ test("GitHub Actions CI validates pull requests and main release-readiness gates
     "npm run check:package-readiness",
   ]);
 
+  assert.match(workflow, /pull_request:\n\s+branches:\n\s+- nightly\n\s+- main/u);
+  assert.match(workflow, /push:\n\s+branches:\n\s+- main/u);
+
   assertExcludesAll(workflow, [
     "health-baseline: fallow-baselines/health.json",
     "dupes-baseline: fallow-baselines/dupes.json",

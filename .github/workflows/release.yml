@@ -3,7 +3,8 @@ name: Release
 on:
   push:
     branches:
-      - "feature/**"
+      - nightly
+      - main
   workflow_dispatch:
     inputs:
       release_kind:
@@ -21,7 +22,7 @@ on:
       milestone:
         description: Milestone name for final release notes
         required: false
-        default: "0.4.0"
+        default: "0.4.2"
         type: string
       previous_tag:
         description: Previous release tag for the full changelog link
@@ -242,14 +243,14 @@ jobs:
             gh release edit "$RELEASE_TAG" \
               --prerelease \
               --latest=false \
-              --title "DiagramPilot $RELEASE_TAG" \
+              --title "$RELEASE_TAG" \
               --notes-file "$RUNNER_TEMP/release-notes.md"
           else
             gh release create "$RELEASE_TAG" \
               --verify-tag \
               --prerelease \
               --latest=false \
-              --title "DiagramPilot $RELEASE_TAG" \
+              --title "$RELEASE_TAG" \
               --notes-file "$RUNNER_TEMP/release-notes.md"
           fi
 
@@ -337,14 +338,14 @@ jobs:
 
             gh release edit "$RELEASE_TAG" \
               --draft \
-              --title "DiagramPilot $RELEASE_TAG" \
+              --title "$RELEASE_TAG" \
               --notes-file "$RUNNER_TEMP/release-notes.md" \
               --target "$GITHUB_SHA"
           else
             gh release create "$RELEASE_TAG" \
               --draft \
               --verify-tag \
-              --title "DiagramPilot $RELEASE_TAG" \
+              --title "$RELEASE_TAG" \
               --notes-file "$RUNNER_TEMP/release-notes.md"
           fi
 

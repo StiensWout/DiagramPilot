@@ -58,7 +58,7 @@ test("GitHub Actions release workflow validates releases before guarded publishi
     /name: Create nightly GitHub prerelease/u,
     /name: Prepare final GitHub Release draft/u,
     /name: Publish final GitHub Release after approval/u,
-    /push:\n\s+branches:\n\s+- "feature\/\*\*"/u,
+    /push:\n\s+branches:\n\s+- nightly\n\s+- main/u,
     /workflow_dispatch:/u,
     /release_kind:/u,
     /milestone:/u,
@@ -101,6 +101,7 @@ test("GitHub Actions release workflow validates releases before guarded publishi
     /Create nightly GitHub prerelease/u,
     /--prerelease/u,
     /--latest=false/u,
+    /--title "\$RELEASE_TAG"/u,
     /--kind nightly/u,
     /--kind final/u,
     /gh pr list --state merged --base main/u,
@@ -108,7 +109,8 @@ test("GitHub Actions release workflow validates releases before guarded publishi
   assertMatchesNone(workflow, [
     /npm run check:issue-release-version/u,
     /pull_request:/u,
-    /branches:\n\s+- main\n\s+- "feature\/\*\*"/u,
+    /"feature\/\*\*"/u,
+    /--title "DiagramPilot \$RELEASE_TAG"/u,
     /NPM_TOKEN|NODE_AUTH_TOKEN|VERCEL|--provenance/u,
     /check:visual|playwright install/u,
   ]);
