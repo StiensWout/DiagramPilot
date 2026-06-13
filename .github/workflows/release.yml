@@ -147,7 +147,7 @@ jobs:
 
       - name: Upload verified publish artifact
         if: steps.release-plan.outputs.should_publish == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: diagrampilot-publish-artifacts
           path: ${{ runner.temp }}/diagrampilot-publish-artifacts.tgz
@@ -187,7 +187,7 @@ jobs:
         run: npm install --global npm@11.16.0
 
       - name: Download verified publish artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: diagrampilot-publish-artifacts
           path: ${{ runner.temp }}/publish-artifacts
