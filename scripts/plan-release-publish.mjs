@@ -107,43 +107,6 @@ function createTagPlan(baseVersion, refName) {
   };
 }
 
-function createPushPlan(baseVersion, nightlyVersion, ref, env) {
-  if (!isOfficialRepository(env)) {
-    return undefined;
-  }
-
-  if (ref === "refs/heads/main") {
-    return {
-      releaseKind: "validation",
-      releaseTag: `v${baseVersion}`,
-      milestone: "",
-      previousTag: "",
-      baseVersion,
-      distTag: "latest",
-      publishVersion: baseVersion,
-      shouldPublish: false,
-      reason:
-        "trusted main push validation only; latest publishing runs from a manual milestone release",
-    };
-  }
-
-  if (ref.startsWith("refs/heads/feature/")) {
-    return {
-      releaseKind: "nightly",
-      releaseTag: `v${nightlyVersion}`,
-      milestone: "",
-      previousTag: "",
-      baseVersion,
-      distTag: "nightly",
-      publishVersion: nightlyVersion,
-      shouldPublish: true,
-      reason: "trusted feature branch push publishes a unique nightly version",
-    };
-  }
-
-  return undefined;
-}
-
 function createPullRequestPlan(baseVersion, nightlyVersion, event) {
   if (isForkPullRequest(event)) {
     return {
@@ -169,8 +132,78 @@ function createPullRequestPlan(baseVersion, nightlyVersion, event) {
     publishVersion: nightlyVersion,
     shouldPublish: false,
     reason:
-      "pull request validation uses dry-run only; feature branch pushes publish nightly",
+      "pull request validation uses dry-run only; nightly branch publishes nightly",
   };
+}
+
+function createMainPushPlan(baseVersion) {
+  return {
+    releaseKind: "final",
+    releaseTag: `v${baseVersion}`,
+    milestone: baseVersion,
+    previousTag: "",
+    baseVersion,
+    distTag: "latest",
+    publishVersion: baseVersion,
+    shouldPublish: true,
+    reason: "trusted main push publishes npm latest for the nightly-to-main promotion model",
+  };
+}
+
+function createNightlyPushPlan(baseVersion, nightlyVersion) {
+  return {
+    releaseKind: "nightly",
+    releaseTag: `v${nightlyVersion}`,
+    milestone: "",
+    previousTag: "",
+    baseVersion,
+    distTag: "nightly",
+    publishVersion: nightlyVersion,
+    shouldPublish: true,
+    reason: "trusted nightly branch push publishes a unique nightly version",
+  };
+}
+
+function createFeaturePushPlan(baseVersion, nightlyVersion) {
+  return {
+    releaseKind: "dry-run",
+    releaseTag: `v${nightlyVersion}`,
+    milestone: "",
+    previousTag: "",
+    baseVersion,
+    distTag: "nightly",
+    publishVersion: nightlyVersion,
+    shouldPublish: false,
+    reason: "feature branch pushes validate through CI only; nightly publishing runs from nightly",
+  };
+}
+
+const pushPlanFactories = [
+  {
+    matches: (ref) => ref === "refs/heads/main",
+    create: ({ baseVersion }) => createMainPushPlan(baseVersion),
+  },
+  {
+    matches: (ref) => ref === "refs/heads/nightly",
+    create: ({ baseVersion, nightlyVersion }) =>
+      createNightlyPushPlan(baseVersion, nightlyVersion),
+  },
+  {
+    matches: (ref) => ref.startsWith("refs/heads/feature/"),
+    create: ({ baseVersion, nightlyVersion }) =>
+      createFeaturePushPlan(baseVersion, nightlyVersion),
+  },
+];
+
+function createPushPlan(baseVersion, nightlyVersion, ref, env) {
+  if (!isOfficialRepository(env)) {
+    return undefined;
+  }
+
+  return pushPlanFactories.find((factory) => factory.matches(ref))?.create({
+    baseVersion,
+    nightlyVersion,
+  });
 }
 
 function dryRunPlan(baseVersion, nightlyVersion, reason) {
@@ -275,8 +308,15 @@ function readNextReleaseVersion(packageVersion) {
 }
 
 function usesNextReleaseVersion(eventName, ref) {
-  return eventName === "pull_request"
-    || (eventName === "push" && ref.startsWith("refs/heads/feature/"));
+  if (eventName === "pull_request") {
+    return true;
+  }
+
+  return eventName === "push" && usesNextReleaseVersionForPushRef(ref);
+}
+
+function usesNextReleaseVersionForPushRef(ref) {
+  return ref === "refs/heads/nightly" || ref.startsWith("refs/heads/feature/");
 }
 
 function selectBaseVersion({ eventName, ref, packageVersion, nextVersion }) {
