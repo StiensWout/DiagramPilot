@@ -98,6 +98,7 @@ test("GitHub Actions release workflow validates releases before guarded publishi
     /uses: actions\/upload-artifact@v4/u,
     /uses: actions\/download-artifact@v4/u,
     /diagrampilot-publish-artifacts/u,
+    /website\/package\.json/u,
     /tar --create --gzip/u,
     /tar --extract --gzip/u,
     /node scripts\/publish-release-packages\.mjs --mode publish/u,
