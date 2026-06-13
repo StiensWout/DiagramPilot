@@ -23,13 +23,12 @@ function assertExcludesAll(source, snippets) {
   }
 }
 
-test("GitHub Actions CI validates pull requests and main release-readiness gates", async () => {
+test("GitHub Actions CI validates pull requests before release publishing", async () => {
   const workflow = await readWorkflow();
 
   assertIncludesAll(workflow, [
     "name: CI",
     "pull_request:",
-    "push:",
     "branches:",
     "main",
     "Code quality audit (pull requests only)",
@@ -61,12 +60,13 @@ test("GitHub Actions CI validates pull requests and main release-readiness gates
     "node ../../packages/cli/dist/index.js check",
     "git diff --exit-code -- demo-projects/checkout/docs/architecture.svg",
     "npm run check:package-readiness",
+    "npm run check:package-size-budgets",
   ]);
 
   assert.match(workflow, /pull_request:\n\s+branches:\n\s+- nightly\n\s+- main/u);
-  assert.match(workflow, /push:\n\s+branches:\n\s+- main/u);
 
   assertExcludesAll(workflow, [
+    "push:",
     "health-baseline: fallow-baselines/health.json",
     "dupes-baseline: fallow-baselines/dupes.json",
     "issue-*",
