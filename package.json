@@ -1,6 +1,6 @@
 {
   "name": "@diagrampilot/workspace",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "description": "Repo-native diagram compiler for AI coding agents.",
   "type": "module",
@@ -55,8 +55,8 @@
     "test": "npm run build && node --test --test-concurrency=1 test/*.test.mjs"
   },
   "devDependencies": {
-    "@diagrampilot/core": "0.4.0",
-    "@diagrampilot/render-svg": "0.4.0",
+    "@diagrampilot/core": "0.4.1",
+    "@diagrampilot/render-svg": "0.4.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/node": "^25.9.1",
     "fallow": "^2.89.0",

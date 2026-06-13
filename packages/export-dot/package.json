@@ -1,6 +1,6 @@
 {
   "name": "@diagrampilot/export-dot",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "DOT export adapter for DiagramPilot.",
   "type": "module",
   "license": "MIT",
@@ -52,6 +52,6 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@diagrampilot/core": "0.4.0"
+    "@diagrampilot/core": "0.4.1"
   }
 }
