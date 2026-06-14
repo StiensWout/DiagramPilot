@@ -11,6 +11,9 @@ import {
 } from "./docs-public-boundary-helpers.mjs";
 import { assertMatchesAll } from "./assertion-helpers.mjs";
 
+const removedPolicyTitle = ["Brand", "Use", "Policy"].join(" ");
+const removedPolicyPath = ["BRAND", "USE", "POLICY"].join("_") + ".md";
+
 function assertQuickstartArtifactWorkflow(quickstart) {
   assertMatchesAll(quickstart, [
     /DiagramPilot Source Files/,
@@ -46,26 +49,24 @@ function assertQuickstartInitGuidance(quickstart) {
   ]);
 }
 
-function assertBrandAssetEntrypoints({ readme, brandUsePolicy, llmsText }) {
+function assertBrandAssetEntrypoints({ readme, llmsText }) {
   assertMatchesAll(readme, [
     /<picture>/,
     /<source[^>]+srcset="assets\/brand\/diagrampilot-logo-light\.svg">/,
     /<img src="assets\/brand\/diagrampilot-logo\.svg"/,
     /Canonical DiagramPilot Brand Assets live in `assets\/brand\/`/,
     /\[DiagramPilot mark\]\(assets\/brand\/diagrampilot-mark\.svg\)/,
-    /\[Brand Use Policy\]\(BRAND_USE_POLICY\.md\)/,
-  ]);
-  assertMatchesAll(brandUsePolicy, [
-    /assets\/brand\/diagrampilot-logo\.svg/,
-    /assets\/brand\/diagrampilot-logo-light\.svg/,
-    /Canonical DiagramPilot Brand Assets live in `assets\/brand\/`/,
   ]);
   assertMatchesAll(llmsText, [
     /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo\.svg/,
     /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo-light\.svg/,
     /https:\/\/diagrampilot\.com\/brand\/diagrampilot-mark\.svg/,
-    /BRAND_USE_POLICY\.md/,
   ]);
+
+  for (const publicSurface of [readme, llmsText]) {
+    assert.equal(publicSurface.includes(removedPolicyTitle), false);
+    assert.equal(publicSurface.includes(removedPolicyPath), false);
+  }
 }
 
 function assertCheckoutDemoDocument(documentText, extraPatterns = []) {
@@ -291,24 +292,23 @@ test("README describes current behavior and public docs only", async () => {
   assert.doesNotMatch(readme, /planned|deferred|future|not implemented|source mutation/i);
 });
 
-test("public entrypoints expose canonical DiagramPilot Brand Assets", async () => {
+test("public entrypoints expose MIT licensing and canonical DiagramPilot Brand Assets", async () => {
   const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
   const publicDocsIndex = await readFile(
     path.join(repoRoot, "docs-public", "index.md"),
     "utf8",
   );
   const llmsText = await readFile(path.join(repoRoot, "llms.txt"), "utf8");
-  const brandUsePolicy = await readFile(
-    path.join(repoRoot, "BRAND_USE_POLICY.md"),
-    "utf8",
-  );
 
-  assertBrandAssetEntrypoints({ readme, brandUsePolicy, llmsText });
+  assert.equal(await exists(removedPolicyPath), false);
+  assertBrandAssetEntrypoints({ readme, llmsText });
   assertMatchesAll(publicDocsIndex, [
     /\/brand\/diagrampilot-logo\.svg/,
     /\/brand\/diagrampilot-logo-light\.svg/,
-    /BRAND_USE_POLICY\.md/,
+    /MIT Code License/,
   ]);
+  assert.equal(publicDocsIndex.includes(removedPolicyTitle), false);
+  assert.equal(publicDocsIndex.includes(removedPolicyPath), false);
 });
 
 test("public quickstart and README route users through the checkout demo workflow", async () => {

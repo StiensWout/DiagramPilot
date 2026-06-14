@@ -8,7 +8,6 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const testRoot = path.join(repoRoot, "test");
 const parallelConcurrency = 8;
 const serialTestNames = new Set([
-  "benchmark-workflows.test.mjs",
   "checkout-demo-project.test.mjs",
 ]);
 

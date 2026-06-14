@@ -39,7 +39,6 @@
   "scripts": {
     "build": "tsc -b && node packages/cli/scripts/make-bin-executable.mjs && node packages/mcp/scripts/make-bin-executable.mjs",
     "build:website": "npm --workspace website run build",
-    "benchmark": "npm run build && node scripts/benchmark-workflows.mjs",
     "audit:maintainability": "npm run build && node scripts/audit-maintainability-file-sizes.mjs",
     "audit:fallow": "npm run build && npm run audit:fallow:dead-code && npm run audit:fallow:dupes && npm run audit:fallow:health",
     "audit:fallow:dead-code": "fallow dead-code --format compact --quiet --baseline fallow-baselines/dead-code.json --fail-on-issues",

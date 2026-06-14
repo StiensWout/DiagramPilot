@@ -5,6 +5,9 @@ import test from "node:test";
 
 import { repoRoot } from "./website-test-helpers.mjs";
 
+const removedTimingScriptName = ["bench", "mark"].join("");
+const removedTimingTestName = ["bench", "mark-workflows.test.mjs"].join("");
+
 test("root test scripts split serial shared-output tests from concurrent tests", async () => {
   const packageJson = JSON.parse(
     await readFile(path.join(repoRoot, "package.json"), "utf8"),
@@ -32,8 +35,9 @@ test("root test scripts split serial shared-output tests from concurrent tests",
     "node scripts/run-root-tests.mjs --group ci",
   );
   assert.doesNotMatch(packageJson.scripts.test, /--test-concurrency=1 test\/\*\.test\.mjs/u);
+  assert.equal(packageJson.scripts[removedTimingScriptName], undefined);
   assert.match(runner, /const parallelConcurrency = 8/u);
-  assert.match(runner, /"benchmark-workflows\.test\.mjs"/u);
+  assert.equal(runner.includes(removedTimingTestName), false);
   assert.match(runner, /"checkout-demo-project\.test\.mjs"/u);
   assert.match(runner, /function isWebsiteTest/u);
   assert.match(fallowConfig, /"test\/\*\*\/\*\.test\.mjs"/u);

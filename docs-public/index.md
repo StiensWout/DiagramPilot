@@ -31,7 +31,6 @@ Core public references:
 - [Integrations and agent recipes](agents/integrations.md)
 - [DiagramSpec v1 JSON Schema](https://diagrampilot.com/schema/diagramspec-v1.schema.json)
 - [MIT Code License](https://github.com/StiensWout/DiagramPilot/blob/main/LICENSE)
-- [Brand Use Policy](https://github.com/StiensWout/DiagramPilot/blob/main/BRAND_USE_POLICY.md)
 
 Current CLI commands:
 

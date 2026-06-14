@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
@@ -11,6 +11,8 @@ import {
 } from "./process-helpers.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const removedPolicyTitle = ["Brand", "Use", "Policy"].join(" ");
+const removedPolicyPath = ["BRAND", "USE", "POLICY"].join("_") + ".md";
 const publicPackageReadmes = [
   ["diagrampilot", "packages/cli/README.md"],
   ["@diagrampilot/core", "packages/core/README.md"],
@@ -31,6 +33,15 @@ function runPackageReadinessCheck() {
       env: sanitizedTestEnv(),
     },
   );
+}
+
+async function exists(repoPath) {
+  try {
+    await access(path.join(repoRoot, repoPath));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 test("package readiness check passes for release-ready public package metadata and tarballs", async () => {
@@ -74,23 +85,15 @@ test("root README links to npm pages for the Public Package Set", async () => {
   }
 });
 
-test("repository entrypoints separate the MIT Code License from the Brand Use Policy", async () => {
+test("repository entrypoints use the MIT license without the retired policy file", async () => {
   const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
   const license = await readFile(path.join(repoRoot, "LICENSE"), "utf8");
-  const brandUsePolicy = await readFile(
-    path.join(repoRoot, "BRAND_USE_POLICY.md"),
-    "utf8",
-  );
 
   assert.match(license, /^MIT License$/m);
   assert.match(license, /Permission is hereby granted, free of charge/);
-  assert.match(brandUsePolicy, /^# DiagramPilot Brand Use Policy$/m);
-  assert.match(brandUsePolicy, /separate from the MIT Code License/);
-  assert.match(brandUsePolicy, /DiagramPilot name/);
-  assert.match(brandUsePolicy, /DiagramPilot mark/);
-  assert.match(brandUsePolicy, /DiagramPilot wordmark/);
-  assert.match(brandUsePolicy, /diagrampilot\.com/);
-  assert.match(brandUsePolicy, /release identity/);
+  assert.equal(await exists(removedPolicyPath), false);
   assert.match(readme, /\[MIT Code License\]\(LICENSE\)/);
-  assert.match(readme, /\[Brand Use Policy\]\(BRAND_USE_POLICY\.md\)/);
+  assert.match(readme, /Canonical DiagramPilot Brand Assets live in `assets\/brand\/`/);
+  assert.equal(readme.includes(removedPolicyTitle), false);
+  assert.equal(readme.includes(removedPolicyPath), false);
 });
