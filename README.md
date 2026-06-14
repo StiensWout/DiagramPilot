@@ -138,9 +138,6 @@ text format is the right downstream target.
 
 DiagramPilot is available under the [MIT Code License](LICENSE).
 
-The DiagramPilot name, logo, and related brand assets are governed by the
-[Brand Use Policy](BRAND_USE_POLICY.md).
-
 Canonical DiagramPilot Brand Assets live in `assets/brand/`:
 
 - [DiagramPilot mark](assets/brand/diagrampilot-mark.svg)

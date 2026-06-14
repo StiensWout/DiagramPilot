@@ -16,7 +16,7 @@ DiagramPilot is a repo-native diagram compiler. Favor local files, stable render
 
 ## Public Surface
 
-- Public: `LICENSE`, `BRAND_USE_POLICY.md`, `llms.txt`, `docs-public/index.md`,
+- Public: `LICENSE`, `llms.txt`, `docs-public/index.md`,
   `docs-public/agents/agent-workflow.md`,
   `docs-public/agents/quickstart.md`,
   `docs-public/agents/installation.md`, `docs-public/agents/spec.md`,
