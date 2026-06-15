@@ -322,9 +322,32 @@ test("website publishes llms.txt and the public DiagramSpec schema", async () =>
     ),
     "utf8",
   );
+  const sourceCheckoutSvg = await readFile(
+    path.join(
+      repoRoot,
+      "demo-projects",
+      "checkout",
+      "docs",
+      "architecture.svg",
+    ),
+    "utf8",
+  );
+  const builtCheckoutSvg = await readFile(
+    path.join(
+      repoRoot,
+      "website",
+      "dist",
+      "demo-projects",
+      "checkout",
+      "docs",
+      "architecture.svg",
+    ),
+    "utf8",
+  );
 
   assert.equal(builtLlmsText, sourceLlmsText);
   assert.equal(builtSchema, sourceSchema);
+  assert.equal(builtCheckoutSvg, sourceCheckoutSvg);
 });
 
 test("website build excludes internal docs and keeps synced copies untracked", async () => {

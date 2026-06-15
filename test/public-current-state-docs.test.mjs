@@ -11,7 +11,7 @@ import {
 const publicSurfaceFiles = [
   "README.md",
   "llms.txt",
-  "website/src/pages/index.astro",
+  "website/src/landing/LandingPage.tsx",
   "docs-public/index.md",
   ...publicAgentDocs.map((fileName) => path.join("docs-public", "agents", fileName)),
   "packages/cli/README.md",
