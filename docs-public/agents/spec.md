@@ -482,31 +482,46 @@ MVP rendering targets:
 
 Interop targets are not the source of truth.
 
-## Import From Mermaid
+## Import From Diagram Text
 
-`diagrampilot import` helps teams adopt DiagramPilot from an existing Mermaid
-flowchart without making Mermaid the long-term source of truth:
+`diagrampilot import` helps teams adopt DiagramPilot from existing diagram text
+without making Mermaid, D2, or DOT the long-term source of truth:
 
 ```bash
 diagrampilot import docs/legacy.mmd --format mermaid --out docs/imported.dp.yaml
 diagrampilot import docs/legacy.mmd --format mermaid --out docs/imported.dp.yaml --json
 diagrampilot import docs/legacy.mmd --format mermaid --out docs/imported.dp.yaml --force
+diagrampilot import docs/legacy.d2 --format d2 --out docs/imported-d2.dp.yaml
+diagrampilot import docs/legacy.dot --format dot --out docs/imported-dot.dp.yaml
 ```
 
-The import MVP supports Mermaid `flowchart` and `graph` diagrams. It
-preserves `LR`, `RL`, `TB`/`TD`, and `BT` direction, simple node IDs and labels,
-directed and undirected edges, edge labels, and simple subgraphs where
-practical. Imported IDs are lowercase snake_case Stable IDs; collisions are
-resolved deterministically with suffixes such as `_2` and `_3`.
+Import supports Mermaid `flowchart` and `graph` diagrams, simple D2 diagrams,
+and simple DOT `graph` or `digraph` files. It preserves Mermaid `LR`, `RL`,
+`TB`/`TD`, and `BT` direction; DOT `rankdir`; simple node IDs and labels;
+directed and undirected edges; edge labels; simple Mermaid subgraphs; simple D2
+containers; and simple DOT clusters where practical. Imported IDs are lowercase
+snake_case Stable IDs; collisions are resolved deterministically with suffixes
+such as `_2` and `_3`.
 
 Import writes a new valid `*.dp.yaml` DiagramPilot Source File and refuses to
 overwrite an existing output unless `--force` is present. Text output and
 `--json` output both include fidelity diagnostics grouped as preserved,
-approximated, and dropped. Styling directives, classes, click handlers,
-accessibility statements, Mermaid-specific shapes, and unsupported Mermaid
-syntax are best-effort only: shapes are approximated as plain DiagramPilot
-nodes when labels can be read, and unsupported constructs are reported as
-dropped.
+approximated, and dropped.
+
+Best-effort import intentionally keeps DiagramSpec conservative:
+
+- Mermaid styling directives, classes, click handlers, accessibility
+  statements, Mermaid-specific shapes, and unsupported syntax are not modeled as
+  DiagramSpec styling.
+- D2 styling, layout controls, icons, tooltips, links, variables, classes,
+  imports, and special shapes are reported instead of being misrepresented.
+- DOT styling/layout attributes, record or HTML-like labels, ports, shorthand
+  subgraph edges, and advanced attribute inheritance are reported instead of
+  being misrepresented.
+
+When labels can be read but source-specific presentation cannot be preserved,
+import creates plain DiagramPilot nodes and records the approximation in the
+fidelity report.
 
 ## Export Fidelity
 

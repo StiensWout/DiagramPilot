@@ -1,4 +1,6 @@
 import {
+  importD2Diagram,
+  importDotDiagram,
   importMermaidDiagram,
   serializeDiagramPilotSourceFile,
   type ImportFidelityDiagnostic,
@@ -14,9 +16,11 @@ import type { CommandPlanningDependencies } from "./command-planning-dependencie
 import { usageFailurePlan } from "./source-command-planning.js";
 import type { CommandPlan } from "./types.js";
 
+type ImportFormat = "mermaid" | "d2" | "dot";
+
 interface ImportCommandOptions {
   inputPath: string;
-  format: "mermaid";
+  format: ImportFormat;
   outPath: string;
   force: boolean;
   json: boolean;
@@ -68,6 +72,16 @@ const valueImportFlags: Readonly<
     property: "outPath",
     missingMessage: "Missing import output path.",
   },
+};
+const importFormats = new Set<ImportFormat>(["mermaid", "d2", "dot"]);
+type ImporterResult =
+  | ReturnType<typeof importMermaidDiagram>
+  | ReturnType<typeof importD2Diagram>
+  | ReturnType<typeof importDotDiagram>;
+const importers: Readonly<Record<ImportFormat, (input: string) => ImporterResult>> = {
+  d2: importD2Diagram,
+  dot: importDotDiagram,
+  mermaid: importMermaidDiagram,
 };
 
 function isBooleanImportFlag(arg: string): arg is BooleanImportFlag {
@@ -170,9 +184,13 @@ function requireImportFormat(
     return { ok: false, message: "Missing import format." };
   }
 
-  return state.format === "mermaid"
+  return isImportFormat(state.format)
     ? { ok: true, value: state.format }
     : { ok: false, message: `Unsupported import format: ${state.format}` };
+}
+
+function isImportFormat(value: string): value is ImportFormat {
+  return importFormats.has(value as ImportFormat);
 }
 
 function requireImportOutput(state: MutableImportArgs): ParseResult<string> {
@@ -354,7 +372,7 @@ function importContentPlan(
   options: ImportCommandOptions,
   inputContent: string,
 ): CommandPlan {
-  const imported = importMermaidDiagram(inputContent);
+  const imported = importers[options.format](inputContent);
   if (!imported.ok) return importFailurePlan(imported.message, options.json);
 
   const content = serializeDiagramPilotSourceFile(imported.spec);

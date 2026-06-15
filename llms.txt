@@ -71,6 +71,8 @@ diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --view runtime --out docs/architecture-runtime.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
 diagrampilot import docs/legacy.mmd --format mermaid --out docs/imported.dp.yaml
+diagrampilot import docs/legacy.d2 --format d2 --out docs/imported-d2.dp.yaml
+diagrampilot import docs/legacy.dot --format dot --out docs/imported-dot.dp.yaml
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --view runtime --format mermaid --out docs/architecture-runtime.mmd
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
@@ -100,11 +102,12 @@ diagrampilot create docs/service-map.dp.yaml --template service-map
 Maintained Source Creation templates are `architecture`, `flow`, `package-map`,
 `system-context`, and `service-map`.
 
-Mermaid is a diagram syntax. DiagramPilot is an agent-safe compiler and
-workflow that keeps DiagramSpec source validated, reviewable, and able to
-complement text renderers such as Mermaid, D2, and DOT. Mermaid import is a
-best-effort migration path for flowcharts into new `*.dp.yaml` files; inspect
-the fidelity report before treating imported output as canonical.
+Mermaid, D2, and DOT are diagram text formats. DiagramPilot is an agent-safe
+compiler and workflow that keeps DiagramSpec source validated, reviewable, and
+able to complement those text renderers. Import is a best-effort adoption path
+from Mermaid flowcharts, D2 diagrams, and DOT graphs into new `*.dp.yaml`
+files; inspect the fidelity report before treating imported output as
+canonical.
 
 ## Important Links
 

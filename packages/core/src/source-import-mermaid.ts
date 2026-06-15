@@ -1,5 +1,12 @@
 import { validateDiagramSpec } from "./diagramspec-validation.js";
 import {
+  addImportFidelity,
+  cleanImportLine,
+  createImportedDiagramSpec,
+  createImportFidelityReport,
+  createUniqueStableId,
+} from "./source-import-common.js";
+import {
   normalizeMermaidLabel,
   parseEdge,
   parseNodeReference,
@@ -11,27 +18,21 @@ import type {
   DiagramSpecGroup,
   DiagramSpecNode,
 } from "./diagramspec-topology.js";
+import type {
+  ImportFidelityDiagnostic,
+  ImportFidelityKind,
+  ImportFidelityReport,
+  ImportFidelitySummary,
+  ImporterStateBase,
+} from "./source-import-common.js";
 import type { ParsedNodeReference } from "./source-import-mermaid-syntax.js";
 
-export type ImportFidelityKind = "preserved" | "approximated" | "dropped";
-
-export interface ImportFidelityDiagnostic {
-  kind: ImportFidelityKind;
-  construct: string;
-  message: string;
-  source?: string;
-}
-
-export interface ImportFidelitySummary {
-  preserved: number;
-  approximated: number;
-  dropped: number;
-}
-
-export interface ImportFidelityReport {
-  summary: ImportFidelitySummary;
-  diagnostics: ImportFidelityDiagnostic[];
-}
+export type {
+  ImportFidelityDiagnostic,
+  ImportFidelityKind,
+  ImportFidelityReport,
+  ImportFidelitySummary,
+};
 
 export type MermaidImportResult =
   | {
@@ -56,17 +57,11 @@ interface MutableGroup {
   contains: Set<string>;
 }
 
-interface MermaidImporterState {
-  title: string;
+interface MermaidImporterState extends ImporterStateBase<MutableGroup> {
   direction?: DiagramSpecDirection;
-  nodes: DiagramSpecNode[];
-  edges: DiagramSpecEdge[];
-  groups: MutableGroup[];
   nodesByRawId: Map<string, DiagramSpecNode>;
   groupsByRawId: Map<string, MutableGroup>;
-  usedStableIds: Set<string>;
   activeGroupIds: string[];
-  fidelity: ImportFidelityDiagnostic[];
   sawDeclaration: boolean;
 }
 
@@ -88,64 +83,8 @@ const unsupportedLinePatterns = [
   /^style\b/iu,
 ] as const;
 
-function createFidelityReport(
-  diagnostics: ImportFidelityDiagnostic[],
-): ImportFidelityReport {
-  return {
-    summary: {
-      preserved: diagnostics.filter((item) => item.kind === "preserved").length,
-      approximated: diagnostics.filter((item) => item.kind === "approximated")
-        .length,
-      dropped: diagnostics.filter((item) => item.kind === "dropped").length,
-    },
-    diagnostics,
-  };
-}
-
-function addFidelity(
-  state: MermaidImporterState,
-  diagnostic: ImportFidelityDiagnostic,
-): void {
-  state.fidelity.push(diagnostic);
-}
-
-function stripInlineComment(line: string): string {
-  const commentIndex = line.indexOf("%%");
-  return commentIndex === -1 ? line : line.slice(0, commentIndex);
-}
-
-function cleanLine(line: string): string {
-  return stripInlineComment(line).trim().replace(/;$/u, "").trim();
-}
-
-function createStableIdBase(value: string, fallbackPrefix: string): string {
-  const normalized = value
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/gu, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/gu, "_")
-    .replace(/^_+|_+$/gu, "")
-    .replace(/_+/gu, "_");
-  const fallback = normalized === "" ? fallbackPrefix : normalized;
-  return /^[a-z]/u.test(fallback) ? fallback : `${fallbackPrefix}_${fallback}`;
-}
-
-function createUniqueStableId(
-  state: MermaidImporterState,
-  value: string,
-  fallbackPrefix: string,
-): string {
-  const base = createStableIdBase(value, fallbackPrefix);
-  let candidate = base;
-  let suffix = 2;
-
-  while (state.usedStableIds.has(candidate)) {
-    candidate = `${base}_${suffix}`;
-    suffix += 1;
-  }
-
-  state.usedStableIds.add(candidate);
-  return candidate;
+function addFidelity(state: MermaidImporterState, diagnostic: ImportFidelityDiagnostic): void {
+  addImportFidelity(state, diagnostic);
 }
 
 function addNodeToActiveGroup(
@@ -177,7 +116,7 @@ function createNode(
   reference: ParsedNodeReference,
 ): DiagramSpecNode {
   const node: DiagramSpecNode = {
-    id: createUniqueStableId(state, reference.rawId, "node"),
+    id: createUniqueStableId(state.usedStableIds, reference.rawId, "node"),
     label: reference.label ?? reference.rawId,
   };
   state.nodesByRawId.set(reference.rawId, node);
@@ -230,7 +169,11 @@ function createEdge(
   source: string,
 ): void {
   const edge: DiagramSpecEdge = {
-    id: createUniqueStableId(state, `${from.id}_to_${to.id}`, "edge"),
+    id: createUniqueStableId(
+      state.usedStableIds,
+      `${from.id}_to_${to.id}`,
+      "edge",
+    ),
     from: from.id,
     to: to.id,
   };
@@ -340,7 +283,7 @@ function getOrCreateGroup(
 
   const mutableGroup: MutableGroup = {
     group: {
-      id: createUniqueStableId(state, reference.rawId, "group"),
+      id: createUniqueStableId(state.usedStableIds, reference.rawId, "group"),
       label: reference.label ?? reference.rawId,
       contains: [],
     },
@@ -476,27 +419,18 @@ function normalizedImportLine(
   if (trimmedLine === "") return undefined;
   if (dropCommentLine(state, trimmedLine)) return undefined;
 
-  const line = cleanLine(rawLine);
+  const line = cleanImportLine(rawLine, ["%%"]);
   return line === "" ? undefined : line;
 }
 
 function createImportedSpec(state: MermaidImporterState): DiagramSpec {
-  const spec: DiagramSpec = {
-    version: 1,
+  return createImportedDiagramSpec({
     title: state.title,
     direction: state.direction ?? "right",
     nodes: state.nodes,
-  };
-
-  if (state.groups.length > 0) {
-    spec.groups = state.groups.map((item) => item.group);
-  }
-
-  if (state.edges.length > 0) {
-    spec.edges = state.edges;
-  }
-
-  return spec;
+    groups: state.groups.map((item) => item.group),
+    edges: state.edges,
+  });
 }
 
 function createEmptyState(options: ImportMermaidOptions): MermaidImporterState {
@@ -560,7 +494,7 @@ export function importMermaidDiagram(
   const state = createEmptyState(options);
   importMermaidLines(state, input);
 
-  const fidelity = createFidelityReport(state.fidelity);
+  const fidelity = createImportFidelityReport(state.fidelity);
   if (!state.sawDeclaration) {
     return importFailureResult(
       "Mermaid import requires a flowchart or graph declaration.",
