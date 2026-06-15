@@ -50,6 +50,7 @@ export {
   createDiagramPilotSourceTemplate,
   diagramPilotSourceTemplateNames,
 } from "./source-templates.js";
+export { importMermaidDiagram } from "./source-import-mermaid.js";
 export { DIAGRAMPILOT_VERSION, getDiagramPilotVersion } from "./version.js";
 export {
   MAINTAINABILITY_FILE_SIZE_GATE,
@@ -188,6 +189,14 @@ export type {
   DiagramPilotSourceTemplateName,
   DiagramPilotSourceTemplateResult,
 } from "./source-templates.js";
+export type {
+  ImportFidelityDiagnostic,
+  ImportFidelityKind,
+  ImportFidelityReport,
+  ImportFidelitySummary,
+  ImportMermaidOptions,
+  MermaidImportResult,
+} from "./source-import-mermaid.js";
 export type {
   MaintainabilityFileSizeAuditFile,
   MaintainabilityFileSizeAuditResult,

@@ -24,6 +24,14 @@ const renderUsageText = [
   "",
 ].join("\n");
 
+const importUsageText = [
+  "Usage:",
+  "  diagrampilot import <input> --format mermaid --out <path>",
+  "  diagrampilot import <input> --format mermaid --out <path> --json",
+  "  diagrampilot import <input> --format mermaid --out <path> --force",
+  "",
+].join("\n");
+
 function renderUsageFailureText(message) {
   return `${message}\n${renderUsageText}`;
 }
@@ -439,6 +447,7 @@ test("plans subcommand help output", async () => {
       ].join("\n"),
     ],
     ["inspect", "Usage: diagrampilot inspect [path] [--json]\n"],
+    ["import", importUsageText],
     ["lint", "Usage: diagrampilot lint <path> [--json]\n"],
     ["render", renderUsageText],
     [

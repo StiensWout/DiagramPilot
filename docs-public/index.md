@@ -62,6 +62,7 @@ diagrampilot render docs/architecture.dp.yaml --group checkout_runtime --out doc
 diagrampilot render docs/architecture.dp.yaml --around orders_service --depth 1 --out docs/architecture-orders-service.svg
 diagrampilot render docs/architecture.dp.yaml --hide-edge-labels --out docs/architecture-overview.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
+diagrampilot import docs/legacy.mmd --format mermaid --out docs/imported.dp.yaml
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --view runtime --format mermaid --out docs/architecture-runtime.mmd
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
@@ -85,7 +86,10 @@ outputs can use `profile: clean`, `profile: compact`, `profile: overview`, or
 `profile: presentation`; use `overview` when dense review artifacts need less
 edge-label noise. `export` prints to stdout by default, writes a file only when
 `--out` is provided, and accepts `--view <view-id>` for Mermaid, D2, and DOT
-projections. `format <path>` validates one
+projections. `import <input> --format mermaid --out <path>` converts a Mermaid
+flowchart into a new DiagramPilot Source File, refuses existing outputs unless
+`--force` is present, and reports preserved, approximated, and dropped
+constructs in text or JSON with `--json`. `format <path>` validates one
 `*.dp.yaml` source and rewrites it in canonical YAML key order; YAML comments
 may be removed
 or moved. `fix <path> --json` plans deterministic source-only repairs without

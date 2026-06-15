@@ -338,6 +338,7 @@ test("public quickstart and README route users through the checkout demo workflo
     /diagrampilot check/,
     /diagrampilot lint docs\/architecture\.dp\.yaml/,
     /Use `validate` for source correctness,\s+`lint` for readability,\s+and `check` for expected artifact freshness/i,
+    /diagrampilot import docs\/legacy\.mmd --format mermaid --out docs\/imported\.dp\.yaml/,
     /diagrampilot export docs\/architecture\.dp\.yaml --format mermaid/,
     /diagrampilot export docs\/architecture\.dp\.yaml --format d2 --out docs\/architecture\.d2/,
     /diagrampilot export docs\/architecture\.dp\.yaml --format dot --out docs\/architecture\.dot/,

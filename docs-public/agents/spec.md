@@ -482,6 +482,32 @@ MVP rendering targets:
 
 Interop targets are not the source of truth.
 
+## Import From Mermaid
+
+`diagrampilot import` helps teams adopt DiagramPilot from an existing Mermaid
+flowchart without making Mermaid the long-term source of truth:
+
+```bash
+diagrampilot import docs/legacy.mmd --format mermaid --out docs/imported.dp.yaml
+diagrampilot import docs/legacy.mmd --format mermaid --out docs/imported.dp.yaml --json
+diagrampilot import docs/legacy.mmd --format mermaid --out docs/imported.dp.yaml --force
+```
+
+The import MVP supports Mermaid `flowchart` and `graph` diagrams. It
+preserves `LR`, `RL`, `TB`/`TD`, and `BT` direction, simple node IDs and labels,
+directed and undirected edges, edge labels, and simple subgraphs where
+practical. Imported IDs are lowercase snake_case Stable IDs; collisions are
+resolved deterministically with suffixes such as `_2` and `_3`.
+
+Import writes a new valid `*.dp.yaml` DiagramPilot Source File and refuses to
+overwrite an existing output unless `--force` is present. Text output and
+`--json` output both include fidelity diagnostics grouped as preserved,
+approximated, and dropped. Styling directives, classes, click handlers,
+accessibility statements, Mermaid-specific shapes, and unsupported Mermaid
+syntax are best-effort only: shapes are approximated as plain DiagramPilot
+nodes when labels can be read, and unsupported constructs are reported as
+dropped.
+
 ## Export Fidelity
 
 DiagramPilot Source Files remain the source of truth. Mermaid, D2, and DOT are

@@ -219,6 +219,80 @@ test("diagrampilot create writes a valid template source and refuses overwrite",
   });
 });
 
+test("diagrampilot import writes a valid Mermaid-derived source and refuses overwrite", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "docs", "legacy.mmd"),
+      [
+        "flowchart LR",
+        '  web["Web App"] -->|HTTPS| api["API Gateway"]',
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const importResult = await runBuiltCli(
+      [
+        "import",
+        "docs/legacy.mmd",
+        "--format",
+        "mermaid",
+        "--out",
+        "docs/imported.dp.yaml",
+      ],
+      tempRoot,
+    );
+
+    assertCliSucceeded(importResult);
+    assert.match(
+      importResult.stdout,
+      /Imported docs\/legacy\.mmd to docs\/imported\.dp\.yaml\./,
+    );
+    assert.match(importResult.stdout, /Fidelity summary:/);
+
+    const sourceText = await readFile(
+      path.join(tempRoot, "docs", "imported.dp.yaml"),
+      "utf8",
+    );
+    assert.match(sourceText, /direction: right/);
+    assert.match(sourceText, /id: web_to_api/);
+    assert.match(sourceText, /label: HTTPS/);
+
+    const validateResult = await runBuiltCli(
+      ["validate", "docs/imported.dp.yaml"],
+      tempRoot,
+    );
+
+    assertCliSuccess(validateResult, {
+      stdout: "Valid docs/imported.dp.yaml\n",
+    });
+
+    const overwriteResult = await runBuiltCli(
+      [
+        "import",
+        "docs/legacy.mmd",
+        "--format",
+        "mermaid",
+        "--out",
+        "docs/imported.dp.yaml",
+      ],
+      tempRoot,
+    );
+
+    assertCliFailure(overwriteResult, {
+      stderrPatterns: [
+        /DiagramPilot Source File already exists: docs\/imported\.dp\.yaml/,
+        /--force/,
+      ],
+    });
+    assert.equal(
+      await readFile(path.join(tempRoot, "docs", "imported.dp.yaml"), "utf8"),
+      sourceText,
+    );
+  });
+});
+
 test(
   "diagrampilot init does not scan repository contents",
   { skip: process.platform === "win32" },
