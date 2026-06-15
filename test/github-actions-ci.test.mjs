@@ -23,17 +23,21 @@ function assertExcludesAll(source, snippets) {
   }
 }
 
-test("GitHub Actions CI validates pull requests and main release-readiness gates", async () => {
+test("GitHub Actions CI validates pull requests before release publishing", async () => {
   const workflow = await readWorkflow();
 
   assertIncludesAll(workflow, [
     "name: CI",
     "pull_request:",
-    "push:",
     "branches:",
     "main",
     "Code quality audit (pull requests only)",
+    "Root tests (parallel)",
+    "Shared-output tests (serial)",
+    "Schema and website surface",
+    "Package readiness",
     "Test suite and package readiness",
+    "needs:",
     "if: github.event_name == 'pull_request'",
     "fetch-depth: 0",
     "FALLOW_UPDATE_CHECK: \"off\"",
@@ -49,25 +53,30 @@ test("GitHub Actions CI validates pull requests and main release-readiness gates
     "cache: npm",
     "npm install --global npm@11.16.0",
     "npm ci",
-    "npm run audit:fallow",
+    "node scripts/run-with-timing.mjs",
     "npm run check:release-version",
     "npm run build",
-    "npm test",
+    "npm run test:root:parallel",
+    "npm run test:root:shared",
     "npm run generate:schema",
     "git diff --exit-code -- schema/diagramspec-v1.schema.json",
-    "npm --workspace website run build",
     "npm --workspace website run test",
-    "node ../../packages/cli/dist/index.js render docs/architecture.dp.yaml --out docs/architecture.svg",
-    "node ../../packages/cli/dist/index.js check",
-    "git diff --exit-code -- demo-projects/checkout/docs/architecture.svg",
     "npm run check:package-readiness",
+    "npm run check:package-size-budgets",
   ]);
 
+  assert.match(workflow, /pull_request:\n\s+branches:\n\s+- nightly\n\s+- main/u);
+
   assertExcludesAll(workflow, [
+    "push:",
     "health-baseline: fallow-baselines/health.json",
     "dupes-baseline: fallow-baselines/dupes.json",
     "issue-*",
     "feature/**",
+    "npm test",
+    "npm run audit:fallow",
+    "npm --workspace website run build",
+    "node ../../packages/cli/dist/index.js render docs/architecture.dp.yaml --out docs/architecture.svg",
     "npm run check:issue-release-version",
   ]);
 

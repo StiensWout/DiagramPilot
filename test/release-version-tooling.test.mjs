@@ -317,22 +317,27 @@ test("release workflow uses current channels and milestone closeout", async () =
   );
 
   assertMatchesAll(workflow, [
-    /push:\n\s+branches:\n\s+- "feature\/\*\*"/u,
+    /push:\n\s+branches:\n\s+- nightly\n\s+- main/u,
     /release_kind:/u,
     /- dry-run/u,
     /- milestone/u,
-    /Release checks \(nightly or manual final\)/u,
+    /default: "0\.4\.2"/u,
+    /Validate release and verify publish artifacts/u,
     /Publish npm packages \(nightly or final\)/u,
     /Create nightly GitHub prerelease/u,
     /Prepare final GitHub Release draft/u,
     /Publish final GitHub Release after approval/u,
     /npm run check:release-version/u,
+    /npm run test:root:ci/u,
     /node scripts\/bump-release-version\.mjs "\$RELEASE_PUBLISH_VERSION"/u,
     /node scripts\/generate-release-notes\.mjs \\\s+--kind final/u,
     /--prs-json "\$RUNNER_TEMP\/release-prs\.json"/u,
     /scripts\/validate-github-release-draft\.mjs/u,
     /node scripts\/generate-release-notes\.mjs \\\s+--kind nightly/u,
     /npm run check:package-readiness/u,
+    /npm run check:package-size-budgets/u,
+    /actions\/upload-artifact@v7/u,
+    /actions\/download-artifact@v8/u,
   ]);
   assertMatchesNone(workflow, [
     /check:issue-release-version/u,
@@ -340,5 +345,6 @@ test("release workflow uses current channels and milestone closeout", async () =
     /\.scratch/u,
   ]);
   assert.match(releasePlanner, /manual milestone release publishes npm latest/u);
+  assert.match(releasePlanner, /trusted main push publishes npm latest/u);
   assert.doesNotMatch(releasePlanner, /issue release/u);
 });

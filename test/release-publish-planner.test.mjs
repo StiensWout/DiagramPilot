@@ -91,17 +91,17 @@ function assertLatestPlan(plan, { baseVersion, shouldPublish }) {
   assert.equal(plan.publishVersion, baseVersion);
 }
 
-test("release publish planner routes feature branch pushes to unique nightly versions", async () => {
-  const baseVersion = await readNextReleaseVersion();
+test("release publish planner routes nightly branch pushes to v0.4.2 nightly publishing", async () => {
+  const baseVersion = "0.4.2";
   const packageVersion = await readWorkspaceVersion();
   const sha = "abcdef1234567890";
 
-  const result = await withGithubEvent({ ref: "refs/heads/feature/dp-61-release" }, (eventPath) =>
+  const result = await withGithubEvent({ ref: "refs/heads/nightly" }, (eventPath) =>
     runReleasePlan(
       releasePlanEnv(eventPath, {
         GITHUB_EVENT_NAME: "push",
-        GITHUB_REF: "refs/heads/feature/dp-61-release",
-        GITHUB_REF_NAME: "feature/dp-61-release",
+        GITHUB_REF: "refs/heads/nightly",
+        GITHUB_REF_NAME: "nightly",
         GITHUB_RUN_NUMBER: "42",
         GITHUB_RUN_ATTEMPT: "3",
         GITHUB_SHA: sha,
@@ -119,11 +119,40 @@ test("release publish planner routes feature branch pushes to unique nightly ver
     runAttempt: "3",
     sha,
     shouldPublish: true,
-    reason: /trusted feature branch push/u,
+    reason: /trusted nightly branch push/u,
   });
 });
 
-test("release publish planner keeps main pushes validation-only", async () => {
+test("release publish planner keeps feature branch pushes validation-only", async () => {
+  const baseVersion = await readNextReleaseVersion();
+  const sha = "abcdef1234567890";
+
+  const result = await withGithubEvent({ ref: "refs/heads/feature/dp-41-release" }, (eventPath) =>
+    runReleasePlan(
+      releasePlanEnv(eventPath, {
+        GITHUB_EVENT_NAME: "push",
+        GITHUB_REF: "refs/heads/feature/dp-41-release",
+        GITHUB_REF_NAME: "feature/dp-41-release",
+        GITHUB_RUN_NUMBER: "42",
+        GITHUB_RUN_ATTEMPT: "3",
+        GITHUB_SHA: sha,
+        DIAGRAMPILOT_NPM_PUBLISH_ENABLED: "true",
+      }),
+    ),
+  );
+
+  const plan = parseSuccessfulPlan(result);
+  assertNightlyPlan(plan, {
+    baseVersion,
+    runNumber: "42",
+    runAttempt: "3",
+    sha,
+    reason: /feature branch pushes validate through CI only/u,
+  });
+  assert.equal(plan.releaseKind, "dry-run");
+});
+
+test("release publish planner routes main pushes to production publishing", async () => {
   const baseVersion = await readWorkspaceVersion();
 
   const result = await withGithubEvent({ ref: "refs/heads/main" }, (eventPath) =>
@@ -140,8 +169,9 @@ test("release publish planner keeps main pushes validation-only", async () => {
   );
 
   const plan = parseSuccessfulPlan(result);
-  assertLatestPlan(plan, { baseVersion, shouldPublish: false });
-  assert.match(plan.reason, /main push validation only/u);
+  assertLatestPlan(plan, { baseVersion, shouldPublish: true });
+  assert.equal(plan.releaseKind, "final");
+  assert.match(plan.reason, /trusted main push publishes npm latest/u);
 });
 
 test("release publish planner routes manual milestone dispatches to latest publishing", async () => {
@@ -179,16 +209,16 @@ test("release publish planner routes manual milestone dispatches to latest publi
   assert.match(plan.reason, /manual milestone release/u);
 });
 
-test("release publish planner keeps trusted pushes dry-run until publishing is enabled", async () => {
+test("release publish planner keeps trusted nightly pushes dry-run until publishing is enabled", async () => {
   const baseVersion = await readNextReleaseVersion();
   const sha = "abcdef1234567890";
 
-  const result = await withGithubEvent({ ref: "refs/heads/feature/dp-61-release" }, (eventPath) =>
+  const result = await withGithubEvent({ ref: "refs/heads/nightly" }, (eventPath) =>
     runReleasePlan(
       releasePlanEnv(eventPath, {
         GITHUB_EVENT_NAME: "push",
-        GITHUB_REF: "refs/heads/feature/dp-61-release",
-        GITHUB_REF_NAME: "feature/dp-61-release",
+        GITHUB_REF: "refs/heads/nightly",
+        GITHUB_REF_NAME: "nightly",
         GITHUB_RUN_NUMBER: "47",
         GITHUB_SHA: sha,
       }),
@@ -233,7 +263,7 @@ test("release publish planner keeps pull requests dry-run even when publishing i
     baseVersion,
     runNumber: "48",
     sha,
-    reason: /pull request validation uses dry-run/u,
+    reason: /pull request validation uses dry-run only; nightly branch publishes nightly/u,
   });
 });
 

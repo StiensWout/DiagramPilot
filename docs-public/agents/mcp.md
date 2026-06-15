@@ -3,17 +3,23 @@
 The DiagramPilot MCP server exposes DiagramPilot context and explicit local
 operations to Model Context Protocol clients.
 
-Launch it through the main CLI:
+Install the optional adapter package when a local MCP client needs DiagramPilot
+tools:
 
 ```bash
-diagrampilot mcp
+npm install --save-dev @diagrampilot/mcp
 ```
 
-Clients that require a dedicated package executable can use:
+Launch the dedicated package executable:
 
 ```bash
 diagrampilot-mcp
 ```
+
+The MCP adapter is separate from the core `diagrampilot` CLI so routine CLI/CI
+installs stay smaller, the default dependency surface stays lower, and MCP can
+iterate without forcing every compiler user to install server-facing runtime
+dependencies.
 
 The server provides resources for the DiagramSpec schema, public docs,
 examples, discovered DiagramPilot Source Files, and Repo Workflow Check

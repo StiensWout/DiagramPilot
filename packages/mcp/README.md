@@ -2,12 +2,21 @@
 
 Model Context Protocol server for DiagramPilot.
 
-Most users should launch MCP through the `diagrampilot mcp` command. Use this
-package when an MCP client expects a dedicated package-level executable:
+Install this optional adapter when a local MCP client needs DiagramPilot tools
+without adding MCP runtime dependencies to the core `diagrampilot` CLI package:
+
+```bash
+npm install --save-dev @diagrampilot/mcp
+```
+
+Launch the package-level executable:
 
 ```bash
 diagrampilot-mcp
 ```
+
+Keeping MCP in this package keeps CLI/CI installs smaller, lowers the default
+security surface for compiler users, and lets the adapter iterate independently.
 
 The server exposes read-only DiagramPilot resources, tools, and prompts for AI
 coding agents working in local repositories.

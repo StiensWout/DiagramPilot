@@ -14,8 +14,8 @@ architecture diagrams directly inside a repository.
 
 DiagramPilot Source Files are YAML-only. The CLI supports local agent authoring
 loops with `create`, `inspect`, `format`, `lint`, `watch`, configured outputs,
-fixed Output Profiles, SVG/PNG rendering, Mermaid/D2/DOT export, and an MCP
-server for local agent clients.
+fixed Output Profiles, SVG/PNG rendering, and Mermaid/D2/DOT export. Local MCP
+clients can add the optional `@diagrampilot/mcp` adapter package.
 
 Public documentation is hosted at `https://diagrampilot.com`.
 
@@ -66,6 +66,9 @@ diagrampilot format docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --view runtime --out docs/architecture-runtime.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
+diagrampilot import docs/legacy.mmd --format mermaid --out docs/imported.dp.yaml
+diagrampilot import docs/legacy.d2 --format d2 --out docs/imported-d2.dp.yaml
+diagrampilot import docs/legacy.dot --format dot --out docs/imported-dot.dp.yaml
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --view runtime --format mermaid --out docs/architecture-runtime.mmd
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
@@ -127,19 +130,20 @@ rewriting it in canonical YAML key order. Formatting preserves DiagramSpec data,
 unknown metadata, and object/array order. It does not promise comment
 preservation; YAML comments may be removed or moved during formatting.
 
-## Mermaid And DiagramPilot
+## Diagram Text And DiagramPilot
 
-Mermaid is a diagram syntax for writing diagrams as text. DiagramPilot is an
-agent-safe compiler and workflow for maintaining DiagramSpec source, validating
-it locally, rendering review-stable artifacts, and exporting Mermaid when that
-text format is the right downstream target.
+Mermaid, D2, and DOT are text formats for diagram interoperability.
+DiagramPilot is an agent-safe compiler and workflow for maintaining
+DiagramSpec source, validating it locally, rendering review-stable artifacts,
+and exporting text diagrams when those formats are the right downstream
+target. `diagrampilot import <input> --format mermaid|d2|dot --out <path>` is
+a best-effort adoption helper: it writes a new valid `*.dp.yaml`, refuses
+overwrite unless `--force` is present, and reports preserved, approximated,
+and dropped constructs in text or JSON.
 
 ## License And Brand
 
 DiagramPilot is available under the [MIT Code License](LICENSE).
-
-The DiagramPilot name, logo, and related brand assets are governed by the
-[Brand Use Policy](BRAND_USE_POLICY.md).
 
 Canonical DiagramPilot Brand Assets live in `assets/brand/`:
 
@@ -160,7 +164,6 @@ diagrampilot check
 diagrampilot inspect
 diagrampilot generate
 diagrampilot watch docs
-diagrampilot mcp
 diagrampilot icons list
 diagrampilot icons search database
 diagrampilot check docs --json
@@ -175,6 +178,9 @@ diagrampilot format docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --view runtime --out docs/architecture-runtime.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
+diagrampilot import docs/legacy.mmd --format mermaid --out docs/imported.dp.yaml
+diagrampilot import docs/legacy.d2 --format d2 --out docs/imported-d2.dp.yaml
+diagrampilot import docs/legacy.dot --format dot --out docs/imported-dot.dp.yaml
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --view runtime --format mermaid --out docs/architecture-runtime.mmd
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
@@ -244,10 +250,12 @@ It watches `*.dp.yaml` and `diagrampilot.config.yaml`, debounces changes, runs
 repo workflow checks first, and generates only when the source/config state is
 valid.
 
-`mcp` launches the Model Context Protocol stdio server for local MCP clients.
-It exposes read-only DiagramPilot resources, validation, repo check,
-export, render, and prompt helpers. See the
-[MCP guide](docs-public/agents/mcp.md).
+The Model Context Protocol stdio server lives in the optional
+`@diagrampilot/mcp` package. Install it only for local MCP clients and launch
+the dedicated `diagrampilot-mcp` executable. Keeping MCP out of the core
+`diagrampilot` package keeps CLI/CI installs smaller, lowers the default
+runtime dependency surface, and lets the MCP adapter iterate independently.
+See the [MCP guide](docs-public/agents/mcp.md).
 
 `icons list` prints packaged `lucide:*` icon references in stable order.
 `icons search <query>` searches packaged Lucide names locally and prints

@@ -45,7 +45,7 @@ export function helpText(version: string): string {
     "  inspect [path] [--json]",
     "  generate [path] [--json]",
     "  watch [path]",
-    "  mcp",
+    "  import <input> --format mermaid|d2|dot --out <path> [--json] [--force]",
     "  icons list",
     "  icons search <query>",
     "  render <path> --out <path>",
@@ -84,6 +84,15 @@ export function inspectUsageText(): string {
 
 export function generateUsageText(): string {
   return "Usage: diagrampilot generate [path] [--json]";
+}
+
+export function importUsageText(): string {
+  return [
+    "Usage:",
+    "  diagrampilot import <input> --format mermaid|d2|dot --out <path>",
+    "  diagrampilot import <input> --format mermaid|d2|dot --out <path> --json",
+    "  diagrampilot import <input> --format mermaid|d2|dot --out <path> --force",
+  ].join("\n");
 }
 
 export function iconsUsageText(): string {

@@ -11,6 +11,9 @@ import {
 } from "./docs-public-boundary-helpers.mjs";
 import { assertMatchesAll } from "./assertion-helpers.mjs";
 
+const removedPolicyTitle = ["Brand", "Use", "Policy"].join(" ");
+const removedPolicyPath = ["BRAND", "USE", "POLICY"].join("_") + ".md";
+
 function assertQuickstartArtifactWorkflow(quickstart) {
   assertMatchesAll(quickstart, [
     /DiagramPilot Source Files/,
@@ -46,26 +49,24 @@ function assertQuickstartInitGuidance(quickstart) {
   ]);
 }
 
-function assertBrandAssetEntrypoints({ readme, brandUsePolicy, llmsText }) {
+function assertBrandAssetEntrypoints({ readme, llmsText }) {
   assertMatchesAll(readme, [
     /<picture>/,
     /<source[^>]+srcset="assets\/brand\/diagrampilot-logo-light\.svg">/,
     /<img src="assets\/brand\/diagrampilot-logo\.svg"/,
     /Canonical DiagramPilot Brand Assets live in `assets\/brand\/`/,
     /\[DiagramPilot mark\]\(assets\/brand\/diagrampilot-mark\.svg\)/,
-    /\[Brand Use Policy\]\(BRAND_USE_POLICY\.md\)/,
-  ]);
-  assertMatchesAll(brandUsePolicy, [
-    /assets\/brand\/diagrampilot-logo\.svg/,
-    /assets\/brand\/diagrampilot-logo-light\.svg/,
-    /Canonical DiagramPilot Brand Assets live in `assets\/brand\/`/,
   ]);
   assertMatchesAll(llmsText, [
     /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo\.svg/,
     /https:\/\/diagrampilot\.com\/brand\/diagrampilot-logo-light\.svg/,
     /https:\/\/diagrampilot\.com\/brand\/diagrampilot-mark\.svg/,
-    /BRAND_USE_POLICY\.md/,
   ]);
+
+  for (const publicSurface of [readme, llmsText]) {
+    assert.equal(publicSurface.includes(removedPolicyTitle), false);
+    assert.equal(publicSurface.includes(removedPolicyPath), false);
+  }
 }
 
 function assertCheckoutDemoDocument(documentText, extraPatterns = []) {
@@ -123,19 +124,20 @@ test("final closeout removes internal planning artifacts from the public repo", 
 test("llms.txt links only public documentation", async () => {
   const llmsText = await readFile(path.join(repoRoot, "llms.txt"), "utf8");
 
-  assert.match(
-    llmsText,
+  assertMatchesAll(llmsText, [
     /https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md/,
-  );
-  assert.match(
-    llmsText,
     /https:\/\/diagrampilot\.com\/docs\/agents\/spec\.md/,
-  );
-  assert.doesNotMatch(llmsText, /docs\/development\//);
-  assert.doesNotMatch(llmsText, /docs\/adr\//);
-  assert.doesNotMatch(llmsText, /issue-tracker\.md/);
-  assert.doesNotMatch(llmsText, /triage-labels\.md/);
-  assert.doesNotMatch(llmsText, /domain\.md/);
+  ]);
+
+  for (const internalPattern of [
+    /docs\/development\//,
+    /docs\/adr\//,
+    /issue-tracker\.md/,
+    /triage-labels\.md/,
+    /domain\.md/,
+  ]) {
+    assert.doesNotMatch(llmsText, internalPattern);
+  }
 });
 
 test("llms.txt reflects current public docs and the published schema helper", async () => {
@@ -156,7 +158,9 @@ test("llms.txt reflects current public docs and the published schema helper", as
     /https:\/\/diagrampilot\.com\/docs\/agents\/mcp\.md/,
   );
   assert.match(llmsText, /Model Context Protocol server/);
-  assert.match(llmsText, /diagrampilot mcp/);
+  assert.match(llmsText, /@diagrampilot\/mcp/);
+  assert.match(llmsText, /diagrampilot-mcp/);
+  assert.doesNotMatch(llmsText, /diagrampilot mcp/);
   assert.doesNotMatch(llmsText, /planned|deferred|future|not implemented|source mutation/i);
   assert.doesNotMatch(
     llmsText,
@@ -269,46 +273,50 @@ test("public docs treat repo workflow check as shipped", async () => {
 test("README describes current behavior and public docs only", async () => {
   const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
 
-  assert.match(
-    readme,
+  assertMatchesAll(readme, [
     /docs-public\/agents\/quickstart\.md/,
-  );
-  assert.match(
-    readme,
     /schema\/diagramspec-v1\.schema\.json/,
-  );
+  ]);
 
-  assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/development\//);
-  assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/adr\//);
-  assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/agents\/deployment\.md/);
-  assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/agents\/issue-tracker\.md/);
-  assert.doesNotMatch(readme, /docs\/development\//);
-  assert.doesNotMatch(readme, /docs\/adr\//);
-  assert.doesNotMatch(readme, /\.scratch\//);
-  assert.match(readme, /docs-public\/agents\/mcp\.md/);
-  assert.match(readme, /diagrampilot mcp/);
-  assert.match(readme, /Model Context Protocol stdio server/);
-  assert.doesNotMatch(readme, /planned|deferred|future|not implemented|source mutation/i);
+  for (const internalPattern of [
+    /https:\/\/diagrampilot\.com\/docs\/development\//,
+    /https:\/\/diagrampilot\.com\/docs\/adr\//,
+    /https:\/\/diagrampilot\.com\/docs\/agents\/deployment\.md/,
+    /https:\/\/diagrampilot\.com\/docs\/agents\/issue-tracker\.md/,
+    /docs\/development\//,
+    /docs\/adr\//,
+    /\.scratch\//,
+    /diagrampilot mcp/,
+    /planned|deferred|future|not implemented|source mutation/i,
+  ]) {
+    assert.doesNotMatch(readme, internalPattern);
+  }
+
+  assertMatchesAll(readme, [
+    /docs-public\/agents\/mcp\.md/,
+    /@diagrampilot\/mcp/,
+    /diagrampilot-mcp/,
+    /Model Context Protocol stdio server/,
+  ]);
 });
 
-test("public entrypoints expose canonical DiagramPilot Brand Assets", async () => {
+test("public entrypoints expose MIT licensing and canonical DiagramPilot Brand Assets", async () => {
   const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
   const publicDocsIndex = await readFile(
     path.join(repoRoot, "docs-public", "index.md"),
     "utf8",
   );
   const llmsText = await readFile(path.join(repoRoot, "llms.txt"), "utf8");
-  const brandUsePolicy = await readFile(
-    path.join(repoRoot, "BRAND_USE_POLICY.md"),
-    "utf8",
-  );
 
-  assertBrandAssetEntrypoints({ readme, brandUsePolicy, llmsText });
+  assert.equal(await exists(removedPolicyPath), false);
+  assertBrandAssetEntrypoints({ readme, llmsText });
   assertMatchesAll(publicDocsIndex, [
     /\/brand\/diagrampilot-logo\.svg/,
     /\/brand\/diagrampilot-logo-light\.svg/,
-    /BRAND_USE_POLICY\.md/,
+    /MIT Code License/,
   ]);
+  assert.equal(publicDocsIndex.includes(removedPolicyTitle), false);
+  assert.equal(publicDocsIndex.includes(removedPolicyPath), false);
 });
 
 test("public quickstart and README route users through the checkout demo workflow", async () => {
@@ -330,6 +338,7 @@ test("public quickstart and README route users through the checkout demo workflo
     /diagrampilot check/,
     /diagrampilot lint docs\/architecture\.dp\.yaml/,
     /Use `validate` for source correctness,\s+`lint` for readability,\s+and `check` for expected artifact freshness/i,
+    /diagrampilot import docs\/legacy\.mmd --format mermaid --out docs\/imported\.dp\.yaml/,
     /diagrampilot export docs\/architecture\.dp\.yaml --format mermaid/,
     /diagrampilot export docs\/architecture\.dp\.yaml --format d2 --out docs\/architecture\.d2/,
     /diagrampilot export docs\/architecture\.dp\.yaml --format dot --out docs\/architecture\.dot/,
@@ -360,13 +369,13 @@ test("public quickstart and README route users through the checkout demo workflo
 
 test("landing page, README, and llms.txt use context-appropriate quickstart routes", async () => {
   const landingPage = await readFile(
-    path.join(repoRoot, "website", "src", "pages", "index.astro"),
+    path.join(repoRoot, "website", "src", "landing", "LandingPage.tsx"),
     "utf8",
   );
   const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
   const llmsText = await readFile(path.join(repoRoot, "llms.txt"), "utf8");
 
-  assert.match(landingPage, /href="\/docs\/agents\/quickstart\/"/);
+  assert.match(landingPage, /href:\s*"\/docs\/agents\/quickstart\/"/);
   assert.match(
     readme,
     /docs-public\/agents\/quickstart\.md/,
@@ -423,7 +432,7 @@ test("public surface describes shipped DiagramPilot behavior only", async () => 
   const publicSurfaceFiles = [
     "README.md",
     "llms.txt",
-    "website/src/pages/index.astro",
+    "website/src/landing/LandingPage.tsx",
     ...publicAgentDocs.map((fileName) => path.join("docs-public", "agents", fileName)),
   ];
 

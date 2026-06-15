@@ -285,6 +285,7 @@ function formatNightlyReleaseNotes(options) {
 
   output.push(
     packageLinkLine("npm", "diagrampilot", version),
+    "Install: `npm install --save-dev --save-exact diagrampilot@nightly`",
     "",
     "## Packages",
     "",

@@ -50,6 +50,9 @@ export {
   createDiagramPilotSourceTemplate,
   diagramPilotSourceTemplateNames,
 } from "./source-templates.js";
+export { importD2Diagram } from "./source-import-d2.js";
+export { importDotDiagram } from "./source-import-dot.js";
+export { importMermaidDiagram } from "./source-import-mermaid.js";
 export { DIAGRAMPILOT_VERSION, getDiagramPilotVersion } from "./version.js";
 export {
   MAINTAINABILITY_FILE_SIZE_GATE,
@@ -188,6 +191,30 @@ export type {
   DiagramPilotSourceTemplateName,
   DiagramPilotSourceTemplateResult,
 } from "./source-templates.js";
+export type {
+  D2ImportFidelityDiagnostic,
+  D2ImportFidelityKind,
+  D2ImportFidelityReport,
+  D2ImportFidelitySummary,
+  D2ImportResult,
+  ImportD2Options,
+} from "./source-import-d2.js";
+export type {
+  DotImportFidelityDiagnostic,
+  DotImportFidelityKind,
+  DotImportFidelityReport,
+  DotImportFidelitySummary,
+  DotImportResult,
+  ImportDotOptions,
+} from "./source-import-dot.js";
+export type {
+  ImportFidelityDiagnostic,
+  ImportFidelityKind,
+  ImportFidelityReport,
+  ImportFidelitySummary,
+  ImportMermaidOptions,
+  MermaidImportResult,
+} from "./source-import-mermaid.js";
 export type {
   MaintainabilityFileSizeAuditFile,
   MaintainabilityFileSizeAuditResult,

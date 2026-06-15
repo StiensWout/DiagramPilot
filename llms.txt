@@ -70,6 +70,9 @@ diagrampilot inspect docs --json
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --view runtime --out docs/architecture-runtime.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
+diagrampilot import docs/legacy.mmd --format mermaid --out docs/imported.dp.yaml
+diagrampilot import docs/legacy.d2 --format d2 --out docs/imported-d2.dp.yaml
+diagrampilot import docs/legacy.dot --format dot --out docs/imported-dot.dp.yaml
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --view runtime --format mermaid --out docs/architecture-runtime.mmd
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
@@ -77,10 +80,15 @@ diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architectu
 diagrampilot check
 ```
 
-Current MCP launch path:
+Optional MCP adapter package:
+
+Use the `@diagrampilot/mcp` package when a local MCP client needs DiagramPilot
+schema, docs, examples, validation, check, export, render, and prompt helpers.
+The adapter is separate so the core `diagrampilot` CLI stays smaller for
+normal authoring and CI workflows.
 
 ```bash
-diagrampilot mcp
+diagrampilot-mcp
 ```
 
 Current Source Creation path:
@@ -94,9 +102,12 @@ diagrampilot create docs/service-map.dp.yaml --template service-map
 Maintained Source Creation templates are `architecture`, `flow`, `package-map`,
 `system-context`, and `service-map`.
 
-Mermaid is a diagram syntax. DiagramPilot is an agent-safe compiler and
-workflow that keeps DiagramSpec source validated, reviewable, and able to
-complement text renderers such as Mermaid, D2, and DOT.
+Mermaid, D2, and DOT are diagram text formats. DiagramPilot is an agent-safe
+compiler and workflow that keeps DiagramSpec source validated, reviewable, and
+able to complement those text renderers. Import is a best-effort adoption path
+from Mermaid flowcharts, D2 diagrams, and DOT graphs into new `*.dp.yaml`
+files; inspect the fidelity report before treating imported output as
+canonical.
 
 ## Important Links
 
@@ -121,5 +132,4 @@ complement text renderers such as Mermaid, D2, and DOT.
 - [DiagramPilot light wordmark](https://diagrampilot.com/brand/diagrampilot-logo-light.svg): Official light-text wordmark for dark surfaces where the full DiagramPilot name remains legible.
 - [DiagramPilot mark](https://diagrampilot.com/brand/diagrampilot-mark.svg): Official mark for favicon and icon-sized placements.
 - [MIT Code License](https://github.com/StiensWout/DiagramPilot/blob/main/LICENSE): License for DiagramPilot code and repository materials.
-- [Brand Use Policy](https://github.com/StiensWout/DiagramPilot/blob/main/BRAND_USE_POLICY.md): Policy for the DiagramPilot name, mark, wordmark, domain, and official release identity.
 - [GitHub repository](https://github.com/StiensWout/DiagramPilot): Source repository.

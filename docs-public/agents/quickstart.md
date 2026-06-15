@@ -272,11 +272,24 @@ PNG rendering rasterizes the SVG output, so SVG and PNG stay aligned.
 Export to another diagram-as-code format when needed:
 
 ```bash
+diagrampilot import docs/legacy.mmd --format mermaid --out docs/imported.dp.yaml
+diagrampilot import docs/legacy.d2 --format d2 --out docs/imported-d2.dp.yaml
+diagrampilot import docs/legacy.dot --format dot --out docs/imported-dot.dp.yaml
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --view runtime --format mermaid --out docs/architecture-runtime.mmd
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
 diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architecture.dot
 ```
+
+`import` is a migration helper, not a replacement source format. It imports
+supported Mermaid flowcharts, D2 diagrams, and DOT graphs into new valid
+`*.dp.yaml` sources, generates lowercase snake_case Stable IDs with
+deterministic collision suffixes, and refuses to overwrite an existing output
+unless `--force` is present. The fidelity report lists preserved direction,
+nodes, labels, directed edges, edge labels, simple D2 containers, and simple DOT
+clusters. Styling, layout controls, classes, clicks, accessibility statements,
+variables, shorthand subgraph edges, and unsupported syntax are reported as
+dropped or approximated.
 
 `export` prints to stdout by default. Use `--out` only when you want to write a
 derived export file.

@@ -1,6 +1,6 @@
 {
   "name": "@diagrampilot/workspace",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "private": true,
   "description": "Repo-native diagram compiler for AI coding agents.",
   "type": "module",
@@ -39,7 +39,6 @@
   "scripts": {
     "build": "tsc -b && node packages/cli/scripts/make-bin-executable.mjs && node packages/mcp/scripts/make-bin-executable.mjs",
     "build:website": "npm --workspace website run build",
-    "benchmark": "npm run build && node scripts/benchmark-workflows.mjs",
     "audit:maintainability": "npm run build && node scripts/audit-maintainability-file-sizes.mjs",
     "audit:fallow": "npm run build && npm run audit:fallow:dead-code && npm run audit:fallow:dupes && npm run audit:fallow:health",
     "audit:fallow:dead-code": "fallow dead-code --format compact --quiet --baseline fallow-baselines/dead-code.json --fail-on-issues",
@@ -50,14 +49,19 @@
     "clean": "tsc -b --clean",
     "generate:schema": "npm run build && node scripts/generate-diagramspec-v1-schema.mjs",
     "check:package-readiness": "node scripts/check-package-readiness.mjs",
+    "check:package-size-budgets": "node scripts/check-package-size-budgets.mjs",
     "check:package-publish-state": "node scripts/check-package-publish-state.mjs",
     "release:bump": "node scripts/bump-release-version.mjs",
-    "test": "npm run build && node --test --test-concurrency=1 test/*.test.mjs"
+    "test": "npm run build && npm run test:root",
+    "test:root": "node scripts/run-root-tests.mjs --group all",
+    "test:root:ci": "node scripts/run-root-tests.mjs --group ci",
+    "test:root:parallel": "node scripts/run-root-tests.mjs --group parallel",
+    "test:root:shared": "node scripts/run-root-tests.mjs --group shared",
+    "test:root:website": "node scripts/run-root-tests.mjs --group website"
   },
   "devDependencies": {
-    "@diagrampilot/core": "0.4.1",
-    "@diagrampilot/render-svg": "0.4.1",
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@diagrampilot/core": "0.4.2",
+    "@diagrampilot/render-svg": "0.4.2",
     "@types/node": "^25.9.1",
     "fallow": "^2.89.0",
     "typescript": "^6.0.3"

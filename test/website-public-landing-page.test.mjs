@@ -19,6 +19,10 @@ async function readBuiltLandingPage() {
 
 test("public landing page proves the local workflow inside the hero", async () => {
   const html = await readBuiltLandingPage();
+  const landingCss = await readFile(
+    path.join(repoRoot, "website", "src", "styles", "landing.css"),
+    "utf8",
+  );
 
   assertMatchesAll(html, [
     /id="workflow-proof"/,
@@ -31,8 +35,8 @@ test("public landing page proves the local workflow inside the hero", async () =
     /diagrampilot generate/,
     /architecture\.svg/,
     /Review-stable SVG artifact/,
-    /prefers-reduced-motion:\s*reduce/,
   ]);
+  assert.match(landingCss, /prefers-reduced-motion:\s*reduce/);
 
   const heroStart = html.indexOf('<section class="hero-zone"');
   const heroEnd = html.indexOf("</section>", heroStart);
@@ -44,6 +48,57 @@ test("public landing page proves the local workflow inside the hero", async () =
   assert.doesNotMatch(html, /<section[^>]+id="workflow-proof"/);
   assert.doesNotMatch(html, /class="workflow-shell/);
   assert.doesNotMatch(html, /<img[^>]+src="\/landing\/hero-workflow\.png"/);
+});
+
+test("public landing page is rendered by the Vite React router with analytics", async () => {
+  const html = await readBuiltLandingPage();
+
+  assertMatchesAll(html, [
+    /<div id="root">/,
+    /data-router-provider="tanstack"/,
+    /DiagramPilot \| Repo-Native Diagrams For AI Coding Agents/,
+    /aria-label="GitHub repository"/,
+    /aria-label="npm package"/,
+    /github-icon/,
+    /npm-icon/,
+  ]);
+  assert.equal(
+    await exists("website/src/pages/index.astro"),
+    false,
+    "the landing page should not be implemented as an Astro page",
+  );
+  assert.equal(
+    await exists("website/src/main.tsx"),
+    true,
+    "Vite should mount the React landing app from src/main.tsx",
+  );
+  assert.equal(
+    await exists("website/src/landing/router.tsx"),
+    true,
+    "TanStack Router should own the landing route tree",
+  );
+
+  const routerSource = await readFile(
+    path.join(repoRoot, "website", "src", "landing", "router.tsx"),
+    "utf8",
+  );
+  const appSource = await readFile(
+    path.join(repoRoot, "website", "src", "landing", "App.tsx"),
+    "utf8",
+  );
+
+  assertMatchesAll(routerSource, [
+    /@tanstack\/react-router/,
+    /createRootRoute/,
+    /createRouter/,
+    /RouterProvider/,
+  ]);
+  assertMatchesAll(appSource, [
+    /@vercel\/analytics\/react/,
+    /<Analytics\s*\/>/,
+  ]);
+  assert.doesNotMatch(appSource, /\btrack\s*\(/);
+  assert.doesNotMatch(appSource, /beforeSend/);
 });
 
 test("public landing page animates the local repository path", async () => {
@@ -69,11 +124,11 @@ test("public landing page offers starting points including npm", async () => {
   const html = await readBuiltLandingPage();
 
   assertMatchesAll(html, [
-    /<h2>Starting points\.<\/h2>/,
+    /<h2>Start\.<\/h2>/,
     /href="https:\/\/www\.npmjs\.com\/package\/diagrampilot"/,
     /npm package/,
     /href="\/docs\/agents\/agent-workflow\/"/,
-    /Agent Workflow/,
+    />Workflow<\/span>/,
     /href="\/docs\/agents\/installation\/"/,
     /href="\/docs\/agents\/quickstart\/"/,
     /href="https:\/\/github\.com\/StiensWout\/DiagramPilot"/,
@@ -92,6 +147,7 @@ test("public landing page reflects the shipped authoring surface", async () => {
     /Output Profiles/,
     /DiagramSpec/,
     /MCP usage/,
+    /diagrampilot-mcp/,
   ]);
   assert.doesNotMatch(html, /Manual Milestone Release|v0\.4/i);
 });
@@ -101,18 +157,18 @@ test("public landing page publishes search and social metadata for developer dis
 
   assertMatchesAll(html, [
     /<title>DiagramPilot \| Repo-Native Diagrams For AI Coding Agents<\/title>/,
-    /name="description" content="DiagramPilot turns \.dp\.yaml source files into review-stable SVG artifacts with local validation for AI coding agents and software repository reviews\."/,
-    /name="robots" content="index, follow"/,
-    /name="theme-color" content="#0f172a"/,
-    /rel="canonical" href="https:\/\/diagrampilot\.com\/"/,
-    /property="og:site_name" content="DiagramPilot"/,
-    /property="og:locale" content="en_US"/,
-    /property="og:image" content="https:\/\/diagrampilot\.com\/landing\/hero-workflow\.png"/,
-    /name="twitter:image:alt" content="DiagramPilot repository workflow showing source, validation, and SVG output\."/,
+    /name="description"\s+content="DiagramPilot turns \.dp\.yaml source files into review-stable SVG artifacts with local validation for AI coding agents and software repository reviews\."/,
+    /name="robots"\s+content="index, follow"/,
+    /name="theme-color"\s+content="#0f172a"/,
+    /rel="canonical"\s+href="https:\/\/diagrampilot\.com\/"/,
+    /property="og:site_name"\s+content="DiagramPilot"/,
+    /property="og:locale"\s+content="en_US"/,
+    /property="og:image"\s+content="https:\/\/diagrampilot\.com\/landing\/hero-workflow\.png"/,
+    /name="twitter:image:alt"\s+content="DiagramPilot repository workflow showing source, validation, and SVG output\."/,
     /type="application\/ld\+json"/,
-    /"@type":"SoftwareApplication"/,
-    /"applicationCategory":"DeveloperApplication"/,
-    /"codeRepository":"https:\/\/github\.com\/StiensWout\/DiagramPilot"/,
+    /"@type":\s*"SoftwareApplication"/,
+    /"applicationCategory":\s*"DeveloperApplication"/,
+    /"codeRepository":\s*"https:\/\/github\.com\/StiensWout\/DiagramPilot"/,
   ]);
 });
 
@@ -123,39 +179,43 @@ test("public landing page presents generated product visuals", async () => {
     path.join(repoRoot, "website", "dist", "index.html"),
     "utf8",
   );
+  const landingSource = await readFile(
+    path.join(repoRoot, "website", "src", "landing", "LandingPage.tsx"),
+    "utf8",
+  );
 
   const diagramPilotHeadings = html.match(/<h1[^>]*>\s*DiagramPilot\s*<\/h1>/g) ?? [];
   assert.equal(diagramPilotHeadings.length, 1);
   const heroStart = html.indexOf('<section class="hero-zone"');
-  const artifactStart = html.indexOf("Product summary");
+  const proofStart = html.indexOf('id="workflow-proof"');
   const promiseStart = html
-    .slice(heroStart, artifactStart)
-    .search(
-      /Commit diagrams like code:\s*`\.dp\.yaml` source in the repo,\s*local\s*checks before review,\s*and SVG artifacts maintainers can inspect/i,
-  );
+    .slice(heroStart, proofStart)
+    .search(/Source in the repo\.\s*SVG out for review\./i);
   assert.ok(heroStart >= 0);
-  assert.ok(artifactStart > heroStart);
+  assert.ok(proofStart > heroStart);
   assert.ok(promiseStart >= 0);
   assert.match(
     html,
-    /Commit diagrams like code:\s*`\.dp\.yaml` source in the repo,\s*local\s*checks before review,\s*and SVG artifacts maintainers can inspect/i,
+    /Source in the repo\.\s*SVG out for review\./i,
   );
   assert.match(
     html,
     /<img[^>]+class="hero-wordmark"[^>]+src="\/brand\/diagrampilot-logo-light\.svg"[^>]+alt=""/,
   );
-  assert.doesNotMatch(
-    html,
-    /class="eyebrow">\s*Repo-native diagram compiler for AI coding agents\s*<\/p>/,
-  );
   assertMatchesAll(html, [
+    /Local diagrams for agents/,
+    /class="hero-signals"/,
+    /\.dp\.yaml/,
+    />source<\/dd>/,
+    />validate<\/dd>/,
+    />review<\/dd>/,
     /GitHub repository/,
     /href="https:\/\/github\.com\/StiensWout\/DiagramPilot"/,
     /href="\/docs\/agents\/quickstart\/"/,
     /href="\/docs\/"/,
     /href="#workflow-proof"/,
-    /See the workflow/,
-    /Install Guide/,
+    />Workflow<\/a>/,
+    />Install<\/a>/,
     /npx diagrampilot check/,
     /class="quick-command"/,
     /data-copy-command="npx diagrampilot check"/,
@@ -168,17 +228,24 @@ test("public landing page presents generated product visuals", async () => {
     /class="hero-copy motion-rise"/,
     /class="proof-item reveal-motion"/,
     /class="image-band reveal-motion"/,
-    /IntersectionObserver/,
   ]);
+  assertMatchesAll(landingSource, [/IntersectionObserver/, /motion-ready/]);
   assert.doesNotMatch(html, /class="workflow-shell/);
   assert.doesNotMatch(html, /\/landing\/agent-flow(?:-v2)?\.png/);
   assertMatchesAll(html, [
-    /Bring your own repository\./,
-    /One command before review\./,
-    /If it breaks, it says where\./,
-    /From `\.dp\.yaml` to review-stable SVG without leaving the repo\./,
-    /Source files become reviewable artifacts\./,
+    /<h2[^>]*>\s*Source to SVG\.\s*<\/h2>/,
+    /One checkout\.\s*One reviewable artifact\./,
+    /<h2>\s*Local\s*<\/h2>/,
+    /<h2>\s*Checked\s*<\/h2>/,
+    /<h2>\s*Repairable\s*<\/h2>/,
+    /<h2[^>]*>\s*Repo to SVG\.\s*<\/h2>/,
+    /<h2>\s*Start\.\s*<\/h2>/,
   ]);
+  assert.doesNotMatch(html, /Product summary/);
+  assert.doesNotMatch(
+    html,
+    /Commit diagrams like code|Bring your own repository|One command before review|If it breaks, it says where|From `\.dp\.yaml` to review-stable SVG without leaving the repo|Source files become reviewable artifacts/i,
+  );
   assert.doesNotMatch(html, /starlight-theme-select/);
   assert.doesNotMatch(html, /class="site-title/);
   assert.doesNotMatch(html, /Select theme/);
@@ -190,9 +257,9 @@ test("public landing page presents generated product visuals", async () => {
   assertMatchesAll(html, [
     /diagrampilot check/,
     /diagrampilot generate/,
-    /review-stable SVG\s+artifacts/i,
-    /repairable errors/i,
-    /MCP agent integration/i,
+    /SVG out for review/i,
+    /repairable validation errors/i,
+    /Agent-ready/i,
     /href="\/docs\/agents\/mcp\/"/,
   ]);
   assert.doesNotMatch(html, /planned|deferred|future|not implemented|source mutation/i);
@@ -248,7 +315,7 @@ test("website publishes canonical brand assets and uses the mark as favicon", as
   assert.equal(publishedLightLogo, canonicalLightLogo);
   assert.match(
     html,
-    /<link rel="(?:shortcut )?icon" href="\/brand\/diagrampilot-mark\.svg" type="image\/svg\+xml">/,
+    /<link rel="(?:shortcut )?icon"\s+href="\/brand\/diagrampilot-mark\.svg"\s+type="image\/svg\+xml"\s*\/?>/,
   );
   assert.doesNotMatch(html, /href="\/favicon\.svg"/);
 });

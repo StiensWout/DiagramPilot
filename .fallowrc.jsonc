@@ -1,10 +1,12 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
-  // Demo fixtures, generated public CSS, and test-helper fixture exports are
-  // intentionally consumed outside Fallow's static entry graph.
+  // Demo fixtures, generated public CSS, root tests discovered by the test
+  // runner, and test-helper fixture exports are intentionally consumed outside
+  // Fallow's static entry graph.
   "entry": [
     "demo-projects/checkout/src/**/*.ts",
     "demo-projects/checkout/src/**/*.tsx",
+    "test/**/*.test.mjs",
     "website/src/styles/docs.css"
   ],
   "ignoreDependencies": [

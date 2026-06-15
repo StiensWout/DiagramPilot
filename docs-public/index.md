@@ -10,8 +10,8 @@ DiagramPilot in their own repositories.
 
 DiagramPilot Source Files are YAML-only. The CLI supports local agent authoring
 loops with `create`, `inspect`, `format`, `lint`, `watch`, configured outputs,
-fixed Output Profiles, SVG/PNG rendering, Mermaid/D2/DOT export, and an MCP
-server for local agent clients.
+fixed Output Profiles, SVG/PNG rendering, and Mermaid/D2/DOT export. Local MCP
+clients can add the optional `@diagrampilot/mcp` adapter package.
 
 Start with the Checkout Demo Project quickstart:
 
@@ -19,19 +19,18 @@ Start with the Checkout Demo Project quickstart:
 
 Core public references:
 
-- [Agent workflow guide](agents/agent-workflow.md)
 - [Installation and removal guide](agents/installation.md)
-- [MCP guide](agents/mcp.md)
-- [DiagramSpec guide](agents/spec.md)
-- [Icon reference](agents/icons.md)
-- [Error repair guide](agents/error-repair.md)
+- [Agent workflow guide](agents/agent-workflow.md)
 - [Agent examples](agents/examples.md)
+- [DiagramSpec guide](agents/spec.md)
+- [Error repair guide](agents/error-repair.md)
+- [MCP guide](agents/mcp.md)
 - [Agent prompting guide](agents/prompting.md)
+- [Icon reference](agents/icons.md)
 - [Comparisons and adjacent tools](agents/comparisons.md)
 - [Integrations and agent recipes](agents/integrations.md)
 - [DiagramSpec v1 JSON Schema](https://diagrampilot.com/schema/diagramspec-v1.schema.json)
 - [MIT Code License](https://github.com/StiensWout/DiagramPilot/blob/main/LICENSE)
-- [Brand Use Policy](https://github.com/StiensWout/DiagramPilot/blob/main/BRAND_USE_POLICY.md)
 
 Current CLI commands:
 
@@ -46,7 +45,6 @@ diagrampilot check
 diagrampilot inspect
 diagrampilot generate
 diagrampilot watch docs
-diagrampilot mcp
 diagrampilot icons list
 diagrampilot icons search database
 diagrampilot check docs --json
@@ -64,6 +62,9 @@ diagrampilot render docs/architecture.dp.yaml --group checkout_runtime --out doc
 diagrampilot render docs/architecture.dp.yaml --around orders_service --depth 1 --out docs/architecture-orders-service.svg
 diagrampilot render docs/architecture.dp.yaml --hide-edge-labels --out docs/architecture-overview.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
+diagrampilot import docs/legacy.mmd --format mermaid --out docs/imported.dp.yaml
+diagrampilot import docs/legacy.d2 --format d2 --out docs/imported-d2.dp.yaml
+diagrampilot import docs/legacy.dot --format dot --out docs/imported-dot.dp.yaml
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --view runtime --format mermaid --out docs/architecture-runtime.mmd
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
@@ -87,14 +88,18 @@ outputs can use `profile: clean`, `profile: compact`, `profile: overview`, or
 `profile: presentation`; use `overview` when dense review artifacts need less
 edge-label noise. `export` prints to stdout by default, writes a file only when
 `--out` is provided, and accepts `--view <view-id>` for Mermaid, D2, and DOT
-projections. `format <path>` validates one
+projections. `import <input> --format mermaid|d2|dot --out <path>` converts
+supported diagram text into a new DiagramPilot Source File, refuses existing
+outputs unless `--force` is present, and reports preserved, approximated, and
+dropped constructs in text or JSON with `--json`. `format <path>` validates one
 `*.dp.yaml` source and rewrites it in canonical YAML key order; YAML comments
 may be removed
 or moved. `fix <path> --json` plans deterministic source-only repairs without
 writing, and `fix <path>` writes only the DiagramPilot Source File after
 post-fix validation succeeds. `watch [path]` watches `*.dp.yaml` and
 `diagrampilot.config.yaml`, debounces changes, checks first, and generates only
-when source/config state is valid. `mcp` launches the MCP stdio server for
-local MCP clients.
+when source/config state is valid. The optional `@diagrampilot/mcp` adapter
+launches the MCP stdio server as `diagrampilot-mcp`; keeping it separate makes
+routine CLI/CI installs smaller and leaves adapter iteration independent.
 Use `icons list` and `icons search <query>` to discover packaged `lucide:*`
 icon references locally.

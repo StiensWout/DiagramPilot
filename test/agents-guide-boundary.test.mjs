@@ -23,3 +23,13 @@ test("repository agent guide stays compact for public repo agents", async () => 
   assert.doesNotMatch(agentGuide, /\.scratch/u);
   assert.doesNotMatch(agentGuide, /create or update local markdown issues/i);
 });
+
+test("repository agent guide documents nightly/main branch workflow", async () => {
+  const agentGuide = await readFile(path.join(repoRoot, "AGENTS.md"), "utf8");
+
+  assert.match(
+    agentGuide,
+    /create the Linear branch from `origin\/nightly`[\s\S]*open implementation PRs[\s\S]*to `nightly`[\s\S]*Production promotion is a PR from `nightly` to `main`; `main` remains Production and there is no `production` branch/i,
+  );
+  assert.doesNotMatch(agentGuide, /open PRs .* to `main`, never with `--head main`/i);
+});

@@ -3,7 +3,8 @@ name: Release
 on:
   push:
     branches:
-      - "feature/**"
+      - nightly
+      - main
   workflow_dispatch:
     inputs:
       release_kind:
@@ -21,7 +22,7 @@ on:
       milestone:
         description: Milestone name for final release notes
         required: false
-        default: "0.4.0"
+        default: "0.4.2"
         type: string
       previous_tag:
         description: Previous release tag for the full changelog link
@@ -45,7 +46,7 @@ permissions:
 
 jobs:
   release-checks:
-    name: Release checks (nightly or manual final)
+    name: Validate release and verify publish artifacts
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
@@ -88,29 +89,18 @@ jobs:
         run: npm run build
 
       - name: Run root test suite
-        run: npm test
+        run: node scripts/run-with-timing.mjs "release root tests" -- npm run test:root:ci
 
       - name: Check DiagramSpec schema drift
         run: |
-          npm run generate:schema
+          node scripts/run-with-timing.mjs "DiagramSpec schema generation" -- npm run generate:schema
           git diff --exit-code -- schema/diagramspec-v1.schema.json
 
       - name: Build website
-        run: npm --workspace website run build
+        run: node scripts/run-with-timing.mjs "website build" -- npm --workspace website run build
 
       - name: Run website tests
-        run: npm --workspace website run test
-
-      - name: Verify checkout demo workflow
-        run: |
-          cd demo-projects/checkout
-          node ../../packages/cli/dist/index.js render docs/architecture.dp.yaml --out docs/architecture.svg
-          node ../../packages/cli/dist/index.js check
-          cd ../..
-          git diff --exit-code -- demo-projects/checkout/docs/architecture.svg
-
-      - name: Check public package readiness
-        run: npm run check:package-readiness
+        run: node scripts/run-with-timing.mjs "website tests" -- npm --workspace website run test
 
       - name: Plan release channel
         id: release-plan
@@ -128,8 +118,33 @@ jobs:
       - name: Check publish package readiness
         run: npm run check:package-readiness
 
+      - name: Check publish package size budgets
+        run: npm run check:package-size-budgets
+
       - name: Verify package publish dry-run
         run: node scripts/publish-release-packages.mjs --mode dry-run
+
+      - name: Create verified publish artifact
+        if: steps.release-plan.outputs.should_publish == 'true'
+        run: |
+          tar --create --gzip --file "$RUNNER_TEMP/diagrampilot-publish-artifacts.tgz" \
+            package.json \
+            package-lock.json \
+            website/package.json \
+            packages/*/package.json \
+            packages/*/README.md \
+            packages/*/LICENSE \
+            packages/*/dist \
+            packages/core/src/version.ts
+
+      - name: Upload verified publish artifact
+        if: steps.release-plan.outputs.should_publish == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: diagrampilot-publish-artifacts
+          path: ${{ runner.temp }}/diagrampilot-publish-artifacts.tgz
+          if-no-files-found: error
+          retention-days: 7
 
   publish-packages:
     name: Publish npm packages (nightly or final)
@@ -163,21 +178,17 @@ jobs:
       - name: Use workspace npm version
         run: npm install --global npm@11.16.0
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Download verified publish artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: diagrampilot-publish-artifacts
+          path: ${{ runner.temp }}/publish-artifacts
 
-      - name: Prepare nightly package metadata
-        if: env.RELEASE_DIST_TAG == 'nightly'
-        run: node scripts/bump-release-version.mjs "$RELEASE_PUBLISH_VERSION"
+      - name: Restore verified publish artifact
+        run: tar --extract --gzip --file "$RUNNER_TEMP/publish-artifacts/diagrampilot-publish-artifacts.tgz" --directory .
 
-      - name: Verify intended publish version before package publish
+      - name: Verify downloaded publish artifacts before package publish
         run: npm run check:release-version -- "$RELEASE_PUBLISH_VERSION"
-
-      - name: Build publish artifacts
-        run: npm run build
-
-      - name: Check publish package readiness
-        run: npm run check:package-readiness
 
       - name: Publish npm packages
         run: node scripts/publish-release-packages.mjs --mode publish
@@ -242,14 +253,14 @@ jobs:
             gh release edit "$RELEASE_TAG" \
               --prerelease \
               --latest=false \
-              --title "DiagramPilot $RELEASE_TAG" \
+              --title "$RELEASE_TAG" \
               --notes-file "$RUNNER_TEMP/release-notes.md"
           else
             gh release create "$RELEASE_TAG" \
               --verify-tag \
               --prerelease \
               --latest=false \
-              --title "DiagramPilot $RELEASE_TAG" \
+              --title "$RELEASE_TAG" \
               --notes-file "$RUNNER_TEMP/release-notes.md"
           fi
 
@@ -337,14 +348,14 @@ jobs:
 
             gh release edit "$RELEASE_TAG" \
               --draft \
-              --title "DiagramPilot $RELEASE_TAG" \
+              --title "$RELEASE_TAG" \
               --notes-file "$RUNNER_TEMP/release-notes.md" \
               --target "$GITHUB_SHA"
           else
             gh release create "$RELEASE_TAG" \
               --draft \
               --verify-tag \
-              --title "DiagramPilot $RELEASE_TAG" \
+              --title "$RELEASE_TAG" \
               --notes-file "$RUNNER_TEMP/release-notes.md"
           fi
 

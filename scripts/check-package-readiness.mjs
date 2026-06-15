@@ -2,7 +2,9 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
+import { finishPackageCheck } from "./package-check-runner.mjs";
 import { runNpmPackDryRun } from "./package-pack-dry-run.mjs";
+import { PUBLIC_PACKAGE_SET } from "./public-package-set.mjs";
 
 const REPOSITORY_URL = "git+https://github.com/StiensWout/DiagramPilot.git";
 const BUGS_URL = "https://github.com/StiensWout/DiagramPilot/issues";
@@ -16,54 +18,6 @@ const REQUIRED_FILES = [
   "README.md",
 ];
 const REQUIRED_KEYWORDS = ["diagrampilot", "diagramspec", "diagram"];
-const PUBLIC_PACKAGE_SET = [
-  {
-    name: "diagrampilot",
-    repoPath: "packages/cli/package.json",
-    directory: "packages/cli",
-    bin: {
-      diagrampilot: "dist/index.js",
-    },
-  },
-  {
-    name: "@diagrampilot/core",
-    repoPath: "packages/core/package.json",
-    directory: "packages/core",
-  },
-  {
-    name: "@diagrampilot/icons",
-    repoPath: "packages/icons/package.json",
-    directory: "packages/icons",
-  },
-  {
-    name: "@diagrampilot/export-mermaid",
-    repoPath: "packages/export-mermaid/package.json",
-    directory: "packages/export-mermaid",
-  },
-  {
-    name: "@diagrampilot/export-d2",
-    repoPath: "packages/export-d2/package.json",
-    directory: "packages/export-d2",
-  },
-  {
-    name: "@diagrampilot/export-dot",
-    repoPath: "packages/export-dot/package.json",
-    directory: "packages/export-dot",
-  },
-  {
-    name: "@diagrampilot/mcp",
-    repoPath: "packages/mcp/package.json",
-    directory: "packages/mcp",
-    bin: {
-      "diagrampilot-mcp": "dist/index.js",
-    },
-  },
-  {
-    name: "@diagrampilot/render-svg",
-    repoPath: "packages/render-svg/package.json",
-    directory: "packages/render-svg",
-  },
-];
 const PRIVATE_WORKSPACES = [
   {
     name: "@diagrampilot/workspace",
@@ -408,20 +362,11 @@ function checkPackageReadiness(rootPath) {
 function main() {
   const issues = checkPackageReadiness(process.cwd());
 
-  if (issues.length > 0) {
-    process.stderr.write(
-      [
-        "DiagramPilot package readiness checks failed:",
-        ...issues.map((issue) => `- ${issue}`),
-      ].join("\n") + "\n",
-    );
-    return 1;
-  }
-
-  process.stdout.write(
-    `DiagramPilot package readiness checks passed for ${PUBLIC_PACKAGE_SET.length} public packages.\n`,
-  );
-  return 0;
+  return finishPackageCheck({
+    issues,
+    failureTitle: "DiagramPilot package readiness checks failed:",
+    successMessage: `DiagramPilot package readiness checks passed for ${PUBLIC_PACKAGE_SET.length} public packages.`,
+  });
 }
 
 process.exitCode = main();
