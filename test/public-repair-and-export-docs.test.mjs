@@ -42,6 +42,14 @@ test("public docs document repairable validation and export fidelity workflows",
   ]);
 
   assertMatchesAll(specGuide, [
+    /## Import From Mermaid/,
+    /diagrampilot import docs\/legacy\.mmd --format mermaid --out docs\/imported\.dp\.yaml/,
+    /flowchart` and `graph` diagrams/,
+    /lowercase snake_case Stable IDs/i,
+    /refuses to\s+overwrite an existing output unless `--force` is present/i,
+    /`--json` output/i,
+    /preserved,\s+approximated,\s+and dropped/i,
+    /Styling directives, classes, click handlers/i,
     /## Export Fidelity/,
     /same\s+small\s+DiagramSpec/i,
     /title: Checkout Export Sample/,

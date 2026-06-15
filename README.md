@@ -66,6 +66,7 @@ diagrampilot format docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --view runtime --out docs/architecture-runtime.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
+diagrampilot import docs/legacy.mmd --format mermaid --out docs/imported.dp.yaml
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --view runtime --format mermaid --out docs/architecture-runtime.mmd
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2
@@ -132,7 +133,11 @@ preservation; YAML comments may be removed or moved during formatting.
 Mermaid is a diagram syntax for writing diagrams as text. DiagramPilot is an
 agent-safe compiler and workflow for maintaining DiagramSpec source, validating
 it locally, rendering review-stable artifacts, and exporting Mermaid when that
-text format is the right downstream target.
+text format is the right downstream target. `diagrampilot import <input>
+--format mermaid --out <path>` is a best-effort migration helper for Mermaid
+flowcharts: it writes a new valid `*.dp.yaml`, refuses overwrite unless
+`--force` is present, and reports preserved, approximated, and dropped
+constructs in text or JSON.
 
 ## License And Brand
 
@@ -171,6 +176,7 @@ diagrampilot format docs/architecture.dp.yaml
 diagrampilot render docs/architecture.dp.yaml --out docs/architecture.svg
 diagrampilot render docs/architecture.dp.yaml --view runtime --out docs/architecture-runtime.svg
 diagrampilot render docs/architecture.dp.yaml --format png --out docs/architecture.png
+diagrampilot import docs/legacy.mmd --format mermaid --out docs/imported.dp.yaml
 diagrampilot export docs/architecture.dp.yaml --format mermaid
 diagrampilot export docs/architecture.dp.yaml --view runtime --format mermaid --out docs/architecture-runtime.mmd
 diagrampilot export docs/architecture.dp.yaml --format d2 --out docs/architecture.d2

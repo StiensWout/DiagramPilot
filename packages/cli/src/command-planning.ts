@@ -40,6 +40,7 @@ import {
   formatUsageText,
   generateUsageText,
   iconsUsageText,
+  importUsageText,
   inspectUsageText,
   lintUsageText,
   renderUsageText,
@@ -51,6 +52,7 @@ import { planCreate } from "./create-command-planning.js";
 import { planFix } from "./fix-command-planning.js";
 import { planDiff } from "./diff-command-planning.js";
 import { planGenerate } from "./generate-command-planning.js";
+import { planImport } from "./import-command-planning.js";
 import { inspectResultPlan } from "./inspect-command-planning.js";
 import {
   initialCommandPlan,
@@ -271,6 +273,7 @@ const commandHandlers: Readonly<Record<string, CommandHandler>> = {
   format: planFormat,
   generate: planGenerate,
   icons: planIcons,
+  import: planImport,
   inspect: planInspect,
   lint: planLint,
   render: planRender,
@@ -286,6 +289,7 @@ const commandHelpText: Readonly<Record<string, () => string>> = {
   format: formatUsageText,
   generate: generateUsageText,
   icons: iconsUsageText,
+  import: importUsageText,
   inspect: inspectUsageText,
   lint: lintUsageText,
   render: renderUsageText,
