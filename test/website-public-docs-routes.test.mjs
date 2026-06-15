@@ -409,6 +409,32 @@ test("website publishes llms.txt and the public DiagramSpec schema", async () =>
   assert.equal(builtCheckoutSvg, sourceCheckoutSvg);
 });
 
+test("website publishes Context7 ownership claim files", async () => {
+  await websiteBuild();
+
+  const rootClaim = JSON.parse(
+    await readFile(
+      path.join(repoRoot, "website", "dist", "context7.json"),
+      "utf8",
+    ),
+  );
+  const docsClaim = JSON.parse(
+    await readFile(
+      path.join(repoRoot, "website", "dist", "docs", "context7.json"),
+      "utf8",
+    ),
+  );
+
+  assert.deepEqual(rootClaim, {
+    url: "https://context7.com/llmstxt/diagrampilot_llms_txt",
+    public_key: "pk_kyVKM0sxSoe0QrVpsew0F",
+  });
+  assert.deepEqual(docsClaim, {
+    url: "https://context7.com/websites/diagrampilot",
+    public_key: "pk_kyVKM0sxSoe0QrVpsew0F",
+  });
+});
+
 test("website build excludes internal docs and keeps synced copies untracked", async () => {
   await websiteBuild();
 
