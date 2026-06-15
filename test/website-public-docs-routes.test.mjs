@@ -12,6 +12,21 @@ import {
 } from "./website-test-helpers.mjs";
 import { toWebsiteLinkContext } from "../website/scripts/link-context.mjs";
 
+function assertSubstringsInOrder(value, substrings, label) {
+  let lastIndex = -1;
+
+  for (const substring of substrings) {
+    const index = value.indexOf(substring);
+
+    assert.notEqual(index, -1, `${label} should include ${substring}`);
+    assert.ok(
+      index > lastIndex,
+      `${label} should place ${substring} after the previous entry`,
+    );
+    lastIndex = index;
+  }
+}
+
 test("public docs sync can run concurrently without deleting current generated docs", async () => {
   await Promise.all(Array.from({ length: 8 }, () => publicDocsSync()));
 
@@ -165,6 +180,8 @@ test("website publishes public docs as human HTML and agent Markdown routes", as
   assert.match(html, /diagrampilot check/);
   assert.match(agentWorkflowHtml, /Agent Workflow/);
   assert.match(agentWorkflowHtml, /diagrampilot inspect docs --json/);
+  assert.match(agentWorkflowHtml, /href="\/docs\/agents\/icons\/"/);
+  assert.doesNotMatch(agentWorkflowHtml, /href="https:\/\/diagrampilot\.com\/docs\/agents\/icons\.md"/);
   assert.match(comparisonsHtml, /Comparisons And Adjacent Tools/);
   assert.match(comparisonsHtml, /Graphviz\/DOT/);
   assert.match(integrationsHtml, /Integrations And Agent Recipes/);
@@ -187,15 +204,15 @@ test("website publishes public docs as human HTML and agent Markdown routes", as
   );
   assert.match(
     syncedIndexMarkdown,
-    /\[Checkout demo quickstart]\(https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md\)/,
+    /\[Checkout demo quickstart]\(\/docs\/agents\/quickstart\/\)/,
   );
   assert.match(
     syncedIndexMarkdown,
-    /\[Comparisons and adjacent tools]\(https:\/\/diagrampilot\.com\/docs\/agents\/comparisons\.md\)/,
+    /\[Comparisons and adjacent tools]\(\/docs\/agents\/comparisons\/\)/,
   );
   assert.match(
     syncedIndexMarkdown,
-    /\[Integrations and agent recipes]\(https:\/\/diagrampilot\.com\/docs\/agents\/integrations\.md\)/,
+    /\[Integrations and agent recipes]\(\/docs\/agents\/integrations\/\)/,
   );
   assert.match(
     websiteIndexMarkdown,
@@ -267,6 +284,48 @@ test("website docs pages use published DiagramPilot brand assets", async () => {
   assert.equal(await exists("website/dist/brand/diagrampilot-logo.svg"), true);
   assert.equal(await exists("website/dist/brand/diagrampilot-logo-light.svg"), true);
   assert.equal(await exists("website/dist/brand/diagrampilot-mark.svg"), true);
+});
+
+test("website docs navigation follows the public docs user journey", async () => {
+  await websiteBuild();
+
+  const publicDocsIndex = await readFile(
+    path.join(repoRoot, "docs-public", "index.md"),
+    "utf8",
+  );
+  const renderedDocsIndex = await readFile(
+    path.join(repoRoot, "website", "dist", "docs", "index.html"),
+    "utf8",
+  );
+
+  assertSubstringsInOrder(
+    publicDocsIndex,
+    [
+      "agents/quickstart.md",
+      "agents/installation.md",
+      "agents/agent-workflow.md",
+      "agents/examples.md",
+      "agents/spec.md",
+      "agents/error-repair.md",
+      "agents/mcp.md",
+      "agents/prompting.md",
+    ],
+    "docs-public index",
+  );
+  assertSubstringsInOrder(
+    renderedDocsIndex,
+    [
+      'href="/docs/agents/quickstart/"',
+      'href="/docs/agents/installation/"',
+      'href="/docs/agents/agent-workflow/"',
+      'href="/docs/agents/examples/"',
+      'href="/docs/agents/spec/"',
+      'href="/docs/agents/error-repair/"',
+      'href="/docs/agents/mcp/"',
+      'href="/docs/agents/prompting/"',
+    ],
+    "rendered docs sidebar",
+  );
 });
 
 test("website docs pages render one page title and theme-compatible wordmark", async () => {

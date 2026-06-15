@@ -9,7 +9,10 @@ import {
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { toWebsiteLinkContext } from "./link-context.mjs";
+import {
+  toRenderedWebsiteLinkContext,
+  toWebsiteLinkContext,
+} from "./link-context.mjs";
 
 const websiteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = path.resolve(websiteRoot, "..");
@@ -91,7 +94,7 @@ async function syncPublicDocs() {
     const sourcePath = path.join(publicDocsRoot, relativePath);
     const targetPath = path.join(starlightPublicDocsRoot, relativePath);
     const sourceMarkdown = await readFile(sourcePath, "utf8");
-    const websiteMarkdown = toWebsiteLinkContext(sourceMarkdown, relativePath);
+    const websiteMarkdown = toRenderedWebsiteLinkContext(sourceMarkdown, relativePath);
 
     await mkdir(path.dirname(targetPath), { recursive: true });
     await writeFile(targetPath, toStarlightMarkdown(websiteMarkdown, relativePath));
