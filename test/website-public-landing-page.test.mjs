@@ -92,6 +92,7 @@ test("public landing page reflects the shipped authoring surface", async () => {
     /Output Profiles/,
     /DiagramSpec/,
     /MCP usage/,
+    /diagrampilot-mcp/,
   ]);
   assert.doesNotMatch(html, /Manual Milestone Release|v0\.4/i);
 });

@@ -62,6 +62,36 @@ test("CLI package publishes the diagrampilot binary without npm manifest auto-co
   });
 });
 
+test("CLI package install surface excludes MCP-only runtime dependencies", async () => {
+  const cliManifest = JSON.parse(
+    await readFile(path.join(repoRoot, "packages", "cli", "package.json"), "utf8"),
+  );
+  const cliTsconfig = JSON.parse(
+    await readFile(path.join(repoRoot, "packages", "cli", "tsconfig.json"), "utf8"),
+  );
+  const mcpManifest = JSON.parse(
+    await readFile(path.join(repoRoot, "packages", "mcp", "package.json"), "utf8"),
+  );
+  const rootManifest = JSON.parse(
+    await readFile(path.join(repoRoot, "package.json"), "utf8"),
+  );
+
+  assert.equal(cliManifest.dependencies["@diagrampilot/mcp"], undefined);
+  assert.equal(cliManifest.dependencies["@modelcontextprotocol/sdk"], undefined);
+  assert.equal(cliManifest.dependencies.zod, undefined);
+  assert.equal(rootManifest.devDependencies["@modelcontextprotocol/sdk"], undefined);
+  assert.equal(
+    cliTsconfig.references.some((reference) => reference.path === "../mcp"),
+    false,
+  );
+
+  assert.deepEqual(mcpManifest.bin, {
+    "diagrampilot-mcp": "dist/index.js",
+  });
+  assert.match(mcpManifest.dependencies["@modelcontextprotocol/sdk"], /^\^/);
+  assert.match(mcpManifest.dependencies.zod, /^\^/);
+});
+
 test("public packages publish npm README files", async () => {
   for (const [packageName, readmePath] of publicPackageReadmes) {
     const readme = await readFile(path.join(repoRoot, readmePath), "utf8");

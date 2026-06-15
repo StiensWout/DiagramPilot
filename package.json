@@ -62,7 +62,6 @@
   "devDependencies": {
     "@diagrampilot/core": "0.4.1",
     "@diagrampilot/render-svg": "0.4.1",
-    "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/node": "^25.9.1",
     "fallow": "^2.89.0",
     "typescript": "^6.0.3"

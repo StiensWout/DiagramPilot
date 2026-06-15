@@ -10,8 +10,8 @@ DiagramPilot in their own repositories.
 
 DiagramPilot Source Files are YAML-only. The CLI supports local agent authoring
 loops with `create`, `inspect`, `format`, `lint`, `watch`, configured outputs,
-fixed Output Profiles, SVG/PNG rendering, Mermaid/D2/DOT export, and an MCP
-server for local agent clients.
+fixed Output Profiles, SVG/PNG rendering, and Mermaid/D2/DOT export. Local MCP
+clients can add the optional `@diagrampilot/mcp` adapter package.
 
 Start with the Checkout Demo Project quickstart:
 
@@ -45,7 +45,6 @@ diagrampilot check
 diagrampilot inspect
 diagrampilot generate
 diagrampilot watch docs
-diagrampilot mcp
 diagrampilot icons list
 diagrampilot icons search database
 diagrampilot check docs --json
@@ -93,7 +92,8 @@ or moved. `fix <path> --json` plans deterministic source-only repairs without
 writing, and `fix <path>` writes only the DiagramPilot Source File after
 post-fix validation succeeds. `watch [path]` watches `*.dp.yaml` and
 `diagrampilot.config.yaml`, debounces changes, checks first, and generates only
-when source/config state is valid. `mcp` launches the MCP stdio server for
-local MCP clients.
+when source/config state is valid. The optional `@diagrampilot/mcp` adapter
+launches the MCP stdio server as `diagrampilot-mcp`; keeping it separate makes
+routine CLI/CI installs smaller and leaves adapter iteration independent.
 Use `icons list` and `icons search <query>` to discover packaged `lucide:*`
 icon references locally.

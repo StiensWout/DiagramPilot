@@ -1,9 +1,7 @@
 import assert from "node:assert/strict";
+import { createRequire } from "node:module";
 import path from "node:path";
 import test from "node:test";
-
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 import { repoRoot, runBuiltCli, withTempRepo } from "./cli-smoke-helpers.mjs";
 import { writeSource } from "./mcp-source-mutation-helpers.mjs";
@@ -14,7 +12,16 @@ import {
   sanitizedTestEnv,
 } from "./process-helpers.mjs";
 
-const cliEntryPoint = path.join(repoRoot, "packages", "cli", "dist", "index.js");
+const mcpEntryPoint = path.join(repoRoot, "packages", "mcp", "dist", "index.js");
+const requireFromMcpPackage = createRequire(
+  path.join(repoRoot, "packages", "mcp", "package.json"),
+);
+const { Client } = await import(
+  requireFromMcpPackage.resolve("@modelcontextprotocol/sdk/client/index.js")
+);
+const { StdioClientTransport } = await import(
+  requireFromMcpPackage.resolve("@modelcontextprotocol/sdk/client/stdio.js")
+);
 
 function runMcpPackageExecutable(args) {
   return runProcess(
@@ -34,11 +41,33 @@ function assertMcpHelp(result, commandName) {
   assert.match(result.stdout, /DiagramPilot MCP server over stdio/);
 }
 
-test("diagrampilot mcp --help documents the stdio MCP launch path", async () => {
+test("diagrampilot mcp --help points users to the optional MCP package", async () => {
   await withTempRepo(async (tempRoot) => {
     const result = await runBuiltCli(["mcp", "--help"], tempRoot);
 
-    assertMcpHelp(result, "diagrampilot mcp");
+    assertProcessSuccess(result);
+    assert.match(
+      result.stdout,
+      /DiagramPilot MCP moved to the optional @diagrampilot\/mcp package/,
+    );
+    assert.match(result.stdout, /npm install --save-dev @diagrampilot\/mcp/);
+    assert.match(result.stdout, /diagrampilot-mcp/);
+    assert.doesNotMatch(result.stdout, /Usage: diagrampilot mcp/);
+  });
+});
+
+test("diagrampilot mcp reports the optional MCP package instead of launching the server", async () => {
+  await withTempRepo(async (tempRoot) => {
+    const result = await runBuiltCli(["mcp"], tempRoot);
+
+    assert.equal(result.code, 1);
+    assert.equal(result.stdout, "");
+    assert.match(
+      result.stderr,
+      /DiagramPilot MCP moved to the optional @diagrampilot\/mcp package/,
+    );
+    assert.match(result.stderr, /npm install --save-dev @diagrampilot\/mcp/);
+    assert.match(result.stderr, /diagrampilot-mcp/);
   });
 });
 
@@ -48,7 +77,7 @@ test("diagrampilot-mcp --help documents the dedicated package executable", async
   assertMcpHelp(result, "diagrampilot-mcp");
 });
 
-test("diagrampilot mcp starts a stdio MCP server with resources tools and prompts", async () => {
+test("diagrampilot-mcp starts a stdio MCP server with resources tools and prompts", async () => {
   await withTempRepo(async (tempRoot) => {
     const sourcePath = await writeSource(tempRoot);
     const client = new Client({
@@ -57,7 +86,7 @@ test("diagrampilot mcp starts a stdio MCP server with resources tools and prompt
     });
     const transport = new StdioClientTransport({
       command: process.execPath,
-      args: [cliEntryPoint, "mcp"],
+      args: [mcpEntryPoint],
       cwd: tempRoot,
       stderr: "pipe",
     });
