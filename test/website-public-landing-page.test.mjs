@@ -124,11 +124,11 @@ test("public landing page offers starting points including npm", async () => {
   const html = await readBuiltLandingPage();
 
   assertMatchesAll(html, [
-    /<h2>Starting points\.<\/h2>/,
+    /<h2>Start\.<\/h2>/,
     /href="https:\/\/www\.npmjs\.com\/package\/diagrampilot"/,
     /npm package/,
     /href="\/docs\/agents\/agent-workflow\/"/,
-    /Agent Workflow/,
+    />Workflow<\/span>/,
     /href="\/docs\/agents\/installation\/"/,
     /href="\/docs\/agents\/quickstart\/"/,
     /href="https:\/\/github\.com\/StiensWout\/DiagramPilot"/,
@@ -187,35 +187,35 @@ test("public landing page presents generated product visuals", async () => {
   const diagramPilotHeadings = html.match(/<h1[^>]*>\s*DiagramPilot\s*<\/h1>/g) ?? [];
   assert.equal(diagramPilotHeadings.length, 1);
   const heroStart = html.indexOf('<section class="hero-zone"');
-  const artifactStart = html.indexOf("Product summary");
+  const proofStart = html.indexOf('id="workflow-proof"');
   const promiseStart = html
-    .slice(heroStart, artifactStart)
-    .search(
-      /Commit diagrams like code:\s*`\.dp\.yaml` source in the repo,\s*local\s*checks before review,\s*and SVG artifacts maintainers can inspect/i,
-  );
+    .slice(heroStart, proofStart)
+    .search(/Source in the repo\.\s*SVG out for review\./i);
   assert.ok(heroStart >= 0);
-  assert.ok(artifactStart > heroStart);
+  assert.ok(proofStart > heroStart);
   assert.ok(promiseStart >= 0);
   assert.match(
     html,
-    /Commit diagrams like code:\s*`\.dp\.yaml` source in the repo,\s*local\s*checks before review,\s*and SVG artifacts maintainers can inspect/i,
+    /Source in the repo\.\s*SVG out for review\./i,
   );
   assert.match(
     html,
     /<img[^>]+class="hero-wordmark"[^>]+src="\/brand\/diagrampilot-logo-light\.svg"[^>]+alt=""/,
   );
-  assert.doesNotMatch(
-    html,
-    /class="eyebrow">\s*Repo-native diagram compiler for AI coding agents\s*<\/p>/,
-  );
   assertMatchesAll(html, [
+    /Local diagrams for agents/,
+    /class="hero-signals"/,
+    /\.dp\.yaml/,
+    />source<\/dd>/,
+    />validate<\/dd>/,
+    />review<\/dd>/,
     /GitHub repository/,
     /href="https:\/\/github\.com\/StiensWout\/DiagramPilot"/,
     /href="\/docs\/agents\/quickstart\/"/,
     /href="\/docs\/"/,
     /href="#workflow-proof"/,
-    /See the workflow/,
-    /Install Guide/,
+    />Workflow<\/a>/,
+    />Install<\/a>/,
     /npx diagrampilot check/,
     /class="quick-command"/,
     /data-copy-command="npx diagrampilot check"/,
@@ -233,12 +233,19 @@ test("public landing page presents generated product visuals", async () => {
   assert.doesNotMatch(html, /class="workflow-shell/);
   assert.doesNotMatch(html, /\/landing\/agent-flow(?:-v2)?\.png/);
   assertMatchesAll(html, [
-    /Bring your own repository\./,
-    /One command before review\./,
-    /If it breaks, it says where\./,
-    /From `\.dp\.yaml` to review-stable SVG without leaving the repo\./,
-    /Source files become reviewable artifacts\./,
+    /<h2[^>]*>\s*Source to SVG\.\s*<\/h2>/,
+    /One checkout\.\s*One reviewable artifact\./,
+    /<h2>\s*Local\s*<\/h2>/,
+    /<h2>\s*Checked\s*<\/h2>/,
+    /<h2>\s*Repairable\s*<\/h2>/,
+    /<h2[^>]*>\s*Repo to SVG\.\s*<\/h2>/,
+    /<h2>\s*Start\.\s*<\/h2>/,
   ]);
+  assert.doesNotMatch(html, /Product summary/);
+  assert.doesNotMatch(
+    html,
+    /Commit diagrams like code|Bring your own repository|One command before review|If it breaks, it says where|From `\.dp\.yaml` to review-stable SVG without leaving the repo|Source files become reviewable artifacts/i,
+  );
   assert.doesNotMatch(html, /starlight-theme-select/);
   assert.doesNotMatch(html, /class="site-title/);
   assert.doesNotMatch(html, /Select theme/);
@@ -250,9 +257,9 @@ test("public landing page presents generated product visuals", async () => {
   assertMatchesAll(html, [
     /diagrampilot check/,
     /diagrampilot generate/,
-    /review-stable SVG\s+artifacts/i,
-    /repairable errors/i,
-    /MCP agent integration/i,
+    /SVG out for review/i,
+    /repairable validation errors/i,
+    /Agent-ready/i,
     /href="\/docs\/agents\/mcp\/"/,
   ]);
   assert.doesNotMatch(html, /planned|deferred|future|not implemented|source mutation/i);

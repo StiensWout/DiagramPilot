@@ -145,8 +145,10 @@ test("website uses Astro for public docs and Vite React for the landing page", a
   assert.match(landingPage, /src="\/brand\/diagrampilot-logo-light\.svg"/);
   assert.match(
     landingPage,
-    /Commit diagrams like code: `\.dp\.yaml` source in the repo,\s+local\s+checks before review, and SVG artifacts maintainers can inspect\./,
+    /Source in the repo\. SVG out for review\./,
   );
+  assert.match(landingPage, /function WorkflowSignals\(\)/);
+  assert.match(landingPage, /className="hero-signals"/);
   assert.match(landingPage, /import \{ WorkflowDemo \}/);
   assert.match(landingPage, /import \{ LocalRepositoryPath \}/);
   assert.match(landingPage, /<WorkflowDemo \/>/);
