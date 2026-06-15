@@ -19,14 +19,14 @@ Start with the Checkout Demo Project quickstart:
 
 Core public references:
 
-- [Agent workflow guide](agents/agent-workflow.md)
 - [Installation and removal guide](agents/installation.md)
-- [MCP guide](agents/mcp.md)
-- [DiagramSpec guide](agents/spec.md)
-- [Icon reference](agents/icons.md)
-- [Error repair guide](agents/error-repair.md)
+- [Agent workflow guide](agents/agent-workflow.md)
 - [Agent examples](agents/examples.md)
+- [DiagramSpec guide](agents/spec.md)
+- [Error repair guide](agents/error-repair.md)
+- [MCP guide](agents/mcp.md)
 - [Agent prompting guide](agents/prompting.md)
+- [Icon reference](agents/icons.md)
 - [Comparisons and adjacent tools](agents/comparisons.md)
 - [Integrations and agent recipes](agents/integrations.md)
 - [DiagramSpec v1 JSON Schema](https://diagrampilot.com/schema/diagramspec-v1.schema.json)

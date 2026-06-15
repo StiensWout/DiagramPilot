@@ -4,6 +4,7 @@ import path from "node:path";
 import test from "node:test";
 
 import { repoRoot } from "./docs-public-boundary-helpers.mjs";
+import { toRenderedWebsiteLinkContext } from "../website/scripts/link-context.mjs";
 
 test("GitHub-rendered README links same-repo public docs relatively", async () => {
   const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
@@ -45,4 +46,27 @@ test("package README links remain hosted for npm consumers", async () => {
     assert.doesNotMatch(readme, /docs-public\//, repoPath);
     assert.doesNotMatch(readme, /\]\(agents\//, repoPath);
   }
+});
+
+test("rendered website docs links stay on rendered docs routes", () => {
+  const markdown = [
+    "[Quickstart](quickstart.md)",
+    "[Spec](spec.md#views)",
+    "[Parent](../index.md)",
+    "[External](https://example.com/docs.md)",
+    "[Anchor](#local-heading)",
+    "[Asset](../schema/diagramspec-v1.schema.json)",
+  ].join("\n");
+
+  assert.equal(
+    toRenderedWebsiteLinkContext(markdown, "agents/agent-workflow.md"),
+    [
+      "[Quickstart](/docs/agents/quickstart/)",
+      "[Spec](/docs/agents/spec/#views)",
+      "[Parent](/docs/)",
+      "[External](https://example.com/docs.md)",
+      "[Anchor](#local-heading)",
+      "[Asset](../schema/diagramspec-v1.schema.json)",
+    ].join("\n"),
+  );
 });

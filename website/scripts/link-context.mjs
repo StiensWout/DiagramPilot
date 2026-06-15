@@ -36,22 +36,48 @@ function resolveDocsRelativePath(pathname, sourceRelativePath) {
   return docsRelativePath.startsWith("../") ? undefined : docsRelativePath;
 }
 
-function hostedDocsTarget(target, sourceRelativePath) {
+function resolveMarkdownDocsTarget(target, sourceRelativePath) {
   if (!canRewriteDocsTarget(target)) return target;
 
   const { hash, pathname, query } = splitLinkTarget(target);
   if (!pathname.endsWith(".md")) return target;
 
   const docsRelativePath = resolveDocsRelativePath(pathname, sourceRelativePath);
-  return docsRelativePath
-    ? `${SITE_ORIGIN}/docs/${docsRelativePath}${query}${hash}`
-    : target;
+  return docsRelativePath ? { docsRelativePath, hash, query } : target;
 }
 
-export function toWebsiteLinkContext(markdown, sourceRelativePath) {
+function hostedDocsTarget(target, sourceRelativePath) {
+  const resolved = resolveMarkdownDocsTarget(target, sourceRelativePath);
+  return typeof resolved === "string"
+    ? resolved
+    : `${SITE_ORIGIN}/docs/${resolved.docsRelativePath}${resolved.query}${resolved.hash}`;
+}
+
+function renderedDocsTarget(target, sourceRelativePath) {
+  const resolved = resolveMarkdownDocsTarget(target, sourceRelativePath);
+  if (typeof resolved === "string") return resolved;
+
+  const renderedPath = resolved.docsRelativePath.slice(0, -".md".length);
+  const routePath = renderedPath === "index" ? "" : `${renderedPath}/`;
+  return `/docs/${routePath}${resolved.query}${resolved.hash}`;
+}
+
+function replaceMarkdownLinks(markdown, resolveTarget) {
   return markdown.replace(
     markdownLinkPattern,
     (match, prefix, label, target, suffix) =>
-      `${prefix}[${label}](${hostedDocsTarget(target, sourceRelativePath)}${suffix})`,
+      `${prefix}[${label}](${resolveTarget(target)}${suffix})`,
+  );
+}
+
+export function toWebsiteLinkContext(markdown, sourceRelativePath) {
+  return replaceMarkdownLinks(markdown, (target) =>
+    hostedDocsTarget(target, sourceRelativePath),
+  );
+}
+
+export function toRenderedWebsiteLinkContext(markdown, sourceRelativePath) {
+  return replaceMarkdownLinks(markdown, (target) =>
+    renderedDocsTarget(target, sourceRelativePath),
   );
 }
