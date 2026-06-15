@@ -53,8 +53,9 @@ test("README explains the agent discovery workflow", async () => {
     /diagrampilot import/,
     /diagrampilot check/,
     /never hand-edit generated artifacts/i,
-    /Mermaid is a diagram syntax/i,
-    /best-effort migration helper for Mermaid\s+flowcharts/i,
+    /Mermaid, D2, and DOT are text formats/i,
+    /best-effort adoption helper/i,
+    /--format mermaid\|d2\|dot --out <path>/,
     /DiagramPilot is an\s+agent-safe compiler and workflow/i,
   ]);
 });
@@ -77,7 +78,8 @@ test("llms.txt exposes the canonical agent workflow", async () => {
     /diagrampilot render/,
     /diagrampilot import/,
     /diagrampilot check/,
-    /Mermaid import is a\s+best-effort migration path/i,
+    /Import is a best-effort adoption path/i,
+    /Mermaid flowcharts, D2 diagrams, and DOT graphs/i,
     /https:\/\/diagrampilot\.com/,
   ]);
 });

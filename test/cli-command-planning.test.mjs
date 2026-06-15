@@ -26,9 +26,9 @@ const renderUsageText = [
 
 const importUsageText = [
   "Usage:",
-  "  diagrampilot import <input> --format mermaid --out <path>",
-  "  diagrampilot import <input> --format mermaid --out <path> --json",
-  "  diagrampilot import <input> --format mermaid --out <path> --force",
+  "  diagrampilot import <input> --format mermaid|d2|dot --out <path>",
+  "  diagrampilot import <input> --format mermaid|d2|dot --out <path> --json",
+  "  diagrampilot import <input> --format mermaid|d2|dot --out <path> --force",
   "",
 ].join("\n");
 

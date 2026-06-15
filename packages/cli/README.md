@@ -10,7 +10,7 @@ Templates: `architecture`, `flow`, `package-map`, `system-context`,
 `service-map`.
 
 Supports YAML Source Files, deterministic source-only `fix` repairs,
-readability lint warnings, best-effort Mermaid flowchart import, Derived
+readability lint warnings, best-effort Mermaid, D2, and DOT import, Derived
 Artifacts, Markdown embeds, SVG/PNG, Mermaid/D2/DOT, local `lucide:*` icon
 discovery, and repo checks. Use
 `--view <view-id>` with `render` or `export` to produce a declared DiagramSpec
