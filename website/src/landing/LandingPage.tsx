@@ -8,62 +8,67 @@ const quickCommand = "npx diagrampilot check";
 
 const proofPoints = [
   {
-    title: "Bring your own repository.",
-    text: "DiagramPilot works where agents already work: in a checkout, next to source code, with artifacts a maintainer can review.",
+    signal: "Repo",
+    title: "Local",
+    text: "Works in a checkout, next to source code.",
   },
   {
-    title: "One command before review.",
-    text: "`diagrampilot check` discovers DiagramPilot source files, validates them, and reports stale same-stem SVG artifacts without rewriting the working tree.",
+    signal: "CLI",
+    title: "Checked",
+    text: "`diagrampilot check` validates before review.",
   },
   {
-    title: "If it breaks, it says where.",
-    text: "Repairable errors name the broken field so an AI coding agent can update the DiagramSpec file, validate again, and commit the repaired source plus rendered output.",
+    signal: "Error",
+    title: "Repairable",
+    text: "Failures name the DiagramSpec field to fix.",
   },
   {
-    title: "Author with local tools.",
-    text: "`diagrampilot create`, `diagrampilot inspect`, `diagrampilot format`, and `diagrampilot watch` cover starter sources, read-only inventory, canonical YAML, and checked generation loops.",
+    signal: "Tools",
+    title: "Authored",
+    text: "`diagrampilot create`, `diagrampilot inspect`, `diagrampilot format`, and `diagrampilot watch` stay local.",
   },
   {
-    title: "MCP agent integration.",
-    text: "Add `@diagrampilot/mcp` and run `diagrampilot-mcp` to expose schema, docs, examples, validation, check, export, render, and prompt helpers to local MCP clients.",
+    signal: "MCP",
+    title: "Agent-ready",
+    text: "Add `@diagrampilot/mcp` and run `diagrampilot-mcp` for local agent helpers.",
   },
 ];
 
 const startingPoints = [
   {
-    label: "Agent Workflow",
+    label: "Workflow",
     href: "/docs/agents/agent-workflow/",
     variant: "primary",
   },
   {
-    label: "Install Guide",
+    label: "Install",
     href: "/docs/agents/installation/",
     variant: "primary",
   },
   {
-    label: "Checkout Demo Project",
+    label: "Demo",
     href: "/docs/agents/quickstart/",
     variant: "secondary",
   },
   {
-    label: "MCP Guide",
+    label: "MCP",
     href: "/docs/agents/mcp/",
     variant: "secondary",
   },
   {
-    label: "npm package",
+    label: "npm",
     href: "https://www.npmjs.com/package/diagrampilot",
     variant: "secondary",
     icon: <NpmIcon />,
     ariaLabel: "npm package",
   },
   {
-    label: "Documentation",
+    label: "Docs",
     href: "/docs/",
     variant: "secondary",
   },
   {
-    label: "GitHub repository",
+    label: "GitHub",
     href: "https://github.com/StiensWout/DiagramPilot",
     variant: "secondary",
     icon: <GitHubIcon />,
@@ -84,7 +89,7 @@ export function LandingPage() {
         <section className="hero-zone" aria-labelledby="landing-title">
           <div className="hero-copy motion-rise">
             <p className="hero-eyebrow">
-              Repo-native diagram compiler for AI coding agents
+              Local diagrams for agents
             </p>
             <h1 id="landing-title" className="sr-only">
               DiagramPilot
@@ -98,38 +103,30 @@ export function LandingPage() {
               decoding="async"
             />
             <p className="promise">
-              Commit diagrams like code: `.dp.yaml` source in the repo, local
-              checks before review, and SVG artifacts maintainers can inspect.
+              Source in the repo. SVG out for review.
             </p>
             <div className="hero-actions" aria-label="Primary actions">
               <a className="action action-primary" href="#workflow-proof">
-                See the workflow
+                Workflow
               </a>
               <a className="action action-secondary" href="/docs/agents/installation/">
-                Install Guide
+                Install
               </a>
               <a className="action action-secondary" href="/docs/">
-                Read Docs
+                Docs
               </a>
             </div>
             <QuickCommand />
+            <WorkflowSignals />
           </div>
 
           <WorkflowDemo />
         </section>
 
-        <section className="intro-copy reveal-motion" aria-label="Product summary">
-          <p>
-            DiagramPilot is a local-first, repo-native diagram compiler for AI
-            coding agents. It turns local DiagramSpec files into review-stable SVG
-            artifacts for software repositories, so diagrams can live in the repo,
-            survive code review, and fail with repairable errors.
-          </p>
-        </section>
-
         <section className="proof-strip" aria-label="Why DiagramPilot works for agents">
           {proofPoints.map((point) => (
             <article className="proof-item reveal-motion" key={point.title}>
+              <p className="proof-signal">{point.signal}</p>
               <h2>{point.title}</h2>
               <p>{point.text}</p>
             </article>
@@ -142,12 +139,11 @@ export function LandingPage() {
           className="final-cta reveal-motion"
           aria-label="DiagramPilot starting points"
         >
-          <h2>Starting points.</h2>
+          <h2>Start.</h2>
           <p>
-            Install the CLI, try the checkout demo, inspect the npm package, or
-            open the repository before adding DiagramPilot to your agent workflow.
-            Public docs cover Output Profiles, DiagramSpec, MCP usage, and
-            repairable validation errors.
+            Install the CLI, try the demo, inspect npm, or open GitHub. Public
+            docs cover Output Profiles, DiagramSpec, MCP usage, and repairable
+            validation errors.
           </p>
           <div className="hero-actions">
             {startingPoints.map((point) => (
@@ -165,6 +161,25 @@ export function LandingPage() {
         </section>
       </main>
     </>
+  );
+}
+
+function WorkflowSignals() {
+  return (
+    <dl className="hero-signals" aria-label="DiagramPilot workflow signals">
+      <div>
+        <dt>.dp.yaml</dt>
+        <dd>source</dd>
+      </div>
+      <div>
+        <dt>check</dt>
+        <dd>validate</dd>
+      </div>
+      <div>
+        <dt>SVG</dt>
+        <dd>review</dd>
+      </div>
+    </dl>
   );
 }
 

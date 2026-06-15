@@ -5,25 +5,25 @@ const workflowSteps = [
     id: "source",
     label: "Source",
     detail: "docs/architecture.dp.yaml",
-    status: "DiagramPilot Source File ready beside the code it explains.",
+    status: "Source sits beside the code.",
   },
   {
     id: "check",
     label: "Check",
     detail: "npx diagrampilot check",
-    status: "Repo workflow check passes without rewriting the working tree.",
+    status: "Validation runs without rewriting the tree.",
   },
   {
     id: "generate",
     label: "Generate",
     detail: "npx diagrampilot generate",
-    status: "Derived artifacts are refreshed from the source file.",
+    status: "Artifacts refresh from source.",
   },
   {
     id: "svg",
-    label: "Review",
+    label: "SVG",
     detail: "docs/architecture.svg",
-    status: "Review-stable SVG artifact is ready for maintainers.",
+    status: "Output is ready for code review.",
   },
 ] as const;
 
@@ -60,14 +60,9 @@ export function WorkflowDemo() {
       aria-label="Interactive DiagramPilot workflow proof"
     >
       <div className="workflow-heading">
-        <p className="eyebrow">Workflow proof</p>
-        <h2 id="workflow-proof-title">
-          From `.dp.yaml` to review-stable SVG without leaving the repo.
-        </h2>
-        <p>
-          The same checkout holds source, command output, and the derived artifact
-          that goes through code review.
-        </p>
+        <p className="eyebrow">Workflow</p>
+        <h2 id="workflow-proof-title">Source to SVG.</h2>
+        <p>One checkout. One reviewable artifact.</p>
       </div>
 
       <div className="demo-stage" data-demo-stage data-active-step={activeStep}>
@@ -122,7 +117,7 @@ function SourcePane() {
     >
       <div className="demo-pane-header">
         <span id="demo-source-title">docs/architecture.dp.yaml</span>
-        <span>.dp.yaml</span>
+        <span>source</span>
       </div>
       <pre>
         <code>{`version: 1
@@ -149,7 +144,7 @@ function TerminalPane() {
     <div className="demo-pane demo-terminal" aria-labelledby="demo-terminal-title">
       <div className="demo-pane-header">
         <span id="demo-terminal-title">Terminal</span>
-        <span>local checkout</span>
+        <span>local</span>
       </div>
       <pre>
         <code>
@@ -174,7 +169,7 @@ function OutputPane() {
       aria-labelledby="demo-output-title"
     >
       <div className="demo-pane-header">
-        <span id="demo-output-title">Review-stable SVG artifact</span>
+        <span id="demo-output-title">SVG artifact</span>
         <span>architecture.svg</span>
       </div>
       <svg

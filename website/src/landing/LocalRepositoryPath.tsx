@@ -3,11 +3,11 @@ export function LocalRepositoryPath() {
     <section className="image-band reveal-motion" aria-labelledby="artifact-title">
       <div className="repo-path-layout">
         <div className="section-copy">
-          <p className="eyebrow">Local repository path</p>
-          <h2 id="artifact-title">Source files become reviewable artifacts.</h2>
+          <p className="eyebrow">Local path</p>
+          <h2 id="artifact-title">Repo to SVG.</h2>
           <p>
-            Keep DiagramSpec source beside rendered output. Agents can validate
-            changes locally before a maintainer reviews the commit.
+            Keep DiagramSpec source beside rendered output. Validate locally,
+            then review the artifact.
           </p>
         </div>
 
