@@ -29,7 +29,7 @@ test("website is an explicit workspace outside the compiler build", async () => 
   );
 });
 
-test("website is a static Astro Starlight shell", async () => {
+test("website uses Astro for public docs and Vite React for the landing page", async () => {
   const websitePackage = await readJson("website/package.json");
   const websiteTsconfig = await readJson("website/tsconfig.json");
   const dependencies = {
@@ -44,16 +44,40 @@ test("website is a static Astro Starlight shell", async () => {
     path.join(repoRoot, "website", "src", "content.config.ts"),
     "utf8",
   );
+  const viteConfig = await readFile(
+    path.join(repoRoot, "website", "vite.config.ts"),
+    "utf8",
+  );
+  const landingTemplate = await readFile(
+    path.join(repoRoot, "website", "index.html"),
+    "utf8",
+  );
+  const landingEntry = await readFile(
+    path.join(repoRoot, "website", "src", "main.tsx"),
+    "utf8",
+  );
+  const landingRouter = await readFile(
+    path.join(repoRoot, "website", "src", "landing", "router.tsx"),
+    "utf8",
+  );
   const landingPage = await readFile(
-    path.join(repoRoot, "website", "src", "pages", "index.astro"),
+    path.join(repoRoot, "website", "src", "landing", "LandingPage.tsx"),
     "utf8",
   );
   const workflowDemo = await readFile(
-    path.join(repoRoot, "website", "src", "components", "WorkflowDemo.astro"),
+    path.join(repoRoot, "website", "src", "landing", "WorkflowDemo.tsx"),
     "utf8",
   );
   const localRepositoryPath = await readFile(
-    path.join(repoRoot, "website", "src", "components", "LocalRepositoryPath.astro"),
+    path.join(repoRoot, "website", "src", "landing", "LocalRepositoryPath.tsx"),
+    "utf8",
+  );
+  const renderLandingScript = await readFile(
+    path.join(repoRoot, "website", "scripts", "render-landing.mjs"),
+    "utf8",
+  );
+  const implementationNotes = await readFile(
+    path.join(repoRoot, "website", "IMPLEMENTATION_NOTES.md"),
     "utf8",
   );
   const websiteGitignore = await readFile(
@@ -68,9 +92,24 @@ test("website is a static Astro Starlight shell", async () => {
   assert.equal(websitePackage.name, "@diagrampilot/website");
   assert.equal(websitePackage.private, true);
   assert.equal(websitePackage.type, "module");
-  assert.equal(websitePackage.scripts.build, "astro build");
+  assert.equal(
+    websitePackage.scripts.build,
+    "npm run build:docs && npm run build:landing && npm run build:landing:ssr && node scripts/render-landing.mjs",
+  );
+  assert.equal(websitePackage.scripts["build:docs"], "astro build");
+  assert.equal(websitePackage.scripts["build:landing"], "vite build");
+  assert.equal(
+    websitePackage.scripts["build:landing:ssr"],
+    "vite build --ssr src/landing/ssr.tsx --outDir dist/.vite-ssr",
+  );
   assert.equal(dependencies.astro, "^6.4.4");
   assert.equal(dependencies["@astrojs/starlight"], "^0.39.3");
+  assert.ok(dependencies.vite);
+  assert.ok(dependencies["@vitejs/plugin-react"]);
+  assert.ok(dependencies["@tanstack/react-router"]);
+  assert.ok(dependencies["@vercel/analytics"]);
+  assert.ok(dependencies.react);
+  assert.ok(dependencies["react-dom"]);
   assert.equal(websiteTsconfig.extends, "../node_modules/astro/tsconfigs/strict.json");
 
   assert.match(astroConfig, /output:\s*"static"/);
@@ -80,23 +119,40 @@ test("website is a static Astro Starlight shell", async () => {
   assert.match(contentConfig, /docsLoader\(\)/);
   assert.match(contentConfig, /docsSchema\(\)/);
 
-  assert.match(landingPage, /<body class="landing-page">/);
+  assert.match(viteConfig, /@vitejs\/plugin-react/);
+  assert.match(viteConfig, /emptyOutDir:\s*false/);
+  assert.match(landingTemplate, /<body class="landing-page">/);
+  assert.match(landingTemplate, /<div id="root"><!--app-html--><\/div>/);
+  assert.match(landingEntry, /hydrateRoot/);
+  assert.match(landingEntry, /from "\.\/landing\/App"/);
+  assert.match(landingRouter, /@tanstack\/react-router/);
+  assert.match(landingRouter, /createRootRoute/);
+  assert.match(landingRouter, /createRouter/);
+  assert.match(landingRouter, /RouterProvider/);
+  assert.match(renderLandingScript, /renderLandingPage/);
+  assert.match(renderLandingScript, /<!--app-html-->/);
+  assert.match(implementationNotes, /TanStack Router and Vite React/);
+  assert.match(
+    implementationNotes,
+    /accounts, paid tiers, or app functionality/i,
+  );
+  assert.match(implementationNotes, /future framework reassessment/i);
   assert.match(
     landingPage,
-    /<h1 id="landing-title" class="sr-only">DiagramPilot<\/h1>/,
+    /<h1 id="landing-title" className="sr-only">/,
   );
-  assert.match(landingPage, /class="hero-wordmark"/);
+  assert.match(landingPage, /className="hero-wordmark"/);
   assert.match(landingPage, /src="\/brand\/diagrampilot-logo-light\.svg"/);
   assert.match(
     landingPage,
     /Commit diagrams like code: `\.dp\.yaml` source in the repo,\s+local\s+checks before review, and SVG artifacts maintainers can inspect\./,
   );
-  assert.match(landingPage, /import WorkflowDemo/);
-  assert.match(landingPage, /import LocalRepositoryPath/);
+  assert.match(landingPage, /import \{ WorkflowDemo \}/);
+  assert.match(landingPage, /import \{ LocalRepositoryPath \}/);
   assert.match(landingPage, /<WorkflowDemo \/>/);
   assert.match(landingPage, /<LocalRepositoryPath \/>/);
   assert.match(workflowDemo, /id="workflow-proof"/);
-  assert.match(workflowDemo, /data-demo-control={step\.id}/);
+  assert.match(workflowDemo, /data-demo-control=\{step\.id\}/);
   assert.match(workflowDemo, /artifact-node-service/);
   assert.match(localRepositoryPath, /repo-path-animation/);
   assert.match(localRepositoryPath, /data-path-step/);

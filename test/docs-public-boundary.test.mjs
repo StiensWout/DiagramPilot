@@ -368,13 +368,13 @@ test("public quickstart and README route users through the checkout demo workflo
 
 test("landing page, README, and llms.txt use context-appropriate quickstart routes", async () => {
   const landingPage = await readFile(
-    path.join(repoRoot, "website", "src", "pages", "index.astro"),
+    path.join(repoRoot, "website", "src", "landing", "LandingPage.tsx"),
     "utf8",
   );
   const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
   const llmsText = await readFile(path.join(repoRoot, "llms.txt"), "utf8");
 
-  assert.match(landingPage, /href="\/docs\/agents\/quickstart\/"/);
+  assert.match(landingPage, /href:\s*"\/docs\/agents\/quickstart\/"/);
   assert.match(
     readme,
     /docs-public\/agents\/quickstart\.md/,
@@ -431,7 +431,7 @@ test("public surface describes shipped DiagramPilot behavior only", async () => 
   const publicSurfaceFiles = [
     "README.md",
     "llms.txt",
-    "website/src/pages/index.astro",
+    "website/src/landing/LandingPage.tsx",
     ...publicAgentDocs.map((fileName) => path.join("docs-public", "agents", fileName)),
   ];
 
