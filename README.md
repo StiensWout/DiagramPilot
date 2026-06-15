@@ -14,8 +14,8 @@ architecture diagrams directly inside a repository.
 
 DiagramPilot Source Files are YAML-only. The CLI supports local agent authoring
 loops with `create`, `inspect`, `format`, `lint`, `watch`, configured outputs,
-fixed Output Profiles, SVG/PNG rendering, Mermaid/D2/DOT export, and an MCP
-server for local agent clients.
+fixed Output Profiles, SVG/PNG rendering, and Mermaid/D2/DOT export. Local MCP
+clients can add the optional `@diagrampilot/mcp` adapter package.
 
 Public documentation is hosted at `https://diagrampilot.com`.
 
@@ -157,7 +157,6 @@ diagrampilot check
 diagrampilot inspect
 diagrampilot generate
 diagrampilot watch docs
-diagrampilot mcp
 diagrampilot icons list
 diagrampilot icons search database
 diagrampilot check docs --json
@@ -241,10 +240,12 @@ It watches `*.dp.yaml` and `diagrampilot.config.yaml`, debounces changes, runs
 repo workflow checks first, and generates only when the source/config state is
 valid.
 
-`mcp` launches the Model Context Protocol stdio server for local MCP clients.
-It exposes read-only DiagramPilot resources, validation, repo check,
-export, render, and prompt helpers. See the
-[MCP guide](docs-public/agents/mcp.md).
+The Model Context Protocol stdio server lives in the optional
+`@diagrampilot/mcp` package. Install it only for local MCP clients and launch
+the dedicated `diagrampilot-mcp` executable. Keeping MCP out of the core
+`diagrampilot` package keeps CLI/CI installs smaller, lowers the default
+runtime dependency surface, and lets the MCP adapter iterate independently.
+See the [MCP guide](docs-public/agents/mcp.md).
 
 `icons list` prints packaged `lucide:*` icon references in stable order.
 `icons search <query>` searches packaged Lucide names locally and prints

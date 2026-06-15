@@ -77,10 +77,15 @@ diagrampilot export docs/architecture.dp.yaml --format dot --out docs/architectu
 diagrampilot check
 ```
 
-Current MCP launch path:
+Optional MCP adapter package:
+
+Use the `@diagrampilot/mcp` package when a local MCP client needs DiagramPilot
+schema, docs, examples, validation, check, export, render, and prompt helpers.
+The adapter is separate so the core `diagrampilot` CLI stays smaller for
+normal authoring and CI workflows.
 
 ```bash
-diagrampilot mcp
+diagrampilot-mcp
 ```
 
 Current Source Creation path:

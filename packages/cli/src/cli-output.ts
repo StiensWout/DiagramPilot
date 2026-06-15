@@ -45,7 +45,6 @@ export function helpText(version: string): string {
     "  inspect [path] [--json]",
     "  generate [path] [--json]",
     "  watch [path]",
-    "  mcp",
     "  icons list",
     "  icons search <query>",
     "  render <path> --out <path>",

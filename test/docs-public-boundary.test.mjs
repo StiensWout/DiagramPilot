@@ -124,19 +124,20 @@ test("final closeout removes internal planning artifacts from the public repo", 
 test("llms.txt links only public documentation", async () => {
   const llmsText = await readFile(path.join(repoRoot, "llms.txt"), "utf8");
 
-  assert.match(
-    llmsText,
+  assertMatchesAll(llmsText, [
     /https:\/\/diagrampilot\.com\/docs\/agents\/quickstart\.md/,
-  );
-  assert.match(
-    llmsText,
     /https:\/\/diagrampilot\.com\/docs\/agents\/spec\.md/,
-  );
-  assert.doesNotMatch(llmsText, /docs\/development\//);
-  assert.doesNotMatch(llmsText, /docs\/adr\//);
-  assert.doesNotMatch(llmsText, /issue-tracker\.md/);
-  assert.doesNotMatch(llmsText, /triage-labels\.md/);
-  assert.doesNotMatch(llmsText, /domain\.md/);
+  ]);
+
+  for (const internalPattern of [
+    /docs\/development\//,
+    /docs\/adr\//,
+    /issue-tracker\.md/,
+    /triage-labels\.md/,
+    /domain\.md/,
+  ]) {
+    assert.doesNotMatch(llmsText, internalPattern);
+  }
 });
 
 test("llms.txt reflects current public docs and the published schema helper", async () => {
@@ -157,7 +158,9 @@ test("llms.txt reflects current public docs and the published schema helper", as
     /https:\/\/diagrampilot\.com\/docs\/agents\/mcp\.md/,
   );
   assert.match(llmsText, /Model Context Protocol server/);
-  assert.match(llmsText, /diagrampilot mcp/);
+  assert.match(llmsText, /@diagrampilot\/mcp/);
+  assert.match(llmsText, /diagrampilot-mcp/);
+  assert.doesNotMatch(llmsText, /diagrampilot mcp/);
   assert.doesNotMatch(llmsText, /planned|deferred|future|not implemented|source mutation/i);
   assert.doesNotMatch(
     llmsText,
@@ -270,26 +273,31 @@ test("public docs treat repo workflow check as shipped", async () => {
 test("README describes current behavior and public docs only", async () => {
   const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
 
-  assert.match(
-    readme,
+  assertMatchesAll(readme, [
     /docs-public\/agents\/quickstart\.md/,
-  );
-  assert.match(
-    readme,
     /schema\/diagramspec-v1\.schema\.json/,
-  );
+  ]);
 
-  assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/development\//);
-  assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/adr\//);
-  assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/agents\/deployment\.md/);
-  assert.doesNotMatch(readme, /https:\/\/diagrampilot\.com\/docs\/agents\/issue-tracker\.md/);
-  assert.doesNotMatch(readme, /docs\/development\//);
-  assert.doesNotMatch(readme, /docs\/adr\//);
-  assert.doesNotMatch(readme, /\.scratch\//);
-  assert.match(readme, /docs-public\/agents\/mcp\.md/);
-  assert.match(readme, /diagrampilot mcp/);
-  assert.match(readme, /Model Context Protocol stdio server/);
-  assert.doesNotMatch(readme, /planned|deferred|future|not implemented|source mutation/i);
+  for (const internalPattern of [
+    /https:\/\/diagrampilot\.com\/docs\/development\//,
+    /https:\/\/diagrampilot\.com\/docs\/adr\//,
+    /https:\/\/diagrampilot\.com\/docs\/agents\/deployment\.md/,
+    /https:\/\/diagrampilot\.com\/docs\/agents\/issue-tracker\.md/,
+    /docs\/development\//,
+    /docs\/adr\//,
+    /\.scratch\//,
+    /diagrampilot mcp/,
+    /planned|deferred|future|not implemented|source mutation/i,
+  ]) {
+    assert.doesNotMatch(readme, internalPattern);
+  }
+
+  assertMatchesAll(readme, [
+    /docs-public\/agents\/mcp\.md/,
+    /@diagrampilot\/mcp/,
+    /diagrampilot-mcp/,
+    /Model Context Protocol stdio server/,
+  ]);
 });
 
 test("public entrypoints expose MIT licensing and canonical DiagramPilot Brand Assets", async () => {

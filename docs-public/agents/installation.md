@@ -125,17 +125,16 @@ Prefer a repository dev dependency for CI and other repeatable workflows.
 
 ## MCP Client Configuration
 
-DiagramPilot includes a local Model Context Protocol server for MCP clients
-that can launch stdio commands.
-
-Use the main CLI command when the client can run project binaries:
+The local Model Context Protocol server is an optional adapter package. Add it
+only to repositories or global toolchains where an MCP client needs
+DiagramPilot resources and tools:
 
 ```bash
-diagrampilot mcp
+npm install --save-dev @diagrampilot/mcp
 ```
 
-Use the dedicated package executable when an MCP client expects a direct server
-command:
+Launch the dedicated package executable from clients that can run project
+binaries:
 
 ```bash
 diagrampilot-mcp
@@ -147,12 +146,15 @@ Example client configuration:
 {
   "mcpServers": {
     "diagrampilot": {
-      "command": "diagrampilot",
-      "args": ["mcp"]
+      "command": "diagrampilot-mcp"
     }
   }
 }
 ```
+
+Keeping MCP outside the core `diagrampilot` package keeps routine authoring and
+CI installs smaller, lowers the default runtime dependency surface, and lets
+the MCP adapter iterate independently from the CLI.
 
 The MCP server exposes read-only resources, Stable ID suggestions, validation,
 repo workflow check, export, render, and prompt helpers. Source Creation writes
