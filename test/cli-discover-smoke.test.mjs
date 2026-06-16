@@ -4,6 +4,7 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  assertCliFailure,
   assertCliSucceeded,
   findFilesMatching,
   runBuiltCli,
@@ -62,6 +63,42 @@ async function writeFunctionDiscoveryFixtureRepo(tempRoot, options = {}) {
       "}",
       "",
     ].join("\n"),
+  );
+}
+
+async function writeImportDiscoveryFixtureRepo(tempRoot, options = {}) {
+  await mkdir(path.join(tempRoot, ".git"));
+  await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+
+  if (options.nestedRoute === true) {
+    await mkdir(path.join(tempRoot, "src", "routes"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "src", "index.ts"),
+      [
+        'import { renderHome } from "./routes/home";',
+        "export { renderHome };",
+        "",
+      ].join("\n"),
+    );
+    await writeFile(
+      path.join(tempRoot, "src", "routes", "home.ts"),
+      "export function renderHome() {}\n",
+    );
+    return;
+  }
+
+  await mkdir(path.join(tempRoot, "src"), { recursive: true });
+  await writeFile(
+    path.join(tempRoot, "src", "app.ts"),
+    [
+      'import { renderHome } from "./home";',
+      "export { renderHome };",
+      "",
+    ].join("\n"),
+  );
+  await writeFile(
+    path.join(tempRoot, "src", "home.ts"),
+    "export function renderHome() {}\n",
   );
 }
 
@@ -184,21 +221,7 @@ test("diagrampilot discover code --include-functions --json reports function-lev
 
 test("diagrampilot discover code --out writes a valid source map from TS imports", async () => {
   await withTempRepo(async (tempRoot) => {
-    await mkdir(path.join(tempRoot, ".git"));
-    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
-    await mkdir(path.join(tempRoot, "src", "routes"), { recursive: true });
-    await writeFile(
-      path.join(tempRoot, "src", "index.ts"),
-      [
-        'import { renderHome } from "./routes/home";',
-        "export { renderHome };",
-        "",
-      ].join("\n"),
-    );
-    await writeFile(
-      path.join(tempRoot, "src", "routes", "home.ts"),
-      "export function renderHome() {}\n",
-    );
+    await writeImportDiscoveryFixtureRepo(tempRoot, { nestedRoute: true });
 
     const result = await runBuiltCli(
       ["discover", "code", "--out", "docs/codebase.dp.yaml"],
@@ -253,6 +276,102 @@ test("diagrampilot discover code --out writes a valid source map from TS imports
       edges: 1,
       groups: 0,
     });
+  });
+});
+
+test("diagrampilot discover code --out protects existing source maps with update and force modes", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await writeImportDiscoveryFixtureRepo(tempRoot);
+
+    const outPath = path.join(tempRoot, "docs", "codebase.dp.yaml");
+    const firstWrite = await runBuiltCli(
+      ["discover", "code", "--out", "docs/codebase.dp.yaml"],
+      tempRoot,
+    );
+    assertCliSucceeded(firstWrite);
+
+    const refusal = await runBuiltCli(
+      ["discover", "code", "--out", "docs/codebase.dp.yaml"],
+      tempRoot,
+    );
+    assertCliFailure(refusal, {
+      stderrPatterns: [
+        /DiagramPilot discovery output already exists: docs\/codebase\.dp\.yaml/u,
+        /rerun discover with --update or --force/u,
+      ],
+    });
+
+    await writeFile(
+      outPath,
+      [
+        "version: 1",
+        "title: Codebase Map",
+        "direction: right",
+        "nodes:",
+        "  - id: app_module",
+        "    label: src/app.ts",
+        "    kind: module",
+        "    metadata:",
+        "      source: src/app.ts",
+        "  - id: home_module",
+        "    label: src/home.ts",
+        "    kind: module",
+        "    metadata:",
+        "      source: src/home.ts",
+        "edges:",
+        "  - id: app_imports_home",
+        "    from: app_module",
+        "    to: home_module",
+        "    label: ./home",
+        "    kind: dependency",
+        "    metadata:",
+        "      source: src/app.ts",
+        "      importSpecifier: ./home",
+        "",
+      ].join("\n"),
+    );
+
+    const update = await runBuiltCli(
+      [
+        "discover",
+        "code",
+        "--out",
+        "docs/codebase.dp.yaml",
+        "--update",
+        "--json",
+      ],
+      tempRoot,
+    );
+    assertCliSucceeded(update);
+    assert.deepEqual(JSON.parse(update.stdout).changes, {
+      added: 0,
+      removed: 0,
+      changed: 0,
+      unmatched: 0,
+    });
+
+    const updatedContent = await readFile(outPath, "utf8");
+    assert.match(updatedContent, /^  - id: app_module$/m);
+    assert.match(updatedContent, /^  - id: home_module$/m);
+    assert.match(updatedContent, /^  - id: app_imports_home$/m);
+
+    const force = await runBuiltCli(
+      [
+        "discover",
+        "code",
+        "--out",
+        "docs/codebase.dp.yaml",
+        "--force",
+        "--json",
+      ],
+      tempRoot,
+    );
+    assertCliSucceeded(force);
+    assert.equal(JSON.parse(force.stdout).writeMode, "force");
+
+    const forcedContent = await readFile(outPath, "utf8");
+    assert.match(forcedContent, /^  - id: file_src_app_ts$/m);
+    assert.doesNotMatch(forcedContent, /^  - id: app_module$/m);
   });
 });
 

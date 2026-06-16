@@ -76,6 +76,27 @@ export function usageFailurePlan(
   };
 }
 
+export function commandFailurePlan(message: string, json: boolean): CommandPlan {
+  if (json) {
+    return {
+      exitCode: 1,
+      stdout: jsonTextLine({
+        ok: false,
+        error: message,
+      }),
+      stderr: "",
+      writes: [],
+    };
+  }
+
+  return {
+    exitCode: 1,
+    stdout: "",
+    stderr: textLine(message),
+    writes: [],
+  };
+}
+
 export function repairableDiagnosticFailurePlan(
   failure: FailedValidatedDiagramSpecLoadResult["failure"],
 ): CommandPlan {

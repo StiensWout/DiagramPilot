@@ -27,6 +27,10 @@ export {
   repoDiscoveryPresets,
 } from "./repo-discovery.js";
 export {
+  applyDiscoverSourceUpdate,
+  createCodeDiscoveryDiagramSpec,
+} from "./repo-discovery-source.js";
+export {
   checkExpectedSvgArtifactFreshness,
   checkExpectedSvgArtifactFreshnessForValidatedSource,
   createSvgArtifactProvenance,
@@ -158,6 +162,11 @@ export type {
   RepoDiscoverySummary,
   RepoDiscoveryTarget,
 } from "./repo-discovery.js";
+export type {
+  CodeDiscoverySourceOptions,
+  DiscoverSourceUpdateChangeSummary,
+  DiscoverSourceUpdateResult,
+} from "./repo-discovery-source.js";
 export type {
   RepoCodeDiscoverySummary,
   RepoDiscoveredCodeClassification,
