@@ -438,6 +438,15 @@ test("plans subcommand help output", async () => {
     ["format", "Usage: diagrampilot format <path>\n"],
     ["generate", "Usage: diagrampilot generate [path] [--json]\n"],
     [
+      "discover",
+      [
+        "Usage:",
+        "  diagrampilot discover code [--json] [--preset typescript|node-package|monorepo]",
+        "  diagrampilot discover packages [--json] [--preset typescript|node-package|monorepo]",
+        "",
+      ].join("\n"),
+    ],
+    [
       "icons",
       [
         "Usage:",

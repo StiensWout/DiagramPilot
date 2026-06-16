@@ -23,6 +23,10 @@ export {
 } from "./source-loading.js";
 export { discoverDiagramPilotSourceFiles } from "./source-discovery.js";
 export {
+  discoverRepo,
+  repoDiscoveryPresets,
+} from "./repo-discovery.js";
+export {
   checkExpectedSvgArtifactFreshness,
   checkExpectedSvgArtifactFreshnessForValidatedSource,
   createSvgArtifactProvenance,
@@ -147,9 +151,19 @@ export type {
   DiagramPilotSourceDiscoveryScope,
 } from "./source-discovery.js";
 export type {
+  RepoDiscoveryIgnoreSource,
+  RepoDiscoveryOptions,
+  RepoDiscoveryPreset,
+  RepoDiscoveryResult,
+  RepoDiscoverySummary,
+  RepoDiscoveryTarget,
+} from "./repo-discovery.js";
+export type {
   RepoWorkflowArtifactMapping,
   RepoWorkflowArtifactOutput,
   RepoWorkflowArtifactOutputFormat,
+  RepoWorkflowDiscoveryOptions,
+  RepoWorkflowDiscoveryPreset,
   RepoWorkflowOutputProfile,
 } from "./repo-workflow-config.js";
 export type {

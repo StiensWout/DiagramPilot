@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 
 import {
   checkDiagramPilotRepoWorkflow,
+  discoverRepo,
   diffDiagramSpecs,
   generateDiagramPilotRepoWorkflow,
   getDiagramPilotVersion,
@@ -34,6 +35,7 @@ import { parseCheckArgs, parseInspectArgs } from "./argument-parsing.js";
 import {
   checkUsageText,
   createUsageText,
+  discoverUsageText,
   diffUsageText,
   exportUsageText,
   fixUsageText,
@@ -49,6 +51,7 @@ import {
 import { checkResultPlan } from "./check-command-planning.js";
 import type { CommandPlanningDependencies } from "./command-planning-dependencies.js";
 import { planCreate } from "./create-command-planning.js";
+import { planDiscover } from "./discover-command-planning.js";
 import { planFix } from "./fix-command-planning.js";
 import { planDiff } from "./diff-command-planning.js";
 import { planGenerate } from "./generate-command-planning.js";
@@ -76,6 +79,7 @@ const defaultCommandPlanningDependencies: CommandPlanningDependencies = {
   checkDiagramPilotRepoWorkflow,
   inspectDiagramPilotRepoWorkflow,
   generateDiagramPilotRepoWorkflow,
+  discoverRepo,
   planDiagramPilotSourceFix,
   loadValidatedDiagramSpec,
   lintDiagramSpec,
@@ -267,6 +271,7 @@ function planIcons(
 const commandHandlers: Readonly<Record<string, CommandHandler>> = {
   check: planCheck,
   create: planCreate,
+  discover: planDiscover,
   diff: planDiff,
   export: planExport,
   fix: planFix,
@@ -283,6 +288,7 @@ const commandHandlers: Readonly<Record<string, CommandHandler>> = {
 const commandHelpText: Readonly<Record<string, () => string>> = {
   check: checkUsageText,
   create: createUsageText,
+  discover: discoverUsageText,
   diff: diffUsageText,
   export: exportUsageText,
   fix: fixUsageText,

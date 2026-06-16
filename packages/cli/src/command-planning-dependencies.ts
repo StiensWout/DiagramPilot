@@ -12,6 +12,8 @@ import type {
   ValidatedDiagramSpecLoadResult,
   DiagramPilotSourceFixOptions,
   DiagramPilotSourceFixResult,
+  RepoDiscoveryOptions,
+  RepoDiscoveryResult,
 } from "@diagrampilot/core";
 import type {
   CreateSvgRendererProvenanceOptions,
@@ -28,6 +30,7 @@ export interface CommandPlanningDependencies {
   generateDiagramPilotRepoWorkflow(
     options: RepoWorkflowGenerateOptions,
   ): Promise<RepoWorkflowGenerateResult>;
+  discoverRepo(options: RepoDiscoveryOptions): Promise<RepoDiscoveryResult>;
   planDiagramPilotSourceFix(
     sourcePath: string,
     options: DiagramPilotSourceFixOptions,

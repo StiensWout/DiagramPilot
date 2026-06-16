@@ -22,6 +22,9 @@ export type RepoWorkflowArtifactOutputFormat =
 export type RepoWorkflowOutputProfile =
   | "clean" | "compact" | "overview" | "presentation";
 
+export type RepoWorkflowDiscoveryPreset =
+  | "typescript" | "node-package" | "monorepo";
+
 export interface RepoWorkflowArtifactOutput {
   format: RepoWorkflowArtifactOutputFormat;
   path: string;
@@ -34,10 +37,15 @@ export interface RepoWorkflowArtifactMapping {
   outputs: readonly RepoWorkflowArtifactOutput[];
 }
 
+export interface RepoWorkflowDiscoveryOptions {
+  preset?: RepoWorkflowDiscoveryPreset;
+}
+
 export interface RepoWorkflowConfig {
   path: string;
   directory: string;
   version: 1;
+  discovery?: RepoWorkflowDiscoveryOptions;
   sources: {
     ignore: readonly string[];
   };
@@ -96,7 +104,12 @@ function validateRepoWorkflowConfigRoot(configPath: string, value: unknown):
     };
   }
 
-  const supportedFields = new Set(["version", "sources", "artifacts"]);
+  const supportedFields = new Set([
+    "version",
+    "discovery",
+    "sources",
+    "artifacts",
+  ]);
   const unsupportedField = Object.keys(value).find(
     (fieldName) => !supportedFields.has(fieldName),
   );
@@ -107,7 +120,7 @@ function validateRepoWorkflowConfigRoot(configPath: string, value: unknown):
       failure: invalidConfigFailure(configPath, {
         path: unsupportedField,
         message: `Unsupported Repo Workflow Configuration field: ${unsupportedField}.`,
-        expected: "Supported top-level fields: version, sources, artifacts.",
+        expected: "Supported top-level fields: version, discovery, sources, artifacts.",
         suggestion: "Remove the unsupported field or upgrade DiagramPilot when that config feature ships.",
         badValue: value[unsupportedField],
       }),
@@ -118,6 +131,150 @@ function validateRepoWorkflowConfigRoot(configPath: string, value: unknown):
     ok: true,
     value,
   };
+}
+
+const discoveryPresets = new Set<RepoWorkflowDiscoveryPreset>([
+  "typescript",
+  "node-package",
+  "monorepo",
+]);
+
+function isDiscoveryPreset(
+  value: unknown,
+): value is RepoWorkflowDiscoveryPreset {
+  return (
+    typeof value === "string" &&
+    discoveryPresets.has(value as RepoWorkflowDiscoveryPreset)
+  );
+}
+
+function validateDiscoveryObject(
+  configPath: string,
+  value: Record<string, unknown>,
+):
+  | {
+      ok: true;
+      discovery?: Record<string, unknown>;
+    }
+  | {
+      ok: false;
+      failure: RepoWorkflowConfigFailure;
+    } {
+  if (value.discovery === undefined) {
+    return {
+      ok: true,
+    };
+  }
+
+  if (!isRecord(value.discovery)) {
+    return invalidConfig(configPath, {
+      path: "discovery",
+      message: "`discovery` must be a YAML object when provided.",
+      expected: "`discovery.preset` as an optional discovery preset.",
+      suggestion: "Use `discovery:\\n  preset: typescript`.",
+      badValue: value.discovery,
+    });
+  }
+
+  return {
+    ok: true,
+    discovery: value.discovery,
+  };
+}
+
+function validateDiscoveryFields(
+  configPath: string,
+  discovery: Record<string, unknown>,
+): RepoWorkflowConfigDiscoveryResult | undefined {
+  const unsupportedField = Object.keys(discovery).find(
+    (fieldName) => fieldName !== "preset",
+  );
+
+  if (unsupportedField !== undefined) {
+    return invalidConfig(configPath, {
+      path: `discovery.${unsupportedField}`,
+      message: `Unsupported Repo Workflow Configuration field: discovery.${unsupportedField}.`,
+      expected: "Supported discovery fields: preset.",
+      suggestion: "Remove the unsupported field or upgrade DiagramPilot when that config feature ships.",
+      badValue: discovery[unsupportedField],
+    });
+  }
+
+  return undefined;
+}
+
+function parseDiscoveryPreset(
+  configPath: string,
+  discovery: Record<string, unknown>,
+): RepoWorkflowConfigDiscoveryResult & {
+  preset?: RepoWorkflowDiscoveryPreset;
+} {
+  const preset = discovery.preset;
+
+  if (preset === undefined) {
+    return {
+      ok: true,
+    };
+  }
+
+  if (!isDiscoveryPreset(preset)) {
+    return invalidConfig(configPath, {
+      path: "discovery.preset",
+      message: `Unsupported discovery preset: ${String(preset)}.`,
+      expected: "Supported discovery presets: typescript, node-package, monorepo.",
+      suggestion: "Use one of `typescript`, `node-package`, or `monorepo`.",
+      badValue: preset,
+    });
+  }
+
+  return {
+    ok: true,
+    preset,
+  };
+}
+
+function parsePresentDiscoveryOptions(
+  configPath: string,
+  discovery: Record<string, unknown>,
+): RepoWorkflowConfigDiscoveryResult & {
+  discovery?: RepoWorkflowDiscoveryOptions;
+} {
+  const fieldsFailure = validateDiscoveryFields(configPath, discovery);
+  if (fieldsFailure !== undefined) return fieldsFailure;
+
+  const presetResult = parseDiscoveryPreset(configPath, discovery);
+  if (!presetResult.ok) return presetResult;
+
+  return {
+    ok: true,
+    discovery: {
+      preset: presetResult.preset,
+    },
+  };
+}
+
+function parseOptionalDiscoveryOptions(
+  configPath: string,
+  discovery: Record<string, unknown> | undefined,
+): RepoWorkflowConfigDiscoveryResult & {
+  discovery?: RepoWorkflowDiscoveryOptions;
+} {
+  return discovery === undefined
+    ? { ok: true }
+    : parsePresentDiscoveryOptions(configPath, discovery);
+}
+
+function parseDiscoveryOptions(
+  configPath: string,
+  value: Record<string, unknown>,
+): RepoWorkflowConfigDiscoveryResult & {
+  discovery?: RepoWorkflowDiscoveryOptions;
+} {
+  const objectResult = validateDiscoveryObject(configPath, value);
+
+  return objectResult.ok
+    ? parseOptionalDiscoveryOptions(configPath, objectResult.discovery)
+    : objectResult;
 }
 
 function validateSourcesObject(configPath: string, value: Record<string, unknown>):
@@ -311,6 +468,7 @@ function validateArtifactMappings(
 }
 
 interface ParsedRepoWorkflowConfigParts {
+  discovery?: RepoWorkflowDiscoveryOptions;
   ignore: readonly string[];
   artifacts: readonly RepoWorkflowArtifactMapping[];
 }
@@ -321,6 +479,12 @@ function parseRepoWorkflowConfigParts(
 ): RepoWorkflowConfigDiscoveryResult & {
   parts?: ParsedRepoWorkflowConfigParts;
 } {
+  const discoveryResult = parseDiscoveryOptions(configPath, value);
+
+  if (!discoveryResult.ok) {
+    return discoveryResult;
+  }
+
   const ignoredSourcesResult = parseIgnoredSourcePatterns(configPath, value);
 
   if (!ignoredSourcesResult.ok) {
@@ -336,6 +500,7 @@ function parseRepoWorkflowConfigParts(
   return {
     ok: true,
     parts: {
+      discovery: discoveryResult.discovery,
       ignore: ignoredSourcesResult.ignore as readonly string[],
       artifacts:
         artifactMappingsResult.artifacts as readonly RepoWorkflowArtifactMapping[],
@@ -351,6 +516,7 @@ function createRepoWorkflowConfig(
     path: configPath,
     directory: path.dirname(configPath),
     version: 1,
+    ...(parts.discovery === undefined ? {} : { discovery: parts.discovery }),
     sources: {
       ignore: parts.ignore,
     },

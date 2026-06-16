@@ -91,8 +91,8 @@ function assertLatestPlan(plan, { baseVersion, shouldPublish }) {
   assert.equal(plan.publishVersion, baseVersion);
 }
 
-test("release publish planner routes nightly branch pushes to v0.4.2 nightly publishing", async () => {
-  const baseVersion = "0.4.2";
+test("release publish planner routes nightly branch pushes to v0.4.3 nightly publishing", async () => {
+  const baseVersion = "0.4.3";
   const packageVersion = await readWorkspaceVersion();
   const sha = "abcdef1234567890";
 
