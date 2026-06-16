@@ -10,10 +10,12 @@ import {
 import {
   importUsageText,
   jsonTextLine,
-  textLine,
 } from "./cli-output.js";
 import type { CommandPlanningDependencies } from "./command-planning-dependencies.js";
-import { usageFailurePlan } from "./source-command-planning.js";
+import {
+  commandFailurePlan,
+  usageFailurePlan,
+} from "./source-command-planning.js";
 import type { CommandPlan } from "./types.js";
 
 type ImportFormat = "mermaid" | "d2" | "dot";
@@ -303,24 +305,7 @@ function importJsonOutput(
 }
 
 function importFailurePlan(message: string, json: boolean): CommandPlan {
-  if (json) {
-    return {
-      exitCode: 1,
-      stdout: jsonTextLine({
-        ok: false,
-        error: message,
-      }),
-      stderr: "",
-      writes: [],
-    };
-  }
-
-  return {
-    exitCode: 1,
-    stdout: "",
-    stderr: textLine(message),
-    writes: [],
-  };
+  return commandFailurePlan(message, json);
 }
 
 function importOverwriteFailurePlan(options: ImportCommandOptions): CommandPlan {
