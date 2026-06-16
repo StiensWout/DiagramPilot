@@ -19,6 +19,7 @@ export interface RepoDiscoveryOptions {
   scopePath?: string;
   target: RepoDiscoveryTarget;
   preset?: RepoDiscoveryPreset;
+  includeFunctions?: boolean;
   includeTests?: boolean;
 }
 
@@ -222,6 +223,7 @@ function createBaseDiscoverySummary(options: {
 function successfulRepoDiscoveryResult(options: {
   baseSummary: RepoDiscoveryBaseSummary;
   directory: string;
+  includeFunctions?: boolean;
   includeTests?: boolean;
 }): RepoDiscoverySummary {
   return options.baseSummary.target === "code"
@@ -231,6 +233,7 @@ function successfulRepoDiscoveryResult(options: {
         ...discoverCodeModules({
           directory: options.directory,
           exclude: options.baseSummary.exclude,
+          includeFunctions: options.includeFunctions,
           includeTests: options.includeTests,
         }),
       }
@@ -263,6 +266,7 @@ export async function discoverRepo(
       target: options.target,
     }),
     directory,
+    includeFunctions: options.includeFunctions,
     includeTests: options.includeTests,
   });
 }

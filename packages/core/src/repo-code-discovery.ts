@@ -4,6 +4,12 @@ import path from "node:path";
 import * as ts from "typescript";
 
 import {
+  discoverCodeFunctions,
+  hasModifier,
+  type RepoCodeDiscoveryFunctionSummary,
+  type RepoCodeFunctionDiscoveryModule,
+} from "./repo-code-function-discovery.js";
+import {
   createRelativePathIgnoreMatcher,
   normalizeRepoRelativePath,
 } from "./path-ignore-patterns.js";
@@ -35,13 +41,21 @@ export interface RepoDiscoveredUnresolvedImport {
   specifier: string;
 }
 
+export type {
+  RepoDiscoveredCodeFunction,
+  RepoDiscoveredCodeFunctionKind,
+  RepoDiscoveredFunctionCallEdge,
+  RepoDiscoveredFunctionDiagnostic,
+} from "./repo-code-function-discovery.js";
+
 export interface RepoIgnoredCodeFile {
   path: string;
   classifications: readonly RepoDiscoveredCodeClassification[];
   reason: "test" | "generated" | "ignored";
 }
 
-export interface RepoCodeDiscoverySummary {
+export interface RepoCodeDiscoverySummary
+  extends Partial<RepoCodeDiscoveryFunctionSummary> {
   files: readonly string[];
   modules: readonly RepoDiscoveredCodeModule[];
   importEdges: readonly RepoDiscoveredImportEdge[];
@@ -52,6 +66,7 @@ export interface RepoCodeDiscoverySummary {
 export interface RepoCodeDiscoveryOptions {
   directory: string;
   exclude: readonly string[];
+  includeFunctions?: boolean;
   includeTests?: boolean;
 }
 
@@ -61,7 +76,9 @@ interface CodeFileCandidate {
   extension: RepoDiscoveredCodeModule["extension"];
 }
 
-interface AnalyzedCodeModule extends RepoDiscoveredCodeModule {
+interface AnalyzedCodeModule
+  extends RepoDiscoveredCodeModule,
+    RepoCodeFunctionDiscoveryModule {
   absolutePath: string;
 }
 
@@ -279,12 +296,6 @@ function scriptKindForExtension(
   return scriptKindByExtension[extension];
 }
 
-function hasModifier(node: ts.Node, kind: ts.SyntaxKind): boolean {
-  return ts.canHaveModifiers(node)
-    ? (ts.getModifiers(node)?.some((modifier) => modifier.kind === kind) ?? false)
-    : false;
-}
-
 function countVariableStatementExports(statement: ts.VariableStatement): number {
   return hasModifier(statement, ts.SyntaxKind.ExportKeyword)
     ? statement.declarationList.declarations.length
@@ -353,6 +364,7 @@ function analyzeCodeModule(file: CodeFileCandidate): AnalyzedCodeModule {
     classifications: classifyCodeFile(file, fileText),
     importSpecifiers,
     exportCount,
+    sourceFile,
   };
 }
 
@@ -457,6 +469,19 @@ function shouldIncludeCodeFile(
   return ignoredFile === undefined;
 }
 
+function functionSummaryForOptions(options: {
+  importEdges: readonly RepoDiscoveredImportEdge[];
+  includeFunctions: boolean;
+  modules: readonly AnalyzedCodeModule[];
+}): Partial<RepoCodeDiscoveryFunctionSummary> {
+  return options.includeFunctions
+    ? discoverCodeFunctions({
+        importEdges: options.importEdges,
+        modules: options.modules,
+      })
+    : {};
+}
+
 export function discoverCodeModules(
   options: RepoCodeDiscoveryOptions,
 ): RepoCodeDiscoverySummary {
@@ -483,11 +508,22 @@ export function discoverCodeModules(
 
   return {
     files: modules.map((module) => module.path),
-    modules: modules.map(({ absolutePath: _absolutePath, ...module }) => module),
+    modules: modules.map(
+      ({
+        absolutePath: _absolutePath,
+        sourceFile: _sourceFile,
+        ...module
+      }) => module,
+    ),
     importEdges,
     unresolvedImports: importEdges
       .filter((edge) => edge.kind === "unresolved")
       .map((edge) => ({ from: edge.from, specifier: edge.specifier })),
     ignoredFiles,
+    ...functionSummaryForOptions({
+      importEdges,
+      includeFunctions: options.includeFunctions === true,
+      modules,
+    }),
   };
 }

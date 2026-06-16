@@ -214,7 +214,7 @@ test("plans conflicting discover preset flags as repairable usage", async () => 
 
   assert.match(
     plan.stderr,
-    /diagrampilot discover code \[--json\] \[--include-tests\] \[--preset typescript\|node-package\|monorepo\]/u,
+    /diagrampilot discover code \[--json\] \[--include-tests\] \[--include-functions\] \[--preset typescript\|node-package\|monorepo\]/u,
   );
 });
 
