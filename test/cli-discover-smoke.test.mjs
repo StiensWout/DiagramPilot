@@ -37,6 +37,34 @@ async function writeDiscoverFixtureRepo(tempRoot) {
   );
 }
 
+async function writeFunctionDiscoveryFixtureRepo(tempRoot, options = {}) {
+  await mkdir(path.join(tempRoot, ".git"));
+  if (options.withDocs === true) {
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+  }
+  await mkdir(path.join(tempRoot, "src"), { recursive: true });
+  await writeFile(
+    path.join(tempRoot, "src", "index.ts"),
+    [
+      'import { formatMessage } from "./messages";',
+      "",
+      "export function bootstrap() {",
+      '  formatMessage("ready");',
+      "}",
+      "",
+    ].join("\n"),
+  );
+  await writeFile(
+    path.join(tempRoot, "src", "messages.ts"),
+    [
+      "export function formatMessage(value: string) {",
+      "  return value.trim();",
+      "}",
+      "",
+    ].join("\n"),
+  );
+}
+
 test("diagrampilot discover packages --json reports effective options without writing files", async () => {
   await withTempRepo(async (tempRoot) => {
     await writeDiscoverFixtureRepo(tempRoot);
@@ -106,6 +134,51 @@ test("diagrampilot discover code --json includes test modules only when requeste
       "src/app.ts",
     ]);
     assert.deepEqual(includeTestsPayload.ignoredFiles, []);
+  });
+});
+
+test("diagrampilot discover code --include-functions --json reports function-level discovery", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await writeFunctionDiscoveryFixtureRepo(tempRoot);
+
+    const result = await runBuiltCli(
+      ["discover", "code", "--include-functions", "--json"],
+      tempRoot,
+    );
+
+    assertCliSucceeded(result);
+    const payload = JSON.parse(result.stdout);
+
+    assert.deepEqual(payload.functions, [
+      {
+        id: "fn_src_index_ts_bootstrap",
+        path: "src/index.ts",
+        name: "bootstrap",
+        exported: true,
+        exportName: "bootstrap",
+        kind: "function-declaration",
+        source: "src/index.ts#L3",
+      },
+      {
+        id: "fn_src_messages_ts_formatmessage",
+        path: "src/messages.ts",
+        name: "formatMessage",
+        exported: true,
+        exportName: "formatMessage",
+        kind: "function-declaration",
+        source: "src/messages.ts#L1",
+      },
+    ]);
+    assert.deepEqual(payload.functionCallEdges, [
+      {
+        from: "fn_src_index_ts_bootstrap",
+        to: "fn_src_messages_ts_formatmessage",
+        callee: "formatMessage",
+        source: "src/index.ts#L4",
+        kind: "direct",
+      },
+    ]);
+    assert.deepEqual(payload.functionDiagnostics, []);
   });
 });
 
@@ -180,5 +253,66 @@ test("diagrampilot discover code --out writes a valid source map from TS imports
       edges: 1,
       groups: 0,
     });
+  });
+});
+
+test("diagrampilot discover code --include-functions --out writes a valid function map", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await writeFunctionDiscoveryFixtureRepo(tempRoot, { withDocs: true });
+
+    const result = await runBuiltCli(
+      [
+        "discover",
+        "code",
+        "--include-functions",
+        "--out",
+        "docs/functions.dp.yaml",
+      ],
+      tempRoot,
+    );
+
+    assertCliSucceeded(result);
+    assert.match(result.stdout, /Wrote docs\/functions\.dp\.yaml/u);
+
+    const outPath = path.join(tempRoot, "docs", "functions.dp.yaml");
+    assert.equal(
+      await readFile(outPath, "utf8"),
+      [
+        "version: 1",
+        "title: Function Map",
+        "direction: right",
+        "nodes:",
+        "  - id: fn_src_index_ts_bootstrap",
+        "    label: bootstrap",
+        "    kind: function",
+        "    metadata:",
+        "      source: src/index.ts#L3",
+        "      module: src/index.ts",
+        "      exported: true",
+        "  - id: fn_src_messages_ts_formatmessage",
+        "    label: formatMessage",
+        "    kind: function",
+        "    metadata:",
+        "      source: src/messages.ts#L1",
+        "      module: src/messages.ts",
+        "      exported: true",
+        "edges:",
+        "  - id: call_fn_src_index_ts_bootstrap_to_fn_src_messages_ts_formatmessage",
+        "    from: fn_src_index_ts_bootstrap",
+        "    to: fn_src_messages_ts_formatmessage",
+        "    label: formatMessage",
+        "    kind: dependency",
+        "    metadata:",
+        "      source: src/index.ts#L4",
+        "      call: formatMessage",
+        "metadata:",
+        "  source: \"**/*.{js,jsx,ts,tsx,mts,cts}\"",
+        "  generatedBy: diagrampilot discover code --include-functions",
+        "",
+      ].join("\n"),
+    );
+
+    assertCliSucceeded(await runBuiltCli(["format", outPath], tempRoot));
+    assertCliSucceeded(await runBuiltCli(["validate", outPath], tempRoot));
   });
 });

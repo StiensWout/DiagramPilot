@@ -161,7 +161,11 @@ export type {
 export type {
   RepoCodeDiscoverySummary,
   RepoDiscoveredCodeClassification,
+  RepoDiscoveredCodeFunction,
+  RepoDiscoveredCodeFunctionKind,
   RepoDiscoveredCodeModule,
+  RepoDiscoveredFunctionCallEdge,
+  RepoDiscoveredFunctionDiagnostic,
   RepoDiscoveredImportEdge,
   RepoDiscoveredUnresolvedImport,
   RepoIgnoredCodeFile,

@@ -24,6 +24,7 @@ export interface DiscoverCommandPlanningDependencies {
 }
 
 interface DiscoverCommandOptions {
+  includeFunctions: boolean;
   includeTests: boolean;
   json: boolean;
   outPath?: string;
@@ -37,6 +38,10 @@ type DiscoverCodeWriteOptions = DiscoverCommandOptions & {
 };
 
 type CodeDiscoverySummary = Extract<RepoDiscoverySummary, { target: "code" }>;
+type CodeDiscoveryFunction = NonNullable<CodeDiscoverySummary["functions"]>[number];
+type CodeDiscoveryFunctionCallEdge = NonNullable<
+  CodeDiscoverySummary["functionCallEdges"]
+>[number];
 type CodeDiscoveryModule = CodeDiscoverySummary["modules"][number];
 type CodeDiscoveryImportEdge = CodeDiscoverySummary["importEdges"][number];
 type InternalCodeDiscoveryImportEdge = CodeDiscoveryImportEdge & {
@@ -55,6 +60,7 @@ type DiscoverArgsResult =
     };
 
 interface MutableDiscoverArgs {
+  includeFunctions: boolean;
   includeTests: boolean;
   json: boolean;
   outPath?: string;
@@ -150,6 +156,10 @@ function parseOutOption(
 }
 
 const discoverOptionParsers: Readonly<Record<string, DiscoverOptionParser>> = {
+  "--include-functions": (_args, _index, state) => {
+    state.includeFunctions = true;
+    return oneTokenResult;
+  },
   "--include-tests": (_args, _index, state) => {
     state.includeTests = true;
     return oneTokenResult;
@@ -272,6 +282,13 @@ function validateTargetSpecificDiscoverOptions(
 function validateDiscoverPackagesOptions(
   state: MutableDiscoverArgs,
 ): { ok: true } | { ok: false; message: string } {
+  if (state.includeFunctions) {
+    return {
+      ok: false,
+      message: "Unsupported discover packages option: --include-functions",
+    };
+  }
+
   if (state.includeTests) {
     return {
       ok: false,
@@ -317,6 +334,7 @@ function completeDiscoverOptions(
   return {
     ok: true,
     options: {
+      includeFunctions: state.includeFunctions,
       includeTests: state.includeTests,
       json: state.json,
       outPath: state.outPath,
@@ -327,7 +345,11 @@ function completeDiscoverOptions(
 }
 
 function parseDiscoverArgs(args: readonly string[]): DiscoverArgsResult {
-  const state: MutableDiscoverArgs = { includeTests: false, json: false };
+  const state: MutableDiscoverArgs = {
+    includeFunctions: false,
+    includeTests: false,
+    json: false,
+  };
   const result = parseDiscoverTokens(args, state);
 
   return result.ok ? completeDiscoverOptions(state) : result;
@@ -406,7 +428,7 @@ function codeImportEdges(result: CodeDiscoverySummary): DiagramSpecEdge[] {
   });
 }
 
-function createCodeDiscoveryDiagramSpec(result: CodeDiscoverySummary): DiagramSpec {
+function createFileLevelDiscoveryDiagramSpec(result: CodeDiscoverySummary): DiagramSpec {
   return {
     version: 1,
     title: "Codebase Map",
@@ -420,8 +442,67 @@ function createCodeDiscoveryDiagramSpec(result: CodeDiscoverySummary): DiagramSp
   };
 }
 
-function serializeCodeDiscoverySourceFile(result: CodeDiscoverySummary): string {
-  return serializeDiagramPilotSourceFile(createCodeDiscoveryDiagramSpec(result));
+function functionNode(codeFunction: CodeDiscoveryFunction): DiagramSpecNode {
+  return {
+    id: codeFunction.id,
+    label: codeFunction.name,
+    kind: "function",
+    metadata: {
+      source: codeFunction.source,
+      module: codeFunction.path,
+      exported: codeFunction.exported,
+    },
+  };
+}
+
+function functionCallEdges(result: CodeDiscoverySummary): DiagramSpecEdge[] {
+  const seenIds = new Map<string, number>();
+
+  return (result.functionCallEdges ?? []).map((edge) => ({
+    id: uniqueStableId(`call_${edge.from}_to_${edge.to}`, seenIds),
+    from: edge.from,
+    to: edge.to,
+    label: edge.callee,
+    kind: "dependency",
+    metadata: {
+      source: edge.source,
+      call: edge.callee,
+    },
+  }));
+}
+
+function createFunctionLevelDiscoveryDiagramSpec(
+  result: CodeDiscoverySummary,
+): DiagramSpec {
+  return {
+    version: 1,
+    title: "Function Map",
+    direction: "right",
+    nodes: (result.functions ?? []).map(functionNode),
+    edges: functionCallEdges(result),
+    metadata: {
+      source: "**/*.{js,jsx,ts,tsx,mts,cts}",
+      generatedBy: "diagrampilot discover code --include-functions",
+    },
+  };
+}
+
+function createCodeDiscoveryDiagramSpec(
+  options: DiscoverCodeWriteOptions,
+  result: CodeDiscoverySummary,
+): DiagramSpec {
+  return options.includeFunctions
+    ? createFunctionLevelDiscoveryDiagramSpec(result)
+    : createFileLevelDiscoveryDiagramSpec(result);
+}
+
+function serializeCodeDiscoverySourceFile(
+  options: DiscoverCodeWriteOptions,
+  result: CodeDiscoverySummary,
+): string {
+  return serializeDiagramPilotSourceFile(
+    createCodeDiscoveryDiagramSpec(options, result),
+  );
 }
 
 function discoverWriteTextOutput(options: DiscoverCodeWriteOptions): string {
@@ -446,16 +527,34 @@ function discoverWriteJsonOutput(
     output: options.outPath,
     readOnly: false,
     files: result.files,
-    nodes: result.modules.length,
-    edges: result.importEdges.filter((edge) => edge.kind === "internal").length,
+    nodes: discoverWriteNodeCount(options, result),
+    edges: discoverWriteEdgeCount(options, result),
   });
+}
+
+function discoverWriteNodeCount(
+  options: DiscoverCodeWriteOptions,
+  result: CodeDiscoverySummary,
+): number {
+  return options.includeFunctions
+    ? (result.functions ?? []).length
+    : result.modules.length;
+}
+
+function discoverWriteEdgeCount(
+  options: DiscoverCodeWriteOptions,
+  result: CodeDiscoverySummary,
+): number {
+  return options.includeFunctions
+    ? (result.functionCallEdges ?? []).length
+    : result.importEdges.filter((edge) => edge.kind === "internal").length;
 }
 
 function discoverWritePlan(
   options: DiscoverCodeWriteOptions,
   result: CodeDiscoverySummary,
 ): CommandPlan {
-  const content = serializeCodeDiscoverySourceFile(result);
+  const content = serializeCodeDiscoverySourceFile(options, result);
 
   return {
     exitCode: 0,
@@ -527,6 +626,7 @@ export async function planDiscover(
   }
 
   const discoverResult = await dependencies.discoverRepo({
+    includeFunctions: argsResult.options.includeFunctions,
     includeTests: argsResult.options.includeTests,
     target: argsResult.options.target,
     preset: argsResult.options.preset,
