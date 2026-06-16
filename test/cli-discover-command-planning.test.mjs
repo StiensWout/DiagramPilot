@@ -39,7 +39,14 @@ test("plans discover code JSON as a read-only effective options report", async (
     target: "code",
     mode: "summary",
     preset: "typescript",
-    include: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx"],
+    include: [
+      "**/*.js",
+      "**/*.jsx",
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.mts",
+      "**/*.cts",
+    ],
     exclude: [
       "node_modules/**",
       ".git/**",
@@ -66,6 +73,17 @@ test("plans discover code JSON as a read-only effective options report", async (
       },
     ],
     readOnly: true,
+    files: ["src/app.ts"],
+    modules: [],
+    importEdges: [],
+    unresolvedImports: [],
+    ignoredFiles: [
+      {
+        path: "src/app.test.ts",
+        classifications: ["test"],
+        reason: "test",
+      },
+    ],
   });
 });
 
@@ -101,7 +119,7 @@ test("plans conflicting discover preset flags as repairable usage", async () => 
 
   assert.match(
     plan.stderr,
-    /diagrampilot discover code \[--json\] \[--preset typescript\|node-package\|monorepo\]/u,
+    /diagrampilot discover code \[--json\] \[--include-tests\] \[--preset typescript\|node-package\|monorepo\]/u,
   );
 });
 

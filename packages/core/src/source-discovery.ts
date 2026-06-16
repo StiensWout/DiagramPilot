@@ -1,6 +1,11 @@
 import { readdirSync, statSync, type Stats } from "node:fs";
 import path from "node:path";
 
+import {
+  createRelativePathIgnoreMatcher,
+  normalizeRepoRelativePath,
+} from "./path-ignore-patterns.js";
+
 export interface DiscoveredDiagramPilotSourceFile {
   absolutePath: string;
   relativePath: string;
@@ -52,64 +57,21 @@ const ignoredDiagramPilotDiscoveryDirectories = new Set([
   ".turbo",
 ]);
 
-function normalizeRelativePath(filePath: string): string {
-  return filePath.split(path.sep).join("/");
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-}
-
-function normalizeIgnorePattern(pattern: string): string {
-  return pattern
-    .replace(/\\/gu, "/")
-    .replace(/^\.\//u, "")
-    .replace(/\/$/u, "/**");
-}
-
-function globPatternToRegExp(pattern: string): RegExp {
-  const normalizedPattern = normalizeIgnorePattern(pattern);
-  const hasDirectoryBoundary = normalizedPattern.includes("/");
-  const expression = normalizedPattern
-    .split("/")
-    .map((segment) => {
-      if (segment === "**") {
-        return ".*";
-      }
-
-      return escapeRegExp(segment)
-        .replace(/\\\*/gu, "[^/]*")
-        .replace(/\\\?/gu, "[^/]");
-    })
-    .join("/");
-
-  if (hasDirectoryBoundary) {
-    return new RegExp(`^${expression}$`, "u");
-  }
-
-  return new RegExp(`(?:^|/)${expression}$`, "u");
-}
-
 function createSourceIgnoreMatcher(
   options: DiagramPilotSourceDiscoveryOptions,
 ): (absolutePath: string, fallbackRelativePath: string) => boolean {
   const patterns = options.ignorePatterns ?? [];
-
-  if (patterns.length === 0) {
-    return () => false;
-  }
-
   const root = options.ignorePatternsRoot;
-  const expressions = patterns.map(globPatternToRegExp);
+  const matchesRelativePath = createRelativePathIgnoreMatcher(patterns);
 
   return (absolutePath, fallbackRelativePath) => {
-    const relativePath = normalizeRelativePath(
+    const relativePath = normalizeRepoRelativePath(
       root === undefined
         ? fallbackRelativePath
         : path.relative(root, absolutePath),
     );
 
-    return expressions.some((expression) => expression.test(relativePath));
+    return matchesRelativePath(relativePath);
   };
 }
 
@@ -131,7 +93,7 @@ function sourceFileForEntry(options: {
     return undefined;
   }
 
-  const relativePath = normalizeRelativePath(
+  const relativePath = normalizeRepoRelativePath(
     path.relative(options.scopePath, options.absolutePath),
   );
 
@@ -232,7 +194,7 @@ function fileScopeDiscoveryResult(
     sources: [
       {
         absolutePath: scopePath,
-        relativePath: normalizeRelativePath(path.basename(scopePath)),
+        relativePath: normalizeRepoRelativePath(path.basename(scopePath)),
       },
     ],
   };

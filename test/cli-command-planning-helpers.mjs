@@ -222,42 +222,79 @@ export function repoWorkflowCheckResult(options = {}) {
   };
 }
 
+const builtinDiscoveryIgnorePatterns = [
+  "node_modules/**",
+  ".git/**",
+  "dist/**",
+  "build/**",
+  "coverage/**",
+  ".next/**",
+  ".vite/**",
+  ".turbo/**",
+];
+
+function discoveryIncludePatterns(target) {
+  return target === "code"
+    ? [
+        "**/*.js",
+        "**/*.jsx",
+        "**/*.ts",
+        "**/*.tsx",
+        "**/*.mts",
+        "**/*.cts",
+      ]
+    : ["package.json", "packages/*/package.json"];
+}
+
+function baseDiscoverPayload({ target, preset }) {
+  return {
+    ok: true,
+    command: "discover",
+    target,
+    mode: "summary",
+    preset: preset ?? (target === "code" ? "typescript" : "node-package"),
+    include: discoveryIncludePatterns(target),
+    exclude: builtinDiscoveryIgnorePatterns,
+    ignoreSources: [
+      {
+        source: "builtin",
+        patterns: builtinDiscoveryIgnorePatterns,
+      },
+    ],
+    readOnly: true,
+  };
+}
+
+function codeDiscoverPayload(options) {
+  return {
+    ...baseDiscoverPayload(options),
+    files: options.includeTests ? ["src/app.test.ts", "src/app.ts"] : ["src/app.ts"],
+    modules: [],
+    importEdges: [],
+    unresolvedImports: [],
+    ignoredFiles: options.includeTests
+      ? []
+      : [
+          {
+            path: "src/app.test.ts",
+            classifications: ["test"],
+            reason: "test",
+          },
+        ],
+  };
+}
+
+function discoverRepoPayload(options) {
+  return options.target === "code"
+    ? codeDiscoverPayload(options)
+    : baseDiscoverPayload(options);
+}
+
 export function createPlanningDependencies(overrides = {}) {
   return {
     loadValidatedDiagramSpec: () => validLoadResult(),
     checkDiagramPilotRepoWorkflow: async () => repoWorkflowCheckResult(),
-    discoverRepo: ({ target, preset }) => {
-      const builtinIgnorePatterns = [
-        "node_modules/**",
-        ".git/**",
-        "dist/**",
-        "build/**",
-        "coverage/**",
-        ".next/**",
-        ".vite/**",
-        ".turbo/**",
-      ];
-
-      return {
-        ok: true,
-        command: "discover",
-        target,
-        mode: "summary",
-        preset: preset ?? (target === "code" ? "typescript" : "node-package"),
-        include:
-          target === "code"
-            ? ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx"]
-            : ["package.json", "packages/*/package.json"],
-        exclude: builtinIgnorePatterns,
-        ignoreSources: [
-          {
-            source: "builtin",
-            patterns: builtinIgnorePatterns,
-          },
-        ],
-        readOnly: true,
-      };
-    },
+    discoverRepo: discoverRepoPayload,
     generateDiagramPilotRepoWorkflow: async (options) => {
       const loadResult = validLoadResult();
       const content = await options.renderSvgArtifact({

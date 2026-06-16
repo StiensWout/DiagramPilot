@@ -20,6 +20,7 @@ export interface DiscoverCommandPlanningDependencies {
 }
 
 interface DiscoverCommandOptions {
+  includeTests: boolean;
   json: boolean;
   preset?: RepoDiscoveryPreset;
   target: RepoDiscoveryTarget;
@@ -36,6 +37,7 @@ type DiscoverArgsResult =
     };
 
 interface MutableDiscoverArgs {
+  includeTests: boolean;
   json: boolean;
   preset?: string;
   target?: string;
@@ -126,6 +128,11 @@ function parseDiscoverOption(
     return { ok: true, consumed: 1 };
   }
 
+  if (arg === "--include-tests") {
+    state.includeTests = true;
+    return { ok: true, consumed: 1 };
+  }
+
   return arg === "--preset"
     ? parsePresetOption(args, index, state)
     : unsupportedDiscoverOption(arg);
@@ -202,6 +209,18 @@ function parseOptionalDiscoverPreset(
       };
 }
 
+function validateTargetSpecificDiscoverOptions(
+  target: RepoDiscoveryTarget,
+  state: MutableDiscoverArgs,
+): { ok: true } | { ok: false; message: string } {
+  return target === "packages" && state.includeTests
+    ? {
+        ok: false,
+        message: "Unsupported discover packages option: --include-tests",
+      }
+    : { ok: true };
+}
+
 function completeDiscoverOptions(
   state: MutableDiscoverArgs,
 ): DiscoverArgsResult {
@@ -211,9 +230,13 @@ function completeDiscoverOptions(
   const preset = parseOptionalDiscoverPreset(state);
   if (!preset.ok) return preset;
 
+  const targetOptions = validateTargetSpecificDiscoverOptions(target.value, state);
+  if (!targetOptions.ok) return targetOptions;
+
   return {
     ok: true,
     options: {
+      includeTests: state.includeTests,
       json: state.json,
       target: target.value,
       preset: preset.value,
@@ -222,7 +245,7 @@ function completeDiscoverOptions(
 }
 
 function parseDiscoverArgs(args: readonly string[]): DiscoverArgsResult {
-  const state: MutableDiscoverArgs = { json: false };
+  const state: MutableDiscoverArgs = { includeTests: false, json: false };
   const result = parseDiscoverTokens(args, state);
 
   return result.ok ? completeDiscoverOptions(state) : result;
@@ -248,6 +271,7 @@ export async function planDiscover(
   }
 
   const discoverResult = await dependencies.discoverRepo({
+    includeTests: argsResult.options.includeTests,
     target: argsResult.options.target,
     preset: argsResult.options.preset,
   });
