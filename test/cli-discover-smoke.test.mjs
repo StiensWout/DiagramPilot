@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 
@@ -106,5 +106,79 @@ test("diagrampilot discover code --json includes test modules only when requeste
       "src/app.ts",
     ]);
     assert.deepEqual(includeTestsPayload.ignoredFiles, []);
+  });
+});
+
+test("diagrampilot discover code --out writes a valid source map from TS imports", async () => {
+  await withTempRepo(async (tempRoot) => {
+    await mkdir(path.join(tempRoot, ".git"));
+    await mkdir(path.join(tempRoot, "docs"), { recursive: true });
+    await mkdir(path.join(tempRoot, "src", "routes"), { recursive: true });
+    await writeFile(
+      path.join(tempRoot, "src", "index.ts"),
+      [
+        'import { renderHome } from "./routes/home";',
+        "export { renderHome };",
+        "",
+      ].join("\n"),
+    );
+    await writeFile(
+      path.join(tempRoot, "src", "routes", "home.ts"),
+      "export function renderHome() {}\n",
+    );
+
+    const result = await runBuiltCli(
+      ["discover", "code", "--out", "docs/codebase.dp.yaml"],
+      tempRoot,
+    );
+
+    assertCliSucceeded(result);
+    assert.match(result.stdout, /Wrote docs\/codebase\.dp\.yaml/u);
+
+    const outPath = path.join(tempRoot, "docs", "codebase.dp.yaml");
+    assert.equal(
+      await readFile(outPath, "utf8"),
+      [
+        "version: 1",
+        "title: Codebase Map",
+        "direction: right",
+        "nodes:",
+        "  - id: file_src_index_ts",
+        "    label: src/index.ts",
+        "    kind: module",
+        "    metadata:",
+        "      source: src/index.ts",
+        "  - id: file_src_routes_home_ts",
+        "    label: src/routes/home.ts",
+        "    kind: module",
+        "    metadata:",
+        "      source: src/routes/home.ts",
+        "edges:",
+        "  - id: import_file_src_index_ts_to_file_src_routes_home_ts",
+        "    from: file_src_index_ts",
+        "    to: file_src_routes_home_ts",
+        "    label: ./routes/home",
+        "    kind: dependency",
+        "    metadata:",
+        "      source: src/index.ts",
+        "      importSpecifier: ./routes/home",
+        "metadata:",
+        "  source: \"**/*.{js,jsx,ts,tsx,mts,cts}\"",
+        "  generatedBy: diagrampilot discover code",
+        "",
+      ].join("\n"),
+    );
+
+    assertCliSucceeded(await runBuiltCli(["format", outPath], tempRoot));
+    assertCliSucceeded(await runBuiltCli(["validate", outPath], tempRoot));
+
+    const inspectResult = await runBuiltCli(["inspect", outPath, "--json"], tempRoot);
+    assertCliSucceeded(inspectResult);
+    const inspectPayload = JSON.parse(inspectResult.stdout);
+    assert.deepEqual(inspectPayload.sources[0].diagram.counts, {
+      nodes: 2,
+      edges: 1,
+      groups: 0,
+    });
   });
 });

@@ -4,8 +4,8 @@ import test from "node:test";
 import { planCommand } from "../packages/cli/dist/index.js";
 import { createPlanningDependencies } from "./cli-command-planning-helpers.mjs";
 
-async function planDiscover(args) {
-  return await planCommand(["discover", ...args], createPlanningDependencies());
+async function planDiscover(args, dependencies = createPlanningDependencies()) {
+  return await planCommand(["discover", ...args], dependencies);
 }
 
 async function parseSuccessfulDiscoverPayload(args) {
@@ -104,6 +104,101 @@ test("plans discover packages JSON with an explicit CLI preset", async () => {
   ]);
 });
 
+test("plans discover code output as a generated source write", async () => {
+  const plan = await planDiscover(
+    ["code", "--out", "docs/codebase.dp.yaml", "--json"],
+    createPlanningDependencies({
+      discoverRepo: () => ({
+        ok: true,
+        command: "discover",
+        target: "code",
+        mode: "summary",
+        preset: "typescript",
+        include: ["**/*.ts"],
+        exclude: [],
+        ignoreSources: [],
+        readOnly: true,
+        files: ["src/index.ts", "src/routes/home.ts"],
+        modules: [
+          {
+            path: "src/index.ts",
+            extension: ".ts",
+            classifications: ["source"],
+            importSpecifiers: ["./routes/home"],
+            exportCount: 1,
+          },
+          {
+            path: "src/routes/home.ts",
+            extension: ".ts",
+            classifications: ["source", "route-like"],
+            importSpecifiers: [],
+            exportCount: 1,
+          },
+        ],
+        importEdges: [
+          {
+            from: "src/index.ts",
+            specifier: "./routes/home",
+            to: "src/routes/home.ts",
+            kind: "internal",
+          },
+        ],
+        unresolvedImports: [],
+        ignoredFiles: [],
+      }),
+    }),
+  );
+
+  assert.equal(plan.exitCode, 0);
+  assert.equal(plan.stderr, "");
+  assert.deepEqual(JSON.parse(plan.stdout), {
+    ok: true,
+    command: "discover",
+    target: "code",
+    mode: "source",
+    output: "docs/codebase.dp.yaml",
+    readOnly: false,
+    files: ["src/index.ts", "src/routes/home.ts"],
+    nodes: 2,
+    edges: 1,
+  });
+  assert.equal(plan.writes.length, 1);
+  assert.equal(plan.writes[0].path, "docs/codebase.dp.yaml");
+
+  assert.equal(
+    plan.writes[0].content,
+    [
+      "version: 1",
+      "title: Codebase Map",
+      "direction: right",
+      "nodes:",
+      "  - id: file_src_index_ts",
+      "    label: src/index.ts",
+      "    kind: module",
+      "    metadata:",
+      "      source: src/index.ts",
+      "  - id: file_src_routes_home_ts",
+      "    label: src/routes/home.ts",
+      "    kind: module",
+      "    metadata:",
+      "      source: src/routes/home.ts",
+      "edges:",
+      "  - id: import_file_src_index_ts_to_file_src_routes_home_ts",
+      "    from: file_src_index_ts",
+      "    to: file_src_routes_home_ts",
+      "    label: ./routes/home",
+      "    kind: dependency",
+      "    metadata:",
+      "      source: src/index.ts",
+      "      importSpecifier: ./routes/home",
+      "metadata:",
+      "  source: \"**/*.{js,jsx,ts,tsx,mts,cts}\"",
+      "  generatedBy: diagrampilot discover code",
+      "",
+    ].join("\n"),
+  );
+});
+
 test("plans conflicting discover preset flags as repairable usage", async () => {
   const plan = await assertDiscoverUsageFailure(
     [
@@ -123,9 +218,13 @@ test("plans conflicting discover preset flags as repairable usage", async () => 
   );
 });
 
-test("plans unsupported discover write options as repairable usage", async () => {
+test("plans unsupported discover update options as repairable usage", async () => {
   await assertDiscoverUsageFailure(
-    ["code", "--out", "docs/codebase.dp.yaml"],
-    /^Unsupported discover write option: --out/u,
+    ["code", "--update", "docs/codebase.dp.yaml"],
+    /^Unsupported discover write option: --update/u,
+  );
+  await assertDiscoverUsageFailure(
+    ["code", "--force"],
+    /^Unsupported discover write option: --force/u,
   );
 });
