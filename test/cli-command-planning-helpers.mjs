@@ -226,6 +226,38 @@ export function createPlanningDependencies(overrides = {}) {
   return {
     loadValidatedDiagramSpec: () => validLoadResult(),
     checkDiagramPilotRepoWorkflow: async () => repoWorkflowCheckResult(),
+    discoverRepo: ({ target, preset }) => {
+      const builtinIgnorePatterns = [
+        "node_modules/**",
+        ".git/**",
+        "dist/**",
+        "build/**",
+        "coverage/**",
+        ".next/**",
+        ".vite/**",
+        ".turbo/**",
+      ];
+
+      return {
+        ok: true,
+        command: "discover",
+        target,
+        mode: "summary",
+        preset: preset ?? (target === "code" ? "typescript" : "node-package"),
+        include:
+          target === "code"
+            ? ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx"]
+            : ["package.json", "packages/*/package.json"],
+        exclude: builtinIgnorePatterns,
+        ignoreSources: [
+          {
+            source: "builtin",
+            patterns: builtinIgnorePatterns,
+          },
+        ],
+        readOnly: true,
+      };
+    },
     generateDiagramPilotRepoWorkflow: async (options) => {
       const loadResult = validLoadResult();
       const content = await options.renderSvgArtifact({
