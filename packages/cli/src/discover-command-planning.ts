@@ -1,5 +1,9 @@
 import {
   repoDiscoveryPresets,
+  serializeDiagramPilotSourceFile,
+  type DiagramSpec,
+  type DiagramSpecEdge,
+  type DiagramSpecNode,
   type RepoDiscoveryOptions,
   type RepoDiscoveryPreset,
   type RepoDiscoveryResult,
@@ -22,9 +26,23 @@ export interface DiscoverCommandPlanningDependencies {
 interface DiscoverCommandOptions {
   includeTests: boolean;
   json: boolean;
+  outPath?: string;
   preset?: RepoDiscoveryPreset;
   target: RepoDiscoveryTarget;
 }
+
+type DiscoverCodeWriteOptions = DiscoverCommandOptions & {
+  outPath: string;
+  target: "code";
+};
+
+type CodeDiscoverySummary = Extract<RepoDiscoverySummary, { target: "code" }>;
+type CodeDiscoveryModule = CodeDiscoverySummary["modules"][number];
+type CodeDiscoveryImportEdge = CodeDiscoverySummary["importEdges"][number];
+type InternalCodeDiscoveryImportEdge = CodeDiscoveryImportEdge & {
+  kind: "internal";
+  to: string;
+};
 
 type DiscoverArgsResult =
   | {
@@ -39,6 +57,7 @@ type DiscoverArgsResult =
 interface MutableDiscoverArgs {
   includeTests: boolean;
   json: boolean;
+  outPath?: string;
   preset?: string;
   target?: string;
 }
@@ -62,9 +81,15 @@ type ParseResult<T> =
       ok: false;
       message: string;
     };
+type DiscoverOptionParser = (
+  args: readonly string[],
+  index: number,
+  state: MutableDiscoverArgs,
+) => FlagParseResult;
 
 const discoverTargets = new Set<RepoDiscoveryTarget>(["code", "packages"]);
-const unsupportedWriteOptions = new Set(["--out", "--update", "--force"]);
+const unsupportedWriteOptions = new Set(["--update", "--force"]);
+const oneTokenResult = { ok: true, consumed: 1 } as const satisfies FlagParseResult;
 
 function isDiscoverTarget(value: string): value is RepoDiscoveryTarget {
   return discoverTargets.has(value as RepoDiscoveryTarget);
@@ -105,6 +130,38 @@ function parsePresetOption(
   return { ok: true, consumed: 2 };
 }
 
+function parseOutOption(
+  args: readonly string[],
+  index: number,
+  state: MutableDiscoverArgs,
+): FlagParseResult {
+  const value = requireFlagValue(args, index, "Missing discover output path.");
+  if (!value.ok) return value;
+
+  if (state.outPath !== undefined && state.outPath !== value.value) {
+    return {
+      ok: false,
+      message: `Conflicting discover output path: ${value.value}`,
+    };
+  }
+
+  state.outPath = value.value;
+  return { ok: true, consumed: 2 };
+}
+
+const discoverOptionParsers: Readonly<Record<string, DiscoverOptionParser>> = {
+  "--include-tests": (_args, _index, state) => {
+    state.includeTests = true;
+    return oneTokenResult;
+  },
+  "--json": (_args, _index, state) => {
+    state.json = true;
+    return oneTokenResult;
+  },
+  "--out": parseOutOption,
+  "--preset": parsePresetOption,
+};
+
 function unsupportedDiscoverOption(arg: string): FlagParseResult {
   const optionKind = unsupportedWriteOptions.has(arg)
     ? "Unsupported discover write option"
@@ -122,20 +179,11 @@ function parseDiscoverOption(
   state: MutableDiscoverArgs,
 ): FlagParseResult {
   const arg = args[index];
+  const parser = discoverOptionParsers[arg];
 
-  if (arg === "--json") {
-    state.json = true;
-    return { ok: true, consumed: 1 };
-  }
-
-  if (arg === "--include-tests") {
-    state.includeTests = true;
-    return { ok: true, consumed: 1 };
-  }
-
-  return arg === "--preset"
-    ? parsePresetOption(args, index, state)
-    : unsupportedDiscoverOption(arg);
+  return parser === undefined
+    ? unsupportedDiscoverOption(arg)
+    : parser(args, index, state);
 }
 
 function parseDiscoverTarget(
@@ -213,12 +261,45 @@ function validateTargetSpecificDiscoverOptions(
   target: RepoDiscoveryTarget,
   state: MutableDiscoverArgs,
 ): { ok: true } | { ok: false; message: string } {
-  return target === "packages" && state.includeTests
-    ? {
-        ok: false,
-        message: "Unsupported discover packages option: --include-tests",
-      }
-    : { ok: true };
+  const packageOptions =
+    target === "packages" ? validateDiscoverPackagesOptions(state) : undefined;
+
+  return packageOptions?.ok === false
+    ? packageOptions
+    : validateDiscoverOutputPath(state);
+}
+
+function validateDiscoverPackagesOptions(
+  state: MutableDiscoverArgs,
+): { ok: true } | { ok: false; message: string } {
+  if (state.includeTests) {
+    return {
+      ok: false,
+      message: "Unsupported discover packages option: --include-tests",
+    };
+  }
+
+  if (state.outPath !== undefined) {
+    return {
+      ok: false,
+      message: "Unsupported discover packages option: --out",
+    };
+  }
+
+  return { ok: true };
+}
+
+function validateDiscoverOutputPath(
+  state: MutableDiscoverArgs,
+): { ok: true } | { ok: false; message: string } {
+  if (state.outPath !== undefined && !state.outPath.endsWith(".dp.yaml")) {
+    return {
+      ok: false,
+      message: "Discover output path must end with .dp.yaml.",
+    };
+  }
+
+  return { ok: true };
 }
 
 function completeDiscoverOptions(
@@ -238,6 +319,7 @@ function completeDiscoverOptions(
     options: {
       includeTests: state.includeTests,
       json: state.json,
+      outPath: state.outPath,
       target: target.value,
       preset: preset.value,
     },
@@ -260,6 +342,180 @@ function formatDiscoverTextReport(result: RepoDiscoverySummary): string {
   ].join("\n");
 }
 
+function stableIdToken(value: string): string {
+  const token = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gu, "_")
+    .replace(/^_+|_+$/gu, "");
+
+  return token === "" ? "unknown" : token;
+}
+
+function codeModuleNodeId(modulePath: string): string {
+  return `file_${stableIdToken(modulePath)}`;
+}
+
+function codeModuleNode(module: CodeDiscoveryModule): DiagramSpecNode {
+  return {
+    id: codeModuleNodeId(module.path),
+    label: module.path,
+    kind: "module",
+    metadata: {
+      source: module.path,
+    },
+  };
+}
+
+function uniqueStableId(
+  baseId: string,
+  seenIds: Map<string, number>,
+): string {
+  const seenCount = seenIds.get(baseId) ?? 0;
+  seenIds.set(baseId, seenCount + 1);
+
+  return seenCount === 0 ? baseId : `${baseId}_${seenCount + 1}`;
+}
+
+function internalImportEdges(
+  result: CodeDiscoverySummary,
+): readonly InternalCodeDiscoveryImportEdge[] {
+  return result.importEdges.filter(
+    (edge): edge is InternalCodeDiscoveryImportEdge =>
+      edge.kind === "internal" && edge.to !== null,
+  );
+}
+
+function codeImportEdges(result: CodeDiscoverySummary): DiagramSpecEdge[] {
+  const seenIds = new Map<string, number>();
+
+  return internalImportEdges(result).map((edge) => {
+    const fromId = codeModuleNodeId(edge.from);
+    const toId = codeModuleNodeId(edge.to);
+
+    return {
+      id: uniqueStableId(`import_${fromId}_to_${toId}`, seenIds),
+      from: fromId,
+      to: toId,
+      label: edge.specifier,
+      kind: "dependency",
+      metadata: {
+        source: edge.from,
+        importSpecifier: edge.specifier,
+      },
+    };
+  });
+}
+
+function createCodeDiscoveryDiagramSpec(result: CodeDiscoverySummary): DiagramSpec {
+  return {
+    version: 1,
+    title: "Codebase Map",
+    direction: "right",
+    nodes: result.modules.map(codeModuleNode),
+    edges: codeImportEdges(result),
+    metadata: {
+      source: "**/*.{js,jsx,ts,tsx,mts,cts}",
+      generatedBy: "diagrampilot discover code",
+    },
+  };
+}
+
+function serializeCodeDiscoverySourceFile(result: CodeDiscoverySummary): string {
+  return serializeDiagramPilotSourceFile(createCodeDiscoveryDiagramSpec(result));
+}
+
+function discoverWriteTextOutput(options: DiscoverCodeWriteOptions): string {
+  const outPath = options.outPath;
+  return [
+    `Wrote ${outPath}.`,
+    `Next: diagrampilot validate ${outPath}`,
+    `Inspect: diagrampilot inspect ${outPath} --json`,
+    "",
+  ].join("\n");
+}
+
+function discoverWriteJsonOutput(
+  options: DiscoverCodeWriteOptions,
+  result: CodeDiscoverySummary,
+): string {
+  return jsonTextLine({
+    ok: true,
+    command: "discover",
+    target: "code",
+    mode: "source",
+    output: options.outPath,
+    readOnly: false,
+    files: result.files,
+    nodes: result.modules.length,
+    edges: result.importEdges.filter((edge) => edge.kind === "internal").length,
+  });
+}
+
+function discoverWritePlan(
+  options: DiscoverCodeWriteOptions,
+  result: CodeDiscoverySummary,
+): CommandPlan {
+  const content = serializeCodeDiscoverySourceFile(result);
+
+  return {
+    exitCode: 0,
+    stdout: options.json
+      ? discoverWriteJsonOutput(options, result)
+      : discoverWriteTextOutput(options),
+    stderr: "",
+    writes: [
+      {
+        path: options.outPath,
+        content,
+      },
+    ],
+  };
+}
+
+function discoverFailurePlan(
+  result: Extract<RepoDiscoveryResult, { ok: false }>,
+): CommandPlan {
+  return {
+    exitCode: 1,
+    stdout: "",
+    stderr: textLine(result.failure.message),
+    writes: [],
+  };
+}
+
+function createDiscoverCodeWriteOptions(
+  options: DiscoverCommandOptions,
+  result: RepoDiscoverySummary,
+): DiscoverCodeWriteOptions | undefined {
+  return options.outPath !== undefined &&
+    options.target === "code" &&
+    result.target === "code"
+    ? {
+        ...options,
+        outPath: options.outPath,
+        target: "code",
+      }
+    : undefined;
+}
+
+function discoverSuccessPlan(
+  options: DiscoverCommandOptions,
+  result: RepoDiscoverySummary,
+): CommandPlan {
+  const writeOptions = createDiscoverCodeWriteOptions(options, result);
+
+  return writeOptions === undefined
+    ? {
+        exitCode: 0,
+        stdout: options.json
+          ? jsonTextLine(result)
+          : textLine(formatDiscoverTextReport(result)),
+        stderr: "",
+        writes: [],
+      }
+    : discoverWritePlan(writeOptions, result as CodeDiscoverySummary);
+}
+
 export async function planDiscover(
   args: readonly string[],
   dependencies: DiscoverCommandPlanningDependencies,
@@ -276,21 +532,7 @@ export async function planDiscover(
     preset: argsResult.options.preset,
   });
 
-  if (!discoverResult.ok) {
-    return {
-      exitCode: 1,
-      stdout: "",
-      stderr: textLine(discoverResult.failure.message),
-      writes: [],
-    };
-  }
-
-  return {
-    exitCode: 0,
-    stdout: argsResult.options.json
-      ? jsonTextLine(discoverResult)
-      : textLine(formatDiscoverTextReport(discoverResult)),
-    stderr: "",
-    writes: [],
-  };
+  return discoverResult.ok
+    ? discoverSuccessPlan(argsResult.options, discoverResult)
+    : discoverFailurePlan(discoverResult);
 }

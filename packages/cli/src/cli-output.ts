@@ -45,6 +45,7 @@ export function helpText(version: string): string {
     "  inspect [path] [--json]",
     "  generate [path] [--json]",
     "  discover code|packages [--json] [--preset typescript|node-package|monorepo]",
+    "  discover code --out <path>",
     "  watch [path]",
     "  import <input> --format mermaid|d2|dot --out <path> [--json] [--force]",
     "  icons list",
@@ -91,6 +92,7 @@ export function discoverUsageText(): string {
   return [
     "Usage:",
     "  diagrampilot discover code [--json] [--include-tests] [--preset typescript|node-package|monorepo]",
+    "  diagrampilot discover code --out <path> [--json] [--include-tests] [--preset typescript|node-package|monorepo]",
     "  diagrampilot discover packages [--json] [--preset typescript|node-package|monorepo]",
   ].join("\n");
 }
