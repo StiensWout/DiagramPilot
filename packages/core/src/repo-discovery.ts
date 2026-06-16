@@ -6,6 +6,10 @@ import {
   type RepoWorkflowConfig,
   type RepoWorkflowConfigFailure,
 } from "./repo-workflow-config.js";
+import {
+  discoverCodeModules,
+  type RepoCodeDiscoverySummary,
+} from "./repo-code-discovery.js";
 
 export type RepoDiscoveryTarget = "code" | "packages";
 
@@ -15,6 +19,7 @@ export interface RepoDiscoveryOptions {
   scopePath?: string;
   target: RepoDiscoveryTarget;
   preset?: RepoDiscoveryPreset;
+  includeTests?: boolean;
 }
 
 export interface RepoDiscoveryIgnoreSource {
@@ -23,7 +28,7 @@ export interface RepoDiscoveryIgnoreSource {
   patterns: readonly string[];
 }
 
-export interface RepoDiscoverySummary {
+interface RepoDiscoveryBaseSummary {
   ok: true;
   command: "discover";
   target: RepoDiscoveryTarget;
@@ -34,6 +39,10 @@ export interface RepoDiscoverySummary {
   ignoreSources: readonly RepoDiscoveryIgnoreSource[];
   readOnly: true;
 }
+
+export type RepoDiscoverySummary =
+  | (RepoDiscoveryBaseSummary & { target: "code" } & RepoCodeDiscoverySummary)
+  | (RepoDiscoveryBaseSummary & { target: "packages" });
 
 export type RepoDiscoveryFailure = RepoWorkflowConfigFailure;
 
@@ -66,6 +75,8 @@ const codeIncludePatterns = [
   "**/*.jsx",
   "**/*.ts",
   "**/*.tsx",
+  "**/*.mts",
+  "**/*.cts",
 ] as const;
 
 const packageIncludePatterns = ["package.json", "packages/*/package.json"] as const;
@@ -176,16 +187,66 @@ function effectivePreset(options: {
   );
 }
 
+function failedRepoDiscoveryResult(
+  failure: RepoWorkflowConfigFailure,
+): RepoDiscoveryResult {
+  return {
+    ok: false,
+    failure,
+  };
+}
+
+function createBaseDiscoverySummary(options: {
+  config?: RepoWorkflowConfig;
+  ignoreSources: readonly RepoDiscoveryIgnoreSource[];
+  preset?: RepoDiscoveryPreset;
+  target: RepoDiscoveryTarget;
+}): RepoDiscoveryBaseSummary {
+  return {
+    ok: true,
+    command: "discover",
+    target: options.target,
+    mode: "summary",
+    preset: effectivePreset({
+      config: options.config,
+      preset: options.preset,
+      target: options.target,
+    }),
+    include: includePatternsForTarget(options.target),
+    exclude: combineIgnorePatterns(options.ignoreSources),
+    ignoreSources: options.ignoreSources,
+    readOnly: true,
+  };
+}
+
+function successfulRepoDiscoveryResult(options: {
+  baseSummary: RepoDiscoveryBaseSummary;
+  directory: string;
+  includeTests?: boolean;
+}): RepoDiscoverySummary {
+  return options.baseSummary.target === "code"
+    ? {
+        ...options.baseSummary,
+        target: "code",
+        ...discoverCodeModules({
+          directory: options.directory,
+          exclude: options.baseSummary.exclude,
+          includeTests: options.includeTests,
+        }),
+      }
+    : {
+        ...options.baseSummary,
+        target: "packages",
+      };
+}
+
 export async function discoverRepo(
   options: RepoDiscoveryOptions,
 ): Promise<RepoDiscoveryResult> {
   const configResult = await discoverRepoWorkflowConfig(options.scopePath);
 
   if (!configResult.ok) {
-    return {
-      ok: false,
-      failure: configResult.failure,
-    };
+    return failedRepoDiscoveryResult(configResult.failure);
   }
 
   const directory = configResult.config?.directory ?? scopeDirectory(options.scopePath);
@@ -194,19 +255,14 @@ export async function discoverRepo(
     directory,
   });
 
-  return {
-    ok: true,
-    command: "discover",
-    target: options.target,
-    mode: "summary",
-    preset: effectivePreset({
+  return successfulRepoDiscoveryResult({
+    baseSummary: createBaseDiscoverySummary({
       config: configResult.config,
+      ignoreSources,
       preset: options.preset,
       target: options.target,
     }),
-    include: includePatternsForTarget(options.target),
-    exclude: combineIgnorePatterns(ignoreSources),
-    ignoreSources,
-    readOnly: true,
-  };
+    directory,
+    includeTests: options.includeTests,
+  });
 }

@@ -159,6 +159,14 @@ export type {
   RepoDiscoveryTarget,
 } from "./repo-discovery.js";
 export type {
+  RepoCodeDiscoverySummary,
+  RepoDiscoveredCodeClassification,
+  RepoDiscoveredCodeModule,
+  RepoDiscoveredImportEdge,
+  RepoDiscoveredUnresolvedImport,
+  RepoIgnoredCodeFile,
+} from "./repo-code-discovery.js";
+export type {
   RepoWorkflowArtifactMapping,
   RepoWorkflowArtifactOutput,
   RepoWorkflowArtifactOutputFormat,

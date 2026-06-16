@@ -441,7 +441,7 @@ test("plans subcommand help output", async () => {
       "discover",
       [
         "Usage:",
-        "  diagrampilot discover code [--json] [--preset typescript|node-package|monorepo]",
+        "  diagrampilot discover code [--json] [--include-tests] [--preset typescript|node-package|monorepo]",
         "  diagrampilot discover packages [--json] [--preset typescript|node-package|monorepo]",
         "",
       ].join("\n"),
