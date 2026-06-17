@@ -10,9 +10,9 @@ const PACKAGE_SIZE_BUDGETS = {
     maxFiles: 130,
   },
   "@diagrampilot/core": {
-    maxSize: 132_000,
-    maxUnpackedSize: 726_000,
-    maxFiles: 247,
+    maxSize: 136_000,
+    maxUnpackedSize: 755_000,
+    maxFiles: 251,
   },
   "@diagrampilot/icons": {
     maxSize: 4_000,

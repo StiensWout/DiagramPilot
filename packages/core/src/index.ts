@@ -180,6 +180,15 @@ export type {
   RepoIgnoredCodeFile,
 } from "./repo-code-discovery.js";
 export type {
+  RepoDiscoveredPackage,
+  RepoDiscoveredPackageDependencyEdge,
+  RepoDiscoveredPackageDependencySets,
+  RepoDiscoveredPackageEntrypoints,
+  RepoPackageDependencySet,
+  RepoPackageDiscoveryDiagnostic,
+  RepoPackageDiscoverySummary,
+} from "./repo-package-discovery.js";
+export type {
   RepoWorkflowArtifactMapping,
   RepoWorkflowArtifactOutput,
   RepoWorkflowArtifactOutputFormat,
