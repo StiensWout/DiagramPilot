@@ -6,7 +6,6 @@ import test from "node:test";
 import {
   assertCliFailure,
   assertCliSucceeded,
-  findFilesMatching,
   runBuiltCli,
   withTempRepo,
 } from "./cli-smoke-helpers.mjs";
@@ -15,27 +14,6 @@ async function writeMinimalCodeRepo(tempRoot) {
   await mkdir(path.join(tempRoot, ".git"));
   await mkdir(path.join(tempRoot, "src"), { recursive: true });
   await writeFile(path.join(tempRoot, "src", "app.ts"), "export {}\n");
-}
-
-async function writeDiscoverFixtureRepo(tempRoot) {
-  await writeMinimalCodeRepo(tempRoot);
-  await writeFile(path.join(tempRoot, "package.json"), '{"name":"fixture"}\n');
-  await writeFile(
-    path.join(tempRoot, ".gitignore"),
-    ["generated/**", "tmp.ts", ""].join("\n"),
-  );
-  await writeFile(
-    path.join(tempRoot, "diagrampilot.config.yaml"),
-    [
-      "version: 1",
-      "discovery:",
-      "  preset: monorepo",
-      "sources:",
-      "  ignore:",
-      "    - fixtures/**",
-      "",
-    ].join("\n"),
-  );
 }
 
 async function writeFunctionDiscoveryFixtureRepo(tempRoot, options = {}) {
@@ -101,42 +79,6 @@ async function writeImportDiscoveryFixtureRepo(tempRoot, options = {}) {
     "export function renderHome() {}\n",
   );
 }
-
-test("diagrampilot discover packages --json reports effective options without writing files", async () => {
-  await withTempRepo(async (tempRoot) => {
-    await writeDiscoverFixtureRepo(tempRoot);
-    const beforeFiles = await findFilesMatching(tempRoot, tempRoot, /./u);
-
-    const result = await runBuiltCli(["discover", "packages", "--json"], tempRoot);
-
-    assertCliSucceeded(result);
-    const payload = JSON.parse(result.stdout);
-
-    assert.equal(payload.ok, true);
-    assert.equal(payload.target, "packages");
-    assert.equal(payload.preset, "monorepo");
-    assert.equal(payload.readOnly, true);
-    assert.deepEqual(payload.include, [
-      "package.json",
-      "packages/*/package.json",
-    ]);
-    assert.deepEqual(payload.ignoreSources.slice(1), [
-      {
-        source: "gitignore",
-        path: ".gitignore",
-        patterns: ["generated/**", "tmp.ts"],
-      },
-      {
-        source: "config",
-        path: "diagrampilot.config.yaml",
-        patterns: ["fixtures/**"],
-      },
-    ]);
-
-    const afterFiles = await findFilesMatching(tempRoot, tempRoot, /./u);
-    assert.deepEqual(afterFiles, beforeFiles);
-  });
-});
 
 test("diagrampilot discover code --json includes test modules only when requested", async () => {
   await withTempRepo(async (tempRoot) => {

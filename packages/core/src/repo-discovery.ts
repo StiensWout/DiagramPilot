@@ -10,6 +10,10 @@ import {
   discoverCodeModules,
   type RepoCodeDiscoverySummary,
 } from "./repo-code-discovery.js";
+import {
+  discoverPackageManifests,
+  type RepoPackageDiscoverySummary,
+} from "./repo-package-discovery.js";
 
 export type RepoDiscoveryTarget = "code" | "packages";
 
@@ -43,7 +47,7 @@ interface RepoDiscoveryBaseSummary {
 
 export type RepoDiscoverySummary =
   | (RepoDiscoveryBaseSummary & { target: "code" } & RepoCodeDiscoverySummary)
-  | (RepoDiscoveryBaseSummary & { target: "packages" });
+  | (RepoDiscoveryBaseSummary & { target: "packages" } & RepoPackageDiscoverySummary);
 
 export type RepoDiscoveryFailure = RepoWorkflowConfigFailure;
 
@@ -240,6 +244,10 @@ function successfulRepoDiscoveryResult(options: {
     : {
         ...options.baseSummary,
         target: "packages",
+        ...discoverPackageManifests({
+          directory: options.directory,
+          exclude: options.baseSummary.exclude,
+        }),
       };
 }
 
